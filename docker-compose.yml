@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: zyncslot-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: zyncslot_user
+      POSTGRES_PASSWORD: zyncslot_password
+      POSTGRES_DB: zyncslot_db
+    volumes:
+      - zyncslot_pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  zyncslot_pg_data:

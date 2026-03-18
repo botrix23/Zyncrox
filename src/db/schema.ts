@@ -7,6 +7,7 @@ import {
   integer,
   decimal,
   boolean,
+  json,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -46,6 +47,8 @@ export const services = pgTable('services', {
   name: varchar('name', { length: 255 }).notNull(),
   durationMinutes: integer('duration_minutes').notNull(),
   price: decimal('price', { precision: 10, scale: 2 }).notNull(),
+  includes: json('includes').$type<string[]>().default([]).notNull(),
+  excludes: json('excludes').$type<string[]>().default([]).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
