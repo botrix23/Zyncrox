@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { tenants } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getSession } from "@/lib/auth-session";
+import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
 import SettingsPage from "./SettingsPage";
 
@@ -9,12 +9,14 @@ export default async function SettingsPageWrapper({ params }: { params: { locale
   const session = await getSession();
   const locale = params.locale || 'es';
 
-  if (!session || !session.tenantId) {
+  const tenantId = getEffectiveTenantId(session);
+  
+  if (!tenantId) {
     redirect(`/${locale}/admin/login`);
   }
 
   const tenant = await db.query.tenants.findFirst({
-    where: eq(tenants.id, session.tenantId)
+    where: eq(tenants.id, tenantId)
   });
 
   if (!tenant) {
@@ -27,8 +29,10 @@ export default async function SettingsPageWrapper({ params }: { params: { locale
         id: tenant.id,
         name: tenant.name,
         logoUrl: tenant.logoUrl,
+        whatsappNumber: tenant.whatsappNumber,
         homeServiceTerms: tenant.homeServiceTerms,
-        homeServiceTermsEnabled: tenant.homeServiceTermsEnabled
+        homeServiceTermsEnabled: tenant.homeServiceTermsEnabled,
+        waMessageTemplate: tenant.waMessageTemplate
       }} 
     />
   );

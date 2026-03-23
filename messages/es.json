@@ -40,7 +40,10 @@
     "branch_address": "Sucursal: {branch}",
     "with_staff": "Con {staff}",
     "home_service_terms_default": "Al agendar este servicio, aceptas que la cita está sujeta a confirmación vía WhatsApp y disponibilidad de transporte.",
-    "i_agree_to_terms": "Acepto los términos y condiciones"
+    "i_agree_to_terms": "Acepto los términos y condiciones",
+    "selected_services": "Servicios seleccionados",
+    "resume": "Resumen",
+    "continue": "Continuar"
   },
   "Login": {
     "title": "Iniciar Sesión",

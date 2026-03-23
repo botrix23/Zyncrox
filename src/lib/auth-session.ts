@@ -23,3 +23,15 @@ export async function getSession(): Promise<SessionUser | null> {
     return null;
   }
 }
+/**
+ * Resuelve el tenantId correcto:
+ * - Si es SUPER_ADMIN y está impersonando, retorna el ID de la empresa visitada.
+ * - Si es ADMIN, retorna su propio tenantId.
+ */
+export function getEffectiveTenantId(session: SessionUser | null): string | null {
+  if (!session) return null;
+  if (session.role === 'SUPER_ADMIN') {
+    return session.impersonatedTenantId || null;
+  }
+  return session.tenantId || null;
+}

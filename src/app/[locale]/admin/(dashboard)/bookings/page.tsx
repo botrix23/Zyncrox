@@ -1,6 +1,6 @@
 import React from 'react';
 import { db } from '@/db';
-import { getSession } from '@/lib/auth-session';
+import { getSession, getEffectiveTenantId } from '@/lib/auth-session';
 import { redirect } from 'next/navigation';
 import { eq, desc } from 'drizzle-orm';
 import { bookings as bookingsTable, services, staff } from '@/db/schema';
@@ -9,12 +9,12 @@ import BookingsClient from './BookingsClient';
 export default async function BookingsPage() {
   const session = await getSession();
 
-  if (!session) {
+  // Aislamiento Multi-tenant
+  const tenantId = getEffectiveTenantId(session);
+
+  if (!tenantId) {
     redirect('/admin/login');
   }
-
-  // Aislamiento Multi-tenant
-  const tenantId = session.tenantId!;
 
   const [dbBookings, dbServices, dbStaff] = await Promise.all([
     db.query.bookings.findMany({

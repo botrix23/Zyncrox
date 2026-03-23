@@ -2,21 +2,23 @@
 
 import { db } from "@/db";
 import { bookings, services, staff, blocks } from "@/db/schema";
-import { eq, and, gte, lte, or, isNull, desc } from "drizzle-orm";
+import { eq, and, gte, lte, or, isNull, desc, not } from "drizzle-orm";
 import { addMinutes, format, parseISO, startOfDay, endOfDay, isBefore, isAfter, max, min } from "date-fns";
 
 /**
  * Calcula los slots de tiempo disponibles para un servicio, fecha y sucursal/staff específicos.
  */
-export async function getAvailableSlots(dateStr: string, serviceId: string, branchId: string, staffId?: string) {
+export async function getAvailableSlots(dateStr: string, serviceId: string, branchId: string, staffId?: string, durationOverride?: number) {
   try {
-    // 1. Obtener duración del servicio
-    const service = await db.query.services.findFirst({
-      where: eq(services.id, serviceId)
-    });
-    if (!service) return [];
-
-    const duration = service.durationMinutes;
+    let duration = durationOverride;
+    
+    if (!duration) {
+      const service = await db.query.services.findFirst({
+        where: eq(services.id, serviceId)
+      });
+      if (!service) return [];
+      duration = service.durationMinutes;
+    }
 
     // 2. Definir horario base (MOCK: 08:00 AM - 08:00 PM)
     // TODO: En el futuro leer de branches.businessHours
@@ -34,7 +36,7 @@ export async function getAvailableSlots(dateStr: string, serviceId: string, bran
         staffId ? eq(bookings.staffId, staffId) : undefined,
         gte(bookings.startTime, dayStartRange),
         lte(bookings.startTime, dayEndRange),
-        eq(bookings.status, 'CONFIRMED')
+        not(eq(bookings.status, 'CANCELLED'))
       )
     );
 
@@ -168,6 +170,19 @@ export async function deleteBookingAction(id: string, tenantId: string) {
  */
 export async function getBookingsAction(tenantId: string) {
   try {
+    // 1. Auto-finalizar citas pasadas (Opcional: solo las CONFIRMED/PENDING)
+    const now = new Date();
+    await db.update(bookings)
+      .set({ status: 'FINALIZADA' as any })
+      .where(
+        and(
+          eq(bookings.tenantId, tenantId),
+          not(eq(bookings.status, 'CANCELLED')),
+          not(eq(bookings.status, 'FINALIZADA')),
+          lte(bookings.endTime, now)
+        )
+      );
+
     return await db.query.bookings.findMany({
       where: eq(bookings.tenantId, tenantId),
       with: {

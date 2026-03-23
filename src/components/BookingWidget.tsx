@@ -61,7 +61,7 @@ export default function BookingWidget({
   // States del Flujo Completo
   const [modality, setModality] = useState<'local' | 'domicilio' | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedServices, setSelectedServices] = useState<Service[]>([]);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -90,6 +90,9 @@ export default function BookingWidget({
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   // Botón habilitado cuando: nombre + email + teléfono válidos
   // Y si es domicilio Y los términos están activados: también debe aceptarlos
+  const totalPrice = selectedServices.reduce((acc, s) => acc + parseFloat(s.price), 0);
+  const totalDuration = selectedServices.reduce((acc, s) => acc + s.durationMinutes, 0);
+
   const isFormValid =
     guestName.trim() !== '' &&
     emailRegex.test(guestEmail) &&
@@ -98,15 +101,16 @@ export default function BookingWidget({
 
   // Cargar horarios reales cuando cambien los filtros
   useEffect(() => {
-    if (step === 3 && selectedDate && selectedService) {
+    if (step === 3 && selectedDate && selectedServices.length > 0) {
       const fetchTimes = async () => {
         setIsLoadingTimes(true);
         try {
           const times = await getAvailableSlots(
             selectedDate, 
-            selectedService.id, 
+            selectedServices[0]?.id || '', 
             selectedBranch?.id || branches[0]?.id || '', 
-            selectedStaff?.id
+            selectedStaff?.id,
+            totalDuration
           );
           console.log("Found slots:", times.length, "for date:", selectedDate);
           setAvailableTimes(times);
@@ -122,7 +126,7 @@ export default function BookingWidget({
       };
       fetchTimes();
     }
-  }, [step, selectedDate, selectedService, selectedStaff, selectedBranch, selectedTime]);
+  }, [step, selectedDate, selectedServices, selectedStaff, selectedBranch, selectedTime]);
 
   // Handlers
   const handleSelectModality = (mod: 'local' | 'domicilio', branch: Branch | null = null) => {
@@ -131,9 +135,12 @@ export default function BookingWidget({
     setStep(2); // Pasar a Servicios
   };
 
-  const handleSelectService = (service: Service) => {
-    setSelectedService(service);
-    setStep(3); // Pasar a Fechas/Staff
+  const handleToggleService = (service: Service) => {
+    setSelectedServices(prev => {
+      const exists = prev.find(s => s.id === service.id);
+      if (exists) return prev.filter(s => s.id !== service.id);
+      return [...prev, service];
+    });
   };
 
   const handleSelectStaff = (member: Staff | null) => {
@@ -151,18 +158,18 @@ export default function BookingWidget({
   };
 
   const handleFinalCheckout = async () => {
-    if (!selectedService || !selectedDate || !selectedTime) return;
+    if (selectedServices.length === 0 || !selectedDate || !selectedTime) return;
 
     // 1. Calcular tiempos de inicio y fin (UTC para consistencia en DB)
     const militaryTime = formatTimeToMilitary(selectedTime);
     const startDateTime = new Date(`${selectedDate}T${militaryTime}Z`);
-    const endDateTime = new Date(startDateTime.getTime() + selectedService.durationMinutes * 60000);
+    const endDateTime = new Date(startDateTime.getTime() + totalDuration * 60000);
 
     // 2. Persistir en Base de Datos
     const result = await createBookingAction({
       tenantId: tenantId, 
       branchId: selectedBranch?.id || branches[0]?.id || '',
-      serviceId: selectedService.id,
+      serviceId: selectedServices[0].id, // Usamos el ID del primero como referencia técnica
       staffId: selectedStaff?.id || staff[0]?.id || '',
       customerName: guestName,
       customerEmail: guestEmail,
@@ -187,8 +194,9 @@ export default function BookingWidget({
         }
 
         // Reemplazar variables
+        const serviceNames = selectedServices.map(s => s.name).join(", ");
         const formattedMsg = message
-          .replace(/{servicio}/g, selectedService.name)
+          .replace(/{servicio}/g, serviceNames)
           .replace(/{fecha}/g, selectedDate)
           .replace(/{hora}/g, selectedTime)
           .replace(/{cliente}/g, guestName)
@@ -259,7 +267,7 @@ export default function BookingWidget({
             </p>
           </div>
           
-          {(modality || selectedService) && (
+          {(modality || selectedServices.length > 0) && (
             <div className="bg-white dark:bg-white/5 backdrop-blur-md rounded-2xl p-6 space-y-4 border-l-4 border-l-purple-500 border border-slate-200 dark:border-white/10 transition-all duration-300 shadow-xl">
               <h3 className="text-zinc-100 font-medium tracking-wide text-sm uppercase">{t("your_appointment")}</h3>
               
@@ -272,10 +280,22 @@ export default function BookingWidget({
                 </div>
               )}
 
-              {selectedService && (
-                <div className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
-                  <Clock className="w-5 h-5 text-blue-400" />
-                  <span className="font-medium">{selectedService.name} ({selectedService.durationMinutes} min)</span>
+              {selectedServices.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
+                    <Clock className="w-5 h-5 text-blue-400" />
+                    <span className="font-bold text-sm uppercase tracking-wider">{t("selected_services")}:</span>
+                  </div>
+                  <div className="pl-8 space-y-1">
+                    {selectedServices.map(s => (
+                      <p key={s.id} className="text-sm font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-2">
+                        <Check className="w-3 h-3 text-emerald-500" /> {s.name}
+                      </p>
+                    ))}
+                    <p className="text-xs font-bold text-purple-400 mt-2">
+                      Total: {totalDuration} min · ${totalPrice.toFixed(2)}
+                    </p>
+                  </div>
                 </div>
               )}
               
@@ -355,47 +375,80 @@ export default function BookingWidget({
                 </h2>
               </div>
               <div className="space-y-4 overflow-y-auto flex-1 pr-2 custom-scrollbar">
-                {services.map((srv) => (
-                  <button 
-                    key={srv.id} 
-                    onClick={() => handleSelectService(srv)}
-                    className="w-full p-5 bg-white dark:bg-white/5 hover:bg-purple-500/10 border border-slate-200 dark:border-white/10 hover:border-purple-500/40 rounded-xl text-left transition-all duration-300 group shadow-lg"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-purple-400 transition-colors">{srv.name}</h3>
-                      <span className="text-purple-400 font-bold bg-purple-500/10 px-3 py-1 rounded-full text-sm inline-block self-start sm:self-auto">${srv.price}</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-zinc-400 mb-5">
-                      <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-400 dark:text-zinc-500" /> {srv.durationMinutes} min</span>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 text-sm border-t border-slate-200 dark:border-white/5 pt-4">
-                      <div>
-                        <p className="text-zinc-200 font-semibold mb-2 flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400"/> {t("includes")}</p>
-                        <ul className="space-y-2">
-                          {srv.includes?.map((inc, i) => (
-                            <li key={i} className="flex items-start gap-2 text-slate-500 dark:text-zinc-400 leading-tight">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 mt-1.5 shrink-0"></span>
-                              {inc}
-                            </li>
-                          ))}
-                        </ul>
+                {services.map((srv) => {
+                  const isSelected = selectedServices.some(s => s.id === srv.id);
+                  return (
+                    <button 
+                      key={srv.id} 
+                      onClick={() => handleToggleService(srv)}
+                      className={`w-full p-5 bg-white dark:bg-white/5 border rounded-xl text-left transition-all duration-300 group shadow-lg flex flex-col ${
+                        isSelected 
+                          ? 'border-purple-500 bg-purple-500/10 shadow-[0_0_20px_rgba(139,92,246,0.1)]' 
+                          : 'border-slate-200 dark:border-white/10 hover:border-purple-500/40'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
+                        <div className="flex items-center gap-3">
+                          {isSelected && <div className="p-1 bg-purple-500 rounded-full"><Check className="w-3 h-3 text-white" /></div>}
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-purple-400 transition-colors uppercase tracking-tight">{srv.name}</h3>
+                        </div>
+                        <span className="text-purple-400 font-bold bg-purple-500/10 px-3 py-1 rounded-full text-sm inline-block self-start sm:self-auto">${srv.price}</span>
                       </div>
-                      <div>
-                        <p className="text-zinc-200 font-semibold mb-2 flex items-center gap-2"><X className="w-4 h-4 text-rose-400"/> {t("excludes")}</p>
-                        <ul className="space-y-2">
-                          {srv.excludes?.map((exc, i) => (
-                            <li key={i} className="flex items-start gap-2 text-slate-400 dark:text-zinc-500 leading-tight">
-                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500/50 mt-1.5 shrink-0"></span>
-                              {exc}
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-zinc-400 mb-5">
+                        <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-400 dark:text-zinc-500" /> {srv.durationMinutes} min</span>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 text-sm border-t border-slate-200 dark:border-white/5 pt-4">
+                        <div>
+                          <p className="text-zinc-200 font-semibold mb-2 flex items-center gap-2 font-black uppercase text-[10px] tracking-widest"><Check className="w-4 h-4 text-emerald-400"/> {t("includes")}</p>
+                          <ul className="space-y-2">
+                            {srv.includes?.map((inc, i) => (
+                              <li key={i} className="flex items-start gap-2 text-slate-500 dark:text-zinc-400 leading-tight">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 mt-1.5 shrink-0"></span>
+                                {inc}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="text-zinc-200 font-semibold mb-2 flex items-center gap-2 font-black uppercase text-[10px] tracking-widest"><X className="w-4 h-4 text-rose-400"/> {t("excludes")}</p>
+                          <ul className="space-y-2">
+                            {srv.excludes?.map((exc, i) => (
+                              <li key={i} className="flex items-start gap-2 text-slate-400 dark:text-zinc-500 leading-tight">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500/50 mt-1.5 shrink-0"></span>
+                                {exc}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
+
+              {/* Summary Bar at bottom of services list */}
+              {selectedServices.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-slate-200 dark:border-white/5 animate-in slide-in-from-bottom-4 duration-300">
+                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
+                      <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t("resume")}</p>
+                        <p className="text-lg font-black text-slate-900 dark:text-white">
+                          {selectedServices.length} {selectedServices.length === 1 ? 'servicio' : 'servicios'} · {totalDuration} min
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <p className="text-2xl font-black text-purple-400">${totalPrice.toFixed(2)}</p>
+                        <button 
+                          onClick={() => setStep(3)}
+                          className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95"
+                        >
+                          {t("continue")} →
+                        </button>
+                      </div>
+                   </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -644,8 +697,8 @@ export default function BookingWidget({
                <div className="space-y-4 text-slate-600 dark:text-zinc-300 mb-8 max-w-md">
                  <p>
                     {modality === 'domicilio' 
-                      ? t("redirecting_desc", { service: selectedService?.name || '', tenant: tenantName })
-                      : t("success_desc", { name: guestName.split(' ')[0], branch: selectedBranch?.name || '', service: selectedService?.name || '' })
+                      ? t("redirecting_desc", { service: selectedServices.map(s => s.name).join(", "), tenant: tenantName })
+                      : t("success_desc", { name: guestName.split(' ')[0], branch: selectedBranch?.name || '', service: selectedServices.map(s => s.name).join(", ") })
                     }
                  </p>
                  <div className="bg-slate-200 dark:bg-black/30 w-full p-4 rounded-xl border border-slate-200 dark:border-white/5 mt-4">
@@ -655,7 +708,7 @@ export default function BookingWidget({
                </div>
                
                <button 
-                onClick={() => { setStep(1); setSelectedDate(null); setSelectedTime(null); setSelectedService(null); setSelectedStaff(null); setModality(null); setGuestName(""); setGuestEmail(""); setGuestPhone(""); }}
+                onClick={() => { setStep(1); setSelectedDate(null); setSelectedTime(null); setSelectedServices([]); setSelectedStaff(null); setModality(null); setGuestName(""); setGuestEmail(""); setGuestPhone(""); }}
                 className="px-8 py-3 bg-white dark:bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-xl font-medium transition-all"
               >
                 {t("back_to_start")}

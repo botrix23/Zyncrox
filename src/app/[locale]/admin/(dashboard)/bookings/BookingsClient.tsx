@@ -17,10 +17,11 @@ import {
   X,
   Clock3
 } from 'lucide-react';
-import { updateBookingAction, deleteBookingAction } from "@/app/actions/booking";
+import { updateBookingAction, deleteBookingAction, createBookingAction } from "@/app/actions/booking";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
+import { format, parse, addMinutes } from "date-fns";
 import { es } from "date-fns/locale";
+import { Loader2 } from 'lucide-react';
 
 export default function BookingsClient({ 
   initialBookings,
@@ -45,9 +46,29 @@ export default function BookingsClient({
     customerName: "",
     customerEmail: "",
     status: "CONFIRMED",
-    serviceId: "",
-    staffId: ""
+    serviceId: services[0]?.id || "",
+    staffId: staff[0]?.id || "",
+    branchId: staff[0]?.branchId || "",
+    date: format(new Date(), "yyyy-MM-dd"),
+    time: "09:00",
+    durationMinutes: services[0]?.durationMinutes || 30
   });
+
+  const handleOpenCreate = () => {
+    setEditingBooking(null);
+    setFormData({
+      customerName: "",
+      customerEmail: "",
+      status: "CONFIRMED",
+      serviceId: services[0]?.id || "",
+      staffId: staff[0]?.id || "",
+      branchId: staff[0]?.branchId || "",
+      date: format(new Date(), "yyyy-MM-dd"),
+      time: "09:00",
+      durationMinutes: services[0]?.durationMinutes || 30
+    });
+    setIsEditModalOpen(true);
+  };
 
   const filteredBookings = initialBookings.filter(b => {
     const matchesSearch = b.customerName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -65,7 +86,11 @@ export default function BookingsClient({
       customerEmail: booking.customerEmail || "",
       status: booking.status,
       serviceId: booking.serviceId,
-      staffId: booking.staffId
+      staffId: booking.staffId,
+      branchId: booking.branchId,
+      date: format(new Date(booking.startTime), "yyyy-MM-dd"),
+      time: format(new Date(booking.startTime), "HH:mm"),
+      durationMinutes: Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000)
     });
     setIsEditModalOpen(true);
   };
@@ -74,17 +99,37 @@ export default function BookingsClient({
     e.preventDefault();
     setIsLoading(true);
     
-    const result = await updateBookingAction({
-      id: editingBooking.id,
-      tenantId,
-      ...formData
-    });
+    // Calcular startTime y endTime
+    const start = parse(`${formData.date} ${formData.time}`, "yyyy-MM-dd HH:mm", new Date());
+    const end = addMinutes(start, formData.durationMinutes);
+
+    let result;
+    if (editingBooking) {
+      result = await updateBookingAction({
+        id: editingBooking.id,
+        tenantId,
+        ...formData,
+        startTime: start,
+        endTime: end
+      });
+    } else {
+      result = await createBookingAction({
+        tenantId,
+        branchId: formData.branchId,
+        serviceId: formData.serviceId,
+        staffId: formData.staffId,
+        customerName: formData.customerName,
+        customerEmail: formData.customerEmail,
+        startTime: start,
+        endTime: end
+      });
+    }
 
     if (result.success) {
       setIsEditModalOpen(false);
       router.refresh();
     } else {
-      alert("Error al actualizar la cita");
+      alert("Error al guardar la cita");
     }
     setIsLoading(false);
   };
@@ -113,7 +158,10 @@ export default function BookingsClient({
                 <Filter className="w-4 h-4" />
                 Filtrar
             </button>
-            <button className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl text-sm font-bold shadow-xl shadow-purple-500/20 transition-all active:scale-95">
+            <button 
+              onClick={handleOpenCreate}
+              className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl text-sm font-bold shadow-xl shadow-purple-500/20 transition-all active:scale-95"
+            >
                 <Calendar className="w-5 h-5" />
                 Agendar Cita
             </button>
@@ -274,11 +322,52 @@ export default function BookingsClient({
                   <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Personal</label>
                   <select 
                     value={formData.staffId}
-                    onChange={e => setFormData({...formData, staffId: e.target.value})}
+                    onChange={e => {
+                      const s = staff.find(st => st.id === e.target.value);
+                      setFormData({...formData, staffId: e.target.value, branchId: s?.branchId || formData.branchId})
+                    }}
                     className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm appearance-none"
                   >
                     {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Duración (min)</label>
+                <div className="relative">
+                  <Clock3 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input 
+                    required
+                    type="number" 
+                    min="1"
+                    value={formData.durationMinutes}
+                    onChange={e => setFormData({...formData, durationMinutes: parseInt(e.target.value) || 0})}
+                    className="w-full p-4 pl-12 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Fecha</label>
+                  <input 
+                    required
+                    type="date" 
+                    value={formData.date}
+                    onChange={e => setFormData({...formData, date: e.target.value})}
+                    className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Hora</label>
+                  <input 
+                    required
+                    type="time" 
+                    value={formData.time}
+                    onChange={e => setFormData({...formData, time: e.target.value})}
+                    className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                  />
                 </div>
               </div>
 
@@ -300,6 +389,3 @@ export default function BookingsClient({
   );
 }
 
-function Loader2({ className }: { className?: string }) {
-  return <Clock3 className={className} />;
-}

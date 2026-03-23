@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { 
   Settings, 
   Truck, 
@@ -8,7 +8,9 @@ import {
   Info,
   CheckCircle2,
   AlertCircle,
-  Phone
+  Phone,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { updateTenantSettingsAction } from "@/app/actions/tenant";
 import { useRouter } from "next/navigation";
@@ -34,6 +36,7 @@ export default function SettingsPage({
   const [waMessageTemplate, setWaMessageTemplate] = useState(tenant.waMessageTemplate || '');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const handleSave = async () => {
@@ -59,10 +62,29 @@ export default function SettingsPage({
     setIsLoading(false);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validación básica
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Por favor selecciona una imagen.' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setLogoUrl(base64);
+      setMessage({ type: 'success', text: 'Logo cargado. No olvides guardar los cambios.' });
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
-    <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
+    <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12 text-slate-900 dark:text-white">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Configuración del Negocio</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Configuración del Negocio</h1>
         <p className="text-slate-500 dark:text-zinc-400 mt-1">Personaliza el comportamiento de tu plataforma ZyncSlot.</p>
       </div>
 
@@ -75,7 +97,8 @@ export default function SettingsPage({
         </div>
       )}
 
-      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-8 shadow-sm space-y-8">
+      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-8 shadow-sm space-y-10">
+        
         {/* Sección: Identidad de Marca */}
         <div className="space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
@@ -85,32 +108,81 @@ export default function SettingsPage({
             <h2 className="text-xl font-bold">Identidad de Marca</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Nombre del Negocio</label>
-              <input 
-                type="text" 
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ej: ZyncSalón Spa"
-                className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Nombre del Negocio</label>
+                <input 
+                  type="text" 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ej: ZyncSalón Spa"
+                  className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">URL del Logo</label>
+                <div className="relative group">
+                  <input 
+                    type="text" 
+                    value={logoUrl.startsWith('data:') ? 'Imagen subida (Base64)' : logoUrl}
+                    onChange={(e) => setLogoUrl(e.target.value)}
+                    placeholder="https://ejemplo.com/logo.png"
+                    readOnly={logoUrl.startsWith('data:')}
+                    className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm pr-12"
+                  />
+                  {logoUrl.startsWith('data:') && (
+                    <button 
+                      onClick={() => setLogoUrl('')}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-purple-500 hover:text-purple-400"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">URL del Logo</label>
-              <input 
-                type="text" 
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="https://ejemplo.com/logo.png"
-                className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
-              />
+
+            <div className="space-y-4">
+               <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Logo del Negocio</label>
+               <div className="relative aspect-video rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex flex-col items-center justify-center overflow-hidden group">
+                  {logoUrl ? (
+                    <>
+                      <img src={logoUrl} alt="Logo Preview" className="absolute inset-0 w-full h-full object-contain p-4" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-4 py-2 bg-white text-black rounded-xl text-xs font-bold flex items-center gap-2"
+                        >
+                          <Upload className="w-3 h-3" /> Cambiar Imagen
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex flex-col items-center gap-2 text-slate-400 hover:text-purple-500 transition-colors"
+                    >
+                      <ImageIcon className="w-8 h-8 opacity-20" />
+                      <p className="text-xs font-medium">Click para subir logo</p>
+                      <p className="text-[10px]">Recomendado: 512x512px (PNG/JPG)</p>
+                    </button>
+                  )}
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden" 
+                    accept="image/*"
+                  />
+               </div>
             </div>
           </div>
         </div>
 
         {/* Sección: Servicio a Domicilio y WhatsApp */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
             <div className="p-2 bg-purple-500/10 rounded-lg">
               <Truck className="w-5 h-5 text-purple-500" />
@@ -118,43 +190,53 @@ export default function SettingsPage({
             <h2 className="text-xl font-bold">Servicio a Domicilio</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             <div className="space-y-2">
-              <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Número de WhatsApp</label>
-              <input 
-                type="text" 
-                value={whatsappNumber}
-                onChange={(e) => setWhatsappNumber(e.target.value.replace(/\D/g, ''))}
-                placeholder="50378901234"
-                className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
-              />
+              <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Teléfono</label>
+              <div className="relative h-[58px]">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input 
+                  type="text" 
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Ej: Teléfono del negocio"
+                  className="w-full h-full p-4 pl-12 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
-              <div>
-                <p className="font-bold text-sm">Términos y Condiciones</p>
-                <p className="text-[10px] text-zinc-500">Obligatorio al reservar a domicilio</p>
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Términos y Condiciones</label>
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 h-[58px]">
+                <div className="pr-4">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Obligatorio al reservar a domicilio</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={homeServiceTermsEnabled} 
+                    onChange={(e) => setHomeServiceTermsEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={homeServiceTermsEnabled} 
-                  onChange={(e) => setHomeServiceTermsEnabled(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-              </label>
             </div>
           </div>
 
           {homeServiceTermsEnabled && (
             <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-              <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Mensaje de Términos</label>
+              <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 group flex items-center gap-2">
+                Contenido de Términos
+                <span title="Estos términos se mostrarán al cliente cuando elija servicio a domicilio.">
+                  <Info className="w-3.5 h-3.5 text-zinc-500" />
+                </span>
+              </label>
               <textarea 
                 value={homeServiceTerms}
                 onChange={(e) => setHomeServiceTerms(e.target.value)}
-                placeholder="Escribe aquí los términos..."
-                className="w-full min-h-[100px] p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none text-sm"
+                placeholder="Ej: El costo de domicilio varía según la zona. El pago se realiza al finalizar el servicio..."
+                className="w-full min-h-[120px] p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none text-sm"
               />
             </div>
           )}
@@ -190,11 +272,12 @@ export default function SettingsPage({
                 ))}
               </div>
               <div className="pt-2 border-t border-slate-200 dark:border-white/5">
-                <p className="text-[10px] font-bold text-zinc-400 mb-2 uppercase">Emojis recomendados:</p>
+                <p className="text-[10px] font-bold text-zinc-400 mb-2 uppercase">Emojis rápidos:</p>
                 <div className="flex flex-wrap gap-2">
                   {['📍', '📅', '⏰', '👤', '📞', '✨', '✂️', '💅', '✅'].map(emoji => (
                     <button 
                       key={emoji}
+                      type="button"
                       onClick={() => setWaMessageTemplate(prev => prev + emoji)}
                       className="p-1.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg hover:border-purple-500 transition-all"
                     >
