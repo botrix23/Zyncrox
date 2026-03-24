@@ -25,6 +25,13 @@ export const tenants = pgTable('tenants', {
   homeServiceTerms: text('home_service_terms'),
   homeServiceTermsEnabled: boolean('home_service_terms_enabled').default(false).notNull(),
   slug: varchar('slug', { length: 255 }).notNull().unique(),
+  bookingSettings: json('booking_settings').$type<{
+    step1Title?: string;
+    step2Title?: string;
+    step3Title?: string;
+    step4Title?: string;
+    showSummaryOnLeft?: boolean;
+  }>().default({}).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
@@ -85,6 +92,7 @@ export const bookings = pgTable('bookings', {
   serviceId: uuid('service_id').notNull().references(() => services.id, { onDelete: 'cascade' }),
   customerName: varchar('customer_name', { length: 255 }).notNull(),
   customerEmail: varchar('customer_email', { length: 255 }),
+  customerPhone: varchar('customer_phone', { length: 30 }),
   // Regla de Oro: Todo el tiempo es geográfico (UTC garantizado con withTimezone: true)
   startTime: timestamp('start_time', { withTimezone: true, mode: 'date' }).notNull(),
   endTime: timestamp('end_time', { withTimezone: true, mode: 'date' }).notNull(),

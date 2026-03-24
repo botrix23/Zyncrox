@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { format, parse, addMinutes } from "date-fns";
 import { es } from "date-fns/locale";
 import { Loader2 } from 'lucide-react';
+import PhoneInput from "@/components/PhoneInput";
 
 export default function BookingsClient({ 
   initialBookings,
@@ -45,6 +46,7 @@ export default function BookingsClient({
   const [formData, setFormData] = useState({
     customerName: "",
     customerEmail: "",
+    customerPhone: "",
     status: "CONFIRMED",
     serviceId: services[0]?.id || "",
     staffId: staff[0]?.id || "",
@@ -54,11 +56,14 @@ export default function BookingsClient({
     durationMinutes: services[0]?.durationMinutes || 30
   });
 
+  const [durationInput, setDurationInput] = useState(formData.durationMinutes.toString());
+
   const handleOpenCreate = () => {
     setEditingBooking(null);
     setFormData({
       customerName: "",
       customerEmail: "",
+      customerPhone: "",
       status: "CONFIRMED",
       serviceId: services[0]?.id || "",
       staffId: staff[0]?.id || "",
@@ -67,6 +72,7 @@ export default function BookingsClient({
       time: "09:00",
       durationMinutes: services[0]?.durationMinutes || 30
     });
+    setDurationInput((services[0]?.durationMinutes || 30).toString());
     setIsEditModalOpen(true);
   };
 
@@ -84,6 +90,7 @@ export default function BookingsClient({
     setFormData({
       customerName: booking.customerName,
       customerEmail: booking.customerEmail || "",
+      customerPhone: booking.customerPhone || "",
       status: booking.status,
       serviceId: booking.serviceId,
       staffId: booking.staffId,
@@ -92,6 +99,7 @@ export default function BookingsClient({
       time: format(new Date(booking.startTime), "HH:mm"),
       durationMinutes: Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000)
     });
+    setDurationInput(Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000).toString());
     setIsEditModalOpen(true);
   };
 
@@ -163,7 +171,7 @@ export default function BookingsClient({
               className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl text-sm font-bold shadow-xl shadow-purple-500/20 transition-all active:scale-95"
             >
                 <Calendar className="w-5 h-5" />
-                Agendar Cita
+                Agendar cita
             </button>
         </div>
       </div>
@@ -212,14 +220,18 @@ export default function BookingsClient({
                         </div>
                         <div>
                             <h3 className="font-black text-slate-900 dark:text-white text-lg leading-tight">{booking.customerName}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                            <div className="flex flex-col gap-0.5 mt-1">
+                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full inline-block w-fit ${
                                     booking.status === 'CONFIRMED' ? 'bg-emerald-500/10 text-emerald-500' :
                                     booking.status === 'PENDING' ? 'bg-orange-500/10 text-orange-500' :
+                                    booking.status === 'FINALIZADA' ? 'bg-purple-500/10 text-purple-500' :
                                     'bg-rose-500/10 text-rose-500'
                                 }`}>
-                                    {booking.status === 'CONFIRMED' ? 'Confirmada' : (booking.status === 'PENDING' ? 'Pendiente' : 'Cancelada')}
+                                    {booking.status === 'CONFIRMED' ? 'Confirmada' : (booking.status === 'PENDING' ? 'Pendiente' : (booking.status === 'FINALIZADA' ? 'Finalizada' : 'Cancelada'))}
                                 </span>
+                                {booking.customerPhone && (
+                                  <span className="text-[10px] text-slate-400 font-bold">{booking.customerPhone}</span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -273,18 +285,18 @@ export default function BookingsClient({
 
       {/* Edit Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/5">
-              <h3 className="text-xl font-bold">Editar Cita</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/5 shrink-0">
+              <h3 className="text-xl font-bold">{editingBooking ? 'Editar cita' : 'Nueva cita'}</h3>
               <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">
                 <X className="w-6 h-6" />
               </button>
             </div>
             
-            <form onSubmit={handleSaveEdit} className="p-6 space-y-6">
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Nombre del Cliente</label>
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Nombre del cliente</label>
                 <input 
                   required
                   type="text" 
@@ -294,17 +306,38 @@ export default function BookingsClient({
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Correo electrónico</label>
+                  <input 
+                    type="email" 
+                    value={formData.customerEmail}
+                    onChange={e => setFormData({...formData, customerEmail: e.target.value})}
+                    placeholder="Ej: cliente@ejemplo.com"
+                    className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Estado de la cita</label>
+                  <select 
+                    value={formData.status}
+                    onChange={e => setFormData({...formData, status: e.target.value})}
+                    className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm appearance-none"
+                  >
+                    <option value="PENDING">Pendiente</option>
+                    <option value="CONFIRMED">Confirmada</option>
+                    <option value="CANCELLED">Cancelada</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Estado de la Cita</label>
-                <select 
-                  value={formData.status}
-                  onChange={e => setFormData({...formData, status: e.target.value})}
-                  className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm appearance-none"
-                >
-                  <option value="PENDING">Pendiente</option>
-                  <option value="CONFIRMED">Confirmada</option>
-                  <option value="CANCELLED">Cancelada</option>
-                </select>
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Teléfono</label>
+                <PhoneInput 
+                  value={formData.customerPhone}
+                  onChange={val => setFormData({...formData, customerPhone: val})}
+                  placeholder="Teléfono del contacto"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -341,8 +374,15 @@ export default function BookingsClient({
                     required
                     type="number" 
                     min="1"
-                    value={formData.durationMinutes}
-                    onChange={e => setFormData({...formData, durationMinutes: parseInt(e.target.value) || 0})}
+                    value={durationInput}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setDurationInput(val);
+                      const parsed = parseInt(val);
+                      if (!isNaN(parsed)) {
+                        setFormData({...formData, durationMinutes: parsed});
+                      }
+                    }}
                     className="w-full p-4 pl-12 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
                   />
                 </div>
@@ -378,7 +418,7 @@ export default function BookingsClient({
                   className="w-full py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold transition-all shadow-xl shadow-purple-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-                  Guardar Cambios
+                  {editingBooking ? 'Guardar cambios' : 'Crear cita'}
                 </button>
               </div>
             </form>

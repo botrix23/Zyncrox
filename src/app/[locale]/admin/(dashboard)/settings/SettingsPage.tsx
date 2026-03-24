@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { updateTenantSettingsAction } from "@/app/actions/tenant";
 import { useRouter } from "next/navigation";
+import PhoneInput from "@/components/PhoneInput";
 
 export default function SettingsPage({ 
   tenant 
@@ -193,14 +194,11 @@ export default function SettingsPage({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             <div className="space-y-2">
               <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Teléfono</label>
-              <div className="relative h-[58px]">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input 
-                  type="text" 
+              <div className="relative">
+                <PhoneInput 
                   value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Ej: Teléfono del negocio"
-                  className="w-full h-full p-4 pl-12 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                  onChange={val => setWhatsappNumber(val)}
+                  placeholder="Teléfono del negocio"
                 />
               </div>
             </div>
@@ -297,7 +295,7 @@ export default function SettingsPage({
             className="w-full py-4 bg-slate-900 dark:bg-white dark:text-black text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:opacity-90 transition-all shadow-xl shadow-slate-900/10 dark:shadow-white/5 disabled:opacity-50"
           >
             {isLoading ? <div className="w-5 h-5 border-2 border-current border-t-transparent animate-spin rounded-full" /> : <Save className="w-5 h-5" />}
-            Guardar Cambios
+            Guardar cambios
           </button>
         </div>
       </div>

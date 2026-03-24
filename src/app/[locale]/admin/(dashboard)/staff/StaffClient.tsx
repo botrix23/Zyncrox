@@ -6,14 +6,15 @@ import {
   Search, 
   User, 
   Mail, 
-  MoreVertical,
   Trash2,
   Edit2,
   X,
-  ChevronRight
+  ChevronRight,
+  MoreVertical
 } from 'lucide-react';
 import { createStaffAction, updateStaffAction, deleteStaffAction } from "@/app/actions/staff";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef, useCallback } from "react";
 
 export default function StaffClient({ 
   initialStaff,
@@ -28,6 +29,9 @@ export default function StaffClient({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   // Form State
@@ -87,9 +91,10 @@ export default function StaffClient({
     setIsLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("¿Estás seguro de eliminar a este miembro del equipo?")) return;
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`¿Estás seguro de eliminar a "${name}"?`)) return;
     
+    setOpenMenu(null);
     const result = await deleteStaffAction(id, tenantId);
     if (result.success) {
       router.refresh();
@@ -97,6 +102,34 @@ export default function StaffClient({
       alert("Error al eliminar el miembro del equipo");
     }
   };
+
+  // Close menu on click outside
+  useEffect(() => {
+    if (!openMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenu(null);
+        setMenuPos(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openMenu]);
+
+  const handleOpenMenu = useCallback((e: React.MouseEvent<HTMLButtonElement>, memberId: string) => {
+    e.stopPropagation();
+    if (openMenu === memberId) {
+      setOpenMenu(null);
+      setMenuPos(null);
+      return;
+    }
+    const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+    setMenuPos({ 
+      top: rect.bottom + window.scrollY + 4, 
+      left: rect.right - 176, // 176 = w-44
+    });
+    setOpenMenu(memberId);
+  }, [openMenu]);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -111,7 +144,7 @@ export default function StaffClient({
           className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl text-sm font-bold shadow-xl shadow-purple-500/20 transition-all active:scale-95"
         >
           <Plus className="w-5 h-5" />
-          Añadir Miembro
+          Añadir miembro
         </button>
       </div>
 
@@ -119,13 +152,13 @@ export default function StaffClient({
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {filteredStaff.map((member) => (
           <div key={member.id} className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-purple-500/5 transition-all group overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                <button onClick={() => handleOpenModal(member)} className="p-2 text-slate-400 hover:text-purple-600">
-                    <Edit2 className="w-4 h-4" />
-                </button>
-                <button onClick={() => handleDelete(member.id)} className="p-2 text-slate-400 hover:text-rose-600">
-                    <Trash2 className="w-4 h-4" />
-                </button>
+            <div className="absolute top-0 right-0 p-4">
+              <button 
+                onClick={(e) => handleOpenMenu(e, member.id)}
+                className={`p-2 rounded-xl transition-all ${openMenu === member.id ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
             </div>
             
             <div className="flex flex-col items-center text-center space-y-4">
@@ -159,7 +192,7 @@ export default function StaffClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/5">
-              <h3 className="text-xl font-bold">{editingMember ? 'Editar Miembro' : 'Añadir Miembro'}</h3>
+              <h3 className="text-xl font-bold">{editingMember ? 'Editar miembro' : 'Añadir miembro'}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">
                 <X className="w-6 h-6" />
               </button>
@@ -167,19 +200,19 @@ export default function StaffClient({
             
             <form onSubmit={handleSave} className="p-6 space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Nombre Completo</label>
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Nombre completo</label>
                 <input 
                   required
                   type="text" 
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
                   className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
-                  placeholder="Ej: Ana Gomez"
+                  placeholder="Ej: Persona Ejemplo"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Correo Electrónico</label>
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Correo electrónico</label>
                 <input 
                   type="email" 
                   value={formData.email}
@@ -190,7 +223,7 @@ export default function StaffClient({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Sucursal Principal</label>
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Sucursal principal</label>
                 <select 
                   required
                   value={formData.branchId}
@@ -212,10 +245,42 @@ export default function StaffClient({
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent animate-spin rounded-full"></div>
                 ) : (
-                  editingMember ? 'Guardar Cambios' : 'Añadir Miembro'
+                  editingMember ? 'Guardar cambios' : 'Añadir miembro'
                 )}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Actions Dropdown */}
+      {openMenu && menuPos && (
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
+          className="w-44 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        >
+          <button 
+            onClick={() => {
+              const m = initialStaff.find(m => m.id === openMenu);
+              if (m) handleOpenModal(m);
+              setOpenMenu(null);
+            }}
+            className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors flex items-center gap-2 font-bold"
+          >
+            <Edit2 className="w-4 h-4" /> Editar
+          </button>
+          <div className="border-t border-slate-100 dark:border-white/5">
+            <button 
+              onClick={() => {
+                const m = initialStaff.find(m => m.id === openMenu);
+                if (m) handleDelete(m.id, m.name);
+                setOpenMenu(null);
+              }}
+              className="w-full text-left px-4 py-3 text-sm text-rose-500 hover:bg-rose-500/10 transition-colors flex items-center gap-2 font-bold"
+            >
+              <Trash2 className="w-4 h-4" /> Eliminar
+            </button>
           </div>
         </div>
       )}

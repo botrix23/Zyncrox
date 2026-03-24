@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { bookings, services, staff, blocks } from "@/db/schema";
+import { bookings, services, staff, blocks, branches } from "@/db/schema";
 import { eq, and, gte, lte, or, isNull, desc, not } from "drizzle-orm";
 import { addMinutes, format, parseISO, startOfDay, endOfDay, isBefore, isAfter, max, min } from "date-fns";
 
@@ -20,10 +20,34 @@ export async function getAvailableSlots(dateStr: string, serviceId: string, bran
       duration = service.durationMinutes;
     }
 
-    // 2. Definir horario base (MOCK: 08:00 AM - 08:00 PM)
-    // TODO: En el futuro leer de branches.businessHours
-    const dayStart = parseISO(`${dateStr}T08:00:00Z`);
-    const dayEnd = parseISO(`${dateStr}T20:00:00Z`);
+    // 2. Obtener horario del branch
+    const branch = await db.query.branches.findFirst({
+      where: eq(branches.id, branchId)
+    });
+
+    let dayStart = parseISO(`${dateStr}T08:00:00Z`);
+    let dayEnd = parseISO(`${dateStr}T20:00:00Z`);
+    let activeSlots: { open: string; close: string }[] = [{ open: '08:00', close: '20:00' }];
+    let isOpen = true;
+
+    if (branch?.businessHours) {
+      try {
+        const bh = JSON.parse(branch.businessHours);
+        const dayOfWeek = format(parseISO(dateStr), 'EEEE').toLowerCase(); // monday, etc.
+        const special = bh.special?.[dateStr];
+        const regular = bh.regular?.[dayOfWeek];
+
+        const schedule = special || regular;
+        if (schedule) {
+          isOpen = schedule.isOpen;
+          activeSlots = schedule.slots || [];
+        }
+      } catch (e) {
+        console.error("Error parsing business hours:", e);
+      }
+    }
+
+    if (!isOpen || activeSlots.length === 0) return [];
 
     // 3. Obtener rangos ocupados (bookings y bloqueos)
     const dayStartRange = startOfDay(parseISO(dateStr));
@@ -34,19 +58,22 @@ export async function getAvailableSlots(dateStr: string, serviceId: string, bran
       and(
         eq(bookings.branchId, branchId),
         staffId ? eq(bookings.staffId, staffId) : undefined,
-        gte(bookings.startTime, dayStartRange),
         lte(bookings.startTime, dayEndRange),
+        gte(bookings.endTime, dayStartRange),
         not(eq(bookings.status, 'CANCELLED'))
       )
     );
+
+    const branchStaff = await db.select().from(staff).where(eq(staff.branchId, branchId));
+    const totalStaffCount = branchStaff.length || 1;
 
     // Consultar bloqueos (vacaciones, descansos, etc)
     const existingBlocks = await db.select().from(blocks).where(
       and(
         eq(blocks.branchId, branchId),
         staffId ? or(isNull(blocks.staffId), eq(blocks.staffId, staffId)) : isNull(blocks.staffId),
-        gte(blocks.startTime, dayStartRange),
-        lte(blocks.startTime, dayEndRange)
+        lte(blocks.startTime, dayEndRange),
+        gte(blocks.endTime, dayStartRange)
       )
     );
 
@@ -55,34 +82,57 @@ export async function getAvailableSlots(dateStr: string, serviceId: string, bran
       ...existingBlocks.map(b => ({ start: b.startTime, end: b.endTime }))
     ];
 
-    // 4. Generar slots cada 30 minutos
-    const slots = [];
-    let currentSlot = dayStart;
+    // 5. Generar todos los slots posibles según los tramos horarios activos
+    const slots: any[] = [];
+    
+    activeSlots.forEach(tramo => {
+      let current = parseISO(`${dateStr}T${tramo.open}:00Z`);
+      const tramoEnd = parseISO(`${dateStr}T${tramo.close}:00Z`);
 
-    while (isBefore(currentSlot, dayEnd)) {
-      const slotEnd = addMinutes(currentSlot, duration);
+      while (isBefore(addMinutes(current, duration), tramoEnd) || format(addMinutes(current, duration), 'HH:mm') === tramo.close) {
+        const slotStart = current;
+        const slotEnd = addMinutes(current, duration);
+        
+        let isOccupied = false;
 
-      // No permitir slots que terminen después del cierre
-      if (isAfter(slotEnd, dayEnd)) break;
+        if (staffId) {
+          isOccupied = [
+            ...existingBookings.map(b => ({ start: b.startTime, end: b.endTime })),
+            ...existingBlocks.map(b => ({ start: b.startTime, end: b.endTime }))
+          ].some(range => isBefore(slotStart, range.end) && isAfter(slotEnd, range.start));
+        } else {
+          const hasBranchBlock = existingBlocks.filter(b => !b.staffId).some(b => 
+            isBefore(slotStart, b.endTime) && isAfter(slotEnd, b.startTime)
+          );
 
-      // Validar solapamiento: max(start1, start2) < min(end1, end2)
-      const isOverlap = occupiedRanges.some(range => {
-        const overlapStart = max([currentSlot, range.start]);
-        const overlapEnd = min([slotEnd, range.end]);
-        return overlapStart < overlapEnd;
-      });
+          if (hasBranchBlock) {
+            isOccupied = true;
+          } else {
+            const busyStaffIds = new Set();
+            existingBookings.forEach(b => {
+              if (isBefore(slotStart, b.endTime) && isAfter(slotEnd, b.startTime)) busyStaffIds.add(b.staffId);
+            });
+            existingBlocks.forEach(b => {
+              if (b.staffId && isBefore(slotStart, b.endTime) && isAfter(slotEnd, b.startTime)) busyStaffIds.add(b.staffId);
+            });
+            isOccupied = busyStaffIds.size >= totalStaffCount;
+          }
+        }
 
-      if (!isOverlap) {
         slots.push({
-          time: format(currentSlot, "hh:mm a"),
-          available: true
+          time: format(slotStart, "HH:mm"),
+          available: !isOccupied
         });
+        
+        current = addMinutes(current, 15); // Intervalos de 15 minutos
       }
+    });
 
-      currentSlot = addMinutes(currentSlot, 30);
-    }
-
-    return slots;
+    // Consolidar slots por tiempo (si hay múltiples tramos que se solapan o para manejar Anyone)
+    // Para simplificar, si el mismo tiempo aparece varias veces, es disponible si alguno es disponible.
+    // Pero aquí solo tenemos un branch y (opcionalmente) un staff.
+    
+    return slots as any;
   } catch (error) {
     console.error("Error fetching available slots:", error);
     return [];
@@ -99,6 +149,7 @@ export async function createBookingAction(data: {
   staffId: string;
   customerName: string;
   customerEmail: string;
+  customerPhone?: string;
   startTime: Date;
   endTime: Date;
 }) {
@@ -110,6 +161,7 @@ export async function createBookingAction(data: {
       staffId: data.staffId,
       customerName: data.customerName,
       customerEmail: data.customerEmail,
+      customerPhone: data.customerPhone,
       startTime: data.startTime,
       endTime: data.endTime,
       status: 'CONFIRMED'
@@ -130,6 +182,7 @@ export async function updateBookingAction(data: {
   tenantId: string;
   customerName?: string;
   customerEmail?: string;
+  customerPhone?: string;
   startTime?: Date;
   endTime?: Date;
   status?: string;
@@ -139,6 +192,7 @@ export async function updateBookingAction(data: {
       .set({
         customerName: data.customerName,
         customerEmail: data.customerEmail,
+        customerPhone: data.customerPhone,
         startTime: data.startTime,
         endTime: data.endTime,
         status: data.status as any,

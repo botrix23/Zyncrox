@@ -160,7 +160,7 @@ export default function ServicesClient({
           className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl text-sm font-bold shadow-xl shadow-purple-500/20 transition-all active:scale-95"
         >
           <Plus className="w-5 h-5" />
-          Nuevo Servicio
+          Nuevo servicio
         </button>
       </div>
 
@@ -279,7 +279,7 @@ export default function ServicesClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/5 shrink-0">
-              <h3 className="text-xl font-bold">{editingService ? 'Editar Servicio' : 'Nuevo Servicio'}</h3>
+              <h3 className="text-xl font-bold">{editingService ? 'Editar servicio' : 'Nuevo servicio'}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">
                 <X className="w-6 h-6" />
               </button>
@@ -288,14 +288,14 @@ export default function ServicesClient({
             <form onSubmit={handleSave} className="p-6 space-y-6 overflow-y-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Nombre del Servicio</label>
+                  <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">Nombre del servicio</label>
                   <input 
                     required
                     type="text" 
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
-                    placeholder="Ej: Corte Premium"
+                    placeholder="Ej: Corte básico"
                   />
                 </div>
 
@@ -399,7 +399,7 @@ export default function ServicesClient({
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent animate-spin rounded-full"></div>
                   ) : (
-                    editingService ? 'Guardar Cambios' : 'Crear Servicio'
+                    editingService ? 'Guardar cambios' : 'Crear servicio'
                   )}
                 </button>
               </div>

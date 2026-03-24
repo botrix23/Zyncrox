@@ -31,6 +31,7 @@ export default async function Home({ params }: { params: { locale: string, slug:
           homeServiceTerms={tenant.homeServiceTerms || ''}
           homeServiceTermsEnabled={tenant.homeServiceTermsEnabled}
           waMessageTemplate={tenant.waMessageTemplate}
+          bookingSettings={tenant.bookingSettings}
         />
       ) : (
         <div className="min-h-screen bg-black text-white flex items-center justify-center">

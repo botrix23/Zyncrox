@@ -65,3 +65,12 @@ export async function deleteStaffAction(id: string, tenantId: string) {
     return { success: false, error: "Failed to delete staff member" };
   }
 }
+export async function getStaffAction(tenantId: string) {
+  try {
+    const results = await db.select().from(staff).where(eq(staff.tenantId, tenantId)).orderBy(staff.name);
+    return results;
+  } catch (error) {
+    console.error("Error fetching staff:", error);
+    return [];
+  }
+}

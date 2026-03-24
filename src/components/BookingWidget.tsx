@@ -42,7 +42,8 @@ export default function BookingWidget({
   whatsappNumber,
   homeServiceTerms,
   homeServiceTermsEnabled,
-  waMessageTemplate
+  waMessageTemplate,
+  bookingSettings
 }: { 
   branches: Branch[], 
   services: Service[], 
@@ -53,7 +54,14 @@ export default function BookingWidget({
   whatsappNumber?: string,
   homeServiceTerms?: string,
   homeServiceTermsEnabled?: boolean,
-  waMessageTemplate?: string | null
+  waMessageTemplate?: string | null,
+  bookingSettings?: {
+    step1Title?: string;
+    step2Title?: string;
+    step3Title?: string;
+    step4Title?: string;
+    showSummaryOnLeft?: boolean;
+  }
 }) {
   const t = useTranslations('BookingWidget');
   const [step, setStep] = useState(1);
@@ -77,6 +85,7 @@ export default function BookingWidget({
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
   const [showCountryList, setShowCountryList] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   // Auto-detect country roughly by timezone
   useEffect(() => {
@@ -113,11 +122,16 @@ export default function BookingWidget({
             totalDuration
           );
           console.log("Found slots:", times.length, "for date:", selectedDate);
-          setAvailableTimes(times);
-          // Si el horario previamente seleccionado ya no está disponible, limpiarlo
-          if (selectedTime && !times.find(t => t.time === selectedTime && t.available)) {
-            setSelectedTime(null);
-          }
+          
+          // Convert HH:mm to 12h format for UI consistency
+          const formattedTimes = times.map((t: {time: string, available: boolean}) => ({
+            ...t,
+            time: formatTo12h(t.time)
+          }));
+
+          setAvailableTimes(formattedTimes);
+          // Si cambiamos de fecha o staff, limpiamos el tiempo seleccionado
+          // Pero NO lo limpiamos si solo se refrescaron los slots
         } catch (error) {
           console.error("Failed to fetch slots:", error);
         } finally {
@@ -126,7 +140,7 @@ export default function BookingWidget({
       };
       fetchTimes();
     }
-  }, [step, selectedDate, selectedServices, selectedStaff, selectedBranch, selectedTime]);
+  }, [step, selectedDate, selectedServices, selectedStaff, selectedBranch]);
 
   // Handlers
   const handleSelectModality = (mod: 'local' | 'domicilio', branch: Branch | null = null) => {
@@ -158,55 +172,63 @@ export default function BookingWidget({
   };
 
   const handleFinalCheckout = async () => {
-    if (selectedServices.length === 0 || !selectedDate || !selectedTime) return;
+    if (selectedServices.length === 0 || !selectedDate || !selectedTime) {
+      console.warn("Cannot checkout: missing services, date or time", { selectedServices, selectedDate, selectedTime });
+      return;
+    }
 
-    // 1. Calcular tiempos de inicio y fin (UTC para consistencia en DB)
-    const militaryTime = formatTimeToMilitary(selectedTime);
-    const startDateTime = new Date(`${selectedDate}T${militaryTime}Z`);
-    const endDateTime = new Date(startDateTime.getTime() + totalDuration * 60000);
+    setIsFinishing(true);
+    try {
+      // 1. Calcular tiempos de inicio y fin (UTC para consistencia en DB)
+      const militaryTime = formatTimeToMilitary(selectedTime);
+      const startDateTime = new Date(`${selectedDate}T${militaryTime}Z`);
+      const endDateTime = new Date(startDateTime.getTime() + totalDuration * 60000);
 
-    // 2. Persistir en Base de Datos
-    const result = await createBookingAction({
-      tenantId: tenantId, 
-      branchId: selectedBranch?.id || branches[0]?.id || '',
-      serviceId: selectedServices[0].id, // Usamos el ID del primero como referencia técnica
-      staffId: selectedStaff?.id || staff[0]?.id || '',
-      customerName: guestName,
-      customerEmail: guestEmail,
-      startTime: startDateTime,
-      endTime: endDateTime
-    });
+      // 2. Persistir en Base de Datos
+      const result = await createBookingAction({
+        tenantId: tenantId, 
+        branchId: selectedBranch?.id || branches[0]?.id || '',
+        serviceId: selectedServices[0].id, 
+        staffId: selectedStaff?.id || staff[0]?.id || '',
+        customerName: guestName,
+        customerEmail: guestEmail,
+        customerPhone: guestPhone ? `${selectedCountry.prefix} ${guestPhone}` : undefined,
+        startTime: startDateTime,
+        endTime: endDateTime
+      });
 
-    if (result.success) {
-      if (modality === 'domicilio') {
-        // Usar el número WA configurado por el negocio (o fallback genérico)
-        const waNumber = whatsappNumber || '50370000000';
-        
-        let message = waMessageTemplate;
-        if (!message) {
-          // Fallback default message (sin rombos ◆)
-          message = "¡Hola! Me gustaría confirmar mi cita para *{servicio}*.\n\n" +
-                    "📅 *Fecha:* {fecha}\n" +
-                    "⏰ *Hora:* {hora}\n" +
-                    "📍 *Modalidad:* Servicio a Domicilio\n" +
-                    "👤 *Cliente:* {cliente}\n" +
-                    "📞 *Teléfono:* {telefono}";
+      if (result.success) {
+        if (modality === 'domicilio') {
+          const waNumber = whatsappNumber || '50370000000';
+          let message = waMessageTemplate;
+          if (!message) {
+            message = "¡Hola! Me gustaría confirmar mi cita para *{servicio}*.\n\n" +
+                      "📅 *Fecha:* {fecha}\n" +
+                      "⏰ *Hora:* {hora}\n" +
+                      "📍 *Modalidad:* Servicio a Domicilio\n" +
+                      "👤 *Cliente:* {cliente}\n" +
+                      "📞 *Teléfono:* {telefono}";
+          }
+
+          const serviceNames = selectedServices.map(s => s.name).join(", ");
+          const formattedMsg = message
+            .replace(/{servicio}/g, serviceNames)
+            .replace(/{fecha}/g, selectedDate)
+            .replace(/{hora}/g, selectedTime)
+            .replace(/{cliente}/g, guestName)
+            .replace(/{telefono}/g, `${selectedCountry.prefix} ${guestPhone}`);
+
+          window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(formattedMsg)}`, '_blank');
         }
-
-        // Reemplazar variables
-        const serviceNames = selectedServices.map(s => s.name).join(", ");
-        const formattedMsg = message
-          .replace(/{servicio}/g, serviceNames)
-          .replace(/{fecha}/g, selectedDate)
-          .replace(/{hora}/g, selectedTime)
-          .replace(/{cliente}/g, guestName)
-          .replace(/{telefono}/g, `${selectedCountry.prefix} ${guestPhone}`);
-
-        window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(formattedMsg)}`, '_blank');
+        setStep(5);
+      } else {
+        alert("Error al crear la reserva: " + (result.error || "Unknown error"));
       }
-      setStep(5);
-    } else {
-      alert("Error al crear la reserva");
+    } catch (err) {
+      console.error("Critical error during checkout:", err);
+      alert("Error crítico al procesar la reserva");
+    } finally {
+      setIsFinishing(false);
     }
   };
 
@@ -219,19 +241,41 @@ export default function BookingWidget({
     return `${hours.padStart(2, '0')}:${minutes}:00`;
   };
 
+  const formatTo12h = (time24h: string) => {
+    const [hours, minutes] = time24h.split(':');
+    let h = parseInt(hours, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${h}:${minutes} ${ampm}`;
+  };
+
   // Generate dates dynamically based on modality
   const today = new Date();
   const nextDays = Array.from({ length: 14 }).map((_, i) => {
     const d = new Date(today);
     // Para domicilio, requerimos 7 días de anticipación
     d.setDate(today.getDate() + i + (modality === 'domicilio' ? 7 : 0)); 
+    
+    // Usar formato local para evitar desfases de UTC
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const dayValue = String(d.getDate()).padStart(2, '0');
+    const fullDateStr = `${year}-${month}-${dayValue}`;
+
     return {
       date: d,
       dayName: d.toLocaleDateString(undefined, { weekday: 'short' }),
       dayNum: d.getDate(),
-      fullDate: d.toISOString().split('T')[0]
+      fullDate: fullDateStr
     };
   });
+
+  const getDayName = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+  };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-start md:justify-center p-4 sm:p-6 md:p-8 lg:p-12 relative overflow-x-hidden bg-slate-50 dark:bg-black/95">
@@ -309,10 +353,30 @@ export default function BookingWidget({
               {(selectedDate || selectedTime) && (
                 <div className="flex items-center gap-3 text-slate-600 dark:text-zinc-300 animate-in fade-in slide-in-from-left-2 duration-300">
                   <Calendar className="w-5 h-5 text-orange-400" />
-                  <span className="font-medium">
-                    {selectedDate ? selectedDate : t("date_tbd")} 
-                    {selectedTime ? ` - ${selectedTime}` : ""}
+                  <span className="font-medium text-sm">
+                    {selectedDate ? getDayName(selectedDate) : t("date_tbd")} 
+                    {selectedTime ? ` · ${selectedTime}` : ""}
                   </span>
+                </div>
+              )}
+
+              {/* Enhanced Summary Info on Left */}
+              {selectedServices.length > 0 && (
+                <div className="pt-6 border-t border-slate-200 dark:border-white/10 mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                   <div className="flex flex-col gap-1 p-4 bg-purple-500/5 rounded-2xl border border-purple-500/10">
+                      <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] mb-1">{t("resume")}</p>
+                      <div className="flex items-baseline justify-between">
+                        <p className="text-2xl font-black text-slate-900 dark:text-white">
+                          ${totalPrice.toFixed(2)}
+                        </p>
+                        <p className="text-xs font-bold text-slate-500 dark:text-zinc-500">
+                          {totalDuration} min
+                        </p>
+                      </div>
+                      <p className="text-[11px] font-medium text-slate-400 mt-1">
+                        {selectedServices.length} {selectedServices.length === 1 ? 'servicio seleccionado' : 'servicios seleccionados'}
+                      </p>
+                   </div>
                 </div>
               )}
             </div>
@@ -327,7 +391,7 @@ export default function BookingWidget({
           {step === 1 && (
             <div className="relative z-10 flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
               <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white tracking-tight">
-                {t("title_branch")}
+                {bookingSettings?.step1Title || t("title_branch")}
               </h2>
               <div className="space-y-4">
                 <p className="text-slate-500 dark:text-zinc-400 text-sm font-semibold uppercase tracking-wider mb-2">{t("visit_branch")}</p>
@@ -371,52 +435,41 @@ export default function BookingWidget({
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                  {t("title_service")}
+                  {bookingSettings?.step2Title || t("title_service")}
                 </h2>
               </div>
-              <div className="space-y-4 overflow-y-auto flex-1 pr-2 custom-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 overflow-y-auto flex-1 pr-2 custom-scrollbar items-start content-start">
                 {services.map((srv) => {
                   const isSelected = selectedServices.some(s => s.id === srv.id);
                   return (
                     <button 
                       key={srv.id} 
                       onClick={() => handleToggleService(srv)}
-                      className={`w-full p-5 bg-white dark:bg-white/5 border rounded-xl text-left transition-all duration-300 group shadow-lg flex flex-col ${
+                      className={`w-full p-4 bg-white dark:bg-white/5 border rounded-xl text-left transition-all duration-300 group shadow-lg flex flex-col ${
                         isSelected 
                           ? 'border-purple-500 bg-purple-500/10 shadow-[0_0_20px_rgba(139,92,246,0.1)]' 
                           : 'border-slate-200 dark:border-white/10 hover:border-purple-500/40'
                       }`}
                     >
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
-                        <div className="flex items-center gap-3">
-                          {isSelected && <div className="p-1 bg-purple-500 rounded-full"><Check className="w-3 h-3 text-white" /></div>}
-                          <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-purple-400 transition-colors uppercase tracking-tight">{srv.name}</h3>
+                        <div className="flex items-center gap-2">
+                          {isSelected && <div className="p-0.5 bg-purple-500 rounded-full"><Check className="w-2.5 h-2.5 text-white" /></div>}
+                          <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-purple-400 transition-colors uppercase tracking-tight">{srv.name}</h3>
                         </div>
-                        <span className="text-purple-400 font-bold bg-purple-500/10 px-3 py-1 rounded-full text-sm inline-block self-start sm:self-auto">${srv.price}</span>
+                        <span className="text-purple-400 font-bold bg-purple-500/10 px-2.5 py-0.5 rounded-full text-xs inline-block self-start sm:self-auto">${srv.price}</span>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-zinc-400 mb-5">
-                        <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-400 dark:text-zinc-500" /> {srv.durationMinutes} min</span>
+                      <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-zinc-400 mb-3">
+                        <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" /> {srv.durationMinutes} min</span>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 text-sm border-t border-slate-200 dark:border-white/5 pt-4">
+                      <div className="grid grid-cols-1 gap-y-3 text-[11px] border-t border-slate-200 dark:border-white/5 pt-3">
                         <div>
-                          <p className="text-zinc-200 font-semibold mb-2 flex items-center gap-2 font-black uppercase text-[10px] tracking-widest"><Check className="w-4 h-4 text-emerald-400"/> {t("includes")}</p>
-                          <ul className="space-y-2">
-                            {srv.includes?.map((inc, i) => (
-                              <li key={i} className="flex items-start gap-2 text-slate-500 dark:text-zinc-400 leading-tight">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 mt-1.5 shrink-0"></span>
+                          <p className="text-zinc-200 font-semibold mb-1 flex items-center gap-2 font-black uppercase text-[9px] tracking-widest"><Check className="w-3.5 h-3.5 text-emerald-400"/> {t("includes")}</p>
+                          <ul className="space-y-1">
+                            {srv.includes?.slice(0, 3).map((inc, i) => (
+                              <li key={i} className="flex items-start gap-2 text-slate-500 dark:text-zinc-400 leading-tight truncate">
+                                <span className="w-1 h-1 rounded-full bg-emerald-500/50 mt-1.5 shrink-0"></span>
                                 {inc}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div>
-                          <p className="text-zinc-200 font-semibold mb-2 flex items-center gap-2 font-black uppercase text-[10px] tracking-widest"><X className="w-4 h-4 text-rose-400"/> {t("excludes")}</p>
-                          <ul className="space-y-2">
-                            {srv.excludes?.map((exc, i) => (
-                              <li key={i} className="flex items-start gap-2 text-slate-400 dark:text-zinc-500 leading-tight">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500/50 mt-1.5 shrink-0"></span>
-                                {exc}
                               </li>
                             ))}
                           </ul>
@@ -427,8 +480,8 @@ export default function BookingWidget({
                 })}
               </div>
 
-              {/* Summary Bar at bottom of services list */}
-              {selectedServices.length > 0 && (
+              {/* Optional Bottom Summary Bar (can be hidden if on left) */}
+              {selectedServices.length > 0 && !bookingSettings?.showSummaryOnLeft && (
                 <div className="mt-6 pt-6 border-t border-slate-200 dark:border-white/5 animate-in slide-in-from-bottom-4 duration-300">
                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
                       <div>
@@ -463,7 +516,7 @@ export default function BookingWidget({
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <h2 className="text-2xl font-bold tracking-tight">
-                  {t("title_specialist")}
+                  {bookingSettings?.step3Title || t("title_specialist")}
                 </h2>
               </div>
               
@@ -527,7 +580,7 @@ export default function BookingWidget({
 
               {/* TIME SELECTION */}
               <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400 mb-4 uppercase tracking-wider">{t("times")}</p>
-              <div className="grid grid-cols-2 gap-3 mb-8 overflow-y-auto flex-1 pr-2 min-h-[200px] relative">
+              <div className="grid grid-cols-2 gap-3 mb-8 overflow-y-auto max-h-[300px] pr-2 relative custom-scrollbar">
                 {isLoadingTimes ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/20 backdrop-blur-[2px] z-20 rounded-xl">
                     <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
@@ -546,13 +599,13 @@ export default function BookingWidget({
                       !available
                         ? "bg-slate-100 dark:bg-black/20 text-zinc-600 border-slate-200 dark:border-white/5 cursor-not-allowed opacity-60"
                         : selectedTime === time 
-                          ? "bg-purple-600 text-slate-900 dark:text-white border-purple-500 shadow-[0_0_20px_rgba(139,92,246,0.5)]" 
+                          ? "bg-purple-600 text-white border-purple-500 shadow-[0_0_20px_rgba(139,92,246,0.5)]" 
                           : "bg-white dark:bg-white/5 hover:bg-white/10 border-slate-200 dark:border-white/10 hover:border-white/20 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:text-white"
                     }`}
                   >
                     <span className={`font-semibold tracking-wide text-sm ${!available ? 'line-through' : ''}`}>{time}</span>
                     {available ? (
-                      <ChevronRight className={`w-4 h-4 transition-all duration-300 ${selectedTime === time ? "opacity-100 translate-x-0 text-slate-900 dark:text-white" : "opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 text-slate-400 dark:text-zinc-500"}`} />
+                      <ChevronRight className={`w-4 h-4 transition-all duration-300 ${selectedTime === time ? "opacity-100 translate-x-0 text-white" : "opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 text-slate-400 dark:text-zinc-500"}`} />
                     ) : (
                       <span className="text-[10px] uppercase font-bold text-rose-500/70">{t("occupied")}</span>
                     )}
@@ -561,9 +614,13 @@ export default function BookingWidget({
               </div>
 
               <button 
-                onClick={handleConfirmTimes}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleConfirmTimes();
+                }}
                 disabled={!selectedTime || !selectedDate}
-                className="w-full mt-auto py-4 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:border-zinc-700 disabled:cursor-not-allowed text-slate-900 dark:text-white rounded-xl font-bold tracking-widest shadow-[0_0_20px_rgba(139,92,246,0.3)] disabled:shadow-none hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] transition-all duration-300 border border-purple-500/50"
+                className="w-full mt-auto py-4 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-200 dark:disabled:bg-zinc-800 disabled:text-slate-400 dark:disabled:text-zinc-600 disabled:border-slate-300 dark:disabled:border-zinc-700 disabled:cursor-not-allowed text-white rounded-xl font-bold tracking-widest shadow-[0_0_20px_rgba(139,92,246,0.3)] disabled:shadow-none hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] transition-all duration-300 border border-purple-500/50 relative z-30"
               >
                 {t("go_to_data")}
               </button>
@@ -581,7 +638,7 @@ export default function BookingWidget({
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <h2 className="text-2xl font-bold tracking-tight">
-                  {t("title_data")}
+                  {bookingSettings?.step4Title || t("title_data")}
                 </h2>
               </div>
               
@@ -674,9 +731,10 @@ export default function BookingWidget({
 
                 <button 
                   onClick={handleFinalCheckout}
-                  disabled={!isFormValid}
-                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:border-zinc-700 disabled:cursor-not-allowed text-slate-900 dark:text-white rounded-xl font-bold tracking-widest shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:shadow-none transition-all duration-300 border border-emerald-500/50"
+                  disabled={!isFormValid || isFinishing}
+                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:border-zinc-700 disabled:cursor-not-allowed text-slate-900 dark:text-white rounded-xl font-bold tracking-widest shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:shadow-none transition-all duration-300 border border-emerald-500/50 flex items-center justify-center gap-2"
                >
+                  {isFinishing && <Loader2 className="w-5 h-5 animate-spin" />}
                   {modality === 'domicilio' ? t("confirm_whatsapp") : t("finish_booking")}
                 </button>
               </div>

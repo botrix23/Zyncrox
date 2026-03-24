@@ -40,7 +40,10 @@
     "branch_address": "Branch: {branch}",
     "with_staff": "With {staff}",
     "home_service_terms_default": "By scheduling this service, you agree that the appointment is subject to confirmation via WhatsApp and transport availability.",
-    "i_agree_to_terms": "I agree to the terms and conditions"
+    "i_agree_to_terms": "I agree to the terms and conditions",
+    "selected_services": "Selected services",
+    "resume": "Resume",
+    "continue": "Continue"
   },
   "Login": {
     "title": "Login",
