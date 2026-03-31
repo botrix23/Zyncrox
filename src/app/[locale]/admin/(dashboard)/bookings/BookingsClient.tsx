@@ -32,6 +32,11 @@ import {
   isSameDay, 
   addDays, 
   subDays, 
+  addWeeks,
+  subWeeks,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
   eachHourOfInterval 
 } from "date-fns";
 import { es, enUS } from "date-fns/locale";
@@ -43,11 +48,13 @@ export default function BookingsClient({
   initialBookings,
   services,
   staff,
+  branches,
   tenantId
 }: { 
   initialBookings: any[],
   services: any[],
   staff: any[],
+  branches: any[],
   tenantId: string
 }) {
   const t = useTranslations('Dashboard.bookings');
@@ -61,7 +68,49 @@ export default function BookingsClient({
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [calendarDate, setCalendarDate] = useState(new Date());
+  const [calendarView, setCalendarView] = useState<'day' | 'week'>('day');
   const router = useRouter();
+
+  // Hora más temprana de apertura entre todas las sucursales
+  const calendarStartHour = (() => {
+    let earliest = 8; // fallback
+    for (const branch of branches) {
+      try {
+        const bh = JSON.parse(branch.businessHours || '{}');
+        const regular: Record<string, any> = bh.regular || {};
+        for (const day of Object.values(regular)) {
+          if ((day as any).isOpen && (day as any).slots?.length > 0) {
+            const openHour = parseInt((day as any).slots[0].open.split(':')[0], 10);
+            if (!isNaN(openHour) && openHour < earliest) earliest = openHour;
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    return earliest;
+  })();
+
+  // Hora más tardía de cierre entre todas las sucursales
+  const calendarEndHour = (() => {
+    let latest = 22; // fallback
+    for (const branch of branches) {
+      try {
+        const bh = JSON.parse(branch.businessHours || '{}');
+        const regular: Record<string, any> = bh.regular || {};
+        for (const day of Object.values(regular)) {
+          const slots: any[] = (day as any).slots || [];
+          if ((day as any).isOpen && slots.length > 0) {
+            const lastSlot = slots[slots.length - 1];
+            const closeHour = parseInt(lastSlot.close.split(':')[0], 10);
+            if (!isNaN(closeHour) && closeHour > latest) latest = closeHour;
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    return latest;
+  })();
+
+  // Total de horas visibles en el calendario
+  const calendarHours = calendarEndHour - calendarStartHour;
 
   // Form State
   const [formData, setFormData] = useState({
@@ -102,6 +151,7 @@ export default function BookingsClient({
     const matchesTab = activeTab === "Todas" || 
       (activeTab === "Confirmadas" && b.status === "CONFIRMED") ||
       (activeTab === "Pendientes" && b.status === "PENDING") ||
+      (activeTab === "Finalizadas" && b.status === "FINALIZADA") ||
       (activeTab === "Canceladas" && b.status === "CANCELLED");
     return matchesSearch && matchesTab;
   });
@@ -332,14 +382,52 @@ export default function BookingsClient({
       ) : (
         <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden flex flex-col min-h-[600px] shadow-sm animate-in fade-in zoom-in-95 duration-500">
           {/* Calendar Header */}
-          <div className="p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/50 dark:bg-white/5">
-            <div className="flex items-center gap-4">
-              <h2 className="text-xl font-black text-slate-900 dark:text-white first-letter:uppercase">
-                {format(calendarDate, localeStr === 'es' ? "EEEE, d 'de' MMMM" : "EEEE, MMMM do", { locale: dateLocale })}
-              </h2>
+          <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 flex items-center justify-between gap-4">
+            {/* Fecha — fija a la izquierda */}
+            <h2 className="text-xl font-black text-slate-900 dark:text-white first-letter:uppercase min-w-0 truncate">
+              {calendarView === 'week'
+                ? (() => {
+                    const ws = startOfWeek(calendarDate, { weekStartsOn: 1 });
+                    const we = endOfWeek(calendarDate, { weekStartsOn: 1 });
+                    return `${format(ws, "d MMM", { locale: dateLocale })} – ${format(we, "d MMM yyyy", { locale: dateLocale })}`;
+                  })()
+                : format(calendarDate, localeStr === 'es' ? "EEEE, d 'de' MMMM" : "EEEE, MMMM do", { locale: dateLocale })
+              }
+            </h2>
+
+            {/* Controles — fijos a la derecha */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Toggle Día / Semana */}
+              <div className="flex bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl p-1">
+                <button
+                  onClick={() => setCalendarView('day')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    calendarView === 'day'
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                      : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-300'
+                  }`}
+                >
+                  Día
+                </button>
+                <button
+                  onClick={() => setCalendarView('week')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    calendarView === 'week'
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                      : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-300'
+                  }`}
+                >
+                  Semana
+                </button>
+              </div>
+
+              {/* Navegación */}
               <div className="flex items-center bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl p-1">
                 <button 
-                  onClick={() => setCalendarDate(subDays(calendarDate, 1))}
+                  onClick={() => calendarView === 'week'
+                    ? setCalendarDate(subWeeks(calendarDate, 1))
+                    : setCalendarDate(subDays(calendarDate, 1))
+                  }
                   className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg text-slate-500 transition-colors"
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -351,7 +439,10 @@ export default function BookingsClient({
                   {t('today')}
                 </button>
                 <button 
-                  onClick={() => setCalendarDate(addDays(calendarDate, 1))}
+                  onClick={() => calendarView === 'week'
+                    ? setCalendarDate(addWeeks(calendarDate, 1))
+                    : setCalendarDate(addDays(calendarDate, 1))
+                  }
                   className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg text-slate-500 transition-colors"
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -362,83 +453,168 @@ export default function BookingsClient({
 
           {/* Calendar Body */}
           <div className="flex-1 overflow-y-auto relative min-h-[800px] custom-scrollbar">
-            <div className="absolute inset-0 grid grid-cols-[80px_1fr] divide-x divide-slate-100 dark:divide-white/5">
-              {/* Hours Column */}
-              <div className="bg-slate-50/30 dark:bg-white/[0.02]">
-                {Array.from({ length: 15 }).map((_, i) => {
-                  const hour = i + 8; // 08:00 to 22:00
-                  return (
-                    <div key={hour} className="h-24 border-b border-slate-100 dark:border-white/5 p-4 text-center">
-                      <span className="text-[10px] font-black text-slate-400 dark:text-zinc-500 tracking-tighter uppercase">
-                        {format(parse(hour.toString(), "H", new Date()), "hh:mm a")}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Grid Content */}
-              <div className="relative group/grid">
-                {/* Horizontal lines */}
-                {Array.from({ length: 15 }).map((_, i) => (
-                  <div key={i} className="h-24 border-b border-slate-100 dark:border-white/5" />
-                ))}
-
-                {/* Bookings Blocks */}
-                <div className="absolute inset-0 p-4">
-                  {initialBookings
-                    .filter(b => isSameDay(new Date(b.startTime), calendarDate))
-                    .map((booking: any) => {
-                      const start = new Date(booking.startTime);
-                      const end = new Date(booking.endTime);
-                      const startMinutes = (start.getHours() - 8) * 60 + start.getMinutes();
-                      const duration = (end.getTime() - start.getTime()) / 60000;
-                      
-                      // Calculate position (each hour is 96px high = 24 * 4px)
-                      const top = (startMinutes * 96) / 60;
-                      const height = (duration * 96) / 60;
-
-                      return (
-                        <button
-                          key={booking.id}
-                          onClick={() => handleOpenEdit(booking)}
-                          style={{ 
-                            top: `${top}px`, 
-                            height: `${height}px`,
-                            left: '1rem',
-                            right: '1rem'
-                          }}
-                          className={`absolute z-10 p-3 rounded-2xl border transition-all text-left group overflow-hidden ${
-                            booking.status === 'CONFIRMED' 
-                              ? 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20' 
-                              : booking.status === 'PENDING'
-                              ? 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20'
-                              : 'bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20'
-                          }`}
-                        >
-                          <div className="flex flex-col h-full">
-                            <h4 className="font-black text-xs text-slate-900 dark:text-white truncate">
-                              {booking.customerName}
-                            </h4>
-                            <p className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 mt-0.5 truncate flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {booking.customerPhone}
-                            </p>
-                            <div className="mt-auto flex items-center justify-between">
-                              <span className="text-[9px] font-black uppercase text-purple-600 dark:text-purple-400 tracking-wider">
-                                {booking.service?.name}
-                              </span>
-                              <span className="text-[9px] font-bold text-slate-400">
-                                {format(start, "hh:mm")} - {format(end, "hh:mm")}
-                              </span>
+            {calendarView === 'day' ? (
+              /* ── VISTA DÍA ── */
+              <div className="absolute inset-0 grid grid-cols-[80px_1fr] divide-x divide-slate-100 dark:divide-white/5">
+                {/* Hours Column */}
+                <div className="bg-slate-50/30 dark:bg-white/[0.02]">
+                  {Array.from({ length: calendarHours }).map((_, i) => {
+                    const hour = i + calendarStartHour;
+                    return (
+                      <div key={hour} className="h-24 border-b border-slate-100 dark:border-white/5 p-4 text-center">
+                        <span className="text-[10px] font-black text-slate-400 dark:text-zinc-500 tracking-tighter uppercase">
+                          {format(parse(hour.toString(), "H", new Date()), "hh:mm a")}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Grid Content */}
+                <div className="relative group/grid">
+                  {Array.from({ length: calendarHours }).map((_, i) => (
+                    <div key={i} className="h-24 border-b border-slate-100 dark:border-white/5" />
+                  ))}
+                  <div className="absolute inset-0 p-4">
+                    {initialBookings
+                      .filter(b => isSameDay(new Date(b.startTime), calendarDate))
+                      .map((booking: any) => {
+                        const start = new Date(booking.startTime);
+                        const end = new Date(booking.endTime);
+                        const startMinutes = (start.getHours() - calendarStartHour) * 60 + start.getMinutes();
+                        const duration = (end.getTime() - start.getTime()) / 60000;
+                        const top = (startMinutes * 96) / 60;
+                        const height = (duration * 96) / 60;
+                        return (
+                          <button
+                            key={booking.id}
+                            onClick={() => handleOpenEdit(booking)}
+                            style={{ top: `${top}px`, height: `${height}px`, left: '1rem', right: '1rem' }}
+                            className={`absolute z-10 p-3 rounded-2xl border transition-all text-left group overflow-hidden ${
+                              booking.status === 'CONFIRMED'
+                                ? 'bg-purple-500/10 border-purple-500/25 hover:bg-purple-500/20'
+                                : booking.status === 'PENDING'
+                                ? 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20'
+                                : booking.status === 'FINALIZADA'
+                                ? 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20'
+                                : 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/20'
+                            }`}
+                          >
+                            <div className="flex flex-col h-full">
+                              <h4 className="font-black text-xs text-slate-900 dark:text-white truncate">{booking.customerName}</h4>
+                              <p className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 mt-0.5 truncate flex items-center gap-1">
+                                <User className="w-3 h-3" />{booking.customerPhone}
+                              </p>
+                              {booking.branch?.name && (
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 truncate flex items-center gap-1 mt-0.5">
+                                  <MapPin className="w-3 h-3 shrink-0" />{booking.branch.name}
+                                </p>
+                              )}
+                              <div className="mt-auto flex items-center justify-between">
+                                <span className="text-[9px] font-black uppercase text-purple-600 dark:text-purple-400 tracking-wider">{booking.service?.name}</span>
+                                <span className="text-[9px] font-bold text-slate-400">{format(start, "hh:mm")} - {format(end, "hh:mm")}</span>
+                              </div>
                             </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                          </button>
+                        );
+                      })}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* ── VISTA SEMANA ── */
+              (() => {
+                const weekStart = startOfWeek(calendarDate, { weekStartsOn: 1 });
+                const weekDays = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
+                return (
+                  <div className="absolute inset-0 flex flex-col">
+                    {/* Day headers */}
+                    <div className="grid shrink-0 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.03]" style={{ gridTemplateColumns: '64px repeat(7, 1fr)' }}>
+                      <div />
+                      {weekDays.map(day => (
+                        <div
+                          key={day.toISOString()}
+                          onClick={() => { setCalendarDate(day); setCalendarView('day'); }}
+                          className={`py-2 text-center cursor-pointer transition-colors hover:bg-purple-500/5 ${
+                            isSameDay(day, new Date()) ? 'border-b-2 border-purple-500' : ''
+                          }`}
+                        >
+                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                            {format(day, 'EEE', { locale: dateLocale })}
+                          </p>
+                          <p className={`text-sm font-black mt-0.5 ${
+                            isSameDay(day, new Date()) ? 'text-purple-600 dark:text-purple-400' : 'text-slate-700 dark:text-zinc-300'
+                          }`}>
+                            {format(day, 'd')}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Grid */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                      <div className="relative" style={{ height: `${calendarHours * 96}px` }}>
+                        {/* Hour rows */}
+                        <div className="absolute inset-0 grid" style={{ gridTemplateColumns: '64px repeat(7, 1fr)' }}>
+                          {Array.from({ length: calendarHours }).map((_, i) => {
+                            const hour = i + calendarStartHour;
+                            return (
+                              <>
+                                <div key={`h-${hour}`} className="row-span-1" style={{ gridColumn: 1, gridRow: i + 1, height: '96px', borderBottom: '1px solid', borderColor: 'rgba(148,163,184,0.1)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '8px', backgroundColor: 'rgba(248,250,252,0.3)' }}>
+                                  <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 tracking-tighter uppercase">
+                                    {format(parse(hour.toString(), "H", new Date()), "h a")}
+                                  </span>
+                                </div>
+                                {weekDays.map((day, di) => (
+                                  <div key={`cell-${hour}-${di}`} style={{ gridColumn: di + 2, gridRow: i + 1, height: '96px', borderBottom: '1px solid', borderRight: di < 6 ? '1px solid' : 'none', borderColor: 'rgba(148,163,184,0.1)' }} />
+                                ))}
+                              </>
+                            );
+                          })}
+                        </div>
+
+                        {/* Booking blocks */}
+                        {weekDays.map((day, di) => {
+                          const dayBookings = initialBookings.filter(b => isSameDay(new Date(b.startTime), day));
+                          return dayBookings.map((booking: any) => {
+                            const start = new Date(booking.startTime);
+                            const end = new Date(booking.endTime);
+                            const startMinutes = (start.getHours() - calendarStartHour) * 60 + start.getMinutes();
+                            const duration = (end.getTime() - start.getTime()) / 60000;
+                            const top = (startMinutes * 96) / 60;
+                            const height = Math.max((duration * 96) / 60, 28);
+                            const colLeft = `calc(64px + ${di} * (100% - 64px) / 7 + 4px)`;
+                            return (
+                              <button
+                                key={booking.id}
+                                onClick={() => handleOpenEdit(booking)}
+                                style={{ position: 'absolute', top: `${top}px`, height: `${height}px`, left: colLeft, width: `calc((100% - 64px) / 7 - 8px)` }}
+                                className={`z-10 p-1.5 rounded-xl border transition-all text-left overflow-hidden ${
+                                  booking.status === 'CONFIRMED'
+                                    ? 'bg-purple-500/10 border-purple-500/25 hover:bg-purple-500/20'
+                                    : booking.status === 'PENDING'
+                                    ? 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20'
+                                    : booking.status === 'FINALIZADA'
+                                    ? 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20'
+                                    : 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/20'
+                                }`}
+                              >
+                                <p className="text-[9px] font-black text-slate-900 dark:text-white truncate leading-tight">{booking.customerName}</p>
+                                <p className="text-[8px] text-purple-500 font-bold truncate">{booking.service?.name}</p>
+                                {booking.branch?.name && (
+                                  <p className="text-[8px] text-slate-400 dark:text-zinc-500 truncate flex items-center gap-0.5">
+                                    <MapPin className="w-2.5 h-2.5 shrink-0" />{booking.branch.name}
+                                  </p>
+                                )}
+                              </button>
+                            );
+                          });
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            )}
           </div>
         </div>
       )}
