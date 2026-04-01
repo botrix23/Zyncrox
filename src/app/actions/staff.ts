@@ -10,14 +10,15 @@ export async function createStaffAction(data: {
   branchId: string; // Legacy/Primary branch
   name: string;
   email?: string;
-  assignments?: Array<{
-    branchId: string;
-    startDate?: Date;
-    endDate?: Date;
-    startTime?: string;
-    endTime?: string;
-    daysOfWeek: string[];
-  }>;
+    assignments?: Array<{
+      branchId: string;
+      startDate?: Date;
+      endDate?: Date;
+      startTime?: string;
+      endTime?: string;
+      daysOfWeek: string[];
+      isPermanent?: boolean;
+    }>;
 }) {
   try {
     const [newStaff] = await db.insert(staff).values({
@@ -38,6 +39,7 @@ export async function createStaffAction(data: {
           startTime: a.startTime,
           endTime: a.endTime,
           daysOfWeek: a.daysOfWeek,
+          isPermanent: a.isPermanent ?? false,
         }))
       );
     } else {
@@ -46,6 +48,7 @@ export async function createStaffAction(data: {
         tenantId: data.tenantId,
         staffId: newStaff.id,
         branchId: data.branchId,
+        isPermanent: true,
         daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
       });
     }
@@ -66,14 +69,15 @@ export async function updateStaffAction(data: {
   branchId?: string;
   name?: string;
   email?: string;
-  assignments?: Array<{
-    branchId: string;
-    startDate?: Date;
-    endDate?: Date;
-    startTime?: string;
-    endTime?: string;
-    daysOfWeek: string[];
-  }>;
+    assignments?: Array<{
+      branchId: string;
+      startDate?: Date;
+      endDate?: Date;
+      startTime?: string;
+      endTime?: string;
+      daysOfWeek: string[];
+      isPermanent?: boolean;
+    }>;
 }) {
   try {
     await db.transaction(async (tx) => {
@@ -102,6 +106,7 @@ export async function updateStaffAction(data: {
               startTime: a.startTime || null,
               endTime: a.endTime || null,
               daysOfWeek: a.daysOfWeek,
+              isPermanent: a.isPermanent ?? false,
             }))
           );
         }

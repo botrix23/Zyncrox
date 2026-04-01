@@ -55,17 +55,25 @@ export default function StaffClient({
   const handleOpenModal = (member?: any) => {
     if (member) {
       setEditingMember(member);
+      const assignments = (member.assignments || []).map((a: any) => ({
+        ...a,
+        startDate: a.startDate ? new Date(a.startDate).toISOString().split('T')[0] : "",
+        endDate: a.endDate ? new Date(a.endDate).toISOString().split('T')[0] : "",
+        startTime: a.startTime || "",
+        endTime: a.endTime || "",
+        isPermanent: !!a.isPermanent
+      }));
+
+      // Asegurar que haya al menos una permanente, si no hay, la primera de la lista lo será por defecto (seguridad)
+      if (!assignments.some((a: any) => a.isPermanent)) {
+        if (assignments[0]) assignments[0].isPermanent = true;
+      }
+
       setFormData({
         name: member.name,
         email: member.email || "",
         branchId: member.branchId,
-        assignments: (member.assignments || []).map((a: any) => ({
-          ...a,
-          startDate: a.startDate ? new Date(a.startDate).toISOString().split('T')[0] : "",
-          endDate: a.endDate ? new Date(a.endDate).toISOString().split('T')[0] : "",
-          startTime: a.startTime || "",
-          endTime: a.endTime || ""
-        }))
+        assignments: assignments
       });
     } else {
       setEditingMember(null);
@@ -79,7 +87,8 @@ export default function StaffClient({
           startDate: "",
           endDate: "",
           startTime: "",
-          endTime: ""
+          endTime: "",
+          isPermanent: true
         }]
       });
     }
@@ -95,10 +104,11 @@ export default function StaffClient({
         {
           branchId: branches[0]?.id || "",
           daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-          startDate: "",
+          startDate: new Date().toISOString().split('T')[0], // Sugerir hoy como inicio
           endDate: "",
           startTime: "",
-          endTime: ""
+          endTime: "",
+          isPermanent: false
         }
       ]
     });
@@ -138,18 +148,24 @@ export default function StaffClient({
       endDate: a.endDate || null
     }));
 
+    // Sincronizar branchId principal con la asignación permanente
+    const permanentAssignment = formData.assignments.find(a => a.isPermanent);
+    const finalBranchId = permanentAssignment?.branchId || formData.branchId;
+
     let result;
     if (editingMember) {
       result = await updateStaffAction({
         id: editingMember.id,
         tenantId,
         ...formData,
+        branchId: finalBranchId,
         assignments: processedAssignments
       });
     } else {
       result = await createStaffAction({
         tenantId,
         ...formData,
+        branchId: finalBranchId,
         assignments: processedAssignments
       });
     }
@@ -233,7 +249,19 @@ export default function StaffClient({
 
       {/* Grid Layout for Staff */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {filteredStaff.map((member) => (
+        {filteredStaff.map((member) => {
+          // Identificar si tiene un override activo hoy
+          const today = new Date().toISOString().split('T')[0];
+          const activeOverride = member.assignments?.find((a: any) => 
+            !a.isPermanent && 
+            a.startDate && 
+            new Date(a.startDate).toISOString().split('T')[0] <= today &&
+            (!a.endDate || new Date(a.endDate).toISOString().split('T')[0] >= today)
+          );
+          const permanentBranch = member.assignments?.find((a: any) => a.isPermanent)?.branchId;
+          const branchName = branches.find(b => b.id === (activeOverride?.branchId || permanentBranch))?.name;
+
+          return (
           <div key={member.id} className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-purple-500/5 transition-all group overflow-hidden relative">
             <div className="absolute top-0 right-0 p-4">
               <button 
@@ -248,7 +276,7 @@ export default function StaffClient({
               <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 p-1">
                 <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center relative overflow-hidden">
                     <User className="w-12 h-12 text-slate-300" />
-                    <div className="absolute bottom-0 left-0 w-full bg-slate-900/80 backdrop-blur-sm py-1">
+                    <div className="absolute bottom-0 left-0 w-full bg-slate-900/80 backdrop-blur-sm py-1 rounded-b-xl">
                         <span className="text-[8px] font-black text-white tracking-tighter">{t('verified')}</span>
                     </div>
                 </div>
@@ -256,9 +284,17 @@ export default function StaffClient({
               
               <div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{member.name}</h3>
-                <p className="text-[10px] font-bold text-purple-600 tracking-widest mt-1 uppercase">
-                  {member.assignments?.length || 0} {member.assignments?.length === 1 ? 'Sucursal' : 'Sucursales'}
-                </p>
+                <div className="mt-1 flex flex-col items-center gap-1">
+                  <p className="text-[10px] font-bold text-purple-600 tracking-widest uppercase">
+                    {branchName || 'Sin sucursal'}
+                  </p>
+                  {activeOverride && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded-full border border-amber-500/20 animate-pulse">
+                      <CalendarDays className="w-2.5 h-2.5" />
+                      TEMPORAL
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="w-full pt-2 space-y-2">
@@ -266,19 +302,17 @@ export default function StaffClient({
                     <Mail className="w-3.5 h-3.5" />
                     <span className="text-[10px] font-bold truncate tracking-tight">{member.email || t('noEmail')}</span>
                 </div>
-                {member.assignments?.slice(0, 2).map((a: any, i: number) => (
-                    <div key={a.id} className="flex items-center gap-2 text-[9px] font-bold text-slate-400 bg-slate-50 dark:bg-white/5 p-2 rounded-xl border border-slate-100 dark:border-white/5">
-                        <ChevronRight className="w-3 h-3 text-purple-500" />
-                        <span className="truncate">{branches.find(b => b.id === a.branchId)?.name}</span>
-                    </div>
-                ))}
-                {member.assignments?.length > 2 && (
-                    <p className="text-[9px] font-black text-purple-500 tracking-widest text-right">+{member.assignments.length - 2} más</p>
+                {!activeOverride && member.assignments?.filter((a: any) => !a.isPermanent).length > 0 && (
+                   <div className="flex items-center justify-center gap-1 text-[8px] font-bold text-slate-400">
+                     <Clock className="w-2.5 h-2.5" />
+                     Próxima rotación programada
+                   </div>
                 )}
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
 
@@ -322,186 +356,124 @@ export default function StaffClient({
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {/* Header de sección */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">{t('form.assignmentsLabel')}</label>
-                    <p className="text-[10px] text-slate-400 dark:text-zinc-500 ml-1 mt-0.5">Define dónde y cuándo trabaja este agente</p>
-                  </div>
-                  {formData.assignments.length < 3 && (
-                    <button 
-                      type="button"
-                      onClick={handleAddAssignment}
-                      className="text-[10px] font-black text-purple-600 hover:text-purple-500 flex items-center gap-1.5 transition-colors bg-purple-500/10 hover:bg-purple-500/20 px-3 py-2 rounded-xl"
-                    >
-                      <Building2 className="w-3 h-3" /> + Añadir sucursal
-                    </button>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  {formData.assignments.map((assignment, index) => {
-                    const isTemporary = !!(assignment.startDate || assignment.endDate);
-                    return (
-                    <div key={index} className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[20px] overflow-hidden animate-in slide-in-from-top-2 duration-300">
-                      
-                      {/* Header de la asignación */}
-                      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200/60 dark:border-white/5">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="w-3.5 h-3.5 text-purple-500" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-400">
-                            {index === 0 ? 'Sucursal principal' : `Sucursal ${index + 1}`}
-                          </span>
-                        </div>
-                        {formData.assignments.length > 1 && (
-                          <button 
-                            type="button"
-                            onClick={() => handleRemoveAssignment(index)}
-                            className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+              <div className="space-y-6">
+                {/* 1. SUCURSAL PERMANENTE */}
+                {formData.assignments.filter(a => a.isPermanent).map((assignment, idx) => {
+                  const realIdx = formData.assignments.indexOf(assignment);
+                  return (
+                  <div key="permanent" className="bg-emerald-500/5 border border-emerald-500/20 rounded-[24px] overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-3 border-b border-emerald-500/10">
+                      <div className="flex items-center gap-2">
+                        <Infinity className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Sucursal Base Permanente</span>
                       </div>
-
-                      <div className="p-5 space-y-5">
-                        {/* Selector de sucursal */}
+                    </div>
+                    <div className="p-5 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sucursal</label>
                           <select 
                             required
                             value={assignment.branchId}
-                            onChange={e => handleAssignmentChange(index, 'branchId', e.target.value)}
-                            className="w-full p-3 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold focus:ring-2 focus:ring-purple-500 outline-none"
+                            onChange={e => handleAssignmentChange(realIdx, 'branchId', e.target.value)}
+                            className="w-full p-3 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none"
                           >
-                            <option value="">Seleccionar sucursal...</option>
-                            {branches.map(b => (
-                              <option key={b.id} value={b.id}>{b.name}</option>
-                            ))}
+                            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                           </select>
                         </div>
-
-                        {/* Toggle Permanente / Temporal */}
                         <div className="space-y-1.5">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Tipo de asignación</label>
+                          <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Horario Base</label>
                           <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                handleAssignmentChange(index, 'startDate', '');
-                                handleAssignmentChange(index, 'endDate', '');
-                              }}
-                              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all border ${
-                                !isTemporary
-                                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                                  : 'bg-white dark:bg-zinc-800 border-slate-200 dark:border-white/10 text-slate-400 hover:border-slate-300'
-                              }`}
-                            >
-                              <Infinity className="w-3.5 h-3.5" />
-                              Permanente
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!assignment.startDate) {
-                                  const today = new Date().toISOString().split('T')[0];
-                                  handleAssignmentChange(index, 'startDate', today);
-                                }
-                              }}
-                              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all border ${
-                                isTemporary
-                                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-sm'
-                                  : 'bg-white dark:bg-zinc-800 border-slate-200 dark:border-white/10 text-slate-400 hover:border-slate-300'
-                              }`}
-                            >
-                              <CalendarDays className="w-3.5 h-3.5" />
-                              Temporal
-                            </button>
+                             <input type="time" value={assignment.startTime} onChange={e => handleAssignmentChange(realIdx, 'startTime', e.target.value)} className="p-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
+                             <input type="time" value={assignment.endTime} onChange={e => handleAssignmentChange(realIdx, 'endTime', e.target.value)} className="p-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
                           </div>
                         </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+                          <button key={day} type="button" onClick={() => toggleDay(realIdx, day)} className={`px-2 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${assignment.daysOfWeek.includes(day) ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-zinc-800 text-slate-400 border border-slate-100 dark:border-white/5'}`}>
+                            {dayAbbreviations[day]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )})}
 
-                        {/* Fechas — solo visibles en modo Temporal */}
-                        {isTemporary && (
-                          <div className="grid grid-cols-2 gap-3 p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl animate-in fade-in slide-in-from-top-1 duration-200">
-                            <div className="space-y-1.5">
-                              <label className="text-[9px] font-black uppercase tracking-widest text-amber-600/70">Desde</label>
-                              <input 
-                                type="date"
-                                value={assignment.startDate}
-                                onChange={e => handleAssignmentChange(index, 'startDate', e.target.value)}
-                                className="w-full p-2.5 bg-white dark:bg-zinc-800 border border-amber-300/40 dark:border-amber-500/20 rounded-lg text-xs font-bold focus:ring-2 focus:ring-amber-400 outline-none"
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <label className="text-[9px] font-black uppercase tracking-widest text-amber-600/70">Hasta <span className="normal-case font-medium opacity-60">(opcional)</span></label>
-                              <input 
-                                type="date"
-                                value={assignment.endDate}
-                                onChange={e => handleAssignmentChange(index, 'endDate', e.target.value)}
-                                className="w-full p-2.5 bg-white dark:bg-zinc-800 border border-amber-300/40 dark:border-amber-500/20 rounded-lg text-xs font-bold focus:ring-2 focus:ring-amber-400 outline-none"
-                              />
-                            </div>
-                            {!assignment.endDate && (
-                              <p className="col-span-2 text-[9px] text-amber-600/60 -mt-1">
-                                💡 Sin fecha de fin, el agente permanece activo desde el inicio indefinidamente.
-                              </p>
-                            )}
-                          </div>
-                        )}
+                {/* 2. OVERRIDES TEMPORALES */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Rotaciones Temporales</label>
+                    {formData.assignments.length < 4 && (
+                      <button type="button" onClick={handleAddAssignment} className="text-[9px] font-black text-purple-600 bg-purple-500/10 px-3 py-1.5 rounded-xl hover:bg-purple-500/20 transition-all">
+                        + Añadir override
+                      </button>
+                    )}
+                  </div>
+                  
+                  {formData.assignments.filter(a => !a.isPermanent).length === 0 && (
+                    <div className="p-8 border-2 border-dashed border-slate-100 dark:border-white/5 rounded-3xl text-center">
+                      <p className="text-[10px] font-bold text-slate-400 italic">No hay overrides programados. El staff siempre estará en su sucursal base.</p>
+                    </div>
+                  )}
 
-                        {/* Horario de trabajo */}
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="w-3 h-3 text-slate-400" />
-                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Horario de trabajo</label>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <label className="text-[9px] text-slate-400 font-medium">Entrada</label>
-                              <input 
-                                type="time"
-                                value={assignment.startTime}
-                                onChange={e => handleAssignmentChange(index, 'startTime', e.target.value)}
-                                className="w-full p-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold focus:ring-2 focus:ring-purple-500 outline-none"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[9px] text-slate-400 font-medium">Salida</label>
-                              <input 
-                                type="time"
-                                value={assignment.endTime}
-                                onChange={e => handleAssignmentChange(index, 'endTime', e.target.value)}
-                                className="w-full p-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold focus:ring-2 focus:ring-purple-500 outline-none"
-                              />
-                            </div>
-                          </div>
+                  <div className="space-y-4">
+                  {formData.assignments.filter(a => !a.isPermanent).map((assignment, idx) => {
+                    const realIdx = formData.assignments.indexOf(assignment);
+                    return (
+                    <div key={`temp-${idx}`} className="bg-amber-500/5 border border-amber-500/20 rounded-[20px] overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2.5 border-b border-amber-500/10">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className="w-3 h-3 text-amber-500" />
+                          <span className="text-[9px] font-black uppercase tracking-widest text-amber-600">Override Temporal</span>
+                        </div>
+                        <button type="button" onClick={() => handleRemoveAssignment(realIdx)} className="text-rose-500 hover:bg-rose-500/10 p-1 rounded-md transition-all">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="p-4 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                           <div className="space-y-1">
+                             <label className="text-[8px] font-black text-slate-400 uppercase">Sucursal Destino</label>
+                             <select value={assignment.branchId} onChange={e => handleAssignmentChange(realIdx, 'branchId', e.target.value)} className="w-full p-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none">
+                               {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                             </select>
+                           </div>
+                           <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1">
+                                <label className="text-[8px] font-black text-slate-400 uppercase">Desde</label>
+                                <input type="date" required value={assignment.startDate} onChange={e => handleAssignmentChange(realIdx, 'startDate', e.target.value)} className="w-full p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold" />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[8px] font-black text-slate-400 uppercase">Hasta</label>
+                                <input type="date" value={assignment.endDate} onChange={e => handleAssignmentChange(realIdx, 'endDate', e.target.value)} className="w-full p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold" />
+                              </div>
+                           </div>
                         </div>
 
-                        {/* Días activos */}
-                        <div className="space-y-2">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Días activos</label>
-                          <div className="flex flex-wrap gap-1.5">
-                            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
-                              <button
-                                key={day}
-                                type="button"
-                                onClick={() => toggleDay(index, day)}
-                                className={`w-10 h-10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                                  assignment.daysOfWeek.includes(day)
-                                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20 scale-105'
-                                    : 'bg-white dark:bg-zinc-800 text-slate-400 border border-slate-200 dark:border-white/10 hover:border-purple-400/50'
-                                }`}
-                              >
-                                {dayAbbreviations[day]}
-                              </button>
-                            ))}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[8px] font-black text-slate-400 uppercase">Horario Especial</label>
+                            <div className="grid grid-cols-2 gap-2">
+                               <input type="time" value={assignment.startTime} onChange={e => handleAssignmentChange(realIdx, 'startTime', e.target.value)} className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold" />
+                               <input type="time" value={assignment.endTime} onChange={e => handleAssignmentChange(realIdx, 'endTime', e.target.value)} className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold" />
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[8px] font-black text-slate-400 uppercase">Días Aplicables</label>
+                            <div className="flex flex-wrap gap-1">
+                              {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+                                <button key={day} type="button" onClick={() => toggleDay(realIdx, day)} className={`px-1.5 py-1 rounded-md text-[7px] font-black uppercase transition-all ${assignment.daysOfWeek.includes(day) ? 'bg-amber-500 text-white' : 'bg-white dark:bg-zinc-800 text-slate-400 border border-slate-100 dark:border-white/5'}`}>
+                                  {dayAbbreviations[day]}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                    );
-                  })}
+                  )})}
+                  </div>
                 </div>
               </div>
 

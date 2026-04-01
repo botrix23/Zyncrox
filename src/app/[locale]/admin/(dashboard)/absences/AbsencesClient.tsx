@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, CalendarOff, MapPin, User, Trash2, X, Clock } from 'lucide-react';
-import { createBlockAction, deleteBlockAction } from "@/app/actions/blocks";
+import { Plus, CalendarOff, MapPin, User, Trash2, X, Clock, Edit2 } from 'lucide-react';
+import { createBlockAction, deleteBlockAction, updateBlockAction } from "@/app/actions/blocks";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
@@ -20,6 +20,7 @@ export default function AbsencesClient({
 }) {
   const t = useTranslations('Dashboard.absences');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -41,17 +42,30 @@ export default function AbsencesClient({
     const startDateTime = new Date(`${formData.startDate}T${formData.startTime}:00`);
     const endDateTime = new Date(`${formData.endDate}T${formData.endTime}:00`);
 
-    const result = await createBlockAction({
-      tenantId,
-      branchId: formData.type === "branch" ? formData.branchId : (null as any), // Modificado para soportar null si es por Staff
-      staffId: formData.type === "staff" ? formData.staffId : null,
-      reason: formData.reason,
-      startTime: startDateTime,
-      endTime: endDateTime
-    });
+    let result;
+    if (editingId) {
+      result = await updateBlockAction({
+        id: editingId,
+        tenantId,
+        staffId: formData.type === "staff" ? formData.staffId : null,
+        reason: formData.reason,
+        startTime: startDateTime,
+        endTime: endDateTime
+      });
+    } else {
+      result = await createBlockAction({
+        tenantId,
+        branchId: formData.type === "branch" ? formData.branchId : (null as any),
+        staffId: formData.type === "staff" ? formData.staffId : null,
+        reason: formData.reason,
+        startTime: startDateTime,
+        endTime: endDateTime
+      });
+    }
 
     if (result.success) {
       setIsModalOpen(false);
+      setEditingId(null);
       setFormData({
         type: "staff",
         branchId: branches[0]?.id || "",
@@ -67,6 +81,21 @@ export default function AbsencesClient({
       alert(t('errorSave'));
     }
     setIsLoading(false);
+  };
+
+  const handleEdit = (block: any) => {
+    setEditingId(block.id);
+    setFormData({
+      type: block.staffId ? "staff" : "branch",
+      branchId: block.branchId || branches[0]?.id || "",
+      staffId: block.staffId || staff[0]?.id || "",
+      reason: block.reason || "",
+      startDate: format(new Date(block.startTime), "yyyy-MM-dd"),
+      startTime: format(new Date(block.startTime), "HH:mm"),
+      endDate: format(new Date(block.endTime), "yyyy-MM-dd"),
+      endTime: format(new Date(block.endTime), "HH:mm")
+    });
+    setIsModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -147,12 +176,20 @@ export default function AbsencesClient({
                                   {format(new Date(block.endTime), "dd MMM yyyy, HH:mm")}
                                </td>
                                <td className="p-6 text-right">
-                                  <button 
-                                    onClick={() => handleDelete(block.id)}
-                                    className="p-2 text-slate-400 hover:text-white hover:bg-rose-500 rounded-xl transition-all inline-flex"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button 
+                                      onClick={() => handleEdit(block)}
+                                      className="p-2 text-slate-400 hover:text-white hover:bg-amber-500 rounded-xl transition-all inline-flex"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDelete(block.id)}
+                                      className="p-2 text-slate-400 hover:text-white hover:bg-rose-500 rounded-xl transition-all inline-flex"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
                                </td>
                             </tr>
                          );
@@ -170,11 +207,16 @@ export default function AbsencesClient({
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-[32px] w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/5">
               <div>
-                <h3 className="text-xl font-black tracking-tight">{t('form.titleNew')}</h3>
+                <h3 className="text-xl font-black tracking-tight">
+                  {editingId ? 'Editar Bloqueo' : t('form.titleNew')}
+                </h3>
               </div>
               <button 
                 type="button"
-                onClick={() => setIsModalOpen(false)} 
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setEditingId(null);
+                }} 
                 className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all"
               >
                 <X className="w-6 h-6" />
@@ -300,7 +342,7 @@ export default function AbsencesClient({
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent animate-spin rounded-full"></div>
                 ) : (
-                  t('form.create')
+                  editingId ? 'Actualizar bloqueo' : t('form.create')
                 )}
               </button>
             </form>

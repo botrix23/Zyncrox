@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Calendar as CalendarIcon, Clock, User, Trash2, Plus, Loader2, AlertCircle } from "lucide-react";
-import { createBlockAction, getBlocksAction, deleteBlockAction } from "@/app/actions/blocks";
+import { X, Calendar as CalendarIcon, Clock, User, Trash2, Plus, Loader2, AlertCircle, Edit2 } from "lucide-react";
+import { createBlockAction, getBlocksAction, deleteBlockAction, updateBlockAction } from "@/app/actions/blocks";
 import { format, parseISO, isAfter } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -18,6 +18,7 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
   const [blocks, setBlocks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Form State
@@ -46,7 +47,7 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
     fetchBlocks();
   }, [branchId]);
 
-  const handleCreateBlock = async (e: React.FormEvent) => {
+  const handleSubmitBlock = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
     setError(null);
@@ -62,22 +63,67 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
       return;
     }
 
-    const result = await createBlockAction({
-      tenantId,
-      branchId,
-      staffId: formData.staffId || null,
-      reason: formData.reason,
-      startTime: start,
-      endTime: end
-    });
+    let result;
+    if (editingId) {
+      result = await updateBlockAction({
+        id: editingId,
+        tenantId,
+        staffId: formData.staffId || null,
+        reason: formData.reason,
+        startTime: start,
+        endTime: end
+      });
+    } else {
+      result = await createBlockAction({
+        tenantId,
+        branchId,
+        staffId: formData.staffId || null,
+        reason: formData.reason,
+        startTime: start,
+        endTime: end
+      });
+    }
 
     if (result.success) {
       setFormData({ ...formData, reason: "", isRange: false });
+      setEditingId(null);
       fetchBlocks();
     } else {
-      setError(result.error || "Error al crear el bloqueo");
+      setError(result.error || "Error al procesar el bloqueo");
     }
     setIsCreating(false);
+  };
+
+  const handleEditClick = (block: any) => {
+    setEditingId(block.id);
+    const startDate = format(new Date(block.startTime), "yyyy-MM-dd");
+    const endDate = format(new Date(block.endTime), "yyyy-MM-dd");
+    const isRange = startDate !== endDate;
+
+    setFormData({
+      staffId: block.staffId || "",
+      reason: block.reason || "",
+      date: startDate,
+      endDate: endDate,
+      isRange: isRange,
+      startTime: format(new Date(block.startTime), "HH:mm"),
+      endTime: format(new Date(block.endTime), "HH:mm")
+    });
+    // Scroll to form on mobile
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setFormData({
+      staffId: "",
+      reason: "",
+      date: format(new Date(), "yyyy-MM-dd"),
+      endDate: format(new Date(), "yyyy-MM-dd"),
+      isRange: false,
+      startTime: "08:00",
+      endTime: "18:00"
+    });
   };
 
   const handleDeleteBlock = async (id: string) => {
@@ -108,9 +154,9 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
             {/* Formulario de Creación */}
             <div className="lg:col-span-12 xl:col-span-5 space-y-6">
               <div className="bg-slate-50 dark:bg-white/5 p-6 rounded-3xl border border-slate-200 dark:border-white/5">
-                <h4 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6">Nuevo Bloqueo</h4>
+                <h4 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6">{editingId ? 'Editar Bloqueo' : 'Nuevo Bloqueo'}</h4>
                 
-                <form onSubmit={handleCreateBlock} className="space-y-5">
+                <form onSubmit={handleSubmitBlock} className="space-y-5">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">¿A quién aplica?</label>
                     <select
@@ -204,14 +250,25 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
                     </div>
                   )}
 
-                  <button
-                    type="submit"
-                    disabled={isCreating}
-                    className="w-full py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold text-sm shadow-xl shadow-purple-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {isCreating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                    Crear bloqueo
-                  </button>
+                   <div className="flex flex-col gap-3">
+                    <button
+                      type="submit"
+                      disabled={isCreating}
+                      className={`w-full py-4 ${editingId ? 'bg-amber-500 hover:bg-amber-400' : 'bg-purple-600 hover:bg-purple-500'} text-white rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50`}
+                    >
+                      {isCreating ? <Loader2 className="w-5 h-5 animate-spin" /> : (editingId ? <Edit2 className="w-5 h-5" /> : <Plus className="w-5 h-5" />)}
+                      {editingId ? 'Actualizar bloqueo' : 'Crear bloqueo'}
+                    </button>
+                    {editingId && (
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="w-full py-3 bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 rounded-xl font-bold text-xs hover:bg-slate-300 transition-all uppercase tracking-widest"
+                      >
+                        Cancelar Edición
+                      </button>
+                    )}
+                  </div>
                 </form>
               </div>
             </div>
@@ -268,12 +325,22 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
                             </div>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleDeleteBlock(block.id)}
-                          className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleEditClick(block)}
+                            className="p-2 text-slate-300 hover:text-amber-500 hover:bg-amber-500/5 rounded-xl transition-all"
+                            title="Editar"
+                          >
+                            <Edit2 className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBlock(block.id)}
+                            className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

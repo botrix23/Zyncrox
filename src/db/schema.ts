@@ -116,6 +116,9 @@ export const staffAssignments = pgTable('staff_assignments', {
   // Rango de fechas (null en startDate significa "siempre")
   startDate: timestamp('start_date', { withTimezone: true, mode: 'date' }),
   endDate: timestamp('end_date', { withTimezone: true, mode: 'date' }),
+  // isPermanent=true → sucursal base; se suspende automáticamente si hay un override temporal activo
+  // isPermanent=false → override temporal (con startDate/endDate)
+  isPermanent: boolean('is_permanent').default(false).notNull(),
   startTime: varchar('start_time', { length: 5 }),
   endTime: varchar('end_time', { length: 5 }),
   // Días de la semana que aplica esta asignación

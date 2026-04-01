@@ -65,3 +65,36 @@ export async function deleteBlockAction(id: string, tenantId: string) {
     return { success: false, error: "Error al eliminar el bloqueo" };
   }
 }
+
+export async function updateBlockAction(data: {
+  id: string;
+  tenantId: string;
+  staffId?: string | null;
+  reason?: string;
+  startTime: Date;
+  endTime: Date;
+}) {
+  try {
+    await db.update(blocks)
+      .set({
+        staffId: data.staffId || null,
+        reason: data.reason,
+        startTime: data.startTime,
+        endTime: data.endTime,
+      })
+      .where(
+        and(
+          eq(blocks.id, data.id),
+          eq(blocks.tenantId, data.tenantId)
+        )
+      );
+
+    revalidatePath("/[locale]/admin/(dashboard)/absences", "page");
+    revalidatePath("/[locale]/admin/(dashboard)/branches", "page");
+    revalidatePath("/[locale]/admin/(dashboard)/bookings", "page");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating block:", error);
+    return { success: false, error: "Error al actualizar el bloqueo" };
+  }
+}

@@ -112,31 +112,56 @@ export async function getAvailableSlots(
     const dayEndRange = addMinutes(localDayEnd, -offsetMinutes);
 
     // 4. Identificar STAFF ACTIVO en esta sucursal para este día
-    // Usamos límites UTC seguros para la comparación de fechas:
-    // Las fechas de asignación se guardan a mediodía UTC (T12:00:00Z), así que
-    // comparamos contra el inicio del día UTC (T00:00:00Z) y el fin del día UTC (T23:59:59Z)
+    // Un staff está activo en esta sucursal si:
+    // a) Tiene un override temporal (isPermanent=false) en ESTA sucursal para HOY.
+    // b) O tiene una asignación permanente (isPermanent=true) en ESTA sucursal Y NO tiene ningún override temporal en OTRA sucursal para hoy.
+    
     const utcDayStart = new Date(`${dateStr}T00:00:00Z`);
     const utcDayEnd   = new Date(`${dateStr}T23:59:59Z`);
 
-    const activeAssignments = await db.query.staffAssignments.findMany({
+    // Traemos TODAS las asignaciones de todos los staff para este día (de cualquier sucursal)
+    // para poder detectar si alguien tiene un override en otro lugar.
+    const allRellevantAssignments = await db.query.staffAssignments.findMany({
       where: and(
-        eq(staffAssignments.branchId, branchId),
-        // Rango de fechas (tolerante a timezone)
         or(isNull(staffAssignments.startDate), lte(staffAssignments.startDate, utcDayEnd)),
         or(isNull(staffAssignments.endDate), gte(staffAssignments.endDate, utcDayStart))
       )
     });
 
-    // Filtrar por día de la semana (manualmente ya que daysOfWeek es JSON)
-    const activeStaffIds = Array.from(new Set(
-      activeAssignments
-        .filter(a => a.daysOfWeek.includes(dayOfWeek))
-        .map(a => a.staffId)
-    ));
+    const activeStaffIds: string[] = [];
+    const staffToAssignmentMap = new Map<string, any>();
 
-    // Si se pidió un staff específico, verificar si es de los activos
+    // Agrupar asignaciones por staff para resolver prioridad
+    const assignmentsByStaff = allRellevantAssignments.reduce((acc, curr) => {
+      if (!acc[curr.staffId]) acc[curr.staffId] = [];
+      acc[curr.staffId].push(curr);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    Object.entries(assignmentsByStaff).forEach(([sId, as]) => {
+      // 1. Ver si tiene override temporal hoy (en cualquier sucursal)
+      const temporalOverride = as.find(a => !a.isPermanent && a.daysOfWeek.includes(dayOfWeek));
+      
+      if (temporalOverride) {
+        // Si el override es en ESTA sucursal, lo agregamos
+        if (temporalOverride.branchId === branchId) {
+          activeStaffIds.push(sId);
+          staffToAssignmentMap.set(sId, temporalOverride);
+        }
+        // Si el override es en OTRA sucursal, ignoramos cualquier permanente que tenga aquí
+      } else {
+        // 2. Si no hay override, ver si tiene permanente en ESTA sucursal
+        const permanentInBranch = as.find(a => a.isPermanent && a.branchId === branchId && a.daysOfWeek.includes(dayOfWeek));
+        if (permanentInBranch) {
+          activeStaffIds.push(sId);
+          staffToAssignmentMap.set(sId, permanentInBranch);
+        }
+      }
+    });
+
+    // Si se pidió un staff específico, verificar si quedó en la lista de activos resolviendo prioridad
     if (staffId && !activeStaffIds.includes(staffId)) {
-        return { slots: [], errorType: 'STAFF_UNAVAILABLE' }; // Staff no trabaja en esta sucursal ese día
+        return { slots: [], errorType: 'STAFF_UNAVAILABLE' };
     }
 
     const effectiveStaffIds = staffId ? [staffId] : activeStaffIds;
@@ -193,13 +218,12 @@ export async function getAvailableSlots(
         const localSlotEndStr = `${String(shiftedEnd.getUTCHours()).padStart(2, '0')}:${String(shiftedEnd.getUTCMinutes()).padStart(2, '0')}`;
         
         const staffIsAssignedInTime = (staffIdCheck: string) => {
-           return activeAssignments.some(a => {
-              if (a.staffId !== staffIdCheck) return false;
-              if (!a.daysOfWeek.includes(dayOfWeek)) return false;
-              const assignStart = a.startTime || '00:00';
-              const assignEnd = a.endTime || '23:59';
-              return localSlotStartStr >= assignStart && localSlotEndStr <= assignEnd;
-           });
+           const a = staffToAssignmentMap.get(staffIdCheck);
+           if (!a) return false;
+           
+           const assignStart = a.startTime || '00:00';
+           const assignEnd = a.endTime || '23:59';
+           return localSlotStartStr >= assignStart && localSlotEndStr <= assignEnd;
         };
         
         let isOccupied = false;
