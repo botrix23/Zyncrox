@@ -45,7 +45,8 @@ export default function StaffClient({
     name: "",
     email: "",
     branchId: branches[0]?.id || "", // Mantener para compatibilidad
-    assignments: [] as any[]
+    assignments: [] as any[],
+    allowsHomeService: true
   });
 
   const filteredStaff = initialStaff.filter(s => 
@@ -73,7 +74,8 @@ export default function StaffClient({
         name: member.name,
         email: member.email || "",
         branchId: member.branchId,
-        assignments: assignments
+        assignments: assignments,
+        allowsHomeService: member.allowsHomeService ?? true
       });
     } else {
       setEditingMember(null);
@@ -89,7 +91,8 @@ export default function StaffClient({
           startTime: "",
           endTime: "",
           isPermanent: true
-        }]
+        }],
+        allowsHomeService: true
       });
     }
     setIsModalOpen(true);
@@ -166,7 +169,8 @@ export default function StaffClient({
         tenantId,
         ...formData,
         branchId: finalBranchId,
-        assignments: processedAssignments
+        assignments: processedAssignments,
+        allowsHomeService: formData.allowsHomeService
       });
     }
 
@@ -288,12 +292,20 @@ export default function StaffClient({
                   <p className="text-[10px] font-bold text-purple-600 tracking-widest uppercase">
                     {branchName || 'Sin sucursal'}
                   </p>
-                  {activeOverride && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded-full border border-amber-500/20 animate-pulse">
-                      <CalendarDays className="w-2.5 h-2.5" />
-                      TEMPORAL
-                    </span>
-                  )}
+                  <div className="flex flex-wrap items-center justify-center gap-1 mt-1">
+                    {activeOverride && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded-full border border-amber-500/20 animate-pulse">
+                        <CalendarDays className="w-2.5 h-2.5" />
+                        TEMPORAL
+                      </span>
+                    )}
+                    {member.allowsHomeService && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8px] font-black rounded-full border border-emerald-500/20">
+                        <Plus className="w-2.5 h-2.5" />
+                        HOME SERVICE OK
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -354,6 +366,20 @@ export default function StaffClient({
                     placeholder="email@ejemplo.com"
                   />
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between p-5 bg-purple-500/5 border border-purple-500/10 rounded-[24px]">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{t('form.allowsHomeServiceLabel')}</p>
+                  <p className="text-[10px] text-slate-500 font-medium tracking-tight italic">{t('form.allowsHomeServiceHint')}</p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setFormData({...formData, allowsHomeService: !formData.allowsHomeService})}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${formData.allowsHomeService ? 'bg-purple-600' : 'bg-slate-300 dark:bg-white/10'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.allowsHomeService ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
               </div>
 
               <div className="space-y-6">

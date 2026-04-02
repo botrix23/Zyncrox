@@ -6,12 +6,14 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, en
 import { es } from "date-fns/locale";
 import { ThemeToggle } from "./ThemeToggle";
 import { LangToggle } from "./LangToggle";
-import { getAvailableSlots, createBookingAction } from "@/app/actions/booking";
-import { Calendar, Clock, ChevronRight, Check, X, ArrowLeft, User, MapPin, Truck, Mail, Phone, UserCircle, Loader2, CheckCircle2, XCircle, Instagram, Facebook, Music } from "lucide-react";
+import { getAvailableSlots, createBookingAction, createBookingSessionAction } from "@/app/actions/booking";
+import { Calendar, Clock, ChevronRight, Check, X, ArrowLeft, User, MapPin, Truck, Mail, Phone, UserCircle, Loader2, CheckCircle2, XCircle, Instagram, Facebook, Music, Layers, CalendarRange, Crown } from "lucide-react";
+import { canUseFeature, getPlanFeatures } from "@/core/plans";
 
 type Branch = { id: string; name: string; businessHours?: string | null };
-type Service = { id: string; name: string; durationMinutes: number; price: string; includes: string[]; excludes: string[] };
-type Staff = { id: string; name: string };
+type Service = { id: string; name: string; durationMinutes: number; price: string; includes: string[]; excludes: string[]; allowsHomeService?: boolean; branches?: { id: string; branchId: string }[] };
+type Staff = { id: string; name: string; allowsHomeService?: boolean };
+type CoverageZone = { id: string; name: string; fee: string; description?: string | null };
 
 const COUNTRIES = [
   { code: 'SV', name: 'El Salvador', prefix: '+503', flag: '🇸🇻', minLen: 8, maxLen: 8 },
@@ -53,7 +55,10 @@ export default function BookingWidget({
   instagramUrl,
   facebookUrl,
   tiktokUrl,
-  allowsHomeService
+  allowsHomeService,
+  homeServiceLeadDays,
+  coverageZones,
+  tenantPlan
 }: { 
   branches: Branch[], 
   services: Service[], 
@@ -79,9 +84,13 @@ export default function BookingWidget({
   facebookUrl?: string;
   tiktokUrl?: string;
   allowsHomeService?: boolean;
+  homeServiceLeadDays?: number;
+  coverageZones?: CoverageZone[];
+  tenantPlan?: string;
 }) {
   const t = useTranslations('BookingWidget');
   const [step, setStep] = useState(1);
+  const currentPlan = tenantPlan || 'FREE';
   
   // States del Flujo Completo
   const [modality, setModality] = useState<'local' | 'domicilio' | null>(null);
@@ -90,13 +99,26 @@ export default function BookingWidget({
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedZone, setSelectedZone] = useState<CoverageZone | null>(null);
   
   // Real-time Availability States
   const [availableTimes, setAvailableTimes] = useState<{time: string, available: boolean}[]>([]);
   const [isLoadingTimes, setIsLoadingTimes] = useState(false);
   const [errorType, setErrorType] = useState<'BRANCH_CLOSED' | 'STAFF_UNAVAILABLE' | null>(null);
-  
-  // Guest Data States
+
+  // Multi-Service Scheduling Strategy
+  const [schedulingMode, setSchedulingMode] = useState<'bulk' | 'separate' | null>(null);
+  const [currentServiceIndex, setCurrentServiceIndex] = useState(0);
+  const [cartBookings, setCartBookings] = useState<{
+    service: Service;
+    staff: Staff | null;
+    date: string | null;
+    time: string | null;
+  }[]>([]);
+
+  // Plan info (fetched or passed, for now we assume we have it via props or we'll add a dummy for now)
+  // TODO: Pass tenant plan from page.tsx to widget. For now default to PRO to allow testing, 
+  // but let's add it to props.
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
@@ -125,29 +147,100 @@ export default function BookingWidget({
   }, [forcedTheme]);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  
+  // Filtrado Granular basado en Modalidad y Sucursal
+  const displayServices = useMemo(() => {
+    if (modality === 'domicilio') {
+      return services.filter(s => s.allowsHomeService !== false);
+    }
+    if (modality === 'local' && selectedBranch) {
+      return services.filter(s => {
+        // Si no hay restricciones de sucursales (relación vacía), es global.
+        if (!s.branches || s.branches.length === 0) return true;
+        // Si tiene restricciones, el selectedBranch debe estar en la lista.
+        return s.branches.some(b => b.branchId === selectedBranch.id);
+      });
+    }
+    return services;
+  }, [services, modality, selectedBranch]);
+
+  const displayStaff = useMemo(() => {
+    if (modality === 'domicilio') {
+      return staff.filter(s => s.allowsHomeService !== false);
+    }
+    return staff;
+  }, [staff, modality]);
   // Botón habilitado cuando: nombre + email + teléfono válidos
   // Y si es domicilio Y los términos están activados: también debe aceptarlos
-  const totalPrice = selectedServices.reduce((acc, s) => acc + parseFloat(s.price), 0);
-  const totalDuration = selectedServices.reduce((acc, s) => acc + s.durationMinutes, 0);
-
   const isFormValid =
     guestName.trim() !== '' &&
     emailRegex.test(guestEmail) &&
     guestPhone.length >= (selectedCountry as any).minLen &&
-    (modality !== 'domicilio' || !homeServiceTermsEnabled || agreedToTerms);
+    (modality !== 'domicilio' || (selectedZone !== null && (!homeServiceTermsEnabled || agreedToTerms)));
+
+  // LÓGICA DE PRECIO PRO: Bloques de traslado
+  const calculateTransferFees = () => {
+    if (modality !== 'domicilio' || !selectedZone || cartBookings.length === 0) return 0;
+    
+    const zoneFee = parseFloat(selectedZone.fee);
+    let transferBlocks = 1;
+
+    // Ordenar citas por tiempo
+    const sortedBookings = [...cartBookings].sort((a, b) => {
+        const timeA = new Date(`${a.date}T${formatTimeToMilitary(a.time!)}`).getTime();
+        const timeB = new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`).getTime();
+        return timeA - timeB;
+    });
+
+    for (let i = 1; i < sortedBookings.length; i++) {
+        const prev = sortedBookings[i-1];
+        const curr = sortedBookings[i];
+        
+        const prevEndTime = new Date(`${prev.date}T${formatTimeToMilitary(prev.time!)}`).getTime() + (prev.service.durationMinutes * 60000);
+        const currStartTime = new Date(`${curr.date}T${formatTimeToMilitary(curr.time!)}`).getTime();
+        
+        // Un traslado extra si:
+        // 1. Diferente día
+        // 2. Diferente especialista
+        // 3. Hay un hueco de tiempo (gap > 0)
+        const isDifferentDay = prev.date !== curr.date;
+        const isDifferentStaff = prev.staff?.id !== curr.staff?.id;
+        const hasGap = currStartTime > prevEndTime;
+
+        if (isDifferentDay || isDifferentStaff || hasGap) {
+            transferBlocks++;
+        }
+    }
+
+    return transferBlocks * zoneFee;
+  };
+
+  const transferTotal = calculateTransferFees();
+  const servicesTotal = selectedServices.reduce((acc, s) => acc + parseFloat(s.price), 0);
+  const totalPrice = servicesTotal + transferTotal;
+  const totalDuration = selectedServices.reduce((acc, s) => acc + s.durationMinutes, 0);
 
   useEffect(() => {
-    if (step === 3 && selectedDate && selectedServices.length > 0) {
+    if (step === 3 && (selectedDate || schedulingMode === 'separate') && selectedServices.length > 0) {
       const fetchTimes = async () => {
         setIsLoadingTimes(true);
         setErrorType(null);
         try {
+          const serviceToQuery = schedulingMode === 'separate' 
+            ? selectedServices[currentServiceIndex] 
+            : selectedServices[0];
+          
+          const durationToQuery = schedulingMode === 'separate'
+            ? serviceToQuery.durationMinutes
+            : totalDuration;
+
           const res = await getAvailableSlots(
-            selectedDate, 
-            selectedServices[0]?.id || '', 
+            selectedDate || '', 
+            serviceToQuery?.id || '', 
             selectedBranch?.id || branches[0]?.id || '', 
             selectedStaff?.id,
-            totalDuration
+            durationToQuery,
+            modality === 'domicilio'
           );
           
           setAvailableTimes(res.slots || []);
@@ -160,14 +253,24 @@ export default function BookingWidget({
           setIsLoadingTimes(false);
         }
       };
-      fetchTimes();
+      if (selectedDate) fetchTimes();
     }
-  }, [step, selectedDate, selectedServices, selectedStaff, selectedBranch, branches, totalDuration]);
+  }, [step, selectedDate, selectedServices, selectedStaff, selectedBranch, branches, totalDuration, schedulingMode, currentServiceIndex]);
 
   // Handlers
   const handleSelectModality = (mod: 'local' | 'domicilio', branch: Branch | null = null) => {
     setModality(mod);
     setSelectedBranch(branch);
+    
+    if (mod === 'domicilio') {
+      setStep(1.1); // Pasar a Selección de Zona
+    } else {
+      setStep(2); // Pasar a Servicios
+    }
+  };
+
+  const handleSelectZone = (zone: CoverageZone) => {
+    setSelectedZone(zone);
     setStep(2); // Pasar a Servicios
   };
 
@@ -175,6 +278,13 @@ export default function BookingWidget({
     setSelectedServices(prev => {
       const exists = prev.find(s => s.id === service.id);
       if (exists) return prev.filter(s => s.id !== service.id);
+      
+      // Check Plan Limit
+      const features = getPlanFeatures(tenantPlan);
+      if (prev.length >= 1 && !features.multiServiceBooking) {
+        // Podríamos mostrar un toast o aviso aquí, por ahora limitamos la selección
+        return prev;
+      }
       return [...prev, service];
     });
   };
@@ -194,29 +304,50 @@ export default function BookingWidget({
   };
 
   const handleFinalCheckout = async () => {
-    if (selectedServices.length === 0 || !selectedDate || !selectedTime) {
-      console.warn("Cannot checkout: missing services, date or time", { selectedServices, selectedDate, selectedTime });
+    if (cartBookings.length === 0) {
+      console.warn("Cannot checkout: cart is empty");
       return;
     }
 
     setIsFinishing(true);
     try {
-      // 1. Calcular tiempos de inicio y fin (UTC para consistencia en DB)
-      const militaryTime = formatTimeToMilitary(selectedTime);
-      const startDateTime = new Date(`${selectedDate}T${militaryTime}Z`);
-      const endDateTime = new Date(startDateTime.getTime() + totalDuration * 60000);
+      // 1. Preparar el arreglo de bookings para la sesión
+      let currentStartTime: Date | null = null;
+      
+      const sessionBookingsData = cartBookings.map((item) => {
+        const militaryTime = formatTimeToMilitary(item.time!);
+        const baseStartTime = new Date(`${item.date}T${militaryTime}Z`);
+        
+        // Si estamos en modo bulk, las citas deben ser seguidas
+        const actualStartTime = (schedulingMode === 'bulk' && currentStartTime) 
+          ? currentStartTime 
+          : baseStartTime;
+          
+        const actualEndTime = new Date(actualStartTime.getTime() + item.service.durationMinutes * 60000);
+        
+        // Actualizar el puntero para la siguiente cita en modo bulk
+        if (schedulingMode === 'bulk') {
+          currentStartTime = actualEndTime;
+        }
 
-      // 2. Persistir en Base de Datos
-      const result = await createBookingAction({
-        tenantId: tenantId, 
-        branchId: selectedBranch?.id || branches[0]?.id || '',
-        serviceId: selectedServices[0].id, 
-        staffId: selectedStaff?.id || staff[0]?.id || '',
+        return {
+          branchId: selectedBranch?.id || branches[0]?.id || '',
+          serviceId: item.service.id,
+          staffId: item.staff?.id || staff[0]?.id || '',
+          startTime: actualStartTime,
+          endTime: actualEndTime,
+          price: item.service.price
+        };
+      });
+
+      // 2. Ejecutar Acción de Sesión
+      const result = await createBookingSessionAction({
+        tenantId: tenantId,
         customerName: guestName,
         customerEmail: guestEmail,
         customerPhone: guestPhone ? `${selectedCountry.prefix} ${guestPhone}` : undefined,
-        startTime: startDateTime,
-        endTime: endDateTime
+        zoneId: selectedZone?.id,
+        bookings: sessionBookingsData
       });
 
       if (result.success) {
@@ -224,31 +355,29 @@ export default function BookingWidget({
           const waNumber = whatsappNumber || '50370000000';
           let message = waMessageTemplate;
           if (!message) {
-            message = "¡Hola! Me gustaría confirmar mi cita para *{servicio}*.\n\n" +
-                      "📅 *Fecha:* {fecha}\n" +
+            message = "¡Hola! Me gustaría confirmar mis citas para:\n{servicios}\n\n" +
+                      "📅 *Primera cita:* {fecha}\n" +
                       "⏰ *Hora:* {hora}\n" +
                       "📍 *Modalidad:* Servicio a Domicilio\n" +
-                      "👤 *Cliente:* {cliente}\n" +
-                      "📞 *Teléfono:* {telefono}";
+                      "👤 *Cliente:* {cliente}";
           }
 
-          const serviceNames = selectedServices.map(s => s.name).join(", ");
+          const serviceList = cartBookings.map(s => `- ${s.service.name}`).join("\n");
           const formattedMsg = message
-            .replace(/{servicio}/g, serviceNames)
-            .replace(/{fecha}/g, selectedDate)
-            .replace(/{hora}/g, selectedTime)
-            .replace(/{cliente}/g, guestName)
-            .replace(/{telefono}/g, `${selectedCountry.prefix} ${guestPhone}`);
+            .replace(/{servicios}/g, serviceList)
+            .replace(/{fecha}/g, cartBookings[0].date!)
+            .replace(/{hora}/g, cartBookings[0].time!)
+            .replace(/{cliente}/g, guestName);
 
           window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(formattedMsg)}`, '_blank');
         }
         setStep(5);
       } else {
-        alert("Error al crear la reserva: " + (result.error || "Unknown error"));
+        alert("Error al crear la sesión: " + (result.error || "Unknown error"));
       }
     } catch (err) {
-      console.error("Critical error during checkout:", err);
-      alert("Error crítico al procesar la reserva");
+      console.error("Critical error during session checkout:", err);
+      alert("Error crítico al procesar la sesión de reservas");
     } finally {
       setIsFinishing(false);
     }
@@ -275,9 +404,9 @@ export default function BookingWidget({
   // Generate dates dynamically based on modality
   const today = new Date();
   const nextDays = Array.from({ length: 14 }).map((_, i) => {
+    const leadDays = modality === 'domicilio' ? (homeServiceLeadDays ?? 7) : 0;
     const d = new Date(today);
-    // Para domicilio, requerimos 7 días de anticipación
-    d.setDate(today.getDate() + i + (modality === 'domicilio' ? 7 : 0)); 
+    d.setDate(today.getDate() + i + leadDays); 
     
     // Usar formato local para evitar desfases de UTC
     const year = d.getFullYear();
@@ -344,7 +473,9 @@ export default function BookingWidget({
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
         const formattedDate = format(day, "yyyy-MM-dd");
-        const isPast = isBefore(day, startOfToday());
+        const leadDays = modality === 'domicilio' ? (homeServiceLeadDays ?? 7) : 0;
+        const minDate = addDays(startOfToday(), leadDays);
+        const isPast = isBefore(day, minDate);
         const isOpen = isBranchOpen(day);
         
         days.push({
@@ -505,6 +636,12 @@ export default function BookingWidget({
                       <p className="text-[11px] font-medium text-slate-400 mt-1">
                         {selectedServices.length} {selectedServices.length === 1 ? 'servicio seleccionado' : 'servicios seleccionados'}
                       </p>
+                      {transferTotal > 0 && (
+                        <p className="text-[10px] font-bold text-emerald-500 mt-0.5 flex items-center gap-1">
+                           <Truck className="w-3 h-3" /> +${transferTotal.toFixed(2)} Tarifa de traslado 
+                           <span title="Esta tarifa cubre el costo de transporte del especialista a tu ubicación.">(?)</span>
+                        </p>
+                      )}
                    </div>
                 </div>
               )}
@@ -557,6 +694,61 @@ export default function BookingWidget({
             </div>
           )}
 
+          {/* STEP 1.1: Zone Selection (Home Service only) */}
+          {step === 1.1 && (
+            <div className="relative z-10 flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
+               <div className="flex items-center gap-3 mb-6">
+                <button 
+                   type="button"
+                   onClick={() => setStep(1)}
+                   className="p-2 bg-white dark:bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl text-slate-600 dark:text-zinc-300 transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div className="flex flex-col">
+                  <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    {t('home_service')}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">{t('home_service_desc')}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4 overflow-y-auto no-scrollbar pr-2 flex-1 scroll-smooth">
+                {coverageZones && coverageZones.length > 0 ? (
+                  coverageZones.map(zone => (
+                    <button 
+                      key={zone.id}
+                      type="button"
+                      onClick={() => handleSelectZone(zone)}
+                      className="w-full p-5 bg-white dark:bg-white/5 hover:bg-purple-500/10 border border-slate-200 dark:border-white/10 hover:border-purple-500/40 rounded-2xl flex items-center justify-between gap-4 transition-all duration-300 group shadow-sm text-left active:scale-[0.98]"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:scale-110 transition-transform"><MapPin /></div>
+                        <div>
+                          <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-purple-400 leading-tight mb-0.5">{zone.name}</h3>
+                          <p className="text-slate-400 dark:text-zinc-500 text-[10px] font-bold uppercase tracking-wider">{zone.description || "COBERTURA DISPONIBLE"}</p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-emerald-500 text-xl font-black tracking-tighter">+${zone.fee}</p>
+                        <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest leading-none">Traslado</p>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="p-8 text-center bg-slate-50 dark:bg-white/5 rounded-3xl border-2 border-dashed border-slate-200 dark:border-white/10 my-auto">
+                     <div className="w-16 h-16 bg-slate-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <MapPin className="w-8 h-8 text-slate-300" />
+                     </div>
+                     <p className="text-slate-500 dark:text-zinc-400 font-bold mb-1">Sin Zonas de Cobertura</p>
+                     <p className="text-xs text-slate-400 max-w-[200px] mx-auto">Este negocio aún no ha configurado zonas para servicio a domicilio.</p>
+                     <button type="button" onClick={() => setStep(1)} className="mt-6 px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-xs font-black active:scale-95 transition-all">VOLVER ATRÁS</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* STEP 2: Select Service */}
           {step === 2 && (
             <div className="relative z-10 flex flex-col h-full animate-in fade-in slide-in-from-right-8 duration-500">
@@ -577,7 +769,7 @@ export default function BookingWidget({
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 overflow-y-auto flex-1 pr-2 custom-scrollbar items-start content-start">
-                {services.map((srv) => {
+                {displayServices.map((srv) => {
                   const isSelected = selectedServices.some(s => s.id === srv.id);
                   return (
                     <button 
@@ -652,7 +844,14 @@ export default function BookingWidget({
                       <div className="flex items-center gap-4">
                         <p className="text-2xl font-black text-purple-400">${totalPrice.toFixed(2)}</p>
                         <button 
-                          onClick={() => setStep(3)}
+                          onClick={() => {
+                            if (selectedServices.length > 1) {
+                              setStep(2.5); // Nuevo paso: Elegir modalidad
+                            } else {
+                              setSchedulingMode('bulk');
+                              setStep(3);
+                            }
+                          }}
                           className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95"
                         >
                           {t("continue")} →
@@ -661,6 +860,56 @@ export default function BookingWidget({
                    </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* STEP 2.5: Choose Scheduling Mode */}
+          {step === 2.5 && (
+            <div className="relative z-10 flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
+              <div className="flex items-center gap-3 mb-6">
+                <button 
+                  onClick={() => setStep(2)}
+                  className="p-2 bg-white dark:bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl text-slate-600 dark:text-zinc-300 transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  ¿Cómo prefieres tus citas?
+                </h2>
+              </div>
+              
+              <div className="space-y-4">
+                <button 
+                  onClick={() => { setSchedulingMode('bulk'); setStep(3); }}
+                  className="w-full p-6 bg-white dark:bg-white/5 hover:bg-purple-500/10 border border-slate-200 dark:border-white/10 hover:border-purple-500/40 rounded-2xl flex items-center gap-5 transition-all duration-300 group shadow-lg text-left"
+                >
+                  <div className="bg-purple-500/20 p-4 rounded-full text-purple-400 group-hover:scale-110 transition-transform"><Layers className="w-8 h-8" /></div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-purple-400">Todo seguido (Recomendado)</h3>
+                    <p className="text-slate-400 dark:text-zinc-500 text-sm">Realiza todos tus servicios en una sola visita, uno tras otro.</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => { setSchedulingMode('separate'); setStep(3); setCurrentServiceIndex(0); }}
+                  className="w-full p-6 bg-white dark:bg-white/5 hover:bg-blue-500/10 border border-slate-200 dark:border-white/10 hover:border-blue-500/40 rounded-2xl flex items-center gap-5 transition-all duration-300 group shadow-lg text-left"
+                >
+                  <div className="bg-blue-500/20 p-4 rounded-full text-blue-400 group-hover:scale-110 transition-transform"><CalendarRange className="w-8 h-8" /></div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-400">En días u horas distintas</h3>
+                    <p className="text-slate-400 dark:text-zinc-500 text-sm">Elige una fecha y especialista diferente para cada servicio.</p>
+                  </div>
+                </button>
+
+                {!canUseFeature(tenantPlan, 'separateServiceScheduling') && (
+                  <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-3">
+                    <Crown className="w-5 h-5 text-amber-500" />
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                      El agendamiento dividido es una función **PRO**. Actualiza tu suscripción para activarla.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -675,7 +924,10 @@ export default function BookingWidget({
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <h2 className="text-2xl font-bold tracking-tight">
-                  {bookingSettings?.step3Title || t("title_specialist")}
+                  {schedulingMode === 'separate' 
+                    ? `Agendando ${currentServiceIndex + 1} de ${selectedServices.length}: ${selectedServices[currentServiceIndex]?.name}`
+                    : (bookingSettings?.step3Title || t("title_specialist"))
+                  }
                 </h2>
               </div>
               
@@ -694,7 +946,7 @@ export default function BookingWidget({
                       <span className="text-sm">✨ {t("anyone")}</span>
                     </button>
                     
-                    {staff.map((member) => (
+                    {displayStaff.map((member) => (
                       <button 
                         key={member.id}
                         onClick={() => handleSelectStaff(member)}
@@ -868,12 +1120,52 @@ export default function BookingWidget({
                   type="button"
                   onClick={(e) => {
                     e.preventDefault();
-                    setStep(4);
+                    
+                    if (schedulingMode === 'separate') {
+                      // Guardar en el carrito temporal
+                      const newBooking = {
+                        service: selectedServices[currentServiceIndex],
+                        staff: selectedStaff,
+                        date: selectedDate,
+                        time: selectedTime,
+                      };
+                      setCartBookings(prev => [...prev, newBooking]);
+                      
+                      // ¿Hay más servicios?
+                      if (currentServiceIndex < selectedServices.length - 1) {
+                        setCurrentServiceIndex(prev => prev + 1);
+                        setSelectedDate(null);
+                        setSelectedTime(null);
+                        setSelectedStaff(null);
+                      } else {
+                        setStep(4);
+                      }
+                    } else {
+                      // Modo Masivo: Una sola selección para todos
+                      const bookingsInBulk = selectedServices.map((s, idx) => {
+                         // TODO: Calculate offsets if they are back-to-back, but for simplicity
+                         // and because createBookingSessionAction will handle the insertion
+                         // let's just mark the session info. 
+                         // For now, in bulk mode, we just pass the same start time for all
+                         // and let the total duration logic handle the availability.
+                         return { 
+                           service: s, 
+                           staff: selectedStaff, 
+                           date: selectedDate, 
+                           time: selectedTime 
+                         };
+                      });
+                      setCartBookings(bookingsInBulk);
+                      setStep(4);
+                    }
                   }}
                   disabled={!selectedTime || !selectedDate}
                   className="w-full py-4 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-zinc-600 text-white rounded-xl font-bold tracking-widest transition-all duration-300 shadow-lg active:scale-[0.98]"
                 >
-                  {t("go_to_data")}
+                  {schedulingMode === 'separate' && currentServiceIndex < selectedServices.length - 1 
+                    ? `Siguiente Servicio (${currentServiceIndex + 2}/${selectedServices.length}) →` 
+                    : t("go_to_data")
+                  }
                 </button>
               </div>
             </div>

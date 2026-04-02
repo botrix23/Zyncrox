@@ -22,9 +22,11 @@ import { useTranslations } from "next-intl";
 
 export default function ServicesClient({ 
   initialServices,
+  branches,
   tenantId 
 }: { 
   initialServices: any[],
+  branches: any[],
   tenantId: string 
 }) {
   const t = useTranslations('Dashboard.services');
@@ -41,9 +43,12 @@ export default function ServicesClient({
     price: "20.00",
     description: "",
     includes: [] as string[],
-    excludes: [] as string[]
+    excludes: [] as string[],
+    allowsHomeService: true,
+    branchIds: [] as string[]
   });
 
+  const [availabilityType, setAvailabilityType] = useState<"all" | "specific">("all");
   const [newInclude, setNewInclude] = useState("");
   const [newExclude, setNewExclude] = useState("");
 
@@ -54,14 +59,19 @@ export default function ServicesClient({
   const handleOpenModal = (service?: any) => {
     if (service) {
       setEditingService(service);
+      const serviceBranchIds = (service.branches || []).map((b: any) => b.branchId);
+      
       setFormData({
         name: service.name,
         durationMinutes: service.durationMinutes,
         price: service.price,
         description: service.description || "",
         includes: service.includes || [],
-        excludes: service.excludes || []
+        excludes: service.excludes || [],
+        allowsHomeService: service.allowsHomeService ?? true,
+        branchIds: serviceBranchIds
       });
+      setAvailabilityType(serviceBranchIds.length > 0 ? "specific" : "all");
     } else {
       setEditingService(null);
       setFormData({
@@ -70,8 +80,11 @@ export default function ServicesClient({
         price: "20.00",
         description: "",
         includes: [],
-        excludes: []
+        excludes: [],
+        allowsHomeService: true,
+        branchIds: []
       });
+      setAvailabilityType("all");
     }
     setIsModalOpen(true);
   };
@@ -80,17 +93,21 @@ export default function ServicesClient({
     e.preventDefault();
     setIsLoading(true);
 
+    const finalBranchIds = availabilityType === "all" ? [] : formData.branchIds;
+
     let result;
     if (editingService) {
       result = await updateServiceAction({
         id: editingService.id,
         tenantId,
-        ...formData
+        ...formData,
+        branchIds: finalBranchIds
       });
     } else {
       result = await createServiceAction({
         tenantId,
         ...formData,
+        branchIds: finalBranchIds,
         sortOrder: initialServices.length
       });
     }
@@ -219,10 +236,26 @@ export default function ServicesClient({
                       <Sparkles className="w-5 h-5" />
                     </div>
                     <div>
-                      <span className="font-bold text-slate-900 dark:text-white block">{service.name}</span>
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {service.durationMinutes} min
+                      <span className="font-bold text-slate-900 dark:text-white block tracking-tight">{service.name}</span>
+                      <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                        <Clock className="w-3 h-3 text-slate-400" /> {service.durationMinutes} min
                       </span>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        {service.allowsHomeService && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[8px] font-black rounded-md uppercase tracking-wider border border-purple-500/20">
+                            <Sparkles className="w-2.5 h-2.5" /> {t('form.badgeHomeService')}
+                          </span>
+                        )}
+                        {(service.branches || []).length === 0 ? (
+                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[8px] font-black rounded-md uppercase tracking-widest border border-blue-500/10">
+                              {t('form.badgeGlobal')}
+                           </span>
+                        ) : (
+                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded-md uppercase tracking-widest border border-amber-500/10">
+                              {t('form.badgeExclusive')}
+                           </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -322,6 +355,73 @@ export default function ServicesClient({
                       className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
                     />
                   </div>
+                </div>
+
+                <div className="flex items-center justify-between p-5 bg-purple-500/5 rounded-3xl border border-purple-500/10">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{t('form.allowsHomeServiceLabel')}</p>
+                    <p className="text-[10px] text-slate-500 font-medium tracking-tight italic">{t('form.allowsHomeServiceHint')}</p>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, allowsHomeService: !formData.allowsHomeService})}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${formData.allowsHomeService ? 'bg-purple-600' : 'bg-slate-300 dark:bg-white/10'}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.allowsHomeService ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+
+                <div className="space-y-4 p-5 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-200 dark:border-white/10">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{t('form.availabilityTypeLabel')}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setAvailabilityType("all")}
+                      className={`p-3 rounded-xl text-xs font-bold transition-all border ${availabilityType === "all" ? 'bg-purple-600 text-white border-purple-500 shadow-lg shadow-purple-500/20' : 'bg-white dark:bg-zinc-800 text-slate-500 border-slate-200 dark:border-white/5'}`}
+                    >
+                      {t('form.allBranchesOption')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAvailabilityType("specific")}
+                      className={`p-3 rounded-xl text-xs font-bold transition-all border ${availabilityType === "specific" ? 'bg-purple-600 text-white border-purple-500 shadow-lg shadow-purple-500/20' : 'bg-white dark:bg-zinc-800 text-slate-500 border-slate-200 dark:border-white/5'}`}
+                    >
+                      {t('form.specificBranchesOption')}
+                    </button>
+                  </div>
+
+                  {availabilityType === "specific" && (
+                    <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 ml-1">{t('form.exclusiveBranchesLabel')}</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {branches.map(branch => {
+                          const isSelected = formData.branchIds.includes(branch.id);
+                          return (
+                            <button
+                              key={branch.id}
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  branchIds: isSelected 
+                                    ? prev.branchIds.filter(id => id !== branch.id)
+                                    : [...prev.branchIds, branch.id]
+                                }));
+                              }}
+                              className={`flex items-center gap-3 p-3 rounded-xl transition-all border ${isSelected ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'bg-white dark:bg-zinc-800 border-slate-200 dark:border-white/5 text-slate-500'}`}
+                            >
+                              <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'bg-transparent border-slate-300 dark:border-white/20'}`}>
+                                {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
+                              </div>
+                              <span className="text-xs font-bold truncate">{branch.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -1,12 +1,14 @@
 "use server";
 
 import { db } from "@/db";
-import { bookings, services, staff, blocks, branches, tenants, staffAssignments } from "@/db/schema";
+import { bookings, services, staff, blocks, branches, tenants, staffAssignments, bookingSessions } from "@/db/schema";
 import { eq, and, gte, lte, or, isNull, desc, not } from "drizzle-orm";
 import { addMinutes, format, parseISO, startOfDay, endOfDay, isBefore, isAfter, max, min } from "date-fns";
 import { resend } from "@/lib/resend";
 import { BookingConfirmationEmail } from "@/components/emails/BookingConfirmationEmail";
 import { es } from "date-fns/locale";
+import { getPlanFeatures } from "@/core/plans";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Obtiene el desplazamiento en minutos de una zona horaria IANA.
@@ -46,7 +48,8 @@ export async function getAvailableSlots(
   serviceId: string,
   branchId: string,
   staffId?: string | null,
-  durationOverride?: number
+  durationOverride?: number,
+  isHomeService: boolean = false
 ): Promise<{ slots: any[], errorType: 'BRANCH_CLOSED' | 'STAFF_UNAVAILABLE' | null }> {
   try {
     let duration = durationOverride;
@@ -158,16 +161,28 @@ export async function getAvailableSlots(
         }
       }
     });
+    if (activeStaffIds.length === 0) return { slots: [], errorType: 'BRANCH_CLOSED' };
 
-    // Si se pidió un staff específico, verificar si quedó en la lista de activos resolviendo prioridad
-    if (staffId && !activeStaffIds.includes(staffId)) {
+    // 5. Filtrar por disponibilidad domiciliaria si es necesario
+    let finalActiveStaffIds = activeStaffIds;
+    if (isHomeService) {
+      const staffDetails = await db.query.staff.findMany({
+        where: or(...activeStaffIds.map(id => eq(staff.id, id)))
+      });
+      finalActiveStaffIds = staffDetails
+        .filter(s => s.allowsHomeService !== false)
+        .map(s => s.id);
+    }
+
+    if (finalActiveStaffIds.length === 0) return { slots: [], errorType: 'BRANCH_CLOSED' };
+
+    // Si se pidió un staff específico, verificar si quedó en la lista de activos resolviendo prioridad y domicilio
+    if (staffId && !finalActiveStaffIds.includes(staffId)) {
         return { slots: [], errorType: 'STAFF_UNAVAILABLE' };
     }
 
-    const effectiveStaffIds = staffId ? [staffId] : activeStaffIds;
+    const effectiveStaffIds = staffId ? [staffId] : finalActiveStaffIds;
     const totalStaffCount = effectiveStaffIds.length;
-
-    if (totalStaffCount === 0) return { slots: [], errorType: 'BRANCH_CLOSED' };
 
     // Consultar citas existentes
     const existingBookings = await db.select().from(bookings).where(
@@ -350,6 +365,138 @@ export async function createBookingAction(data: {
   } catch (error) {
     console.error("Error creating booking:", error);
     return { success: false, error: "Failed to create booking" };
+  }
+}
+
+/**
+ * Crea una sesión de reserva con múltiples citas.
+ */
+export async function createBookingSessionAction(data: {
+  tenantId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  zoneId?: string;
+  bookings: {
+    branchId: string;
+    serviceId: string;
+    staffId: string;
+    startTime: Date;
+    endTime: Date;
+    price: string;
+  }[];
+}) {
+  try {
+    // 1. Validar Plan del Tenant
+    const tenant = await db.query.tenants.findFirst({ where: eq(tenants.id, data.tenantId) });
+    if (!tenant) return { success: false, error: "Tenant not found" };
+
+    const features = getPlanFeatures(tenant.plan);
+
+    // Si intenta agendar más de 1 servicio pero su plan no lo permite
+    if (data.bookings.length > 1 && !features.multiServiceBooking) {
+      return { success: false, error: "MULTI_SERVICE_NOT_ALLOWED" };
+    }
+
+    // 2. Calcular Tarifa de Traslado (Servidor)
+    let transferTotal = 0;
+    if (data.zoneId) {
+      const zone = await db.query.coverageZones.findFirst({ where: (gz, { eq }) => eq(gz.id, data.zoneId!) });
+      if (zone) {
+        const zoneFee = parseFloat(zone.fee);
+        let blocksCount = 1;
+        
+        // Ordenar citas por tiempo
+        const sorted = [...data.bookings].sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+        
+        for (let i = 1; i < sorted.length; i++) {
+          const prev = sorted[i-1];
+          const curr = sorted[i];
+          
+          const isDifferentDay = format(prev.startTime, 'yyyy-MM-dd') !== format(curr.startTime, 'yyyy-MM-dd');
+          const isDifferentStaff = prev.staffId !== curr.staffId;
+          const hasGap = curr.startTime.getTime() > prev.endTime.getTime();
+          
+          if (isDifferentDay || isDifferentStaff || hasGap) {
+            blocksCount++;
+          }
+        }
+        transferTotal = blocksCount * zoneFee;
+      }
+    }
+
+    const servicesTotal = data.bookings.reduce((sum, b) => sum + parseFloat(b.price), 0);
+    const finalTotalPrice = (servicesTotal + transferTotal).toFixed(2);
+
+    // 3. Transacción de Base de Datos
+    const result = await db.transaction(async (tx) => {
+      // 3a. Crear la sesión
+      const [session] = await tx.insert(bookingSessions).values({
+        tenantId: data.tenantId,
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        customerPhone: data.customerPhone,
+        zoneId: data.zoneId,
+        totalPrice: finalTotalPrice,
+        status: 'CONFIRMED'
+      }).returning();
+
+      // 2b. Crear cada booking individual
+      const newBookings = [];
+      for (const bData of data.bookings) {
+        const [nb] = await tx.insert(bookings).values({
+          tenantId: data.tenantId,
+          branchId: bData.branchId,
+          serviceId: bData.serviceId,
+          staffId: bData.staffId,
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          customerPhone: data.customerPhone,
+          startTime: bData.startTime,
+          endTime: bData.endTime,
+          sessionId: session.id,
+          status: 'CONFIRMED'
+        }).returning();
+        newBookings.push(nb);
+      }
+
+      return { session, bookings: newBookings };
+    });
+
+    // 3. Enviar Correo de Confirmación Resumido
+    try {
+      // Por ahora enviamos el primer servicio para no romper el template existente, 
+      // idealmente se debería crear un template Multi-Booking
+      const firstBooking = data.bookings[0];
+      const service = await db.query.services.findFirst({ where: eq(services.id, firstBooking.serviceId) });
+      const branch = await db.query.branches.findFirst({ where: eq(branches.id, firstBooking.branchId) });
+      const staffMember = await db.query.staff.findFirst({ where: eq(staff.id, firstBooking.staffId) });
+
+      if (tenant && service && branch) {
+        await resend.emails.send({
+          from: 'ZincSlot <noreply@resend.dev>',
+          to: data.customerEmail,
+          subject: `${data.bookings.length > 1 ? 'Sesión de Reservas Confirmada' : 'Cita Confirmada'} - ${tenant.name}`,
+          react: BookingConfirmationEmail({
+            customerName: data.customerName,
+            serviceName: service.name + (data.bookings.length > 1 ? ` (+${data.bookings.length - 1} más)` : ''),
+            date: format(firstBooking.startTime, "EEEE, d 'de' MMMM", { locale: es }),
+            time: format(firstBooking.startTime, "hh:mm a"),
+            branchName: branch.name,
+            staffName: staffMember?.name,
+            tenantName: tenant.name,
+            tenantLogo: tenant.logoUrl || undefined
+          }),
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send session confirmation email:", emailError);
+    }
+
+    return { success: true, session: result.session, bookings: result.bookings };
+  } catch (error) {
+    console.error("Error creating booking session:", error);
+    return { success: false, error: "Failed to create booking session" };
   }
 }
 

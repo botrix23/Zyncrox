@@ -25,6 +25,7 @@ export const tenants = pgTable('tenants', {
   homeServiceTerms: text('home_service_terms'),
   homeServiceTermsEnabled: boolean('home_service_terms_enabled').default(false).notNull(),
   allowsHomeService: boolean('allows_home_service').default(true).notNull(),
+  homeServiceLeadDays: integer('home_service_lead_days').notNull().default(7),
   slug: varchar('slug', { length: 255 }).notNull().unique(),
   coverUrl: text('cover_url'),
   primaryColor: varchar('primary_color', { length: 20 }).default('#9333ea').notNull(),
@@ -61,6 +62,7 @@ export const staff = pgTable('staff', {
   branchId: uuid('branch_id').notNull().references(() => branches.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }),
+  allowsHomeService: boolean('allows_home_service').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
@@ -76,6 +78,7 @@ export const services = pgTable('services', {
   includes: json('includes').$type<string[]>().default([]).notNull(),
   excludes: json('excludes').$type<string[]>().default([]).notNull(),
   sortOrder: integer('sort_order').notNull().default(0), // Para ordenamiento personalizado
+  allowsHomeService: boolean('allows_home_service').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
@@ -104,7 +107,41 @@ export const bookings = pgTable('bookings', {
   startTime: timestamp('start_time', { withTimezone: true, mode: 'date' }).notNull(),
   endTime: timestamp('end_time', { withTimezone: true, mode: 'date' }).notNull(),
   status: varchar('status', { length: 50 }).notNull().default('CONFIRMED'), 
+  sessionId: uuid('session_id').references(() => bookingSessions.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// 7. BookingSessions (Agrupador de múltiples citas de un cliente)
+export const bookingSessions = pgTable('booking_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  customerName: varchar('customer_name', { length: 255 }).notNull(),
+  customerEmail: varchar('customer_email', { length: 255 }).notNull(),
+  customerPhone: varchar('customer_phone', { length: 30 }),
+  totalPrice: decimal('total_price', { precision: 10, scale: 2 }).notNull().default('0.00'),
+  status: varchar('status', { length: 50 }).notNull().default('PENDING'), 
+  zoneId: uuid('zone_id').references(() => coverageZones.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// 8. CoverageZones (Zonas de cobertura para servicio a domicilio)
+export const coverageZones = pgTable('coverage_zones', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  fee: decimal('fee', { precision: 10, scale: 2 }).notNull().default('0.00'),
+  description: varchar('description', { length: 500 }),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// 9. ServiceBranches (Relación muchos-a-muchos entre servicios y sucursales)
+export const serviceBranches = pgTable('service_branches', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  serviceId: uuid('service_id').notNull().references(() => services.id, { onDelete: 'cascade' }),
+  branchId: uuid('branch_id').notNull().references(() => branches.id, { onDelete: 'cascade' }),
 });
 
 // 7. StaffAssignments (Asignaciones de staff a sucursales y rotaciones)
@@ -142,17 +179,6 @@ export const blocks = pgTable('blocks', {
   reason: varchar('reason', { length: 255 }),
   startTime: timestamp('start_time', { withTimezone: true, mode: 'date' }).notNull(),
   endTime: timestamp('end_time', { withTimezone: true, mode: 'date' }).notNull(),
-});
-
-// 8. CoverageZones (Zonas de cobertura)
-export const coverageZones = pgTable('coverage_zones', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
-  branchId: uuid('branch_id').notNull().references(() => branches.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 255 }).notNull(),
-  zipCode: varchar('zip_code', { length: 20 }),
-  radiusKm: decimal('radius_km', { precision: 5, scale: 2 }),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
 // 9. Users (Usuarios con Roles: ADMIN, SUPER_ADMIN)
@@ -206,6 +232,13 @@ export const staffRelations = relations(staff, ({ one, many }) => ({
 export const servicesRelations = relations(services, ({ one, many }) => ({
   tenant: one(tenants, { fields: [services.tenantId], references: [tenants.id] }),
   bookings: many(bookings),
+  branches: many(serviceBranches),
+}));
+
+export const serviceBranchesRelations = relations(serviceBranches, ({ one }) => ({
+  tenant: one(tenants, { fields: [serviceBranches.tenantId], references: [tenants.id] }),
+  service: one(services, { fields: [serviceBranches.serviceId], references: [services.id] }),
+  branch: one(branches, { fields: [serviceBranches.branchId], references: [branches.id] }),
 }));
 
 export const bookingsRelations = relations(bookings, ({ one }) => ({
@@ -213,4 +246,16 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
   branch: one(branches, { fields: [bookings.branchId], references: [branches.id] }),
   staff: one(staff, { fields: [bookings.staffId], references: [staff.id] }),
   service: one(services, { fields: [bookings.serviceId], references: [services.id] }),
+  session: one(bookingSessions, { fields: [bookings.sessionId], references: [bookingSessions.id] }),
+}));
+
+export const bookingSessionsRelations = relations(bookingSessions, ({ one, many }) => ({
+  tenant: one(tenants, { fields: [bookingSessions.tenantId], references: [tenants.id] }),
+  bookings: many(bookings),
+  zone: one(coverageZones, { fields: [bookingSessions.zoneId], references: [coverageZones.id] }),
+}));
+
+export const coverageZonesRelations = relations(coverageZones, ({ one, many }) => ({
+  tenant: one(tenants, { fields: [coverageZones.tenantId], references: [tenants.id] }),
+  sessions: many(bookingSessions),
 }));

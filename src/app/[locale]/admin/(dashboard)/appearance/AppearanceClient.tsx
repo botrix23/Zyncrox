@@ -5,6 +5,12 @@ import {
   Palette, CheckCircle2, AlertCircle, Upload, Save, Eye, MonitorSmartphone, Monitor, Moon, Sun, MonitorCheck, LayoutTemplate, Link as LinkIcon, ExternalLink, Instagram, Facebook, Music, Building2, ImageIcon, Truck, Info, Phone, Settings, Share2, Copy
 } from "lucide-react";
 import { updatePortalSettingsAction } from "@/app/actions/tenant";
+import { 
+  getCoverageZonesAction, 
+  createCoverageZoneAction, 
+  updateCoverageZoneAction, 
+  deleteCoverageZoneAction 
+} from "@/app/actions/zones";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -29,7 +35,9 @@ export default function AppearanceClient({
     homeServiceTermsEnabled?: boolean;
     waMessageTemplate?: string | null;
     allowsHomeService?: boolean;
-  }
+    homeServiceLeadDays: number;
+  },
+  initialZones: any[];
 }) {
   const t = useTranslations('Dashboard');
   const tPortal = useTranslations('Dashboard.portal');
@@ -58,6 +66,12 @@ export default function AppearanceClient({
   const [homeServiceTermsEnabled, setHomeServiceTermsEnabled] = useState(tenant.homeServiceTermsEnabled || false);
   const [homeServiceTerms, setHomeServiceTerms] = useState(tenant.homeServiceTerms || "");
   const [waMessageTemplate, setWaMessageTemplate] = useState(tenant.waMessageTemplate || "");
+  const [homeServiceLeadDays, setHomeServiceLeadDays] = useState(tenant.homeServiceLeadDays || 7);
+  
+  // Zonas de Cobertura
+  const [zones, setZones] = useState<any[]>(initialZones || []);
+  const [isAddingZone, setIsAddingZone] = useState(false);
+  const [newZone, setNewZone] = useState({ name: '', fee: '0', description: '' });
 
   const PRESET_COLORS = [
     { name: 'Púrpura', value: '#9333ea' },
@@ -94,7 +108,8 @@ export default function AppearanceClient({
       allowsHomeService,
       homeServiceTermsEnabled,
       homeServiceTerms,
-      waMessageTemplate
+      waMessageTemplate,
+      homeServiceLeadDays
     });
 
     if (result.success) {
@@ -143,6 +158,29 @@ export default function AppearanceClient({
       setMessage({ type: 'success', text: "Logo cargado. Recuerda Guardar." });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleAddZone = async () => {
+    if (!newZone.name) return;
+    const res = await createCoverageZoneAction({
+      tenantId: tenant.id,
+      ...newZone,
+    });
+    if (res.success) {
+      setZones([...zones, (res as any).zone]);
+      setNewZone({ name: '', fee: '0', description: '' });
+      setIsAddingZone(false);
+      setMessage({ type: 'success', text: "Zona añadida" });
+    }
+  };
+
+  const handleDeleteZone = async (id: string) => {
+    if (!confirm("¿Eliminar esta zona?")) return;
+    const res = await deleteCoverageZoneAction(id);
+    if (res.success) {
+      setZones(zones.filter(z => z.id !== id));
+      setMessage({ type: 'success', text: "Zona eliminada" });
+    }
   };
 
   return (
@@ -507,6 +545,93 @@ export default function AppearanceClient({
                         <span className="text-white font-black text-2xl">{name.charAt(0) || 'Z'}</span>
                       </div>
                     )}
+
+                    {/* Logística Pro: Anticipación y Zonas */}
+                    <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-white/5">
+                      <div className="space-y-2">
+                         <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Anticipación requerida (Días)</label>
+                         <div className="flex items-center gap-4">
+                            <input 
+                              type="number" 
+                              min="0"
+                              max="90"
+                              value={homeServiceLeadDays}
+                              onChange={e => setHomeServiceLeadDays(parseInt(e.target.value))}
+                              className="w-24 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-black text-center"
+                            />
+                            <p className="text-xs text-slate-500 italic flex-1">Tiempo mínimo requerido para organizar la logística del traslado.</p>
+                         </div>
+                      </div>
+
+                      <div className="space-y-4">
+                         <div className="flex items-center justify-between">
+                            <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Zonas de Cobertura y Tarifas</label>
+                            <button 
+                              type="button"
+                              onClick={() => setIsAddingZone(true)}
+                              className="px-4 py-2 bg-purple-500/10 text-purple-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-500/20 transition-all active:scale-95"
+                            >
+                              + Añadir Zona
+                            </button>
+                         </div>
+
+                         {isAddingZone && (
+                           <div className="p-5 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 border border-purple-500/20 rounded-3xl space-y-4 animate-in zoom-in-95 duration-200">
+                              <div className="grid grid-cols-2 gap-4">
+                                 <div className="col-span-2 sm:col-span-1">
+                                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Nombre Zona</label>
+                                   <input 
+                                     placeholder="Ej. Santa Tecla" 
+                                     value={newZone.name}
+                                     onChange={e => setNewZone({...newZone, name: e.target.value})}
+                                     className="w-full p-3 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-bold" 
+                                   />
+                                 </div>
+                                 <div className="col-span-2 sm:col-span-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Tarifa Extra</label>
+                                    <div className="relative">
+                                      <span className="absolute left-3 top-3.5 text-slate-400 text-sm font-bold">$</span>
+                                      <input 
+                                        type="number"
+                                        placeholder="0.00" 
+                                        value={newZone.fee}
+                                        onChange={e => setNewZone({...newZone, fee: e.target.value})}
+                                        className="w-full p-3 pl-8 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black" 
+                                      />
+                                    </div>
+                                 </div>
+                              </div>
+                              <div className="flex justify-end gap-3 pt-2">
+                                 <button type="button" onClick={() => setIsAddingZone(false)} className="text-xs font-bold text-slate-500">CANCELAR</button>
+                                 <button type="button" onClick={handleAddZone} className="px-6 py-2.5 bg-purple-600 text-white rounded-xl text-xs font-black shadow-lg shadow-purple-500/20 transition-all">CREAR</button>
+                              </div>
+                           </div>
+                         )}
+
+                         <div className="flex flex-col gap-2">
+                            {zones.map(zone => (
+                              <div key={zone.id} className="flex items-center justify-between p-4 bg-white dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 group hover:border-purple-500/50 transition-all">
+                                 <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                      <Truck className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                       <p className="text-sm font-black text-slate-900 dark:text-white">{zone.name}</p>
+                                       <p className="text-[10px] text-emerald-600 font-bold tracking-tight">+${zone.fee} Tarifa traslado</p>
+                                    </div>
+                                 </div>
+                                 <button 
+                                   type="button"
+                                   onClick={() => handleDeleteZone(zone.id)}
+                                   className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                                 >
+                                    <Save className="w-4 h-4 rotate-45" />
+                                 </button>
+                              </div>
+                            ))}
+                         </div>
+                      </div>
+                    </div>
                     <h2 className="text-xl font-black tracking-tight text-white drop-shadow-md px-1 leading-tight">{name || 'Mi Negocio'}</h2>
                   </div>
                </div>

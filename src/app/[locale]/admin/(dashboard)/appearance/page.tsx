@@ -20,6 +20,11 @@ export default async function AppearancePage({ params }: { params: { locale: str
     redirect(`/${params.locale}/admin/login`);
   }
 
+  // Obtener zonas de cobertura
+  const coverageZones = await db.query.coverageZones.findMany({
+    where: (zones, { eq }) => eq(zones.tenantId, tenantData.id),
+  });
+
   return (
     <AppearanceClient 
       tenant={{
@@ -37,8 +42,10 @@ export default async function AppearancePage({ params }: { params: { locale: str
         homeServiceTerms: tenantData.homeServiceTerms,
         homeServiceTermsEnabled: tenantData.homeServiceTermsEnabled,
         waMessageTemplate: tenantData.waMessageTemplate,
-        allowsHomeService: tenantData.allowsHomeService
+        allowsHomeService: tenantData.allowsHomeService,
+        homeServiceLeadDays: tenantData.homeServiceLeadDays
       }} 
+      initialZones={coverageZones}
     />
   );
 }

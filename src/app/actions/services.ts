@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { services } from "@/db/schema";
+import { services, serviceBranches } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -14,18 +14,34 @@ export async function createServiceAction(data: {
   includes?: string[];
   excludes?: string[];
   sortOrder?: number;
+  allowsHomeService?: boolean;
+  branchIds?: string[];
 }) {
   try {
-    const [newService] = await db.insert(services).values({
-      tenantId: data.tenantId,
-      name: data.name,
-      durationMinutes: data.durationMinutes,
-      price: data.price,
-      description: data.description,
-      includes: data.includes || [],
-      excludes: data.excludes || [],
-      sortOrder: data.sortOrder || 0,
-    }).returning();
+    const newService = await db.transaction(async (tx) => {
+      const [inserted] = await tx.insert(services).values({
+        tenantId: data.tenantId,
+        name: data.name,
+        durationMinutes: data.durationMinutes,
+        price: data.price,
+        description: data.description,
+        includes: data.includes || [],
+        excludes: data.excludes || [],
+        sortOrder: data.sortOrder || 0,
+        allowsHomeService: data.allowsHomeService ?? true,
+      }).returning();
+
+      if (data.branchIds && data.branchIds.length > 0) {
+        await tx.insert(serviceBranches).values(
+          data.branchIds.map(branchId => ({
+            tenantId: data.tenantId,
+            serviceId: inserted.id,
+            branchId,
+          }))
+        );
+      }
+      return inserted;
+    });
 
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/[slug]", "page");
@@ -46,20 +62,40 @@ export async function updateServiceAction(data: {
   includes?: string[];
   excludes?: string[];
   sortOrder?: number;
+  allowsHomeService?: boolean;
+  branchIds?: string[];
 }) {
   try {
-    await db.update(services)
-      .set({
-        name: data.name,
-        durationMinutes: data.durationMinutes,
-        price: data.price,
-        description: data.description,
-        includes: data.includes,
-        excludes: data.excludes,
-        sortOrder: data.sortOrder,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(services.id, data.id), eq(services.tenantId, data.tenantId)));
+    await db.transaction(async (tx) => {
+      await tx.update(services)
+        .set({
+          name: data.name,
+          durationMinutes: data.durationMinutes,
+          price: data.price,
+          description: data.description,
+          includes: data.includes,
+          excludes: data.excludes,
+          sortOrder: data.sortOrder,
+          allowsHomeService: data.allowsHomeService,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(services.id, data.id), eq(services.tenantId, data.tenantId)));
+
+      if (data.branchIds !== undefined) {
+        // Sync branches: remove old and insert new
+        await tx.delete(serviceBranches).where(eq(serviceBranches.serviceId, data.id));
+        
+        if (data.branchIds.length > 0) {
+          await tx.insert(serviceBranches).values(
+            data.branchIds.map(branchId => ({
+              tenantId: data.tenantId,
+              serviceId: data.id,
+              branchId,
+            }))
+          );
+        }
+      }
+    });
 
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/[slug]", "page");

@@ -15,6 +15,7 @@ export async function updateTenantSettingsAction(data: {
   homeServiceTerms?: string;
   homeServiceTermsEnabled?: boolean;
   waMessageTemplate?: string | null;
+  homeServiceLeadDays?: number;
 }) {
   try {
     const session = await getSession();
@@ -26,6 +27,7 @@ export async function updateTenantSettingsAction(data: {
         homeServiceTerms: data.homeServiceTerms,
         homeServiceTermsEnabled: data.homeServiceTermsEnabled,
         waMessageTemplate: data.waMessageTemplate,
+        homeServiceLeadDays: data.homeServiceLeadDays,
         updatedAt: new Date()
       })
       .where(eq(tenants.id, data.tenantId));
@@ -60,6 +62,7 @@ export async function updatePortalSettingsAction(data: {
   homeServiceTermsEnabled: boolean;
   waMessageTemplate?: string | null;
   allowsHomeService: boolean;
+  homeServiceLeadDays: number;
 }) {
   try {
     const session = await getSession();
@@ -78,6 +81,7 @@ export async function updatePortalSettingsAction(data: {
         homeServiceTermsEnabled: data.homeServiceTermsEnabled,
         waMessageTemplate: data.waMessageTemplate || null,
         allowsHomeService: data.allowsHomeService,
+        homeServiceLeadDays: data.homeServiceLeadDays,
         updatedAt: new Date()
       })
       .where(eq(tenants.id, data.tenantId));

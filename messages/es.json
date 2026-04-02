@@ -171,7 +171,16 @@
         "newExcludePlaceholder": "Nueva exclusión...",
         "save": "Guardar cambios",
         "create": "Crear servicio",
-        "edit": "Editar servicio"
+        "edit": "Editar servicio",
+        "allowsHomeServiceLabel": "¿Disponible a domicilio?",
+        "allowsHomeServiceHint": "Permite que el cliente agende este servicio fuera de la sucursal.",
+        "availabilityTypeLabel": "Disponibilidad en Sucursales",
+        "allBranchesOption": "Disponible en todas las sucursales",
+        "specificBranchesOption": "Solo en sucursales seleccionadas",
+        "exclusiveBranchesLabel": "Seleccionar Sucursales",
+        "badgeHomeService": "DOMICILIO OK",
+        "badgeGlobal": "GLOBAL",
+        "badgeExclusive": "EXCLUSIVO"
       },
       "confirmDelete": "¿Estás seguro de eliminar este servicio?",
       "errorSave": "Error al guardar el servicio",
@@ -251,7 +260,9 @@
         "branchSelect": "Sucursal",
         "from": "Fecha de inicio (opcional)",
         "to": "Fecha de fin (opcional)",
-        "daysOfWeek": "Días de la semana"
+        "daysOfWeek": "Días de la semana",
+        "allowsHomeServiceLabel": "¿Puede realizar servicios a domicilio?",
+        "allowsHomeServiceHint": "Si se activa, este especialista aparecerá como opción para citas fuera de sucursal."
       },
       "confirmDelete": "¿Estás seguro de eliminar a \"{name}\"?",
       "errorSave": "Error al guardar el miembro del equipo",

@@ -171,7 +171,16 @@
         "newExcludePlaceholder": "New exclusion...",
         "save": "Save changes",
         "create": "Create service",
-        "edit": "Edit service"
+        "edit": "Edit service",
+        "allowsHomeServiceLabel": "Available for home service?",
+        "allowsHomeServiceHint": "Allows the customer to schedule this service outside the branch.",
+        "availabilityTypeLabel": "Branch Availability",
+        "allBranchesOption": "Available in all branches",
+        "specificBranchesOption": "Only in selected branches",
+        "exclusiveBranchesLabel": "Select Branches",
+        "badgeHomeService": "HOME SERVICE OK",
+        "badgeGlobal": "GLOBAL",
+        "badgeExclusive": "EXCLUSIVE"
       },
       "confirmDelete": "Are you sure you want to delete this service?",
       "errorSave": "Error saving service",
@@ -251,7 +260,9 @@
         "branchSelect": "Branch",
         "from": "Start date (optional)",
         "to": "End date (optional)",
-        "daysOfWeek": "Days of the week"
+        "daysOfWeek": "Days of the week",
+        "allowsHomeServiceLabel": "Can perform home services?",
+        "allowsHomeServiceHint": "If activated, this specialist will appear as an option for appointments outside the branch."
       },
       "confirmDelete": "Are you sure you want to delete \"{name}\"?",
       "errorSave": "Error saving team member",
