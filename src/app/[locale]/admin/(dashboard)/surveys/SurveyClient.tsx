@@ -360,7 +360,7 @@ export default function SurveyClient({
                  <div className="flex items-center gap-2 mt-1">
                     <h4 className="text-4xl font-black text-slate-900 dark:text-white">
                       {initialReviews.length > 0 
-                        ? (initialReviews.reduce((acc: number, r: any) => acc + (r.rating || 0), 0) / initialReviews.length).toFixed(1)
+                        ? (initialReviews.reduce((acc: number, r: any) => acc + Number(r.rating || 0), 0) / initialReviews.length).toFixed(1)
                         : '--'}
                     </h4>
                     <Star className="w-6 h-6 text-yellow-400 fill-current" />
@@ -398,7 +398,7 @@ export default function SurveyClient({
                         <tr key={r.id} className="group hover:bg-slate-50 dark:hover:bg-white/5 transition-all">
                           <td className="py-5 px-2">
                              <div className="flex flex-col items-center">
-                               <span className="text-lg font-black text-slate-900 dark:text-white leading-none">{r.rating}</span>
+                               <span className="text-lg font-black text-slate-900 dark:text-white leading-none">{Number(r.rating).toFixed(1)}</span>
                                <Star className="w-3 h-3 text-yellow-400 fill-current" />
                              </div>
                           </td>

@@ -214,7 +214,7 @@ export const reviews = pgTable('reviews', {
   tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   bookingId: uuid('booking_id').notNull().references(() => bookings.id, { onDelete: 'cascade' }),
   staffId: uuid('staff_id').notNull().references(() => staff.id, { onDelete: 'cascade' }),
-  rating: integer('rating').notNull(), // 1 to 5
+  rating: decimal('rating', { precision: 3, scale: 2 }).notNull(), // Permite promedios (ej 4.5)
   comment: text('comment'),
   responses: json('responses').$type<Array<{ questionId: string; answer: any; questionText?: string; questionType?: string }>>().default([]).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),

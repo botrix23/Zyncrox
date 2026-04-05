@@ -167,9 +167,9 @@
         "priceLabel": "Precio ($)",
         "descriptionLabel": "Descripción (opcional)",
         "descriptionPlaceholder": "Describe qué incluye el servicio...",
-        "includesLabel": "Inclusiones",
+        "includesLabel": "Incluye",
         "newIncludePlaceholder": "Nueva inclusión...",
-        "excludesLabel": "Exclusiones",
+        "excludesLabel": "No incluye",
         "newExcludePlaceholder": "Nueva exclusión...",
         "save": "Guardar cambios",
         "create": "Crear servicio",
@@ -236,7 +236,9 @@
       },
       "confirmCancel": "¿Estás seguro de cancelar esta cita?",
       "errorSave": "Error al guardar la cita",
-      "errorDelete": "Error al eliminar la cita"
+      "errorDelete": "Error al eliminar la cita",
+      "copySurveyLink": "Copiar enlace de encuesta",
+      "surveyLinkCopied": "¡Enlace copiado!"
     },
     "staff": {
       "title": "Staff / equipo",

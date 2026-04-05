@@ -40,7 +40,7 @@ export default async function AdminLayout({
         <AdminHeader user={session} />
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50 dark:bg-black/40">
+        <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar bg-slate-50 dark:bg-black/40">
           {children}
         </div>
       </main>

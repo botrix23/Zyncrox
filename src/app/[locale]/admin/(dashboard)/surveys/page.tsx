@@ -47,13 +47,13 @@ export default async function SurveysPage({ params: { locale } }: { params: { lo
   const canUseAdvanced = planFeatures.advancedSurveys;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
+    <div className="space-y-6 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
             {t('title')}
           </h1>
-          <p className="text-slate-500 dark:text-zinc-400 font-medium">
+          <p className="text-slate-500 dark:text-zinc-400 mt-1">
             {t('subtitle')}
           </p>
         </div>

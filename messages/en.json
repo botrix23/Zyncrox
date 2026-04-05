@@ -167,9 +167,9 @@
         "priceLabel": "Price ($)",
         "descriptionLabel": "Description (optional)",
         "descriptionPlaceholder": "Describe what the service includes...",
-        "includesLabel": "Inclusions",
+        "includesLabel": "Includes",
         "newIncludePlaceholder": "New inclusion...",
-        "excludesLabel": "Exclusions",
+        "excludesLabel": "Does not include",
         "newExcludePlaceholder": "New exclusion...",
         "save": "Save changes",
         "create": "Create service",
@@ -236,7 +236,9 @@
       },
       "confirmCancel": "Are you sure you want to cancel this appointment?",
       "errorSave": "Error saving appointment",
-      "errorDelete": "Error deleting appointment"
+      "errorDelete": "Error deleting appointment",
+      "copySurveyLink": "Copy survey link",
+      "surveyLinkCopied": "Link copied!"
     },
     "staff": {
       "title": "Staff / team",

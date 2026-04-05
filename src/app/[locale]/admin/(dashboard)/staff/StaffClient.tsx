@@ -245,7 +245,7 @@ export default function StaffClient({
 
   return (
     <>
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -277,7 +277,7 @@ export default function StaffClient({
 
           // Calcular promedio de rating
           const avgRating = member.reviews?.length > 0 
-            ? (member.reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / member.reviews.length).toFixed(1)
+            ? (member.reviews.reduce((acc: number, r: any) => acc + Number(r.rating), 0) / member.reviews.length).toFixed(1)
             : null;
 
           return (
@@ -638,7 +638,7 @@ export default function StaffClient({
                        <div className="flex items-center justify-between">
                           <div className="flex gap-0.5">
                             {[1, 2, 3, 4, 5].map(star => (
-                              <Star key={star} className={`w-3 h-3 ${star <= r.rating ? 'text-yellow-400 fill-current' : 'text-slate-200 dark:text-zinc-800'}`} />
+                              <Star key={star} className={`w-3 h-3 ${star <= Math.round(Number(r.rating)) ? 'text-yellow-400 fill-current' : 'text-slate-200 dark:text-zinc-800'}`} />
                             ))}
                           </div>
                           <span className="text-[9px] font-bold text-slate-400">{new Date(r.createdAt).toLocaleDateString()}</span>

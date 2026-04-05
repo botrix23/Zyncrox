@@ -19,7 +19,9 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutList,
-  MapPin
+  MapPin,
+  Copy,
+  Check
 } from 'lucide-react';
 import { updateBookingAction, deleteBookingAction, createBookingAction } from "@/app/actions/booking";
 import { useRouter } from "next/navigation";
@@ -66,9 +68,10 @@ export default function BookingsClient({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("calendar");
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [calendarView, setCalendarView] = useState<'day' | 'week'>('day');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const router = useRouter();
 
   // Hora más temprana de apertura entre todas las sucursales
@@ -225,7 +228,8 @@ export default function BookingsClient({
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -362,6 +366,24 @@ export default function BookingsClient({
                       </div>
 
                       <div className="flex items-center gap-2">
+                          {booking.status === 'FINALIZADA' && (
+                            <button 
+                              onClick={() => {
+                                const url = `${window.location.origin}/${localeStr}/review/${booking.id}`;
+                                navigator.clipboard.writeText(url);
+                                setCopiedId(booking.id);
+                                setTimeout(() => setCopiedId(null), 2000);
+                              }}
+                              title={t('copySurveyLink')}
+                              className={`p-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center ${
+                                copiedId === booking.id 
+                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                                : 'bg-slate-50 dark:bg-white/5 text-slate-400 hover:bg-purple-500 hover:text-white'
+                              }`}
+                            >
+                                {copiedId === booking.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            </button>
+                          )}
                           <button 
                             onClick={() => handleOpenEdit(booking)}
                             className="p-3 bg-slate-50 dark:bg-white/5 hover:bg-purple-500 hover:text-white rounded-2xl text-slate-400 transition-all active:scale-95"
@@ -380,7 +402,7 @@ export default function BookingsClient({
           ))}
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden flex flex-col min-h-[600px] shadow-sm animate-in fade-in zoom-in-95 duration-500">
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden flex flex-col min-h-[700px] shadow-sm animate-in fade-in zoom-in-95 duration-500">
           {/* Calendar Header */}
           <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 flex items-center justify-between gap-4">
             {/* Fecha — fija a la izquierda */}
@@ -580,8 +602,8 @@ export default function BookingsClient({
                             const end = new Date(booking.endTime);
                             const startMinutes = (start.getHours() - calendarStartHour) * 60 + start.getMinutes();
                             const duration = (end.getTime() - start.getTime()) / 60000;
-                            const top = (startMinutes * 96) / 60;
-                            const height = Math.max((duration * 96) / 60, 28);
+                            const top = (startMinutes * 80) / 60;
+                            const height = Math.max((duration * 80) / 60, 28);
                             const colLeft = `calc(64px + ${di} * (100% - 64px) / 7 + 4px)`;
                             return (
                               <button
@@ -763,6 +785,151 @@ export default function BookingsClient({
         </div>
       )}
     </div>
+
+    {/* Edit Modal */}
+    {isEditModalOpen && (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+          <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/5 shrink-0">
+            <h3 className="text-xl font-bold">{editingBooking ? t('form.titleEdit') : t('form.titleNew')}</h3>
+            <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          
+          <form onSubmit={handleSaveEdit} className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">{t('form.customerName')}</label>
+              <input 
+                required
+                type="text" 
+                value={formData.customerName}
+                onChange={e => setFormData({...formData, customerName: e.target.value})}
+                className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">{t('form.customerEmail')}</label>
+                <input 
+                  type="email" 
+                  value={formData.customerEmail}
+                  onChange={e => setFormData({...formData, customerEmail: e.target.value})}
+                  placeholder="Email"
+                  className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">{t('form.status')}</label>
+                <select 
+                  value={formData.status}
+                  onChange={e => setFormData({...formData, status: e.target.value})}
+                  className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm appearance-none"
+                >
+                  <option value="PENDING">{t('status.PENDING')}</option>
+                  <option value="CONFIRMED">{t('status.CONFIRMED')}</option>
+                  <option value="FINALIZADA">{t('status.FINALIZADA')}</option>
+                  <option value="CANCELLED">{t('status.CANCELLED')}</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">{t('form.customerPhone')}</label>
+              <PhoneInput 
+                value={formData.customerPhone}
+                onChange={val => setFormData({...formData, customerPhone: val})}
+                placeholder="Teléfono del contacto"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">{t('form.service')}</label>
+                <select 
+                  value={formData.serviceId}
+                  onChange={e => setFormData({...formData, serviceId: e.target.value})}
+                  className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm appearance-none"
+                >
+                  {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">{t('form.staff')}</label>
+                <select 
+                  value={formData.staffId}
+                  onChange={e => {
+                    const s = staff.find(st => st.id === e.target.value);
+                    setFormData({...formData, staffId: e.target.value, branchId: s?.branchId || formData.branchId})
+                  }}
+                  className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm appearance-none"
+                >
+                  {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">{t('form.duration')}</label>
+              <div className="relative">
+                <Clock3 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input 
+                  required
+                  type="number" 
+                  min="1"
+                  value={durationInput}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setDurationInput(val);
+                    const parsed = parseInt(val);
+                    if (!isNaN(parsed)) {
+                      setFormData({...formData, durationMinutes: parsed});
+                    }
+                  }}
+                  className="w-full p-4 pl-12 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">{t('form.date')}</label>
+                <input 
+                  required
+                  type="date" 
+                  value={formData.date}
+                  onChange={e => setFormData({...formData, date: e.target.value})}
+                  className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 dark:text-zinc-300">{t('form.time')}</label>
+                <input 
+                  required
+                  type="time" 
+                  value={formData.time}
+                  onChange={e => setFormData({...formData, time: e.target.value})}
+                  className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <button 
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold transition-all shadow-xl shadow-purple-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                {editingBooking ? t('form.save') : t('form.create')}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
