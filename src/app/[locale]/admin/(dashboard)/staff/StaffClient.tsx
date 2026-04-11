@@ -249,15 +249,7 @@ export default function StaffClient({
     setOpenMenu(memberId);
   }, [openMenu]);
 
-  const dayAbbreviations: Record<string, string> = {
-    monday: 'Lu',
-    tuesday: 'Ma',
-    wednesday: 'Mi',
-    thursday: 'Ju',
-    friday: 'Vi',
-    saturday: 'Sa',
-    sunday: 'Do'
-  };
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
   return (
     <>
@@ -534,9 +526,9 @@ export default function StaffClient({
                           </div>
                         </div>
                         <div className={`flex flex-wrap gap-1 transition-opacity duration-300 ${formData.inheritBranchHours ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-                          {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+                          {days.map(day => (
                             <button key={day} type="button" onClick={() => toggleDay(realIdx, day)} className={`px-2.5 py-2 rounded-xl text-xs font-bold uppercase transition-all ${assignment.daysOfWeek.includes(day) ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-zinc-800 text-slate-400 border border-slate-100 dark:border-white/5'}`}>
-                              {dayAbbreviations[day]}
+                              {t(`days.${day}`)}
                             </button>
                           ))}
                         </div>
@@ -605,9 +597,9 @@ export default function StaffClient({
                             <div className="space-y-1.5">
                               <label className="text-[8px] font-black text-slate-400 uppercase">{t('form.applicableDays')}</label>
                               <div className="flex flex-wrap gap-1">
-                                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+                                {days.map(day => (
                                   <button key={day} type="button" onClick={() => toggleDay(realIdx, day)} className={`px-1.5 py-1 rounded-md text-[7px] font-black uppercase transition-all ${assignment.daysOfWeek.includes(day) ? 'bg-amber-500 text-white' : 'bg-white dark:bg-zinc-800 text-slate-400 border border-slate-100 dark:border-white/5'}`}>
-                                    {dayAbbreviations[day]}
+                                    {t(`days.${day}`)}
                                   </button>
                                 ))}
                               </div>

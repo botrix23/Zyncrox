@@ -199,7 +199,7 @@ export default function SurveyClient({
               </div>
               <div className="flex items-center gap-3 bg-slate-50 dark:bg-white/5 p-2 pr-4 rounded-2xl border border-slate-100 dark:border-white/5 overflow-hidden max-w-md">
                  <div className="px-3 py-2 bg-white dark:bg-zinc-800 rounded-xl text-xs font-mono text-slate-500 truncate">
-                    {origin}/{locale}/review/[ID_CITA]
+                    {origin}{t('link.urlPattern', { locale })}
                  </div>
                  <div className="flex items-center gap-1">
                     <button 
@@ -416,8 +416,8 @@ export default function SurveyClient({
                           </td>
                           <td className="py-5 px-4 max-w-[200px]">
                              <div className="space-y-0.5">
-                               <p className="text-sm font-black text-slate-900 dark:text-white truncate">{r.booking?.staff?.name || 'Staff'}</p>
-                               <p className="text-[11px] font-bold text-slate-400 truncate">{r.booking?.service?.name || 'Servicio'}</p>
+                               <p className="text-sm font-black text-slate-900 dark:text-white truncate">{r.booking?.staff?.name || t('audit.table.staffFallback')}</p>
+                               <p className="text-[11px] font-bold text-slate-400 truncate">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
                              </div>
                           </td>
                           <td className="py-5 px-4 min-w-[300px]">
@@ -436,7 +436,7 @@ export default function SurveyClient({
                              </div>
                           </td>
                           <td className="py-5 px-4">
-                             <span className="text-[11px] font-bold text-slate-400">{new Date(r.createdAt).toLocaleDateString()}</span>
+                             <span className="text-[11px] font-bold text-slate-400">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
                           </td>
                         </tr>
                       ))

@@ -147,7 +147,17 @@
       "delete": "Delete",
       "confirmDelete": "Are you sure you want to delete the branch \"{name}\"?",
       "errorSave": "Error saving branch",
-      "errorDelete": "Error deleting branch"
+      "errorDelete": "Error deleting branch",
+      "noAddress": "No registered address",
+      "noPhone": "No registered phone",
+      "closedToday": "Closed today",
+      "hoursNotAvailable": "Schedule not available",
+      "today": "Today",
+      "regularOperatingDays": "{count} regular operating days",
+      "operatingError": "Error in business hours format",
+      "namePlaceholder": "Branch name",
+      "addressPlaceholder": "Full address",
+      "phonePlaceholder": "Phone number"
     },
     "services": {
       "title": "Services",
@@ -197,6 +207,10 @@
       "nextDay": "Next",
       "today": "Today",
       "filter": "Filter",
+      "noTags": "No tags",
+      "overlapWarning": "Attention: There is already an appointment for {staff} at this time.",
+      "allowOverlap": "I understand, I want to force the appointment anyway.",
+      "overlapDetail": "Conflict with: {customer} ({start} - {end})",
       "new": "Schedule appointment",
       "tabs": {
         "Todas": "All",
@@ -208,7 +222,7 @@
       "searchPlaceholder": "Search client...",
       "noBookings": "No appointments found.",
       "status": {
-        "CONFIRMED": "Confirmed",
+        "CONFIRMED": "Scheduled",
         "PENDING": "Pending",
         "FINALIZADA": "Finished",
         "CANCELLED": "Cancelled"
@@ -232,7 +246,8 @@
         "date": "Date",
         "time": "Time",
         "save": "Save changes",
-        "create": "Create appointment"
+        "create": "Schedule appointment",
+        "delete": "Delete appointment"
       },
       "confirmCancel": "Are you sure you want to cancel this appointment?",
       "errorSave": "Error saving appointment",
@@ -254,6 +269,15 @@
       "noBranch": "No branch",
       "nextRotationScheduled": "Next rotation scheduled",
       "invalidEmail": "Please enter a valid email address (example@domain.com)",
+      "days": {
+        "monday": "Mo",
+        "tuesday": "Tu",
+        "wednesday": "We",
+        "thursday": "Th",
+        "friday": "Fr",
+        "saturday": "Sa",
+        "sunday": "Su"
+      },
       "form": {
         "titleNew": "Add member",
         "titleEdit": "Edit member",
@@ -434,6 +458,7 @@
         "heroSubtitlePlaceholder": "e.g. Book your appointment in seconds",
         "logoLabel": "Business Logo",
         "logoPlaceholder": "Logo URL",
+        "localImage": "Locally uploaded image",
         "upload": "Upload",
         "instagram": "Instagram URL",
         "facebook": "Facebook URL",
@@ -445,6 +470,7 @@
         "terms": "Terms and Conditions",
         "termsRequired": "Required when booking home service",
         "termsContent": "Terms content",
+        "termsTooltip": "These policies will be shown when scheduling.",
         "termsPlaceholder": "Content of terms and conditions...",
         "leadDays": "Lead Days Required",
         "leadDaysHint": "Minimum time required to organize transport logistics.",
@@ -518,7 +544,10 @@
         "title": "Recent appointments",
         "viewAll": "View all",
         "noBookings": "No recent appointments.",
-        "statusConfirmed": "Confirmed"
+        "statusConfirmed": "Scheduled",
+        "statusInProcess": "In Process",
+        "statusPending": "Pending",
+        "unknownService": "Unknown service"
       },
       "portalLink": {
         "title": "Your booking link",
@@ -593,7 +622,8 @@
       "description": "The system sends this link automatically after each finished appointment.",
       "placeholder": "Copy base URL",
       "preview": "Preview",
-      "copyDone": "Base link copied. Remember the system sends unique links per appointment automatically."
+      "copyDone": "Base link copied. Remember the system sends unique links per appointment automatically.",
+      "urlPattern": "/{locale}/review/[BOOKING_ID]"
     },
     "errors": {
       "update": "Error updating settings",
@@ -615,7 +645,9 @@
         "rating": "Rating",
         "staffService": "Staff / Service",
         "comment": "Comment",
-        "date": "Date"
+        "date": "Date",
+        "staffFallback": "Staff",
+        "serviceFallback": "Service"
       }
     },
     "modal": {

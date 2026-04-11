@@ -207,7 +207,7 @@ export default function BranchesClient({
                   <Home className="w-4 h-4 text-slate-400" />
                 </div>
                 <p className="text-sm font-medium text-slate-600 dark:text-zinc-300 leading-tight pt-1">
-                  {branch.address || "Sin dirección registrada"}
+                  {branch.address || t('noAddress')}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -215,7 +215,7 @@ export default function BranchesClient({
                   <Phone className="w-4 h-4 text-slate-400" />
                 </div>
                 <p className="text-sm font-medium text-slate-600 dark:text-zinc-300">
-                  {branch.phone || "Sin teléfono registrado"}
+                  {branch.phone || t('noPhone')}
                 </p>
               </div>
               {branch.businessHours && (
@@ -237,28 +237,28 @@ export default function BranchesClient({
                         
                         let displayTime = "";
                         if (!isOpen) {
-                          displayTime = "Cerrado hoy";
+                          displayTime = t('closedToday');
                         } else if (isNewFormat && todaySched?.slots) {
                           displayTime = todaySched.slots.map((s: any) => `${s.open} - ${s.close}`).join(', ');
                         } else if (todaySched?.open && todaySched?.close) {
                           displayTime = `${todaySched.open} - ${todaySched.close}`;
                         } else {
-                          displayTime = "Horario no disponible";
+                          displayTime = t('hoursNotAvailable');
                         }
 
                         return (
                           <div className="flex flex-col">
-                            <span className="font-bold text-slate-900 dark:text-white tracking-widest uppercase text-[11px] mb-1 opacity-60">Hoy</span>
+                            <span className="font-bold text-slate-900 dark:text-white tracking-widest uppercase text-[11px] mb-1 opacity-60">{t('today')}</span>
                             <span className="font-bold text-slate-700 dark:text-zinc-100">{displayTime}</span>
                             {isNewFormat && (
                               <span className="text-slate-400 dark:text-zinc-500 text-[11px] font-bold mt-0.5">
-                                {days.filter(d => bh.regular[d]?.isOpen).length} días de atención regular
+                                {t('regularOperatingDays', { count: days.filter(d => bh.regular[d]?.isOpen).length })}
                               </span>
                             )}
                           </div>
                         );
                       } catch {
-                        return <span className="italic text-rose-500/70">Error en formato de horario</span>;
+                        return <span className="italic text-rose-500/70">{t('operatingError')}</span>;
                       }
                     })()}
                   </div>
@@ -300,7 +300,7 @@ export default function BranchesClient({
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm font-medium"
-                    placeholder="Nombre de la sucursal"
+                    placeholder={t('namePlaceholder')}
                   />
                 </div>
 
@@ -311,7 +311,7 @@ export default function BranchesClient({
                     value={formData.address}
                     onChange={e => setFormData({...formData, address: e.target.value})}
                     className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm font-medium"
-                    placeholder="Dirección completa"
+                    placeholder={t('addressPlaceholder')}
                   />
                 </div>
 
@@ -321,7 +321,7 @@ export default function BranchesClient({
                     <PhoneInput 
                       value={formData.phone}
                       onChange={val => setFormData({...formData, phone: val})}
-                      placeholder="Teléfono"
+                      placeholder={t('phonePlaceholder')}
                     />
                   </div>
                   <div className="space-y-2">

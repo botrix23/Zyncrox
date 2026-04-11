@@ -22,10 +22,15 @@ export default async function AdminLayout({
     if (session.role === 'SUPER_ADMIN' && session.impersonatedTenantName) {
       tenantName = session.impersonatedTenantName;
     } else if (session.tenantId) {
-      const tenant = await db.query.tenants.findFirst({
-        where: eq(tenants.id, session.tenantId)
-      });
-      tenantName = tenant?.name || "";
+      try {
+        const tenant = await db.query.tenants.findFirst({
+          where: eq(tenants.id, session.tenantId)
+        });
+        tenantName = tenant?.name || "";
+      } catch (error) {
+        console.error("Error fetching tenant details:", error);
+        tenantName = ""; // Fallback to empty string if query fails
+      }
     }
   }
 

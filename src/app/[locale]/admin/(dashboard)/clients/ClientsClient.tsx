@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es, enUS } from "date-fns/locale";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -296,7 +296,7 @@ export default function ClientsClient({
                                <tr key={idx} className="text-xs hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
                                   <td className="p-3">
                                      <div className="flex flex-col">
-                                        <span className="font-bold text-slate-900 dark:text-white">{format(h.startTime, "dd MMM yyyy", { locale: es })}</span>
+                                        <span className="font-bold text-slate-900 dark:text-white">{format(h.startTime, "dd MMM yyyy", { locale: locale === 'es' ? es : enUS })}</span>
                                         <span className="text-[10px] text-slate-400 font-bold">{format(h.startTime, "HH:mm")}</span>
                                      </div>
                                   </td>

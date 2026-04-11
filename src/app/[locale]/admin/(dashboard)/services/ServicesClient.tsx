@@ -338,7 +338,7 @@ export default function ServicesClient({
                         value={formData.name}
                         onChange={e => setFormData({...formData, name: e.target.value})}
                         className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium"
-                        placeholder="Nombre del servicio"
+                        placeholder={t('form.nameLabel')}
                       />
                   </div>
 
@@ -445,7 +445,7 @@ export default function ServicesClient({
                     value={formData.description}
                     onChange={e => setFormData({...formData, description: e.target.value})}
                     className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium min-h-[100px] resize-none"
-                    placeholder="Descripción detallada del servicio..."
+                    placeholder={t('form.descriptionPlaceholder')}
                   />
                 </div>
 
@@ -461,7 +461,7 @@ export default function ServicesClient({
                         onChange={e => setNewInclude(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag('includes'))}
                         className="flex-1 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium outline-none focus:border-emerald-500"
-                        placeholder="Pj: Exfoliación incluida..."
+                        placeholder={t('form.newIncludePlaceholder')}
                       />
                       <button type="button" onClick={() => addTag('includes')} className="p-4 bg-emerald-500/10 text-emerald-500 rounded-2xl hover:bg-emerald-500 hover:text-white transition-all">
                         <Plus className="w-5 h-5" />
@@ -488,7 +488,7 @@ export default function ServicesClient({
                         onChange={e => setNewExclude(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag('excludes'))}
                         className="flex-1 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium outline-none focus:border-rose-500"
-                        placeholder="Pj: No incluye propinas..."
+                        placeholder={t('form.newExcludePlaceholder')}
                       />
                       <button type="button" onClick={() => addTag('excludes')} className="p-4 bg-rose-500/10 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all">
                         <Plus className="w-5 h-5" />

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { 
-  Palette, CheckCircle2, AlertCircle, Upload, Save, Eye, MonitorSmartphone, Monitor, Moon, Sun, MonitorCheck, LayoutTemplate, Link as LinkIcon, ExternalLink, Instagram, Facebook, Music, Building2, ImageIcon, Truck, Info, Phone, Settings, Share2, Copy, Trash2, Lock
+  Palette, CheckCircle2, AlertCircle, Upload, Save, Eye, MonitorSmartphone, Monitor, Moon, Sun, MonitorCheck, LayoutTemplate, Link as LinkIcon, ExternalLink, Instagram, Facebook, Music, Building2, ImageIcon, Truck, Info, Phone, Settings, Share2, Copy, Trash2, Lock, Mail
 } from "lucide-react";
 import { updatePortalSettingsAction } from "@/app/actions/tenant";
 import { 
@@ -288,7 +288,7 @@ setMessage({ type: 'error', text: tPortal('errorUpload') });
                     }}
                     className="px-3 py-1.5 bg-white text-purple-600 rounded-lg hover:bg-purple-50 transition-all active:scale-95 font-bold text-xs"
                   >
-                    Copiar
+                    {tPortal('link.copy')}
                   </button>
                 </div>
               </div>
@@ -346,7 +346,7 @@ className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:b
                           <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                              <button onClick={() => setLogoUrl('')} className="text-white hover:text-rose-400 p-1">
-                               <Lock className="w-4 h-4" />
+                               <Trash2 className="w-4 h-4" />
                              </button>
                           </div>
                         </div>
@@ -357,7 +357,7 @@ className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:b
                         </button>
                      )}
                      <div className="flex-1">
-                        <input type="text" value={logoUrl.startsWith('data:') ? 'Imagen cargada localmente' : logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder={tPortal('form.logoPlaceholder')} readOnly={logoUrl.startsWith('data:')} className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white" />
+                        <input type="text" value={logoUrl.startsWith('data:') ? tPortal('form.localImage') : logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder={tPortal('form.logoPlaceholder')} readOnly={logoUrl.startsWith('data:')} className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white" />
                      </div>
                      <input type="file" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" accept="image/*" />
                    </div>
@@ -369,19 +369,19 @@ className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:b
                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                         <Instagram className="w-4 h-4" />
                      </div>
-                     <input type="url" value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} placeholder="Instagram URL" className="w-full pl-10 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white" />
+                     <input type="url" value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} placeholder={tPortal('form.instagram')} className="w-full pl-10 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white" />
                   </div>
                   <div className="relative">
                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                         <Facebook className="w-4 h-4" />
                      </div>
-                     <input type="url" value={facebookUrl} onChange={e => setFacebookUrl(e.target.value)} placeholder="Facebook URL" className="w-full pl-10 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white" />
+                     <input type="url" value={facebookUrl} onChange={e => setFacebookUrl(e.target.value)} placeholder={tPortal('form.facebook')} className="w-full pl-10 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white" />
                   </div>
                   <div className="relative">
                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                         <Music className="w-4 h-4" />
                      </div>
-                     <input type="url" value={tiktokUrl} onChange={e => setTiktokUrl(e.target.value)} placeholder="TikTok URL" className="w-full pl-10 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white" />
+                     <input type="url" value={tiktokUrl} onChange={e => setTiktokUrl(e.target.value)} placeholder={tPortal('form.tiktok')} className="w-full pl-10 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white" />
                   </div>
                 </div>
               </div>
@@ -518,7 +518,7 @@ className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:b
                    {homeServiceTermsEnabled && (
                       <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                         <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-2">
-                          {tPortal('form.termsContent')} <span title="Estas políticas se mostrarán al agendar."><Info className="w-3.5 h-3.5 text-zinc-500" /></span>
+                          {tPortal('form.termsContent')} <span title={tPortal('form.termsTooltip')}><Info className="w-3.5 h-3.5 text-zinc-500" /></span>
                         </label>
                         <textarea value={homeServiceTerms} onChange={e => setHomeServiceTerms(e.target.value)} placeholder={tPortal('form.termsPlaceholder')} className="w-full min-h-[120px] p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none text-sm" />
                       </div>

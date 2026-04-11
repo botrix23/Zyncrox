@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Calendar, 
   Search, 
@@ -140,9 +140,82 @@ export default function BookingsClient({
   })();
 
   const [durationInput, setDurationInput] = useState(formData.durationMinutes.toString());
+  const [allowOverlap, setAllowOverlap] = useState(false);
+  const [overlapInfo, setOverlapInfo] = useState<any | null>(null);
+  
+  // Algoritmo para posicionar citas solapadas lado a lado
+  const getEventLayout = (events: any[]) => {
+    if (events.length === 0) return [];
+    
+    // 1. Ordenar por tiempo de inicio, luego por duración (más larga primero)
+    const sorted = [...events].sort((a, b) => {
+      const aStart = new Date(a.startTime).getTime();
+      const bStart = new Date(b.startTime).getTime();
+      if (aStart !== bStart) return aStart - bStart;
+      const aEnd = new Date(a.endTime).getTime();
+      const bEnd = new Date(b.endTime).getTime();
+      return (bEnd - bStart) - (aEnd - aStart);
+    });
 
-  const handleOpenCreate = () => {
+    const columns: any[][] = [];
+    
+    sorted.forEach(event => {
+      let placed = false;
+      for (let i = 0; i < columns.length; i++) {
+        const lastInCol = columns[i][columns[i].length - 1];
+        if (new Date(event.startTime) >= new Date(lastInCol.endTime)) {
+          columns[i].push(event);
+          event.colIndex = i;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        event.colIndex = columns.length;
+        columns.push([event]);
+      }
+    });
+
+    return sorted.map(event => ({
+      ...event,
+      totalCols: columns.length
+    }));
+  };
+
+  // Detección de solapamiento (Overlap)
+  const checkOverlap = () => {
+    try {
+      const start = parse(`${formData.date} ${formData.time}`, "yyyy-MM-dd HH:mm", new Date());
+      const end = addMinutes(start, formData.durationMinutes);
+      
+      const conflict = initialBookings.find(b => {
+        if (editingBooking && b.id === editingBooking.id) return false;
+        if (b.status === 'CANCELLED') return false;
+        if (b.staffId !== formData.staffId) return false;
+        
+        const bStart = new Date(b.startTime);
+        const bEnd = new Date(b.endTime);
+        
+        return start < bEnd && end > bStart;
+      });
+
+      setOverlapInfo(conflict || null);
+      if (!conflict) setAllowOverlap(false);
+    } catch {
+      setOverlapInfo(null);
+    }
+  };
+
+  // Efecto para re-validar solapamiento cuando cambia el form
+  useEffect(() => {
+    checkOverlap();
+  }, [formData.date, formData.time, formData.durationMinutes, formData.staffId, editingBooking]);
+
+  // Reemplazar el anterior handleOpenCreate para resetear estados
+  const handleOpenCreateInternal = () => {
     setEditingBooking(null);
+    setOverlapInfo(null);
+    setAllowOverlap(false);
     setFormData({
       customerName: "",
       customerEmail: "",
@@ -158,6 +231,8 @@ export default function BookingsClient({
     setDurationInput((services[0]?.durationMinutes || 30).toString());
     setIsEditModalOpen(true);
   };
+
+  const handleOpenCreate = handleOpenCreateInternal;
 
   const filteredBookings = initialBookings.filter(b => {
     const matchesSearch = b.customerName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -243,10 +318,8 @@ export default function BookingsClient({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-        <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t('title')}</h1>
           <p className="text-slate-500 dark:text-zinc-400 mt-1">{t('subtitle')}</p>
-        </div>
         </div>
         <div className="flex gap-3">
              <button className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-zinc-300 rounded-2xl text-sm font-bold shadow-sm transition-all active:scale-95">
@@ -439,7 +512,7 @@ export default function BookingsClient({
                       : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-300'
                   }`}
                 >
-                  Día
+                  {t('day')}
                 </button>
                 <button
                   onClick={() => setCalendarView('week')}
@@ -449,7 +522,7 @@ export default function BookingsClient({
                       : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-300'
                   }`}
                 >
-                  Semana
+                  {t('week')}
                 </button>
               </div>
 
@@ -507,34 +580,51 @@ export default function BookingsClient({
                     <div key={i} className="h-24 border-b border-slate-100 dark:border-white/5" />
                   ))}
                   <div className="absolute inset-0 p-4">
-                    {initialBookings
-                      .filter(b => isSameDay(new Date(b.startTime), calendarDate))
-                      .map((booking: any) => {
+                    {(() => {
+                      const dayEvents = initialBookings.filter(b => isSameDay(new Date(b.startTime), calendarDate));
+                      const layoutEvents = getEventLayout(dayEvents);
+                      
+                      return layoutEvents.map((booking: any) => {
                         const start = new Date(booking.startTime);
                         const end = new Date(booking.endTime);
                         const startMinutes = (start.getHours() - calendarStartHour) * 60 + start.getMinutes();
                         const duration = (end.getTime() - start.getTime()) / 60000;
                         const top = (startMinutes * 96) / 60;
                         const height = (duration * 96) / 60;
+                        
+                        const width = 100 / booking.totalCols;
+                        const left = booking.colIndex * width;
+
+                        const isCancelled = booking.status === 'CANCELLED';
+
                         return (
                           <button
                             key={booking.id}
                             onClick={() => handleOpenEdit(booking)}
-                            style={{ top: `${top}px`, height: `${height}px`, left: '1rem', right: '1rem' }}
+                            style={{ 
+                              top: `${top}px`, 
+                              height: `${height}px`, 
+                              left: `calc(${left}% + 4px)`, 
+                              width: `calc(${width}% - 8px)` 
+                            }}
                             className={`absolute z-10 p-3 rounded-2xl border transition-all text-left group overflow-hidden ${
-                              booking.status === 'CONFIRMED'
-                                ? 'bg-purple-500/10 border-purple-500/25 hover:bg-purple-500/20'
-                                : booking.status === 'PENDING'
-                                ? 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20'
-                                : booking.status === 'FINALIZADA'
-                                ? 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20'
-                                : 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/20'
+                              isCancelled 
+                                ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-60 grayscale-[0.5]' 
+                                : booking.status === 'CONFIRMED'
+                                  ? 'bg-purple-500/10 border-purple-500/25 hover:bg-purple-500/20'
+                                  : booking.status === 'PENDING'
+                                  ? 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20'
+                                  : booking.status === 'FINALIZADA'
+                                  ? 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20'
+                                  : 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/20'
                             }`}
                           >
                             <div className="flex flex-col h-full gap-0.5">
                               {/* Fila Cliente y Horario */}
                               <div className="flex items-center justify-between gap-4 mb-0.5">
-                                <h4 className="font-extrabold text-[14px] text-slate-900 dark:text-white truncate flex-1 leading-tight" title={booking.customerName}>
+                                <h4 className={`font-extrabold text-[14px] truncate flex-1 leading-tight ${
+                                  isCancelled ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'
+                                }`} title={booking.customerName}>
                                   {booking.customerName}
                                 </h4>
                                 <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
@@ -563,7 +653,8 @@ export default function BookingsClient({
                             </div>
                           </button>
                         );
-                      })}
+                      });
+                    })()}
                   </div>
                 </div>
               </div>
@@ -622,32 +713,52 @@ export default function BookingsClient({
                         {/* Booking blocks */}
                         {weekDays.map((day, di) => {
                           const dayBookings = initialBookings.filter(b => isSameDay(new Date(b.startTime), day));
-                          return dayBookings.map((booking: any) => {
+                          const layoutEvents = getEventLayout(dayBookings);
+                          
+                          return layoutEvents.map((booking: any) => {
                             const start = new Date(booking.startTime);
                             const end = new Date(booking.endTime);
                             const startMinutes = (start.getHours() - calendarStartHour) * 60 + start.getMinutes();
                             const duration = (end.getTime() - start.getTime()) / 60000;
                             const top = (startMinutes * 80) / 60;
                             const height = Math.max((duration * 80) / 60, 28);
-                            const colLeft = `calc(64px + ${di} * (100% - 64px) / 7 + 4px)`;
+                            
+                            const colWidth = 100 / booking.totalCols;
+                            const colLeft = `calc(64px + ${di} * (100% - 64px) / 7 + (${booking.colIndex} * (100% - 64px) / 7 / ${booking.totalCols}) + 2px)`;
+                            const finalWidth = `calc((100% - 64px) / 7 / ${booking.totalCols} - 4px)`;
+
+                            const isCancelled = booking.status === 'CANCELLED';
+
                             return (
                               <button
                                 key={booking.id}
                                 onClick={() => handleOpenEdit(booking)}
-                                style={{ position: 'absolute', top: `${top}px`, height: `${height}px`, left: colLeft, width: `calc((100% - 64px) / 7 - 8px)` }}
+                                style={{ 
+                                  position: 'absolute', 
+                                  top: `${top}px`, 
+                                  height: `${height}px`, 
+                                  left: colLeft, 
+                                  width: finalWidth
+                                }}
                                 className={`z-10 p-1.5 rounded-xl border transition-all text-left overflow-hidden ${
-                                  booking.status === 'CONFIRMED'
-                                    ? 'bg-purple-500/10 border-purple-500/25 hover:bg-purple-500/20'
-                                    : booking.status === 'PENDING'
-                                    ? 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20'
-                                    : booking.status === 'FINALIZADA'
-                                    ? 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20'
-                                    : 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/20'
+                                  isCancelled
+                                    ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-60 grayscale-[0.5]'
+                                    : booking.status === 'CONFIRMED'
+                                      ? 'bg-purple-500/10 border-purple-500/25 hover:bg-purple-500/20'
+                                      : booking.status === 'PENDING'
+                                      ? 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20'
+                                      : booking.status === 'FINALIZADA'
+                                      ? 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20'
+                                      : 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/20'
                                 }`}
                               >
                                 <div className="flex flex-col h-full gap-0.5">
                                   <div className="flex items-center justify-between gap-1 overflow-hidden">
-                                    <p className="font-black text-xs text-slate-900 dark:text-white truncate flex-1 leading-tight">{booking.customerName}</p>
+                                    <p className={`font-black text-xs truncate flex-1 leading-tight ${
+                                      isCancelled ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'
+                                    }`}>
+                                      {booking.customerName}
+                                    </p>
                                     <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap opacity-60">{format(start, "h:mm a")}</span>
                                   </div>
                                   <p className="text-[11px] text-slate-500 font-bold truncate">
@@ -806,6 +917,38 @@ export default function BookingsClient({
                   </div>
                 </div>
 
+                {/* Advertencia de Solapamiento */}
+                {overlapInfo && (
+                  <div className="p-4 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-bold text-orange-900 dark:text-orange-200">
+                          {t('overlapWarning', { staff: staff.find(s => s.id === formData.staffId)?.name })}
+                        </p>
+                        <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                          {t('overlapDetail', { 
+                            customer: overlapInfo.customerName,
+                            start: format(new Date(overlapInfo.startTime), "hh:mm a"),
+                            end: format(new Date(overlapInfo.endTime), "hh:mm a")
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-3 p-3 bg-white dark:bg-black/20 rounded-xl cursor-pointer hover:bg-white/80 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={allowOverlap}
+                        onChange={e => setAllowOverlap(e.target.checked)}
+                        className="w-4 h-4 rounded border-orange-300 transform scale-125 accent-orange-500"
+                      />
+                      <span className="text-xs font-bold text-orange-800 dark:text-orange-300">
+                        {t('allowOverlap')}
+                      </span>
+                    </label>
+                  </div>
+                )}
+
                 {isPastBooking && (
                   <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-600 dark:text-amber-400 text-xs font-bold animate-in fade-in slide-in-from-top-2">
                     <AlertCircle className="w-5 h-5 shrink-0" />
@@ -816,14 +959,23 @@ export default function BookingsClient({
                   </div>
                 )}
 
-                <div className="pt-4">
+                <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 shrink-0 -mx-7 -mb-7 mt-4 flex gap-3">
+                  {editingBooking && (
+                    <button 
+                      type="button"
+                      onClick={() => handleDelete(editingBooking.id)}
+                      className="px-6 py-4 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-2xl font-bold transition-all flex items-center justify-center gap-2 border border-rose-500/20"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                      {t('form.delete')}
+                    </button>
+                  )}
                   <button 
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold transition-all shadow-xl shadow-purple-500/20 disabled:opacity-50 flex items-center justify-center gap-2 text-base"
+                    type="submit" 
+                    disabled={isLoading || (!!overlapInfo && !allowOverlap)}
+                    className="flex-1 py-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold shadow-xl shadow-purple-500/20 transition-all flex items-center justify-center gap-2"
                   >
-                    {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-                    {editingBooking ? t('form.save') : t('form.create')}
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (editingBooking ? t('form.save') : t('form.create'))}
                   </button>
                 </div>
               </form>
@@ -832,9 +984,8 @@ export default function BookingsClient({
         </Portal>
       )}
     </div>
-
-
     </>
   );
 }
+
 

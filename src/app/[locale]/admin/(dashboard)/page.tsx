@@ -84,9 +84,11 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
   const recentBookingsDisplay = allBookings.slice(0, 5).map(b => ({
     id: b.id,
     customer: b.customerName,
-    service: b.service?.name || 'Servicio desconocido',
+    service: b.service?.name || t('recentBookings.unknownService'),
     time: format(b.startTime, "hh:mm a"),
-    status: b.status === 'CONFIRMED' ? t('recentBookings.statusConfirmed') : b.status,
+    status: b.status === 'CONFIRMED' ? t('recentBookings.statusConfirmed') : 
+            b.status === 'PENDING' ? t('recentBookings.statusPending') :
+            b.status === 'IN_PROGRESS' || b.status === 'En Proceso' ? t('recentBookings.statusInProcess') : b.status,
     avatar: b.customerName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }));
 
@@ -193,7 +195,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
                     <p className="text-sm font-bold text-slate-900 dark:text-white">{booking.time}</p>
                     <p className={`text-[11px] font-bold uppercase mt-1 ${
                       booking.status === t('recentBookings.statusConfirmed') ? 'text-emerald-500' : 
-                      booking.status === 'En Proceso' ? 'text-blue-500' : 'text-orange-500'
+                      booking.status === t('recentBookings.statusInProcess') ? 'text-blue-500' : 'text-orange-500'
                     }`}>
                       {booking.status}
                     </p>

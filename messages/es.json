@@ -147,7 +147,17 @@
       "delete": "Eliminar",
       "confirmDelete": "¿Estás seguro de eliminar la sucursal \"{name}\"?",
       "errorSave": "Error al guardar la sucursal",
-      "errorDelete": "Error al eliminar la sucursal"
+      "errorDelete": "Error al eliminar la sucursal",
+      "noAddress": "Sin dirección registrada",
+      "noPhone": "Sin teléfono registrado",
+      "closedToday": "Cerrado hoy",
+      "hoursNotAvailable": "Horario no disponible",
+      "today": "Hoy",
+      "regularOperatingDays": "{count} días de atención regular",
+      "operatingError": "Error en formato de horario",
+      "namePlaceholder": "Nombre de la sucursal",
+      "addressPlaceholder": "Dirección completa",
+      "phonePlaceholder": "Teléfono"
     },
     "services": {
       "title": "Servicios",
@@ -198,18 +208,22 @@
       "nextDay": "Siguiente",
       "today": "Hoy",
       "filter": "Filtrar",
+      "noTags": "Sin etiquetas",
+      "overlapWarning": "Atención: Ya existe una cita para {staff} en este horario.",
+      "allowOverlap": "Entiendo, deseo forzar la cita de todas formas.",
+      "overlapDetail": "Conflicto con: {customer} ({start} - {end})",
       "new": "Agendar cita",
       "tabs": {
         "Todas": "Todas",
         "Pendientes": "Pendientes",
-        "Confirmadas": "Confirmadas",
+        "Confirmadas": "Agendadas",
         "Finalizadas": "Finalizadas",
         "Canceladas": "Canceladas"
       },
       "searchPlaceholder": "Buscar cliente...",
       "noBookings": "No se encontraron citas.",
       "status": {
-        "CONFIRMED": "Confirmada",
+        "CONFIRMED": "Agendada",
         "PENDING": "Pendiente",
         "FINALIZADA": "Finalizada",
         "CANCELLED": "Cancelada"
@@ -223,7 +237,7 @@
       "form": {
         "titleNew": "Nueva cita",
         "titleEdit": "Editar cita",
-        "customerName": "Nombre del cliente",
+        "customerName": "Nombre del Cliente",
         "customerEmail": "Email",
         "status": "Estado de la cita",
         "customerPhone": "Teléfono",
@@ -233,7 +247,8 @@
         "date": "Fecha",
         "time": "Hora",
         "save": "Guardar cambios",
-        "create": "Crear cita"
+        "create": "Agendar cita",
+        "delete": "Eliminar cita"
       },
       "confirmCancel": "¿Estás seguro de cancelar esta cita?",
       "errorSave": "Error al guardar la cita",
@@ -255,6 +270,15 @@
       "noBranch": "Sin sucursal",
       "nextRotationScheduled": "Próxima rotación programada",
       "invalidEmail": "Por favor ingresa un correo electrónico válido (ejemplo@dominio.com)",
+      "days": {
+        "monday": "Lu",
+        "tuesday": "Ma",
+        "wednesday": "Mi",
+        "thursday": "Ju",
+        "friday": "Vi",
+        "saturday": "Sa",
+        "sunday": "Do"
+      },
       "form": {
         "titleNew": "Añadir miembro",
         "titleEdit": "Editar miembro",
@@ -441,6 +465,7 @@
         "heroSubtitlePlaceholder": "Ej: Reserva tu cita en segundos",
         "logoLabel": "Logo del negocio",
         "logoPlaceholder": "URL del logo",
+        "localImage": "Imagen cargada localmente",
         "upload": "Subir",
         "instagram": "Instagram URL",
         "facebook": "Facebook URL",
@@ -452,6 +477,7 @@
         "terms": "Términos y condiciones",
         "termsRequired": "Obligatorio al reservar a domicilio",
         "termsContent": "Contenido de términos",
+        "termsTooltip": "Estas políticas se mostrarán al agendar.",
         "termsPlaceholder": "Contenido de los términos y condiciones...",
         "leadDays": "Anticipación requerida (Días)",
         "leadDaysHint": "Tiempo mínimo requerido para organizar la logística del traslado.",
@@ -525,7 +551,10 @@
         "title": "Citas recientes",
         "viewAll": "Ver todas",
         "noBookings": "No hay citas recientes.",
-        "statusConfirmed": "Confirmada"
+        "statusConfirmed": "Agendada",
+        "statusInProcess": "En Proceso",
+        "statusPending": "Pendiente",
+        "unknownService": "Servicio desconocido"
       },
       "portalLink": {
         "title": "Tu enlace de reservas",
@@ -600,7 +629,8 @@
       "description": "El sistema envía este enlace automáticamente después de cada cita finalizada.",
       "placeholder": "Copiar URL base",
       "preview": "Vista Previa",
-      "copyDone": "Enlace base copiado. Recuerda que el sistema envía enlaces únicos por cada cita automáticamente."
+      "copyDone": "Enlace base copiado. Recuerda que el sistema envía enlaces únicos por cada cita automáticamente.",
+      "urlPattern": "/{locale}/review/[ID_CITA]"
     },
     "errors": {
       "update": "Error al actualizar configuración",
@@ -622,7 +652,9 @@
         "rating": "Calif.",
         "staffService": "Staff / Servicio",
         "comment": "Comentario",
-        "date": "Fecha"
+        "date": "Fecha",
+        "staffFallback": "Personal",
+        "serviceFallback": "Servicio"
       }
     },
     "modal": {

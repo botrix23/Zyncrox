@@ -343,7 +343,7 @@ export async function createBookingAction(data: {
         console.log(`[Email] Intentando enviar a ${data.customerEmail} para tenant ${tenant.name}`);
         try {
           const result = await resend.emails.send({
-            from: 'onboarding@resend.dev', // Cambiado temporalmente para asegurar entrega en cuentas no verificadas
+            from: 'ZyncSlot <onboarding@resend.dev>', // Cambiado temporalmente para asegurar entrega en cuentas no verificadas
             to: data.customerEmail,
             subject: `Cita Confirmada - ${tenant.name}`,
             react: BookingConfirmationEmail({
@@ -389,8 +389,8 @@ export async function createBookingSessionAction(data: {
     branchId: string;
     serviceId: string;
     staffId: string;
-    startTime: Date;
-    endTime: Date;
+    startTime: string; // Recibimos como string local "YYYY-MM-DDTHH:mm:ss"
+    endTime: string;   // Recibimos como string local "YYYY-MM-DDTHH:mm:ss"
     price: string;
   }[];
 }) {
@@ -436,6 +436,16 @@ export async function createBookingSessionAction(data: {
     const servicesTotal = data.bookings.reduce((sum, b) => sum + parseFloat(b.price), 0);
     const finalTotalPrice = (servicesTotal + transferTotal).toFixed(2);
 
+    // 2.5 Normalizar fechas según Timezone del Tenant
+    const tenantTz = tenant.timezone || 'America/El_Salvador';
+    
+    // Función auxiliar para convertir string local a Date UTC usando el offset del tenant
+    const convertToUtc = (localIso: string) => {
+      const date = new Date(localIso);
+      const offset = getTimezoneOffsetInMinutes(tenantTz, date);
+      return new Date(date.getTime() - offset * 60000);
+    };
+
     // 3. Transacción de Base de Datos
     const result = await db.transaction(async (tx) => {
       // 3a. Crear la sesión
@@ -447,12 +457,15 @@ export async function createBookingSessionAction(data: {
         zoneId: data.zoneId,
         notes: data.notes,
         totalPrice: finalTotalPrice,
-        status: 'CONFIRMED'
+        status: data.zoneId ? 'PENDING' : 'CONFIRMED'
       }).returning();
 
       // 2b. Crear cada booking individual
       const newBookings = [];
       for (const bData of data.bookings) {
+        const utcStart = convertToUtc(bData.startTime);
+        const utcEnd = convertToUtc(bData.endTime);
+
         const [nb] = await tx.insert(bookings).values({
           tenantId: data.tenantId,
           branchId: bData.branchId,
@@ -461,10 +474,10 @@ export async function createBookingSessionAction(data: {
           customerName: data.customerName,
           customerEmail: data.customerEmail,
           customerPhone: data.customerPhone,
-          startTime: bData.startTime,
-          endTime: bData.endTime,
+          startTime: utcStart,
+          endTime: utcEnd,
           sessionId: session.id,
-          status: 'CONFIRMED'
+          status: data.zoneId ? 'PENDING' : 'CONFIRMED'
         }).returning();
         newBookings.push(nb);
       }
@@ -483,7 +496,7 @@ export async function createBookingSessionAction(data: {
 
       if (tenant && service && branch) {
         await resend.emails.send({
-          from: 'onboarding@resend.dev',
+          from: 'ZyncSlot <onboarding@resend.dev>', // Nombre de remitente amigable
           to: data.customerEmail,
           subject: `${data.bookings.length > 1 ? 'Sesión de Reservas Confirmada' : 'Cita Confirmada'} - ${tenant.name}`,
           react: BookingConfirmationEmail({

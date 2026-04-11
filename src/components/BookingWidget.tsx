@@ -135,6 +135,39 @@ export default function BookingWidget({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
 
+  // --- Lógica de Zonas Horarias Inteligente ---
+  const businessTimezone = branches[0]?.tenant?.timezone || 'America/El_Salvador';
+  
+  const [hasTzDifference, setHasTzDifference] = useState(false);
+  const [businessOffsetLabel, setBusinessOffsetLabel] = useState("");
+
+  useEffect(() => {
+    try {
+      // 1. Obtener offset del negocio
+      const bizFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: businessTimezone,
+        timeZoneName: 'shortOffset'
+      });
+      const bizParts = bizFormatter.formatToParts(new Date());
+      const bizTzName = bizParts.find(p => p.type === 'timeZoneName')?.value || 'GMT-6';
+      
+      // 2. Obtener offset del navegador
+      const browserFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZoneName: 'shortOffset'
+      });
+      const browserParts = browserFormatter.formatToParts(new Date());
+      const browserTzName = browserParts.find(p => p.type === 'timeZoneName')?.value || '';
+
+      if (bizTzName !== browserTzName) {
+        setHasTzDifference(true);
+        setBusinessOffsetLabel(bizTzName);
+      }
+    } catch (e) {
+      console.warn("TZ detection failed", e);
+    }
+  }, [businessTimezone]);
+  // --- FIN Lógica de Zonas Horarias ---
+
   // Auto-detect country roughly by timezone
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -322,26 +355,30 @@ export default function BookingWidget({
       
       const sessionBookingsData = cartBookings.map((item) => {
         const militaryTime = formatTimeToMilitary(item.time!);
-        const baseStartTime = new Date(`${item.date}T${militaryTime}Z`);
         
-        // Si estamos en modo bulk, las citas deben ser seguidas
+        // Enviamos el string "plano" YYYY-MM-DDTHH:mm:ss
+        // IMPORTANTE: NO usamos new Date().toISOString() aquí porque eso aplicaría el offset del cliente
+        const localIsoString = `${item.date}T${militaryTime}:00`;
+        
+        // Para calcular el endTime localmente
+        const baseStartTime = new Date(`${item.date}T${militaryTime}`);
         const actualStartTime = (schedulingMode === 'bulk' && currentStartTime) 
           ? currentStartTime 
           : baseStartTime;
-          
         const actualEndTime = new Date(actualStartTime.getTime() + item.service.durationMinutes * 60000);
         
-        // Actualizar el puntero para la siguiente cita en modo bulk
         if (schedulingMode === 'bulk') {
           currentStartTime = actualEndTime;
         }
+
+        const formattedEnd = format(actualEndTime, "yyyy-MM-dd'T'HH:mm:ss");
 
         return {
           branchId: selectedBranch?.id || branches[0]?.id || '',
           serviceId: item.service.id,
           staffId: item.staff?.id || staff[0]?.id || '',
-          startTime: actualStartTime,
-          endTime: actualEndTime,
+          startTime: localIsoString, // Enviamos el string del inicio
+          endTime: formattedEnd,     // Enviamos el string del fin
           price: item.service.price
         };
       });
@@ -438,34 +475,48 @@ export default function BookingWidget({
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
-  // Helper to check if branch is open on a specific date
-  const isBranchOpen = (date: Date) => {
+  // Helper to get branch schedule for a specific date
+  const getBranchSchedule = (date: Date) => {
     const targetBranch = selectedBranch || branches[0];
-    if (!targetBranch?.businessHours) return true; // Default open if no config
+    const defaultSchedule = { isOpen: true, slots: [] as { open: string; close: string }[] };
+    if (!targetBranch?.businessHours) return defaultSchedule;
 
     try {
       const bh = JSON.parse(targetBranch.businessHours);
       const dateStr = format(date, "yyyy-MM-dd");
-      const dayOfWeek = format(date, 'EEEE').toLowerCase(); // monday, etc.
+      const dayOfWeek = format(date, "EEEE").toLowerCase();
 
       // Check special dates first
       if (bh.special?.[dateStr]) {
-        return bh.special[dateStr].isOpen;
+        return { 
+          isOpen: bh.special[dateStr].isOpen, 
+          slots: bh.special[dateStr].slots || [] 
+        };
       }
 
       // Check regular schedule
       if (bh.regular?.[dayOfWeek]) {
-        return bh.regular[dayOfWeek].isOpen;
+        return { 
+          isOpen: bh.regular[dayOfWeek].isOpen, 
+          slots: bh.regular[dayOfWeek].slots || [] 
+        };
       }
 
       // Fallback for simple format: {"open": "08:00", "close": "18:00"}
-      if (bh.open && bh.close) return true;
+      if (bh.open && bh.close) {
+        return { 
+          isOpen: true, 
+          slots: [{ open: bh.open, close: bh.close }] 
+        };
+      }
 
-      return true; // Default open
+      return defaultSchedule;
     } catch (e) {
-      return true;
+      return defaultSchedule;
     }
   };
+
+  const isBranchOpen = (date: Date) => getBranchSchedule(date).isOpen;
 
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
@@ -485,14 +536,27 @@ export default function BookingWidget({
         let isPast = isBefore(day, minDate);
         const isOpen = isBranchOpen(day);
 
-        // Si es HOY y no hay días de anticipación requeridos, verificar si aún quedan slots
-        if (!isPast && isSameDay(day, new Date()) && leadDays === 0) {
-          // Heurística rápida: si ya pasaron las 8 PM y el negocio cierra promedio 6-7 PM, deshabilitar.
-          // O mejor, podrías deshabilitar si faltan menos de 1 hora para el cierre. 
-          // Por ahora, si es hoy, dejamos que el usuario entre pero podríamos ser más estrictos.
-          // Para cumplir con el requerimiento del usuario de deshabilitar si ya no hay slots:
-          const now = new Date();
-          if (now.getHours() >= 20) isPast = true; // Pasadas las 8 PM deshabilitamos hoy
+        // Si es HOY y no hay días de anticipación requeridos, verificar si aún hay tiempo suficiente para el servicio antes del cierre
+        const isToday = formattedDate === format(new Date(), "yyyy-MM-dd");
+        if (!isPast && isToday && leadDays === 0) {
+          const schedule = getBranchSchedule(day);
+          if (schedule.isOpen && schedule.slots.length > 0) {
+            // Obtener el cierre definitivo del día
+            const lastSlot = schedule.slots[schedule.slots.length - 1];
+            const [h, m] = lastSlot.close.split(':').map(Number);
+            
+            const closingTime = new Date();
+            closingTime.setHours(h, m, 0, 0);
+            
+            const now = new Date();
+            // Si la hora actual más la duración del servicio excede el cierre, o ya pasó la hora de cierre
+            if (new Date(now.getTime() + totalDuration * 60000) > closingTime || now >= closingTime) {
+              isPast = true;
+            }
+          } else {
+            // Si no está abierto o no tiene slots para hoy, es pasado
+            isPast = true;
+          }
         }
         
         days.push({
@@ -509,7 +573,7 @@ export default function BookingWidget({
       days = [];
     }
     return rows;
-  }, [currentMonth, selectedDate, selectedBranch, branches]);
+  }, [currentMonth, selectedDate, selectedBranch, branches, modality, homeServiceLeadDays, selectedServices, totalDuration]);
 
   const brand = primaryColor || '#9333ea';
 
@@ -1027,7 +1091,7 @@ export default function BookingWidget({
                             }}
                             className={`
                               h-9 sm:h-10 text-xs font-bold rounded-lg transition-all duration-300 relative
-                              ${d.isDisabled ? 'text-slate-300 dark:text-zinc-700 opacity-50 cursor-not-allowed' : 'hover:scale-110'}
+                              ${d.isDisabled ? 'text-slate-300 dark:text-zinc-700 opacity-50 cursor-not-allowed pointer-events-none' : 'hover:scale-110'}
                               ${!d.isCurrentMonth ? 'opacity-40 grayscale-[0.5]' : ''}
                               ${d.isClosed ? 'bg-rose-500/10 text-rose-500/50' : ''}
                               ${d.isSelected 
@@ -1103,6 +1167,14 @@ export default function BookingWidget({
                                       {section.label}
                                     </h3>
                                   </div>
+                                  {hasTzDifference && i === 0 && (
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg mb-2">
+                                      <Globe className="w-3.5 h-3.5 text-amber-500" />
+                                      <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                        Horarios mostrados en la hora local del negocio ({businessOffsetLabel})
+                                      </p>
+                                    </div>
+                                  )}
                                   <div className="grid grid-cols-4 gap-1.5">
                                     {sectionTimes.map(({time, available}) => (
                                       <button 
@@ -1333,7 +1405,14 @@ export default function BookingWidget({
                  </p>
                  <div className="bg-slate-200 dark:bg-black/30 w-full p-4 rounded-xl border border-slate-200 dark:border-white/5 mt-4">
                     <p className="text-purple-400 font-bold text-lg mb-1">{selectedDate || t("date_tbd")}</p>
-                    <p className="text-slate-900 dark:text-white text-xl">{selectedTime}</p>
+                    <p className="text-slate-900 dark:text-white text-xl">
+                      {selectedTime}
+                      {hasTzDifference && (
+                        <span className="block text-[10px] text-slate-400 mt-1 font-medium italic">
+                          Hora del negocio • Tu calendario se ajustará automáticamente
+                        </span>
+                      )}
+                    </p>
                  </div>
                </div>
                
