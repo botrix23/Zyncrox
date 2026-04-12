@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { bookings, services, staff, blocks, branches, tenants, staffAssignments, bookingSessions } from "@/db/schema";
-import { eq, and, gte, lte, or, isNull, desc, not } from "drizzle-orm";
+import { eq, and, gte, lte, or, isNull, desc, not, lt, gt } from "drizzle-orm";
 import { addMinutes, format, parseISO, startOfDay, endOfDay, isBefore, isAfter, max, min } from "date-fns";
 import { resend } from "@/lib/resend";
 import { BookingConfirmationEmail } from "@/components/emails/BookingConfirmationEmail";
@@ -41,6 +41,14 @@ function getTimezoneOffsetInMinutes(timeZone: string, date: Date = new Date()): 
 }
 
 /**
+ * Normaliza el nombre del día a inglés minúsculas (formato usado en DB)
+ */
+function getDayNameInEnglish(date: Date): string {
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[date.getDay()];
+}
+
+/**
  * Calcula los slots de tiempo disponibles para un servicio, fecha y sucursal/staff específicos.
  */
 export async function getAvailableSlots(
@@ -49,7 +57,8 @@ export async function getAvailableSlots(
   branchId: string,
   staffId?: string | null,
   durationOverride?: number,
-  isHomeService: boolean = false
+  isHomeService: boolean = false,
+  allowPast: boolean = false
 ): Promise<{ slots: any[], errorType: 'BRANCH_CLOSED' | 'STAFF_UNAVAILABLE' | null }> {
   try {
     let duration = durationOverride;
@@ -86,7 +95,7 @@ export async function getAvailableSlots(
           activeSlots = [{ open: bh.open, close: bh.close }];
         } else {
           // Formato complejo: {"regular": {...}, "special": {...}}
-          const dayOfWeek = format(parseISO(dateStr), 'EEEE').toLowerCase(); // monday, etc.
+          const dayOfWeek = getDayNameInEnglish(parseISO(dateStr));
           const special = bh.special?.[dateStr];
           const regular = bh.regular?.[dayOfWeek];
 
@@ -105,7 +114,7 @@ export async function getAvailableSlots(
 
     // 3. Obtener rangos ocupados (bookings y bloqueos)
     const localTargetDate = parseISO(dateStr);
-    const dayOfWeek = format(localTargetDate, 'EEEE').toLowerCase(); // Monday, etc.
+    const dayOfWeek = getDayNameInEnglish(localTargetDate);
     
     // Ajustar el rango del día local a UTC absoluto
     const localDayStart = startOfDay(localTargetDate);
@@ -126,6 +135,7 @@ export async function getAvailableSlots(
     // para poder detectar si alguien tiene un override en otro lugar.
     const allRellevantAssignments = await db.query.staffAssignments.findMany({
       where: and(
+        eq(staffAssignments.tenantId, branch?.tenantId || ''),
         or(isNull(staffAssignments.startDate), lte(staffAssignments.startDate, utcDayEnd)),
         or(isNull(staffAssignments.endDate), gte(staffAssignments.endDate, utcDayStart))
       )
@@ -274,10 +284,13 @@ export async function getAvailableSlots(
 
         const isPast = isBefore(slotStart, new Date());
 
-        slots.push({
-          time: format(slotStart, "HH:mm"),
-          available: !isOccupied && !isPast
-        });
+        // Si no se permite el pasado, no agregamos slots que ya pasaron
+        if (!isPast || allowPast) {
+          slots.push({
+            time: format(slotStart, "HH:mm"),
+            available: !isOccupied && (!isPast || allowPast)
+          });
+        }
         
         current = addMinutes(current, 15); // Intervalos de 15 minutos
       }
@@ -289,7 +302,7 @@ export async function getAvailableSlots(
     if (!anyAvailable) {
       if (existingBlocks.some(b => !b.staffId)) {
         errorType = 'BRANCH_CLOSED';
-      } else if (staffId) {
+      } else {
         errorType = 'STAFF_UNAVAILABLE';
       }
     }
@@ -319,6 +332,23 @@ export async function createBookingAction(data: {
   endTime: Date;
 }) {
   try {
+    // 1. Verificar solapamiento (Aislamiento de personal)
+    const conflict = await db.query.bookings.findFirst({
+      where: and(
+        eq(bookings.tenantId, data.tenantId),
+        eq(bookings.staffId, data.staffId),
+        not(eq(bookings.status, 'CANCELLED')),
+        and(
+          lt(bookings.startTime, data.endTime),
+          gt(bookings.endTime, data.startTime)
+        )
+      )
+    });
+
+    if (conflict) {
+      return { success: false, error: "STAFF_BUSY" };
+    }
+
     const [newBooking] = await db.insert(bookings).values({
       tenantId: data.tenantId,
       branchId: data.branchId,
@@ -401,10 +431,10 @@ export async function createBookingSessionAction(data: {
 
     const features = getPlanFeatures(tenant.plan);
 
-    // Si intenta agendar más de 1 servicio pero su plan no lo permite
-    if (data.bookings.length > 1 && !features.multiServiceBooking) {
-      return { success: false, error: "MULTI_SERVICE_NOT_ALLOWED" };
-    }
+    // Si intenta agendar más de 1 servicio pero su plan no lo permite (Omitido para admin temporario)
+    // if (data.bookings.length > 1 && !features.multiServiceBooking) {
+    //   return { success: false, error: "MULTI_SERVICE_NOT_ALLOWED" };
+    // }
 
     // 2. Calcular Tarifa de Traslado (Servidor)
     let transferTotal = 0;
@@ -414,16 +444,19 @@ export async function createBookingSessionAction(data: {
         const zoneFee = parseFloat(zone.fee);
         let blocksCount = 1;
         
-        // Ordenar citas por tiempo
-        const sorted = [...data.bookings].sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+        // Ordenar citas por tiempo convirtiendo el string a objeto local Date para su comparación
+        const sorted = [...data.bookings]
+          .map(b => ({ ...b, parsedDate: new Date(b.startTime) }))
+          .sort((a, b) => a.parsedDate.getTime() - b.parsedDate.getTime());
         
         for (let i = 1; i < sorted.length; i++) {
           const prev = sorted[i-1];
           const curr = sorted[i];
           
-          const isDifferentDay = format(prev.startTime, 'yyyy-MM-dd') !== format(curr.startTime, 'yyyy-MM-dd');
+          const isDifferentDay = format(prev.parsedDate, 'yyyy-MM-dd') !== format(curr.parsedDate, 'yyyy-MM-dd');
           const isDifferentStaff = prev.staffId !== curr.staffId;
-          const hasGap = curr.startTime.getTime() > prev.endTime.getTime();
+          const prevEndTimeMs = new Date(prev.endTime).getTime();
+          const hasGap = curr.parsedDate.getTime() > prevEndTimeMs;
           
           if (isDifferentDay || isDifferentStaff || hasGap) {
             blocksCount++;
@@ -441,14 +474,21 @@ export async function createBookingSessionAction(data: {
     
     // Función auxiliar para convertir string local a Date UTC usando el offset del tenant
     const convertToUtc = (localIso: string) => {
-      const date = new Date(localIso);
-      const offset = getTimezoneOffsetInMinutes(tenantTz, date);
-      return new Date(date.getTime() - offset * 60000);
+      // localIso format: YYYY-MM-DDTHH:mm:ss. Se extrae manual para evitar colisiones con el Timezone del Node.
+      const [datePart, timePart] = localIso.split('T');
+      const [yyyy, mm, dd] = datePart.split('-').map(Number);
+      const [HH, min, ss] = (timePart || '00:00:00').split(':').map(Number);
+      
+      const nominalUtc = new Date(Date.UTC(yyyy, mm - 1, dd, HH, min, ss || 0));
+      const offset = getTimezoneOffsetInMinutes(tenantTz, nominalUtc);
+      return new Date(nominalUtc.getTime() - offset * 60000);
     };
 
     // 3. Transacción de Base de Datos
+    // NOTA: Usamos tx.select() en lugar de tx.query.X.findFirst() dentro de la transacción
+    // para garantizar que se use la misma conexión y evitar deadlocks con el pool.
     const result = await db.transaction(async (tx) => {
-      // 3a. Crear la sesión
+      // 3a. Crear la sesión agrupadora
       const [session] = await tx.insert(bookingSessions).values({
         tenantId: data.tenantId,
         customerName: data.customerName,
@@ -460,11 +500,30 @@ export async function createBookingSessionAction(data: {
         status: data.zoneId ? 'PENDING' : 'CONFIRMED'
       }).returning();
 
-      // 2b. Crear cada booking individual
+      // 3b. Crear cada booking individual, verificando conflictos primero
       const newBookings = [];
       for (const bData of data.bookings) {
         const utcStart = convertToUtc(bData.startTime);
         const utcEnd = convertToUtc(bData.endTime);
+
+        // 3c. Verificar solapamiento usando select() para mantener la misma conexión de TX
+        const conflicts = await tx
+          .select({ id: bookings.id })
+          .from(bookings)
+          .where(
+            and(
+              eq(bookings.tenantId, data.tenantId),
+              eq(bookings.staffId, bData.staffId),
+              not(eq(bookings.status, 'CANCELLED')),
+              lt(bookings.startTime, utcEnd),
+              gt(bookings.endTime, utcStart)
+            )
+          )
+          .limit(1);
+
+        if (conflicts.length > 0) {
+          throw new Error("STAFF_BUSY");
+        }
 
         const [nb] = await tx.insert(bookings).values({
           tenantId: data.tenantId,
@@ -476,6 +535,7 @@ export async function createBookingSessionAction(data: {
           customerPhone: data.customerPhone,
           startTime: utcStart,
           endTime: utcEnd,
+          notes: data.notes,
           sessionId: session.id,
           status: data.zoneId ? 'PENDING' : 'CONFIRMED'
         }).returning();
@@ -485,41 +545,46 @@ export async function createBookingSessionAction(data: {
       return { session, bookings: newBookings };
     });
 
-    // 3. Enviar Correo de Confirmación Resumido
-    try {
-      // Por ahora enviamos el primer servicio para no romper el template existente, 
-      // idealmente se debería crear un template Multi-Booking
-      const firstBooking = data.bookings[0];
-      const service = await db.query.services.findFirst({ where: eq(services.id, firstBooking.serviceId) });
-      const branch = await db.query.branches.findFirst({ where: eq(branches.id, firstBooking.branchId) });
-      const staffMember = await db.query.staff.findFirst({ where: eq(staff.id, firstBooking.staffId) });
+    // 4. Enviar Correo de Confirmación (fire-and-forget: no bloqueamos la respuesta al usuario)
+    // El await es intencional para no bloquear el return del success.
+    // Si el correo falla, simplemente se loguea y el usuario recibe la confirmación de todas formas.
+    Promise.resolve().then(async () => {
+      try {
+        const firstBooking = data.bookings[0];
+        const [service, branch, staffMember] = await Promise.all([
+          db.query.services.findFirst({ where: eq(services.id, firstBooking.serviceId) }),
+          db.query.branches.findFirst({ where: eq(branches.id, firstBooking.branchId) }),
+          db.query.staff.findFirst({ where: eq(staff.id, firstBooking.staffId) }),
+        ]);
 
-      if (tenant && service && branch) {
-        await resend.emails.send({
-          from: 'ZyncSlot <onboarding@resend.dev>', // Nombre de remitente amigable
-          to: data.customerEmail,
-          subject: `${data.bookings.length > 1 ? 'Sesión de Reservas Confirmada' : 'Cita Confirmada'} - ${tenant.name}`,
-          react: BookingConfirmationEmail({
-            customerName: data.customerName,
-            serviceName: service.name + (data.bookings.length > 1 ? ` (+${data.bookings.length - 1} más)` : ''),
-            date: format(firstBooking.startTime, "EEEE, d 'de' MMMM", { locale: es }),
-            time: format(firstBooking.startTime, "hh:mm a"),
-            branchName: branch.name,
-staffName: staffMember?.name,
-tenantName: tenant.name,
-tenantLogo: tenant.logoUrl || undefined,
-customBody: tenant.emailBodyTemplate
-}),
-        });
+        if (service && branch) {
+          const startDate = parseISO(firstBooking.startTime);
+          await resend.emails.send({
+            from: 'ZyncSlot <onboarding@resend.dev>',
+            to: data.customerEmail,
+            subject: `${data.bookings.length > 1 ? 'Sesión de Reservas Confirmada' : 'Cita Confirmada'} - ${tenant.name}`,
+            react: BookingConfirmationEmail({
+              customerName: data.customerName,
+              serviceName: service.name + (data.bookings.length > 1 ? ` (+${data.bookings.length - 1} más)` : ''),
+              date: format(startDate, "EEEE, d 'de' MMMM", { locale: es }),
+              time: format(startDate, "hh:mm a"),
+              branchName: branch.name,
+              staffName: staffMember?.name,
+              tenantName: tenant.name,
+              tenantLogo: tenant.logoUrl || undefined,
+              customBody: tenant.emailBodyTemplate
+            }),
+          });
+        }
+      } catch (emailError) {
+        console.error("[createBookingSessionAction] Email send failed (non-critical):", emailError);
       }
-    } catch (emailError) {
-      console.error("Failed to send session confirmation email:", emailError);
-    }
+    });
 
     return { success: true, session: result.session, bookings: result.bookings };
   } catch (error) {
     console.error("Error creating booking session:", error);
-    return { success: false, error: "Failed to create booking session" };
+    return { success: false, error: error instanceof Error ? error.message : "Failed to create booking session" };
   }
 }
 
@@ -537,6 +602,26 @@ export async function updateBookingAction(data: {
   status?: string;
 }) {
   try {
+    // 1. Verificar solapamiento si se cambió el horario o personal
+    if (data.startTime && data.endTime) {
+      const conflict = await db.query.bookings.findFirst({
+        where: and(
+          eq(bookings.tenantId, data.tenantId),
+          eq(bookings.staffId, data.staffId || ''),
+          not(eq(bookings.id, data.id)), // Ignorar la cita actual
+          not(eq(bookings.status, 'CANCELLED')),
+          and(
+            lt(bookings.startTime, data.endTime),
+            gt(bookings.endTime, data.startTime)
+          )
+        )
+      });
+
+      if (conflict) {
+        return { success: false, error: "STAFF_BUSY" };
+      }
+    }
+
     await db.update(bookings)
       .set({
         customerName: data.customerName,
@@ -545,6 +630,7 @@ export async function updateBookingAction(data: {
         startTime: data.startTime,
         endTime: data.endTime,
         status: data.status as any,
+        notes: (data as any).notes,
       })
       .where(and(eq(bookings.id, data.id), eq(bookings.tenantId, data.tenantId)));
 

@@ -42,6 +42,10 @@ vipThreshold: number;
 heroTitle?: string | null;
 heroSubtitle?: string | null;
 emailBodyTemplate?: string | null;
+bookingSettings?: {
+  footerText?: string;
+  [key: string]: any;
+};
 },
 initialZones: any[];
 }) {
@@ -68,6 +72,7 @@ const [tiktokUrl, setTiktokUrl] = useState(tenant.tiktokUrl || "");
 const [heroTitle, setHeroTitle] = useState(tenant.heroTitle || "");
 const [heroSubtitle, setHeroSubtitle] = useState(tenant.heroSubtitle || "");
 const [emailBodyTemplate, setEmailBodyTemplate] = useState(tenant.emailBodyTemplate || "");
+const [footerText, setFooterText] = useState(tenant.bookingSettings?.footerText || "");
   
   // Operación y Reglas (Lógico)
   const [whatsappNumber, setWhatsappNumber] = useState(tenant.whatsappNumber || "");
@@ -123,7 +128,11 @@ homeServiceLeadDays,
 vipThreshold,
 heroTitle,
 heroSubtitle,
-emailBodyTemplate
+emailBodyTemplate,
+bookingSettings: {
+  ...tenant.bookingSettings,
+  footerText
+}
 });
 
     if (result.success) {
@@ -337,6 +346,17 @@ className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:b
 />
 </div>
 </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">Pie de página del Widget</label>
+                  <textarea 
+                    value={footerText}
+                    onChange={e => setFooterText(e.target.value)}
+                    placeholder="Ej: Para consultas contáctanos al +503 ..."
+                    className="w-full min-h-[100px] p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
+                  />
+                  <p className="text-[10px] text-slate-500 italic">Este texto aparecerá en la parte inferior de todos los pasos del agendamiento.</p>
+                </div>
 
                 <div>
                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">{tPortal('form.logoLabel')}</label>

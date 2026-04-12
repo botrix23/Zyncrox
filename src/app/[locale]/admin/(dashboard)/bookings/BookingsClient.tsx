@@ -21,9 +21,17 @@ import {
   LayoutList,
   MapPin,
   Copy,
-  Check
+  Check,
+  Loader2,
+  Plus,
+  Minus,
+  Briefcase,
+  FileText,
+  Truck,
+  Layers,
+  CalendarRange
 } from 'lucide-react';
-import { updateBookingAction, deleteBookingAction, createBookingAction } from "@/app/actions/booking";
+import { updateBookingAction, deleteBookingAction, createBookingAction, createBookingSessionAction, getAvailableSlots } from "@/app/actions/booking";
 import { useRouter } from "next/navigation";
 import { 
   format, 
@@ -42,7 +50,7 @@ import {
   eachHourOfInterval 
 } from "date-fns";
 import { es, enUS } from "date-fns/locale";
-import { Loader2 } from 'lucide-react';
+
 import PhoneInput from "@/components/PhoneInput";
 import { useTranslations, useLocale } from "next-intl";
 import { Portal } from "@/components/Portal";
@@ -52,13 +60,17 @@ export default function BookingsClient({
   services,
   staff,
   branches,
-  tenantId
+  coverageZones = [],
+  tenantId,
+  tenantSettings
 }: { 
   initialBookings: any[],
   services: any[],
   staff: any[],
   branches: any[],
-  tenantId: string
+  coverageZones?: any[],
+  tenantId: string,
+  tenantSettings: any
 }) {
   const t = useTranslations('Dashboard.bookings');
   const localeStr = useLocale();
@@ -127,7 +139,8 @@ export default function BookingsClient({
     branchId: staff[0]?.branchId || "",
     date: format(new Date(), "yyyy-MM-dd"),
     time: "09:00",
-    durationMinutes: services[0]?.durationMinutes || 30
+    durationMinutes: services[0]?.durationMinutes || 30,
+    notes: ""
   });
 
   const isPastBooking = (() => {
@@ -143,6 +156,31 @@ export default function BookingsClient({
   const [allowOverlap, setAllowOverlap] = useState(false);
   const [overlapInfo, setOverlapInfo] = useState<any | null>(null);
   
+  // -- NUEVOS ESTADOS PARA MULTI-SERVICIO Y DOMICILIO --
+  const [modalStep, setModalStep] = useState(1); // 1: Cliente info, 2: Servicios, 3: Modalidad, 4: Agendamiento, 5: Resumen
+  const [selectedServicesList, setSelectedServicesList] = useState<any[]>([]); // Servicios seleccionados en el Paso 2
+  const [modality, setModality] = useState<'local' | 'domicilio'>('local');
+  const [selectedZone, setSelectedZone] = useState<any | null>(null);
+  const [schedulingMode, setSchedulingMode] = useState<'bulk' | 'separate'>('bulk');
+  const [cart, setCart] = useState<any[]>([]); // [{ service, staff, date, time, duration }]
+  const [currentServiceIndex, setCurrentServiceIndex] = useState(0);
+  const [availableSlots, setAvailableSlots] = useState<{time: string, available: boolean}[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  // -- FIN NUEVOS ESTADOS --
+
+  // Filtrar staff según modalidad
+  const filteredStaff = staff.filter(s => {
+    if (modality === 'domicilio') return s.allowsHomeService !== false;
+    return true;
+  });
+
+  // Filtrar servicios según modalidad
+  const filteredServices = services.filter(s => {
+    if (modality === 'domicilio') return s.allowsHomeService !== false;
+    return true;
+  });
+  
   // Algoritmo para posicionar citas solapadas lado a lado
   const getEventLayout = (events: any[]) => {
     if (events.length === 0) return [];
@@ -157,29 +195,21 @@ export default function BookingsClient({
       return (bEnd - bStart) - (aEnd - aStart);
     });
 
-    const columns: any[][] = [];
-    
-    sorted.forEach(event => {
-      let placed = false;
-      for (let i = 0; i < columns.length; i++) {
-        const lastInCol = columns[i][columns[i].length - 1];
-        if (new Date(event.startTime) >= new Date(lastInCol.endTime)) {
-          columns[i].push(event);
-          event.colIndex = i;
-          placed = true;
-          break;
-        }
-      }
-      if (!placed) {
-        event.colIndex = columns.length;
-        columns.push([event]);
-      }
+    return sorted.map(event => {
+      // Encontrar el grupo de solapamiento para determinar el ancho real
+      const overlappingInGroup = events.filter(e => {
+        const eStart = new Date(e.startTime);
+        const eEnd = new Date(e.endTime);
+        const eventStart = new Date(event.startTime);
+        const eventEnd = new Date(event.endTime);
+        return eStart < eventEnd && eEnd > eventStart;
+      });
+      
+      return {
+        ...event,
+        totalCols: overlappingInGroup.length
+      };
     });
-
-    return sorted.map(event => ({
-      ...event,
-      totalCols: columns.length
-    }));
   };
 
   // Detección de solapamiento (Overlap)
@@ -211,11 +241,77 @@ export default function BookingsClient({
     checkOverlap();
   }, [formData.date, formData.time, formData.durationMinutes, formData.staffId, editingBooking]);
 
+  // Nuevo Efecto para cargar slots en tiempo real
+  useEffect(() => {
+    const fetchSlots = async () => {
+      // Solo cargar si estamos en el paso 4 de creación
+      if (modalStep !== 4 || !formData.date || !formData.staffId || editingBooking) return;
+      
+      setLoadingSlots(true);
+      try {
+        const currentService = selectedServicesList[currentServiceIndex];
+        
+        // Calcular duración a validar: En modo bulk, sumamos todos los servicios seleccionados
+        // para asegurar que el bloque completo quepa sin traslapes.
+        const durationToValidate = schedulingMode === 'bulk'
+          ? selectedServicesList.reduce((acc, s) => acc + s.durationMinutes, 0)
+          : currentService.durationMinutes;
+
+        const res = await getAvailableSlots(
+          formData.date,
+          currentService.id,
+          formData.branchId || staff[0].branchId,
+          formData.staffId,
+          durationToValidate,
+          modality === 'domicilio',
+          true // allowPast: true para el administrador
+        );
+        
+        if (res.slots) {
+          const inMemoryFiltered = res.slots.map(slot => {
+             let isAvailable = slot.available;
+             if (isAvailable && schedulingMode === 'separate') {
+                const slotStart = parse(`${formData.date} ${slot.time}`, "yyyy-MM-dd HH:mm", new Date());
+                const slotEnd = addMinutes(slotStart, currentService.durationMinutes);
+                
+                for (const appt of cart) {
+                   if (appt.staff.id === formData.staffId && appt.date === formData.date) {
+                      const apptStart = parse(`${appt.date} ${appt.time}`, "yyyy-MM-dd HH:mm", new Date());
+                      const apptEnd = addMinutes(apptStart, appt.duration);
+                      if (slotStart < apptEnd && slotEnd > apptStart) {
+                         isAvailable = false;
+                         break;
+                      }
+                   }
+                }
+             }
+             return { ...slot, available: isAvailable };
+          });
+          setAvailableSlots(inMemoryFiltered);
+        }
+      } catch (error) {
+        console.error("Error fetching slots:", error);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+
+    fetchSlots();
+  }, [modalStep, formData.date, formData.staffId, currentServiceIndex, modality]);
+
   // Reemplazar el anterior handleOpenCreate para resetear estados
   const handleOpenCreateInternal = () => {
     setEditingBooking(null);
     setOverlapInfo(null);
     setAllowOverlap(false);
+    setModalStep(1);
+    setSelectedServicesList([]);
+    setCart([]);
+    setModality('local');
+    setSelectedZone(null);
+    setSchedulingMode('bulk');
+    setCurrentServiceIndex(0);
+    setIsSuccess(false);
     setFormData({
       customerName: "",
       customerEmail: "",
@@ -226,7 +322,8 @@ export default function BookingsClient({
       branchId: staff[0]?.branchId || "",
       date: format(new Date(), "yyyy-MM-dd"),
       time: "09:00",
-      durationMinutes: services[0]?.durationMinutes || 30
+      durationMinutes: services[0]?.durationMinutes || 30,
+      notes: ""
     });
     setDurationInput((services[0]?.durationMinutes || 30).toString());
     setIsEditModalOpen(true);
@@ -256,7 +353,8 @@ export default function BookingsClient({
       branchId: booking.branchId,
       date: format(new Date(booking.startTime), "yyyy-MM-dd"),
       time: format(new Date(booking.startTime), "HH:mm"),
-      durationMinutes: Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000)
+      durationMinutes: Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000),
+      notes: booking.notes || ""
     });
     setDurationInput(Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000).toString());
     setIsEditModalOpen(true);
@@ -266,46 +364,78 @@ export default function BookingsClient({
     e.preventDefault();
     setIsLoading(true);
     
-    // Calcular startTime y endTime
-    const start = parse(`${formData.date} ${formData.time}`, "yyyy-MM-dd HH:mm", new Date());
-    const end = addMinutes(start, formData.durationMinutes);
+    try {
+      let result;
+      if (editingBooking) {
+        // Calcular startTime y endTime para edición de cita individual
+        const start = parse(`${formData.date} ${formData.time}`, "yyyy-MM-dd HH:mm", new Date());
+        const end = addMinutes(start, formData.durationMinutes);
+        
+        result = await updateBookingAction({
+          id: editingBooking.id,
+          tenantId,
+          ...formData,
+          startTime: start,
+          endTime: end
+        });
+      } else {
+        // CREACIÓN DE NUEVA SESIÓN (Multi-servicio / Remota)
+        // Transformar el carrito al formato de la acción de sesión
+        const sessionBookings = cart.map(item => {
+          const start = parse(`${item.date} ${item.time}`, "yyyy-MM-dd HH:mm", new Date());
+          const end = addMinutes(start, item.duration || item.service.durationMinutes);
+          
+          // Formatear como ISO local (la acción se encarga del offset del tenant)
+          const formatLocalIso = (d: Date) => format(d, "yyyy-MM-dd'T'HH:mm:ss");
 
-    let result;
-    if (editingBooking) {
-      result = await updateBookingAction({
-        id: editingBooking.id,
-        tenantId,
-        ...formData,
-        startTime: start,
-        endTime: end
-      });
-    } else {
-      result = await createBookingAction({
-        tenantId,
-        branchId: formData.branchId,
-        serviceId: formData.serviceId,
-        staffId: formData.staffId,
-        customerName: formData.customerName,
-        customerEmail: formData.customerEmail,
-        startTime: start,
-        endTime: end
-      });
-    }
+          return {
+            branchId: item.staff.branchId || formData.branchId, 
+            serviceId: item.service.id,
+            staffId: item.staff.id,
+            startTime: formatLocalIso(start),
+            endTime: formatLocalIso(end),
+            price: item.service.price.toString()
+          };
+        });
 
-    if (result.success) {
-      setIsEditModalOpen(false);
-      router.refresh();
-    } else {
+        result = await createBookingSessionAction({
+          tenantId,
+          customerName: formData.customerName,
+          customerEmail: formData.customerEmail,
+          customerPhone: formData.customerPhone,
+          zoneId: selectedZone?.id,
+          notes: formData.notes, 
+          bookings: sessionBookings
+        });
+      }
+
+      if (result.success) {
+        if (editingBooking) {
+          setIsEditModalOpen(false);
+          setEditingBooking(null);
+        } else {
+          setIsSuccess(true);
+        }
+        router.refresh();
+      } else {
+        alert(t('errorSave') + (result.error ? `: ${result.error}` : ""));
+      }
+    } catch (err) {
+      console.error("Error during booking save:", err);
       alert(t('errorSave'));
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
+
 
   const handleDelete = async (id: string) => {
     if (!confirm(t('confirmCancel'))) return;
     
     const result = await deleteBookingAction(id, tenantId);
     if (result.success) {
+      setIsEditModalOpen(false);
+      setEditingBooking(null);
       router.refresh();
     } else {
       alert(t('errorDelete'));
@@ -393,8 +523,18 @@ export default function BookingsClient({
                           <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20">
                               <User className="w-7 h-7" />
                           </div>
-                          <div>
-                              <h3 className="font-black text-slate-900 dark:text-white text-lg leading-tight">{booking.customerName}</h3>
+                           <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-black text-slate-900 dark:text-white text-lg leading-tight">{booking.customerName}</h3>
+                                {booking.notes && (
+                                  <div className="group relative">
+                                    <FileText className="w-4 h-4 text-purple-500 cursor-help" />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl border border-white/10">
+                                      {booking.notes}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                               <div className="flex flex-col gap-0.5 mt-1">
                                   <span className={`text-[11px] font-black px-2 py-0.5 rounded-full inline-block w-fit ${
                                       booking.status === 'CONFIRMED' ? 'bg-emerald-500/10 text-emerald-500' :
@@ -448,7 +588,7 @@ export default function BookingsClient({
                           </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                           {booking.status === 'FINALIZADA' && (
                             <button 
                               onClick={() => {
@@ -789,7 +929,7 @@ export default function BookingsClient({
         <Portal>
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-hidden">
              {/* Backdrop con Blur Dinámico - Fixed para cubrir todo */}
-             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsEditModalOpen(false)} />
+             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300" />
             <div className="relative bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-[32px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
               <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/5 shrink-0">
                 <h3 className="text-xl font-black tracking-tight">{editingBooking ? t('form.titleEdit') : t('form.titleNew')}</h3>
@@ -798,187 +938,588 @@ export default function BookingsClient({
                 </button>
               </div>
               
-              <form onSubmit={handleSaveEdit} className="p-7 space-y-6 overflow-y-auto custom-scrollbar flex-1">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerName')}</label>
-                  <input 
-                    required
-                    type="text" 
-                    value={formData.customerName}
-                    onChange={e => setFormData({...formData, customerName: e.target.value})}
-                    className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium text-slate-900 dark:text-white"
-                    placeholder={t('form.customerName')}
-                  />
-                </div>
+              {editingBooking ? (
+                /* MODO EDICIÓN (LEGACY) */
+                <form onSubmit={handleSaveEdit} className="flex flex-col h-full overflow-hidden">
+                  <div className="p-7 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerName')}</label>
+                      <input 
+                        required
+                        type="text" 
+                        value={formData.customerName}
+                        onChange={e => setFormData({...formData, customerName: e.target.value})}
+                        className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium text-slate-900 dark:text-white"
+                        placeholder={t('form.customerName')}
+                      />
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerEmail')}</label>
-                    <input 
-                      type="email" 
-                      value={formData.customerEmail}
-                      onChange={e => setFormData({...formData, customerEmail: e.target.value})}
-                      placeholder={t('form.customerEmail')}
-                      className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 ml-1">{t('form.status')}</label>
-                    <select 
-                      value={formData.status}
-                      onChange={e => setFormData({...formData, status: e.target.value})}
-                      className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-bold appearance-none cursor-pointer text-slate-900 dark:text-white"
-                    >
-                      <option value="PENDING">{t('status.PENDING')}</option>
-                      <option value="CONFIRMED">{t('status.CONFIRMED')}</option>
-                      <option value="FINALIZADA">{t('status.FINALIZADA')}</option>
-                      <option value="CANCELLED">{t('status.CANCELLED')}</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerPhone')}</label>
-                  <PhoneInput 
-                    value={formData.customerPhone}
-                    onChange={val => setFormData({...formData, customerPhone: val})}
-                    placeholder={t('form.customerPhone')}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 ml-1">{t('form.service')}</label>
-                    <select 
-                      value={formData.serviceId}
-                      onChange={e => setFormData({...formData, serviceId: e.target.value})}
-                      className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-bold appearance-none cursor-pointer text-slate-900 dark:text-white"
-                    >
-                      {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 ml-1">{t('form.staff')}</label>
-                    <select 
-                      value={formData.staffId}
-                      onChange={e => {
-                        const s = staff.find(st => st.id === e.target.value);
-                        setFormData({...formData, staffId: e.target.value, branchId: s?.branchId || formData.branchId})
-                      }}
-                      className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-bold appearance-none cursor-pointer text-slate-900 dark:text-white"
-                    >
-                      {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 ml-1">{t('form.duration')}</label>
-                  <div className="relative">
-                    <Clock3 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input 
-                      required
-                      type="number" 
-                      min="1"
-                      value={durationInput}
-                      onChange={e => {
-                        const val = e.target.value;
-                        setDurationInput(val);
-                        const parsed = parseInt(val);
-                        if (!isNaN(parsed)) {
-                          setFormData({...formData, durationMinutes: parsed});
-                        }
-                      }}
-                      className="w-full p-3 pl-10 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium text-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 ml-1">{t('form.date')}</label>
-                    <input 
-                      required
-                      type="date" 
-                      value={formData.date}
-                      onChange={e => setFormData({...formData, date: e.target.value})}
-                      className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-bold cursor-pointer text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 ml-1">{t('form.time')}</label>
-                    <input 
-                      required
-                      type="time" 
-                      value={formData.time}
-                      onChange={e => setFormData({...formData, time: e.target.value})}
-                      className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-bold cursor-pointer text-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-
-                {/* Advertencia de Solapamiento */}
-                {overlapInfo && (
-                  <div className="p-4 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-2">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-bold text-orange-900 dark:text-orange-200">
-                          {t('overlapWarning', { staff: staff.find(s => s.id === formData.staffId)?.name })}
-                        </p>
-                        <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
-                          {t('overlapDetail', { 
-                            customer: overlapInfo.customerName,
-                            start: format(new Date(overlapInfo.startTime), "hh:mm a"),
-                            end: format(new Date(overlapInfo.endTime), "hh:mm a")
-                          })}
-                        </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerEmail')}</label>
+                        <input 
+                          type="email" 
+                          value={formData.customerEmail}
+                          onChange={e => setFormData({...formData, customerEmail: e.target.value})}
+                          placeholder={t('form.customerEmail')}
+                          className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.status')}</label>
+                        <select 
+                          value={formData.status}
+                          onChange={e => setFormData({...formData, status: e.target.value})}
+                          className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-bold appearance-none cursor-pointer text-slate-900 dark:text-white"
+                        >
+                          <option value="PENDING">{t('status.PENDING')}</option>
+                          <option value="CONFIRMED">{t('status.CONFIRMED')}</option>
+                          <option value="FINALIZADA">{t('status.FINALIZADA')}</option>
+                          <option value="CANCELLED">{t('status.CANCELLED')}</option>
+                        </select>
                       </div>
                     </div>
-                    <label className="flex items-center gap-3 p-3 bg-white dark:bg-black/20 rounded-xl cursor-pointer hover:bg-white/80 transition-colors">
-                      <input 
-                        type="checkbox" 
-                        checked={allowOverlap}
-                        onChange={e => setAllowOverlap(e.target.checked)}
-                        className="w-4 h-4 rounded border-orange-300 transform scale-125 accent-orange-500"
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerPhone')}</label>
+                      <PhoneInput 
+                        value={formData.customerPhone}
+                        onChange={val => setFormData({...formData, customerPhone: val})}
+                        placeholder={t('form.customerPhone')}
                       />
-                      <span className="text-xs font-bold text-orange-800 dark:text-orange-300">
-                        {t('allowOverlap')}
-                      </span>
-                    </label>
-                  </div>
-                )}
-
-                {isPastBooking && (
-                  <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-600 dark:text-amber-400 text-xs font-bold animate-in fade-in slide-in-from-top-2">
-                    <AlertCircle className="w-5 h-5 shrink-0" />
-                    <div>
-                      <p>Atención: Esta cita está siendo programada en el PASADO.</p>
-                      <p className="mt-1 font-medium opacity-80 underline">Se guardará de todas formas para tu gestión interna.</p>
                     </div>
-                  </div>
-                )}
 
-                <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 shrink-0 -mx-7 -mb-7 mt-4 flex gap-3">
-                  {editingBooking && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-500 ml-1">{t('form.notes')}</label>
+                      <textarea 
+                        value={formData.notes}
+                        onChange={e => setFormData({...formData, notes: e.target.value})}
+                        placeholder={t('form.notesPlaceholder')}
+                        className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium text-slate-900 dark:text-white min-h-[80px] resize-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.service')}</label>
+                        <select 
+                          value={formData.serviceId}
+                          onChange={e => setFormData({...formData, serviceId: e.target.value})}
+                          className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-bold appearance-none cursor-pointer text-slate-900 dark:text-white"
+                        >
+                          {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.staff')}</label>
+                        <select 
+                          value={formData.staffId}
+                          onChange={e => {
+                            const s = staff.find(st => st.id === e.target.value);
+                            setFormData({...formData, staffId: e.target.value, branchId: s?.branchId || formData.branchId})
+                          }}
+                          className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-bold appearance-none cursor-pointer text-slate-900 dark:text-white"
+                        >
+                          {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.date')}</label>
+                        <input 
+                          required
+                          type="date" 
+                          value={formData.date}
+                          onChange={e => setFormData({...formData, date: e.target.value})}
+                          className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-bold cursor-pointer text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.time')}</label>
+                        <input 
+                          required
+                          type="time" 
+                          value={formData.time}
+                          onChange={e => setFormData({...formData, time: e.target.value})}
+                          className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-bold cursor-pointer text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {isPastBooking && (
+                      <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                            {t('pastBookingWarning')}
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                            {t('pastBookingDetail')}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {overlapInfo && (
+                      <div className="p-4 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-2xl space-y-3">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-bold text-orange-900 dark:text-orange-200">
+                              {t('overlapWarning', { staff: staff.find(s => s.id === formData.staffId)?.name })}
+                            </p>
+                            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                              {t('overlapDetail', { 
+                                customer: overlapInfo.customerName,
+                                start: format(new Date(overlapInfo.startTime), "hh:mm a"),
+                                end: format(new Date(overlapInfo.endTime), "hh:mm a")
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <label className="flex items-center gap-3 p-3 bg-white dark:bg-black/20 rounded-xl cursor-pointer hover:bg-white/80 transition-colors">
+                          <input 
+                            type="checkbox" 
+                            checked={allowOverlap}
+                            onChange={e => setAllowOverlap(e.target.checked)}
+                            className="w-4 h-4 rounded border-orange-300 transform scale-125 accent-orange-500"
+                          />
+                          <span className="text-xs font-bold text-orange-800 dark:text-orange-300">
+                            {t('allowOverlap')}
+                          </span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-white dark:bg-zinc-900 shrink-0 flex gap-3 sticky bottom-0 z-30">
                     <button 
                       type="button"
-                      onClick={() => handleDelete(editingBooking.id)}
-                      className="px-6 py-4 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-2xl font-bold transition-all flex items-center justify-center gap-2 border border-rose-500/20"
+                      disabled={isLoading}
+                      onClick={() => { handleDelete(editingBooking.id); setIsEditModalOpen(false); }}
+                      className="px-6 py-4 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold transition-all flex items-center justify-center gap-2 border border-rose-500/20"
                     >
                       <Trash2 className="w-5 h-5" />
                       {t('form.delete')}
                     </button>
-                  )}
-                  <button 
-                    type="submit" 
-                    disabled={isLoading || (!!overlapInfo && !allowOverlap)}
-                    className="flex-1 py-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold shadow-xl shadow-purple-500/20 transition-all flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (editingBooking ? t('form.save') : t('form.create'))}
-                  </button>
+                    <button 
+                      type="submit" 
+                      disabled={isLoading || (!!overlapInfo && !allowOverlap)}
+                      className="flex-1 py-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold shadow-xl shadow-purple-500/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('form.save')}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                /* MODO CREACIÓN (PASO A PASO) */
+                <div className="flex flex-col flex-1 overflow-hidden">
+                  <div className="px-7 py-4 bg-slate-50/50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5 flex gap-2">
+                    {[1, 2, 3, 4, 5].map(step => (
+                      <div 
+                        key={step} 
+                        className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${modalStep >= step ? 'bg-purple-500' : 'bg-slate-200 dark:bg-white/10'}`} 
+                      />
+                    ))}
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto custom-scrollbar relative flex flex-col">
+                    {modalStep === 1 && (
+                      <div className="flex flex-col flex-1 animate-in fade-in slide-in-from-right-4">
+                        <div className="p-7 space-y-6 flex-1">
+                          <h4 className="text-lg font-black">{t('form.customerInfo')}</h4>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerName')} *</label>
+                              <input 
+                                required
+                                type="text" 
+                                value={formData.customerName}
+                                onChange={e => setFormData({...formData, customerName: e.target.value})}
+                                className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium"
+                                placeholder={t('form.customerName')}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerEmail')} *</label>
+                              <input 
+                                required
+                                type="email" 
+                                value={formData.customerEmail}
+                                onChange={e => setFormData({...formData, customerEmail: e.target.value})}
+                                placeholder={t('form.customerEmail')}
+                                className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerPhone')} *</label>
+                              <PhoneInput 
+                                value={formData.customerPhone}
+                                onChange={val => setFormData({...formData, customerPhone: val})}
+                                placeholder={t('form.customerPhone')}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-black text-slate-500 ml-1">{t('form.notes')}</label>
+                              <textarea 
+                                value={formData.notes}
+                                onChange={e => setFormData({...formData, notes: e.target.value})}
+                                placeholder={t('form.notesPlaceholder')}
+                                className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium min-h-[80px] resize-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-7 bg-white dark:bg-zinc-900 border-t border-slate-100 dark:border-white/5 sticky bottom-0 z-20 shrink-0 w-full mt-auto">
+                          <button 
+                            onClick={() => setModalStep(2)}
+                            disabled={!formData.customerName || !formData.customerEmail || !formData.customerPhone || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customerEmail)}
+                            className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black disabled:opacity-50 transition-all"
+                          >
+                            {t('continue')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {modalStep === 2 && (
+                      <div className="flex flex-col flex-1 animate-in fade-in slide-in-from-right-4">
+                        <div className="p-7 space-y-4 flex-1">
+                          <h4 className="text-lg font-black">{t('form.selectServices')}</h4>
+                          <div className="grid grid-cols-1 gap-3">
+                            {filteredServices.map(srv => {
+                              const isSelected = selectedServicesList.some(s => s.id === srv.id);
+                              return (
+                                <button
+                                  key={srv.id}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setSelectedServicesList(selectedServicesList.filter(s => s.id !== srv.id));
+                                    } else {
+                                      setSelectedServicesList([...selectedServicesList, srv]);
+                                    }
+                                  }}
+                                  className={`p-4 rounded-2xl border text-left transition-all ${
+                                    isSelected 
+                                      ? 'bg-purple-500/10 border-purple-500 shadow-lg shadow-purple-500/5' 
+                                      : 'bg-white dark:bg-white/5 border-slate-100 dark:border-white/5 hover:border-purple-500/30'
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-3">
+                                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-purple-500 border-purple-500' : 'border-slate-300'}`}>
+                                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                                      </div>
+                                      <div>
+                                        <p className="font-bold text-sm">{srv.name}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold">{srv.durationMinutes} min</p>
+                                      </div>
+                                    </div>
+                                    <p className="font-black text-emerald-500">${srv.price}</p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div className="p-7 bg-white dark:bg-zinc-900 border-t border-slate-100 dark:border-white/5 sticky bottom-0 z-20 shrink-0 w-full mt-auto flex gap-3">
+                          <button onClick={() => setModalStep(1)} className="flex-1 py-4 bg-slate-100 dark:bg-white/5 rounded-2xl font-black">{t('back')}</button>
+                          <button 
+                            onClick={() => {
+                              if (selectedServicesList.length > 1 && (tenantSettings?.allowsHomeService)) {
+                                setModalStep(3);
+                              } else if (selectedServicesList.length > 1) {
+                                setModalStep(3); // Aún step 3 para modalidad local vs domicilio (si el negocio lo permite)
+                              } else {
+                                setSchedulingMode('bulk');
+                                setModalStep(3);
+                              }
+                            }}
+                            disabled={selectedServicesList.length === 0}
+                            className="flex-[2] py-4 bg-purple-600 text-white rounded-2xl font-black disabled:opacity-50"
+                          >
+                            {t('continue')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {modalStep === 3 && (
+                      <div className="flex flex-col flex-1 animate-in fade-in slide-in-from-right-4">
+                        <div className="p-7 space-y-6 flex-1">
+                           <h4 className="text-lg font-black">{t('form.modalityTitle')}</h4>
+                           <div className="grid grid-cols-2 gap-4">
+                              <button 
+                                onClick={() => { setModality('local'); setSelectedZone(null); }}
+                                className={`p-6 rounded-[24px] border-2 transition-all flex flex-col items-center gap-3 ${modality === 'local' ? 'bg-purple-500/10 border-purple-500' : 'bg-slate-50 dark:bg-white/5 border-transparent opacity-60'}`}
+                              >
+                                <Sparkles className={`w-8 h-8 ${modality === 'local' ? 'text-purple-500' : 'text-slate-400'}`} />
+                                <span className="font-bold text-sm">{t('modality.local')}</span>
+                              </button>
+                              <button 
+                                onClick={() => setModality('domicilio')}
+                                disabled={!tenantSettings?.allowsHomeService}
+                                className={`p-6 rounded-[24px] border-2 transition-all flex flex-col items-center gap-3 ${modality === 'domicilio' ? 'bg-emerald-500/10 border-emerald-500' : 'bg-slate-50 dark:bg-white/5 border-transparent opacity-60'} ${!tenantSettings?.allowsHomeService ? 'cursor-not-allowed grayscale' : ''}`}
+                              >
+                                <Truck className={`w-8 h-8 ${modality === 'domicilio' ? 'text-emerald-500' : 'text-slate-400'}`} />
+                                <span className="font-bold text-sm">{t('modality.home')}</span>
+                                {!tenantSettings?.allowsHomeService && <span className="text-[8px] text-rose-500 font-black uppercase">NO ACTIVADO</span>}
+                              </button>
+                           </div>
+
+                           {modality === 'domicilio' && (
+                             <div className="space-y-4 p-5 bg-emerald-500/5 rounded-[24px] border border-emerald-500/10 animate-in zoom-in-95">
+                                <label className="text-xs font-black text-slate-500">{t('form.zoneInfo')}</label>
+                                <div className="space-y-2">
+                                  {coverageZones.map(zone => (
+                                    <button
+                                      key={zone.id}
+                                      onClick={() => setSelectedZone(zone)}
+                                      className={`w-full p-4 rounded-xl border flex items-center justify-between transition-all ${selectedZone?.id === zone.id ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg' : 'bg-white dark:bg-white/5 border-slate-100 dark:border-white/5'}`}
+                                    >
+                                      <div><p className="font-bold text-sm">{zone.name}</p></div>
+                                      <p className="font-black">+${zone.fee}</p>
+                                    </button>
+                                  ))}
+                                </div>
+                             </div>
+                           )}
+
+                           {selectedServicesList.length > 1 && (
+                             <div className="space-y-4 border-t border-slate-100 dark:border-white/5 pt-6">
+                               <label className="text-xs font-black text-slate-500">{t('form.schedulingMode')}</label>
+                               <div className="grid grid-cols-1 gap-3">
+                                  <button onClick={() => setSchedulingMode('bulk')} className={`p-4 rounded-xl border flex items-center gap-4 text-left ${schedulingMode === 'bulk' ? 'bg-purple-500/10 border-purple-500' : 'border-slate-100 dark:border-white/5'}`}>
+                                    <Layers className="w-5 h-5 text-purple-500" />
+                                    <div><p className="font-bold text-sm">{t('schedulingMode.bulk')}</p></div>
+                                  </button>
+                                  <button onClick={() => setSchedulingMode('separate')} className={`p-4 rounded-xl border flex items-center gap-4 text-left ${schedulingMode === 'separate' ? 'bg-blue-500/10 border-blue-500' : 'border-slate-100 dark:border-white/5'}`}>
+                                    <CalendarRange className="w-5 h-5 text-blue-500" />
+                                    <div><p className="font-bold text-sm">{t('schedulingMode.separate')}</p></div>
+                                  </button>
+                               </div>
+                             </div>
+                           )}
+                        </div>
+                        <div className="p-7 bg-white dark:bg-zinc-900 border-t border-slate-100 dark:border-white/5 sticky bottom-0 z-20 shrink-0 w-full mt-auto flex gap-3">
+                          <button onClick={() => setModalStep(2)} className="flex-1 py-4 bg-slate-100 dark:bg-white/5 rounded-2xl font-black">{t('back')}</button>
+                          <button onClick={() => setModalStep(4)} className="flex-[2] py-4 bg-purple-600 text-white rounded-2xl font-black">{t('continue')}</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {modalStep === 4 && (
+                      <div className="flex flex-col flex-1 animate-in fade-in slide-in-from-right-4">
+                        <div className="p-7 space-y-4 flex-1">
+                           <h4 className="text-lg font-black">{schedulingMode === 'separate' ? `${t('form.scheduling')} - ${selectedServicesList[currentServiceIndex]?.name} (${currentServiceIndex + 1}/${selectedServicesList.length})` : t('form.schedulingBulk')}</h4>
+                            <div className="space-y-6 bg-slate-50 dark:bg-white/5 p-6 rounded-[24px] border border-slate-100 dark:border-white/5">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.staff')}</label>
+                                   <select value={formData.staffId} onChange={e => setFormData({...formData, staffId: e.target.value})} className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-slate-100 dark:border-white/5 rounded-2xl font-bold text-sm appearance-none shadow-sm">
+                                     {filteredStaff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                   </select>
+                                </div>
+                                <div className="space-y-2">
+                                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.date')}</label>
+                                   <input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-slate-100 dark:border-white/5 rounded-2xl font-black text-sm" />
+                                </div>
+                              </div>
+                              
+                              {isPastBooking && (
+                                <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
+                                  <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                                      {t('pastBookingWarning')}
+                                    </p>
+                                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                                      {t('pastBookingDetail')}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                  {loadingSlots ? 'Cargando horarios...' : 'Selecciona un horario'}
+                                </label>
+                                
+                                {loadingSlots ? (
+                                  <div className="grid grid-cols-4 gap-2 animate-pulse">
+                                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} className="h-10 bg-slate-200 dark:bg-white/5 rounded-xl" />)}
+                                  </div>
+                                ) : availableSlots.length > 0 ? (
+                                  <div className="grid grid-cols-4 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {availableSlots.map((slot) => (
+                                      <button
+                                        key={slot.time}
+                                        disabled={!slot.available}
+                                        onClick={() => setFormData({...formData, time: slot.time})}
+                                        className={`py-2.5 rounded-xl text-xs font-black transition-all ${
+                                          formData.time === slot.time 
+                                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' 
+                                            : slot.available 
+                                              ? 'bg-white dark:bg-white/5 text-slate-600 dark:text-zinc-400 hover:border-purple-500 border-2 border-transparent'
+                                              : 'bg-slate-100 dark:bg-white/5 text-slate-300 dark:text-zinc-600 cursor-not-allowed'
+                                        }`}
+                                      >
+                                        {slot.time}
+                                      </button>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="p-4 bg-rose-500/5 border border-rose-500/10 rounded-2xl text-center">
+                                    <p className="text-xs font-bold text-rose-500">No hay horarios disponibles para este día.</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                        </div>
+                        <div className="p-7 bg-white dark:bg-zinc-900 border-t border-slate-100 dark:border-white/5 sticky bottom-0 z-20 shrink-0 w-full mt-auto flex gap-3">
+                          <button 
+                            onClick={() => {
+                              if (schedulingMode === 'separate' && currentServiceIndex > 0) {
+                                setCurrentServiceIndex(currentServiceIndex - 1);
+                                const prevAppt = cart[currentServiceIndex - 1];
+                                if (prevAppt) {
+                                  setFormData({...formData, date: prevAppt.date, time: prevAppt.time, staffId: prevAppt.staff.id});
+                                }
+                              } else {
+                                setModalStep(3);
+                              }
+                            }} 
+                            className="flex-1 py-4 bg-slate-100 dark:bg-white/5 rounded-2xl font-black"
+                          >
+                            {t('back')}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const currentService = selectedServicesList[currentServiceIndex];
+                              if (schedulingMode === 'bulk') {
+                                let currentStartTime = parse(`${formData.date} ${formData.time}`, "yyyy-MM-dd HH:mm", new Date());
+                                const bulkCart = selectedServicesList.map(srv => {
+                                   const appt = { service: srv, staff: staff.find(s => s.id === formData.staffId), date: formData.date, time: format(currentStartTime, "HH:mm"), duration: srv.durationMinutes };
+                                   currentStartTime = addMinutes(currentStartTime, srv.durationMinutes);
+                                   return appt;
+                                });
+                                setCart(bulkCart);
+                                setModalStep(5);
+                              } else {
+                                const newAppt = { service: currentService, staff: staff.find(s => s.id === formData.staffId), date: formData.date, time: formData.time, duration: currentService.durationMinutes };
+                                const updatedCart = [...cart]; updatedCart[currentServiceIndex] = newAppt; setCart(updatedCart);
+                                if (currentServiceIndex < selectedServicesList.length - 1) {
+                                  setCurrentServiceIndex(currentServiceIndex + 1);
+                                  setFormData({...formData, time: ""}); // Resetear tiempo para obligar a seleccionar el del siguiente servicio
+                                } else {
+                                  setModalStep(5);
+                                }
+                              }
+                            }}
+                            disabled={!formData.time || !formData.date || !formData.staffId || loadingSlots || !availableSlots.find(s => s.time === formData.time)?.available}
+                            className="flex-[2] py-4 bg-purple-600 text-white rounded-2xl font-black disabled:opacity-50 disabled:cursor-not-allowed"
+                          >{schedulingMode === 'separate' && currentServiceIndex < selectedServicesList.length - 1 ? t('nextService') : t('continue')}</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {modalStep === 5 && !isSuccess && (
+                      <div className="flex flex-col flex-1 animate-in fade-in slide-in-from-right-4">
+                        <div className="p-7 space-y-6 flex-1">
+                           <h4 className="text-lg font-black">{t('form.summaryTitle')}</h4>
+                           <div className="space-y-3">
+                              {cart.map((item, idx) => (
+                                <div key={idx} className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10 flex items-center justify-between gap-4">
+                                   <div className="flex items-center gap-3 truncate">
+                                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center font-black text-purple-500 shrink-0 shadow-sm">{item.service.name.charAt(0)}</div>
+                                      <div className="truncate"><p className="font-bold text-sm truncate">{item.service.name}</p><p className="text-[10px] text-slate-500 font-bold truncate">{item.staff.name} • {item.date} • {item.time}</p></div>
+                                   </div>
+                                   <p className="font-black text-sm shrink-0">${item.service.price}</p>
+                                </div>
+                              ))}
+                           </div>
+                           
+                           <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-[32px] border border-slate-200 dark:border-white/10 space-y-3">
+                              <div className="flex justify-between items-center text-sm font-bold text-slate-500">
+                                <span>Subtotal servicios</span>
+                                <span>${cart.reduce((acc, curr) => acc + Number(curr.service.price), 0).toFixed(2)}</span>
+                              </div>
+                              {modality === 'domicilio' && selectedZone && (
+                                <div className="flex justify-between items-center text-sm font-bold text-emerald-500">
+                                  <div className="flex items-center gap-2">
+                                    <Truck className="w-4 h-4" />
+                                    <span>Tarifa de traslado ({selectedZone.name})</span>
+                                  </div>
+                                  <span>+${Number(selectedZone.fee).toFixed(2)}</span>
+                                </div>
+                              )}
+                              <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex justify-between items-end">
+                                 <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total a pagar</p>
+                                    <p className="text-3xl font-black text-slate-900 dark:text-white">
+                                      ${(cart.reduce((acc, curr) => acc + Number(curr.service.price), 0) + (selectedZone?.fee ? Number(selectedZone.fee) : 0)).toFixed(2)}
+                                    </p>
+                                 </div>
+                                 <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white flex items-center justify-center text-white dark:text-slate-900">
+                                    <Sparkles className="w-6 h-6" />
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                        <div className="p-7 bg-white dark:bg-zinc-900 border-t border-slate-100 dark:border-white/5 sticky bottom-0 z-20 shrink-0 w-full mt-auto flex gap-3">
+                          <button 
+                            onClick={() => {
+                              if (schedulingMode === 'separate' && cart.length > 0) {
+                                const lastAppt = cart[selectedServicesList.length - 1];
+                                if (lastAppt) {
+                                  setFormData({...formData, date: lastAppt.date, time: lastAppt.time, staffId: lastAppt.staff.id});
+                                }
+                              }
+                              setModalStep(4);
+                            }} 
+                            className="flex-1 py-4 bg-slate-100 dark:bg-white/5 rounded-2xl font-black"
+                          >
+                            {t('back')}
+                          </button>
+                          <button onClick={handleSaveEdit} disabled={isLoading} className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-xl flex items-center justify-center gap-2">
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('confirmAndSave')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {isSuccess && (
+                      <div className="py-12 flex flex-col items-center text-center space-y-6 animate-in zoom-in-95 duration-500">
+                        <div className="w-24 h-24 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border-4 border-emerald-500/20">
+                          <CheckCircle2 className="w-12 h-12" />
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="text-2xl font-black text-slate-900 dark:text-white">¡Reserva Exitosa!</h4>
+                          <p className="text-slate-500 dark:text-zinc-400 font-medium px-6">
+                            La cita ha sido agendada correctamente. El cliente recibirá un correo de confirmación en breve.
+                          </p>
+                        </div>
+                        <div className="flex flex-col w-full gap-3 pt-4">
+                          <button 
+                            onClick={() => setIsEditModalOpen(false)}
+                            className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black shadow-xl transition-all active:scale-95"
+                          >
+                            Volver al Calendario
+                          </button>
+                          <button 
+                            onClick={handleOpenCreateInternal}
+                            className="w-full py-4 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-zinc-400 rounded-2xl font-bold transition-all"
+                          >
+                            Agendar otra cita
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </form>
+              )}
             </div>
           </div>
         </Portal>

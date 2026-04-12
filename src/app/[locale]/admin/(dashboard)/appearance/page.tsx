@@ -43,7 +43,9 @@ export default async function AppearancePage({ params }: { params: { locale: str
         homeServiceTermsEnabled: tenantData.homeServiceTermsEnabled,
         waMessageTemplate: tenantData.waMessageTemplate,
         allowsHomeService: tenantData.allowsHomeService,
-        homeServiceLeadDays: tenantData.homeServiceLeadDays
+        homeServiceLeadDays: tenantData.homeServiceLeadDays,
+        vipThreshold: tenantData.vipThreshold,
+        bookingSettings: tenantData.bookingSettings as any
       }} 
       initialZones={coverageZones}
     />

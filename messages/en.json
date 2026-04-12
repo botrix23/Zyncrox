@@ -207,6 +207,8 @@
       "nextDay": "Next",
       "today": "Today",
       "filter": "Filter",
+      "pastBookingWarning": "Past Booking",
+      "pastBookingDetail": "You are creating an appointment for a date or time that has already passed. This will be saved as a historical record.",
       "noTags": "No tags",
       "overlapWarning": "Attention: There is already an appointment for {staff} at this time.",
       "allowOverlap": "I understand, I want to force the appointment anyway.",
@@ -247,7 +249,29 @@
         "time": "Time",
         "save": "Save changes",
         "create": "Schedule appointment",
-        "delete": "Delete appointment"
+        "delete": "Delete appointment",
+        "customerInfo": "Customer Information",
+        "selectServices": "Select Services",
+        "modalityTitle": "How will the service be provided?",
+        "zoneInfo": "Select coverage zone",
+        "schedulingMode": "Scheduling mode",
+        "scheduling": "Service schedule",
+        "schedulingBulk": "Session schedule",
+        "summaryTitle": "Booking Summary"
+      },
+      "continue": "Continue",
+      "back": "Back",
+      "nextService": "Next service",
+      "confirmAndSave": "Confirm and schedule",
+      "modality": {
+        "local": "In-branch",
+        "home": "Home service"
+      },
+      "schedulingMode": {
+        "bulk": "Bulk",
+        "bulkDesc": "Services one after another",
+        "separate": "Individual",
+        "separateDesc": "Each service at a different time"
       },
       "confirmCancel": "Are you sure you want to cancel this appointment?",
       "errorSave": "Error saving appointment",

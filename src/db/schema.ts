@@ -115,6 +115,7 @@ export const bookings = pgTable('bookings', {
   startTime: timestamp('start_time', { withTimezone: true, mode: 'date' }).notNull(),
   endTime: timestamp('end_time', { withTimezone: true, mode: 'date' }).notNull(),
   status: varchar('status', { length: 50 }).notNull().default('CONFIRMED'), 
+  notes: text('notes'),
   sessionId: uuid('session_id').references(() => bookingSessions.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });

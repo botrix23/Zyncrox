@@ -15,13 +15,18 @@ export function LangToggle() {
   const toggleLocale = () => {
     const nextLocale = locale === 'es' ? 'en' : 'es';
     const pathParts = pathname.split('/');
+    let newPath = '';
     // pathParts[0] es "", pathParts[1] es el locale (es o en)
     if (pathParts[1] === 'es' || pathParts[1] === 'en') {
       pathParts[1] = nextLocale;
-      router.push(pathParts.join('/'));
+      newPath = pathParts.join('/');
     } else {
-      router.push(`/${nextLocale}${pathname === '/' ? '' : pathname}`);
+      newPath = `/${nextLocale}${pathname === '/' ? '' : pathname}`;
     }
+    
+    // Forzar recarga completa para Next-intl y override middleware cookie
+    document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000`;
+    window.location.href = `${newPath}${window.location.search}`;
   };
 
   return (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isBefore, startOfToday } from "date-fns";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isBefore, startOfToday, isAfter } from "date-fns";
 import { es } from "date-fns/locale";
 import { ThemeToggle } from "./ThemeToggle";
 import { LangToggle } from "./LangToggle";
@@ -133,6 +133,8 @@ export default function BookingWidget({
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  // Aviso inline cuando el plan no permite más servicios
+  const [planLimitWarning, setPlanLimitWarning] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
 
   // --- Lógica de Zonas Horarias Inteligente ---
@@ -282,8 +284,33 @@ export default function BookingWidget({
             modality === 'domicilio'
           );
           
-          setAvailableTimes(res.slots || []);
+          const slots = res.slots || [];
+          setAvailableTimes(slots);
           setErrorType(res.errorType || null);
+
+          // LÓGICA DE AUTO-SELECCIÓN DE PRÓXIMO DÍA DISPONIBLE
+          // Si no hay slots disponibles hoy y el usuario llegó a este paso sin una fecha específica o por cambio de staff
+          if (slots.filter(s => s.available).length === 0 && selectedDate && schedulingMode === 'bulk') {
+             // Buscar el primer día con slots en los próximos 30 días
+             const findNextAvailable = async () => {
+                for (const day of nextDays) {
+                   if (day.fullDate <= (selectedDate || '')) continue;
+                   const nextRes = await getAvailableSlots(
+                      day.fullDate,
+                      serviceToQuery?.id || '',
+                      selectedBranch?.id || branches[0]?.id || '',
+                      selectedStaff?.id,
+                      durationToQuery,
+                      modality === 'domicilio'
+                   );
+                   if (nextRes.slots?.some(s => s.available)) {
+                      setSelectedDate(day.fullDate);
+                      return;
+                   }
+                }
+             };
+             findNextAvailable();
+          }
         } catch (error) {
           console.error("Failed to fetch slots:", error);
           setAvailableTimes([]);
@@ -293,6 +320,7 @@ export default function BookingWidget({
         }
       };
       if (selectedDate) fetchTimes();
+      else if (nextDays.length > 0) setSelectedDate(nextDays[0].fullDate); // Auto-select first day on start
     }
   }, [step, selectedDate, selectedServices, selectedStaff, selectedBranch, branches, totalDuration, schedulingMode, currentServiceIndex]);
 
@@ -314,14 +342,17 @@ export default function BookingWidget({
   };
 
   const handleToggleService = (service: Service) => {
+    setPlanLimitWarning(null); // Limpiar aviso previo
     setSelectedServices(prev => {
       const exists = prev.find(s => s.id === service.id);
+      // Si ya estaba seleccionado, lo quitamos (toggle off)
       if (exists) return prev.filter(s => s.id !== service.id);
       
-      // Check Plan Limit
+      // Verificar si el plan permite multi-servicio
       const features = getPlanFeatures(tenantPlan);
       if (prev.length >= 1 && !features.multiServiceBooking) {
-        // Podríamos mostrar un toast o aviso aquí, por ahora limitamos la selección
+        // Mostrar aviso amigable al usuario en lugar de ignorar el clic
+        setTimeout(() => setPlanLimitWarning('Tu plan actual solo permite seleccionar 1 servicio por cita. Actualiza a Plan PRO para agendar más servicios en una sola sesión.'), 0);
         return prev;
       }
       return [...prev, service];
@@ -330,7 +361,8 @@ export default function BookingWidget({
 
   const handleSelectStaff = (member: Staff | null) => {
     setSelectedStaff(member);
-    setSelectedDate(null);
+    // Ya no reseteamos la fecha para reducir fricción
+    // El efecto useEffect en el widget cargará los slots automáticamente para el nuevo staff
     setSelectedTime(null);
   };
 
@@ -447,7 +479,7 @@ export default function BookingWidget({
 
   // Generate dates dynamically based on modality
   const today = new Date();
-  const nextDays = Array.from({ length: 14 }).map((_, i) => {
+  const nextDays = Array.from({ length: 30 }).map((_, i) => {
     const leadDays = modality === 'domicilio' ? (homeServiceLeadDays ?? 7) : 0;
     const d = new Date(today);
     d.setDate(today.getDate() + i + leadDays); 
@@ -484,7 +516,8 @@ export default function BookingWidget({
     try {
       const bh = JSON.parse(targetBranch.businessHours);
       const dateStr = format(date, "yyyy-MM-dd");
-      const dayOfWeek = format(date, "EEEE").toLowerCase();
+      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayOfWeek = days[date.getDay()];
 
       // Check special dates first
       if (bh.special?.[dateStr]) {
@@ -528,16 +561,21 @@ export default function BookingWidget({
     let days = [];
     let day = startDate;
 
+    const todayStart = startOfToday();
+    const leadDays = modality === 'domicilio' ? (homeServiceLeadDays ?? 7) : 0;
+    const minDate = addDays(todayStart, leadDays);
+    const maxDate = addDays(todayStart, 30 + leadDays); // Horizonte de 30 días disponibles
+
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
         const formattedDate = format(day, "yyyy-MM-dd");
-        const leadDays = modality === 'domicilio' ? (homeServiceLeadDays ?? 7) : 0;
-        const minDate = addDays(startOfToday(), leadDays);
+        
         let isPast = isBefore(day, minDate);
+        let isTooFar = isAfter(day, maxDate);
         const isOpen = isBranchOpen(day);
 
-        // Si es HOY y no hay días de anticipación requeridos, verificar si aún hay tiempo suficiente para el servicio antes del cierre
-        const isToday = formattedDate === format(new Date(), "yyyy-MM-dd");
+        // Si es HOY y no hay días de anticipación requeridos, verificar si aún hay tiempo suficiente para el servicio antes del cierre definitivo
+        const isToday = formattedDate === format(todayStart, "yyyy-MM-dd");
         if (!isPast && isToday && leadDays === 0) {
           const schedule = getBranchSchedule(day);
           if (schedule.isOpen && schedule.slots.length > 0) {
@@ -549,8 +587,9 @@ export default function BookingWidget({
             closingTime.setHours(h, m, 0, 0);
             
             const now = new Date();
-            // Si la hora actual más la duración del servicio excede el cierre, o ya pasó la hora de cierre
-            if (new Date(now.getTime() + totalDuration * 60000) > closingTime || now >= closingTime) {
+            // Si ya pasó la hora de cierre definitiva, el día es pasado.
+            // Nota: El backend filtrará los slots individuales que ya pasaron.
+            if (now >= closingTime) {
               isPast = true;
             }
           } else {
@@ -562,8 +601,8 @@ export default function BookingWidget({
         days.push({
           day,
           formattedDate,
-          isDisabled: isPast || !isOpen,
-          isClosed: !isOpen && !isPast,
+          isDisabled: isPast || isTooFar || !isOpen,
+          isClosed: !isOpen && !isPast && !isTooFar,
           isCurrentMonth: isSameMonth(day, monthStart),
           isSelected: selectedDate === formattedDate
         });
@@ -578,7 +617,7 @@ export default function BookingWidget({
   const brand = primaryColor || '#9333ea';
 
   return (
-    <main id={`widget-${tenantId}`} className="flex min-h-screen flex-col items-center justify-start md:justify-center relative overflow-x-hidden bg-slate-50 dark:bg-black/95">
+    <main id={`widget-${tenantId}`} className="flex min-h-screen flex-col items-center justify-start relative overflow-x-hidden bg-slate-50 dark:bg-black/95">
       <style dangerouslySetInnerHTML={{__html: `
          #widget-${tenantId} .bg-purple-600 { background-color: ${brand} !important; }
          #widget-${tenantId} .hover\\:bg-purple-500:hover { background-color: ${brand} !important; filter: brightness(1.2); }
@@ -615,10 +654,10 @@ export default function BookingWidget({
         </>
       )}
 
-      <div className="z-10 w-full max-w-7xl flex flex-col lg:flex-row gap-8 lg:gap-12 items-start justify-center p-4 sm:p-6 md:p-8 lg:p-12 mt-[10vh]">
+      <div className="z-10 w-full max-w-7xl flex flex-col lg:flex-row gap-8 lg:gap-12 items-start justify-center p-4 sm:p-6 md:p-8 mt-4">
         
         {/* Left Side: Business Info / Contextual Selection */}
-        <div className="w-full lg:flex-1 space-y-6 pt-8 lg:pt-12 lg:sticky top-12">
+        <div className="w-full lg:flex-1 space-y-6 pt-0 lg:sticky top-4">
           <div className="space-y-4 px-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
               {tenantLogo ? (
@@ -696,7 +735,7 @@ export default function BookingWidget({
                   <Calendar className="w-5 h-5 text-orange-400" />
                   <span className="font-medium text-sm">
                     {selectedDate ? getDayName(selectedDate) : t("date_tbd")} 
-                    {selectedTime ? ` · ${selectedTime}` : ""}
+                    {selectedTime ? ` · ${formatTo12h(selectedTime)}` : ""}
                   </span>
                 </div>
               )}
@@ -731,12 +770,12 @@ export default function BookingWidget({
         </div>
 
         {/* Right Side: Interactive Booking Widget */}
-        <div className="flex-[1.5] w-full bg-white/95 dark:bg-zinc-950/85 backdrop-blur-2xl border border-slate-200 dark:border-white/10 p-5 sm:p-8 shadow-2xl relative min-h-[500px] flex flex-col rounded-3xl overflow-hidden">
+        <div className="flex-[1.5] w-full bg-white/95 dark:bg-zinc-950/85 backdrop-blur-2xl border border-slate-200 dark:border-white/10 p-5 sm:p-7 shadow-2xl relative min-h-[550px] flex flex-col rounded-3xl overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent dark:from-white/5 rounded-3xl pointer-events-none"></div>
           
           {/* STEP Branch & Modality */}
           {step === 1 && (
-            <div className="relative z-10 flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
+            <div className="relative z-10 flex flex-col w-full h-full animate-in fade-in zoom-in-95 duration-500">
               <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white tracking-tight">
                 {bookingSettings?.step1Title || t("title_branch")}
               </h2>
@@ -832,7 +871,7 @@ export default function BookingWidget({
 
           {/* STEP Select Service */}
           {step === 2 && (
-            <div className="relative z-10 flex flex-col h-full animate-in fade-in slide-in-from-right-8 duration-500">
+            <div className="relative z-10 flex flex-col w-full items-start animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="flex items-center gap-3 mb-6">
                 <button 
                   onClick={() => setStep(1)}
@@ -912,6 +951,18 @@ export default function BookingWidget({
                 })}
               </div>
 
+              {/* Aviso de límite de plan */}
+              {planLimitWarning && (
+                <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl animate-in slide-in-from-top-2 duration-300 flex items-start gap-3">
+                  <span className="text-amber-400 text-lg shrink-0">⚠</span>
+                  <div>
+                    <p className="text-sm font-bold text-amber-400">Límite de plan alcanzado</p>
+                    <p className="text-xs text-amber-300/80 mt-0.5">{planLimitWarning}</p>
+                  </div>
+                  <button onClick={() => setPlanLimitWarning(null)} className="ml-auto text-amber-400/60 hover:text-amber-400 transition-colors shrink-0">✕</button>
+                </div>
+              )}
+
               {/* Optional Bottom Summary Bar (can be hidden if on left) */}
               {selectedServices.length > 0 && !bookingSettings?.showSummaryOnLeft && (
                 <div className="mt-6 pt-6 border-t border-slate-200 dark:border-white/5 animate-in slide-in-from-bottom-4 duration-300">
@@ -946,7 +997,7 @@ export default function BookingWidget({
 
           {/* STEP 2.Choose Scheduling Mode */}
           {step === 2.5 && (
-            <div className="relative z-10 flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
+            <div className="relative z-10 flex flex-col w-full items-start animate-in fade-in zoom-in-95 duration-500">
               <div className="flex items-center gap-3 mb-6">
                 <button 
                   onClick={() => setStep(2)}
@@ -996,7 +1047,7 @@ export default function BookingWidget({
 
           {/* STEP Select Date & Time (and STAFF) */}
           {step === 3 && (
-            <div className="relative z-10 flex flex-col h-full animate-in fade-in slide-in-from-right-8 duration-500 text-slate-900 dark:text-white max-h-screen">
+            <div className="relative z-10 flex flex-col w-full items-start animate-in fade-in slide-in-from-right-8 duration-500 text-slate-900 dark:text-white max-h-screen">
               <div className="flex items-center gap-3 mb-4">
                 <button 
                   onClick={() => { setStep(2); setSelectedTime(null); setSelectedStaff(null); }}
@@ -1109,8 +1160,8 @@ export default function BookingWidget({
                   </div>
 
                   {/* TIME SELECTION - Grid */}
-                  <div className="flex-1 flex flex-col overflow-hidden">
-                    <div className="flex flex-col h-full bg-slate-50/50 dark:bg-black/20 rounded-2xl border border-slate-200/60 dark:border-white/5 p-4 sm:p-6 ml-0 md:ml-2">
+                  <div className="flex-1 flex flex-col overflow-hidden w-full">
+                    <div className="flex flex-col h-full bg-slate-50/50 dark:bg-black/20 rounded-2xl border border-slate-200/60 dark:border-white/5 p-4 sm:p-6 w-full">
                       <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                         <Clock className="w-3.5 h-3.5" />
                         Horarios disponibles
@@ -1122,16 +1173,20 @@ export default function BookingWidget({
                             <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
                             <p className="mt-2 text-xs text-slate-400">Verificando disponibilidad...</p>
                           </div>
-                        ) : errorType ? (
-                          <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-rose-500/5 border border-dashed border-rose-500/20 rounded-2xl animate-in fade-in zoom-in-95 duration-500">
-                            <XCircle className="w-10 h-10 mb-3 text-rose-500/60" />
+                        ) : errorType || (selectedDate && availableTimes.length === 0) ? (
+                          <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-rose-500/5 dark:bg-rose-500/10 border border-dashed border-rose-500/20 rounded-2xl animate-in fade-in zoom-in-95 duration-500">
+                            {errorType === 'BRANCH_CLOSED' ? (
+                                <XCircle className="w-10 h-10 mb-3 text-rose-500/60" />
+                            ) : (
+                                <Clock className="w-10 h-10 mb-3 text-rose-500/60" />
+                            )}
                             <p className="text-sm font-bold text-rose-600 dark:text-rose-400">
                               {errorType === 'BRANCH_CLOSED'
-                                ? 'La sucursal no se encuentra disponible en este momento'
-                                : 'El agente no se encuentra disponible en este horario'}
+                                ? 'La sucursal no se encuentra disponible en este horario'
+                                : (modality === 'domicilio' ? 'No hay disponibilidad para servicio a domicilio' : 'No hay especialistas disponibles para esta fecha')}
                             </p>
                             <p className="mt-2 text-[10px] text-slate-400 leading-relaxed">
-                              Por favor intenta con otra fecha.
+                              Por favor intenta con otra fecha o {selectedStaff ? 'selecciona otro especialista' : 'verifica en un horario distinto'}.
                             </p>
                           </div>
                         ) : !selectedDate ? (
@@ -1139,11 +1194,6 @@ export default function BookingWidget({
                             <Calendar className="w-8 h-8 mb-2 opacity-20" />
                             <p className="text-sm font-medium">Selecciona un día en el calendario</p>
                             <p className="text-[10px] opacity-50 mt-1 max-w-[150px] text-center">Escoge una fecha para ver los horarios disponibles</p>
-                          </div>
-                        ) : availableTimes.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-12 text-slate-400 border border-dashed border-slate-200 dark:border-white/10 rounded-2xl">
-                            <Clock className="w-8 h-8 mb-2 opacity-20" />
-                            <p className="text-sm px-4 text-center">{t("no_slots_available")}</p>
                           </div>
                         ) : (
                           <>
@@ -1189,7 +1239,7 @@ export default function BookingWidget({
                                               : "bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border-slate-200 dark:border-white/10 text-slate-600 dark:text-zinc-300"
                                         }`}
                                       >
-                                        <span className="font-bold text-[10px]">{time}</span>
+                                        <span className="font-bold text-[10px]">{formatTo12h(time)}</span>
                                       </button>
                                     ))}
                                   </div>
@@ -1204,7 +1254,7 @@ export default function BookingWidget({
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10">
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-white/10 w-full">
                 <button 
                   type="button"
                   onClick={(e) => {
@@ -1232,11 +1282,6 @@ export default function BookingWidget({
                     } else {
                       // Modo Masivo: Una sola selección para todos
                       const bookingsInBulk = selectedServices.map((s, idx) => {
-                         // TODO: Calculate offsets if they are back-to-back, but for simplicity
-                         // and because createBookingSessionAction will handle the insertion
-                         // let's just mark the session info. 
-                         // For now, in bulk mode, we just pass the same start time for all
-                         // and let the total duration logic handle the availability.
                          return { 
                            service: s, 
                            staff: selectedStaff, 
@@ -1249,7 +1294,7 @@ export default function BookingWidget({
                     }
                   }}
                   disabled={!selectedTime || !selectedDate}
-                  className="w-full py-4 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-zinc-600 text-white rounded-xl font-bold tracking-widest transition-all duration-300 shadow-lg active:scale-[0.98]"
+                  className="w-full py-5 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-zinc-600 text-white rounded-xl font-black tracking-widest transition-all duration-300 shadow-xl active:scale-[0.98] uppercase text-sm"
                 >
                   {schedulingMode === 'separate' && currentServiceIndex < selectedServices.length - 1 
                     ? `Siguiente Servicio (${currentServiceIndex + 2}/${selectedServices.length}) →` 
@@ -1262,7 +1307,7 @@ export default function BookingWidget({
 
           {/* STEP Guest Form */}
           {step === 4 && (
-            <div className="relative z-10 flex flex-col h-full animate-in fade-in slide-in-from-right-8 duration-500 text-slate-900 dark:text-white">
+            <div className="relative z-10 flex flex-col w-full items-start animate-in fade-in slide-in-from-right-8 duration-500 text-slate-900 dark:text-white">
               <div className="flex items-center gap-3 mb-6">
                 <button 
                   onClick={() => setStep(3)}
@@ -1275,7 +1320,7 @@ export default function BookingWidget({
                 </h2>
               </div>
               
-              <div className="space-y-5 mb-8">
+              <div className="space-y-5 mb-8 w-full">
                 <div>
                   <label className="block text-sm font-semibold text-slate-500 dark:text-zinc-400 tracking-wider mb-2">{t("full_name")}</label>
                   <div className="relative">
@@ -1371,12 +1416,11 @@ export default function BookingWidget({
                 )}
               </div>
 
-              <div className="mt-auto">
-
+              <div className="mt-auto w-full">
                 <button 
                   onClick={handleFinalCheckout}
                   disabled={!isFormValid || isFinishing}
-                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:border-zinc-700 disabled:cursor-not-allowed text-slate-900 dark:text-white rounded-xl font-bold tracking-widest shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:shadow-none transition-all duration-300 border border-emerald-500/50 flex items-center justify-center gap-2"
+                  className="w-full py-5 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:border-zinc-700 disabled:cursor-not-allowed text-white rounded-xl font-black tracking-widest shadow-xl shadow-purple-500/20 disabled:shadow-none transition-all duration-300 border border-purple-500/50 flex items-center justify-center gap-2 uppercase text-sm"
                >
                   {isFinishing && <Loader2 className="w-5 h-5 animate-spin" />}
                   {modality === 'domicilio' ? t("confirm_whatsapp") : t("finish_booking")}
@@ -1387,32 +1431,80 @@ export default function BookingWidget({
 
           {/* STEP Success Screen */}
           {step === 5 && (
-            <div className="relative z-10 flex flex-col items-center justify-center h-full text-center animate-in fade-in zoom-in-95 duration-700">
-               <div className={`w-24 h-24 ${modality === 'domicilio' ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.2)] text-emerald-400' : 'bg-purple-500/10 border-purple-500/20 shadow-[0_0_30px_rgba(168,85,247,0.2)] text-purple-400'} border rounded-full flex items-center justify-center mb-8`}>
-                 {modality === 'domicilio' ? <Phone className="w-10 h-10" /> : <Check className="w-12 h-12" />}
+            <div className="relative z-10 flex flex-col w-full items-center justify-start text-center animate-in fade-in zoom-in-95 duration-700 pt-2">
+               <div className={`w-16 h-16 ${modality === 'domicilio' ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.2)] text-emerald-400' : 'bg-purple-500/10 border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.2)] text-purple-400'} border rounded-full flex items-center justify-center mb-3`}>
+                 {modality === 'domicilio' ? <Phone className="w-8 h-8" /> : <Check className="w-10 h-10" />}
                </div>
                
-               <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 mb-4">
+               <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 leading-tight">
                  {modality === 'domicilio' ? t("redirecting") : t("success")}
                </h2>
                
-               <div className="space-y-4 text-slate-600 dark:text-zinc-300 mb-8 max-w-md">
-                 <p>
+               <div className="space-y-2 text-slate-600 dark:text-zinc-300 mb-4 max-w-md w-full">
+                 <p className="text-sm">
                     {modality === 'domicilio' 
                       ? t("redirecting_desc", { service: selectedServices.map(s => s.name).join(", "), tenant: tenantName })
                       : t("success_desc", { name: guestName.split(' ')[0], branch: selectedBranch?.name || '', service: selectedServices.map(s => s.name).join(", ") })
                     }
                  </p>
-                 <div className="bg-slate-200 dark:bg-black/30 w-full p-4 rounded-xl border border-slate-200 dark:border-white/5 mt-4">
-                    <p className="text-purple-400 font-bold text-lg mb-1">{selectedDate || t("date_tbd")}</p>
-                    <p className="text-slate-900 dark:text-white text-xl">
-                      {selectedTime}
-                      {hasTzDifference && (
-                        <span className="block text-[10px] text-slate-400 mt-1 font-medium italic">
-                          Hora del negocio • Tu calendario se ajustará automáticamente
-                        </span>
+                 
+                 <div className="bg-slate-100 dark:bg-black/30 w-full p-5 rounded-2xl border border-slate-200 dark:border-white/5 mt-2 space-y-3 text-left">
+                    <div className="grid grid-cols-2 gap-4 pb-3 border-b border-slate-200 dark:border-white/5">
+                      <div>
+                        <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">{t("date")}</p>
+                        <p className="text-purple-500 font-bold text-sm tracking-tight">{selectedDate || t("date_tbd")}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">{t("time")}</p>
+                        <p className="text-slate-900 dark:text-white font-bold text-sm tracking-tight">{selectedTime ? formatTo12h(selectedTime) : '--'}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500">
+                          <User className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">{t("customer")}</p>
+                          <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{guestName}</p>
+                        </div>
+                      </div>
+
+                      {selectedStaff && (
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500 overflow-hidden">
+                            {selectedStaff.imageUrl ? <img src={selectedStaff.imageUrl} className="w-full h-full object-cover" /> : <Check className="w-4 h-4" />}
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">{t("specialist")}</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{selectedStaff.name}</p>
+                          </div>
+                        </div>
                       )}
-                    </p>
+
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500">
+                          <Phone className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">{t("contact")}</p>
+                          <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{`${selectedCountry.prefix} ${guestPhone}`}</p>
+                        </div>
+                      </div>
+
+                      {guestEmail && (
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500">
+                            <Mail className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">{t("email_label")}</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight break-all">{guestEmail}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                  </div>
                </div>
                
@@ -1465,12 +1557,21 @@ className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 dark:hover:bg-whi
 </div>
 </div>
 
-<button 
-onClick={() => { setStep(1); setSelectedDate(null); setSelectedTime(null); setSelectedServices([]); setSelectedStaff(null); setModality(null); setGuestName(""); setGuestEmail(""); setGuestPhone(""); }}
-className="px-8 py-3 bg-white dark:bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-xl font-medium transition-all"
->
-{t("back_to_start")}
-</button>
+              <button 
+                onClick={() => { setStep(1); setSelectedDate(null); setSelectedTime(null); setSelectedServices([]); setSelectedStaff(null); setModality(null); setGuestName(""); setGuestEmail(""); setGuestPhone(""); }}
+                className="w-full py-4 bg-white dark:bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-xl font-black tracking-widest uppercase transition-all text-xs shadow-sm hover:shadow-md mt-4"
+              >
+                {t("back_to_start")}
+              </button>
+            </div>
+          )}
+
+          {/* Persistent Widget Footer */}
+          {bookingSettings?.footerText && (
+            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-white/5 text-center">
+              <p className="text-xs text-slate-500 dark:text-zinc-500 whitespace-pre-wrap leading-relaxed opacity-80 max-w-sm mx-auto">
+                {bookingSettings.footerText}
+              </p>
             </div>
           )}
 

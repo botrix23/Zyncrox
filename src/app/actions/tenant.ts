@@ -16,10 +16,10 @@ export async function updateTenantSettingsAction(data: {
   homeServiceTermsEnabled?: boolean;
   waMessageTemplate?: string | null;
   homeServiceLeadDays?: number;
-vipThreshold?: number;
-heroTitle?: string | null;
-heroSubtitle?: string | null;
-emailBodyTemplate?: string | null;
+  vipThreshold?: number;
+  heroTitle?: string | null;
+  heroSubtitle?: string | null;
+  emailBodyTemplate?: string | null;
 }) {
   try {
     const session = await getSession();
@@ -30,14 +30,14 @@ emailBodyTemplate?: string | null;
         whatsappNumber: data.whatsappNumber,
         homeServiceTerms: data.homeServiceTerms,
         homeServiceTermsEnabled: data.homeServiceTermsEnabled,
-waMessageTemplate: data.waMessageTemplate,
-homeServiceLeadDays: data.homeServiceLeadDays,
-vipThreshold: data.vipThreshold,
-heroTitle: data.heroTitle,
-heroSubtitle: data.heroSubtitle,
-emailBodyTemplate: data.emailBodyTemplate,
-updatedAt: new Date()
-})
+        waMessageTemplate: data.waMessageTemplate,
+        homeServiceLeadDays: data.homeServiceLeadDays,
+        vipThreshold: data.vipThreshold,
+        heroTitle: data.heroTitle,
+        heroSubtitle: data.heroSubtitle,
+        emailBodyTemplate: data.emailBodyTemplate,
+        updatedAt: new Date()
+      })
       .where(eq(tenants.id, data.tenantId));
 
     await logAuditEvent({
@@ -56,25 +56,26 @@ updatedAt: new Date()
 }
 
 export async function updatePortalSettingsAction(data: {
-tenantId: string;
-name: string;
-primaryColor: string;
-theme: string;
-coverUrl?: string | null;
-logoUrl?: string | null;
-instagramUrl?: string | null;
-facebookUrl?: string | null;
-tiktokUrl?: string | null;
-whatsappNumber?: string | null;
-homeServiceTerms?: string | null;
-homeServiceTermsEnabled: boolean;
-waMessageTemplate?: string | null;
-allowsHomeService: boolean;
-homeServiceLeadDays: number;
-vipThreshold: number;
-heroTitle?: string | null;
-heroSubtitle?: string | null;
-emailBodyTemplate?: string | null;
+  tenantId: string;
+  name: string;
+  primaryColor: string;
+  theme: string;
+  coverUrl?: string | null;
+  logoUrl?: string | null;
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+  tiktokUrl?: string | null;
+  whatsappNumber?: string | null;
+  homeServiceTerms?: string | null;
+  homeServiceTermsEnabled: boolean;
+  waMessageTemplate?: string | null;
+  allowsHomeService: boolean;
+  homeServiceLeadDays: number;
+  vipThreshold: number;
+  heroTitle?: string | null;
+  heroSubtitle?: string | null;
+  emailBodyTemplate?: string | null;
+  bookingSettings?: any;
 }) {
   try {
     const session = await getSession();
@@ -91,15 +92,16 @@ emailBodyTemplate?: string | null;
         whatsappNumber: data.whatsappNumber || null,
         homeServiceTerms: data.homeServiceTerms || null,
         homeServiceTermsEnabled: data.homeServiceTermsEnabled,
-waMessageTemplate: data.waMessageTemplate || null,
-allowsHomeService: data.allowsHomeService,
-homeServiceLeadDays: data.homeServiceLeadDays,
-vipThreshold: data.vipThreshold,
-heroTitle: data.heroTitle || null,
-heroSubtitle: data.heroSubtitle || null,
-emailBodyTemplate: data.emailBodyTemplate || null,
-updatedAt: new Date()
-})
+        waMessageTemplate: data.waMessageTemplate || null,
+        allowsHomeService: data.allowsHomeService,
+        homeServiceLeadDays: data.homeServiceLeadDays,
+        vipThreshold: data.vipThreshold,
+        heroTitle: data.heroTitle || null,
+        heroSubtitle: data.heroSubtitle || null,
+        emailBodyTemplate: data.emailBodyTemplate || null,
+        bookingSettings: data.bookingSettings,
+        updatedAt: new Date()
+      })
       .where(eq(tenants.id, data.tenantId));
 
     await logAuditEvent({
