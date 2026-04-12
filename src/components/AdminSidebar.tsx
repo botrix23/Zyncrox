@@ -84,7 +84,7 @@ export function AdminSidebar({ user, locale, tenantName }: { user: SessionUser |
           <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
             <Calendar className="text-white w-6 h-6" />
           </div>
-          <span className="text-xl font-bold tracking-tight">ZincSlot</span>
+          <span className="text-xl font-bold tracking-tight">ZyncSlot</span>
         </div>
       </div>
 

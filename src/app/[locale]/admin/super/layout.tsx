@@ -23,7 +23,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <ShieldCheck className="w-6 h-6 text-purple-400" />
-            <span className="font-black text-lg tracking-tight">ZincSlot</span>
+            <span className="font-black text-lg tracking-tight">ZyncSlot</span>
           </div>
           <p className="text-xs text-zinc-500 font-semibold uppercase tracking-widest">Super Admin</p>
         </div>

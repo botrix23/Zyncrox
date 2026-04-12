@@ -34,7 +34,7 @@ async function main() {
     // 1. Obtener o Crear Tenants
     const tenantValues = [
       { name: 'ZyncSalón Spa', slug: 'zyncsalon-spa', whatsappNumber: '50370000000', timezone: 'America/El_Salvador', status: 'ACTIVE' as const },
-      { name: 'ZincSlot Test Studio', slug: 'test', whatsappNumber: '50300000000', timezone: 'America/El_Salvador', status: 'ACTIVE' as const, primaryColor: '#000000' }
+      { name: 'ZyncSlot Test Studio', slug: 'test', whatsappNumber: '50300000000', timezone: 'America/El_Salvador', status: 'ACTIVE' as const, primaryColor: '#000000' }
     ];
 
     for (const val of tenantValues) {

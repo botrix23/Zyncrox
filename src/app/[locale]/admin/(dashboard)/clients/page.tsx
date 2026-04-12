@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import ClientsClient from "./ClientsClient";
 
 export const metadata = {
-  title: "Clientes | ZincSlot",
+  title: "Clientes | ZyncSlot",
 };
 
 export default async function ClientsPage({

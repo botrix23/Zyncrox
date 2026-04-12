@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import AbsencesClient from "./AbsencesClient";
 
 export const metadata = {
-  title: "Ausencias | ZincSlot",
+  title: "Ausencias | ZyncSlot",
 };
 
 export default async function AbsencesPage({

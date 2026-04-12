@@ -109,7 +109,7 @@ export default function ForgotPasswordPage({ params: { locale } }: { params: { l
 
         {/* Footer */}
         <div className="text-center text-xs text-slate-400 font-medium">
-          &copy; {new Date().getFullYear()} ZincSlot · Seguridad de Grado Industrial
+          &copy; {new Date().getFullYear()} ZyncSlot · Seguridad de Grado Industrial
         </div>
       </div>
     </div>

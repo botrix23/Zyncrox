@@ -12,7 +12,7 @@ async function testEmail() {
     const data = await resend.emails.send({
       from: 'onboarding@resend.dev',
       to: 'boris90guardado@gmail.com',
-      subject: 'Prueba de Conexión ZincSlot',
+      subject: 'Prueba de Conexión ZyncSlot',
       html: '<strong>Si recibes esto, la integración de Resend está funcionando correctamente.</strong>'
     });
 

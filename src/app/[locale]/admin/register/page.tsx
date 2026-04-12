@@ -92,7 +92,7 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-600 rounded-2xl shadow-xl shadow-purple-500/20 mb-4">
             <Calendar className="text-white w-8 h-8" />
           </div>
-          <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">ZincSlot</h1>
+          <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">ZyncSlot</h1>
           <p className="text-slate-500 dark:text-zinc-500 font-medium mt-2">La nueva era de las reservas</p>
         </div>
 

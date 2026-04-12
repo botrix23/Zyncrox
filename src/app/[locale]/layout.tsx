@@ -6,7 +6,7 @@ import { getMessages } from 'next-intl/server';
 import { ThemeProvider } from "../../components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "ZincSlot | Premium SaaS Booking",
+  title: "ZyncSlot | Premium SaaS Booking",
   description: "Advanced multi-tenant scheduling & booking SaaS",
 };
 
