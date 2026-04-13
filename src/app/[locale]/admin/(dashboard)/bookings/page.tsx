@@ -33,7 +33,8 @@ export default async function BookingsPage() {
       with: {
         service: true,
         staff: true,
-        branch: true
+        branch: true,
+        session: true
       },
       orderBy: [desc(bookingsTable.startTime)]
     }),

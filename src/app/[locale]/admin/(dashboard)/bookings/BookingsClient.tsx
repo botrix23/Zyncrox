@@ -492,22 +492,24 @@ export default function BookingsClient({
           <p className="text-slate-500 dark:text-zinc-400 mt-1">{t('subtitle')}</p>
         </div>
         <div className="flex gap-3">
+          {viewMode === 'list' && (
              <button className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-zinc-300 rounded-2xl text-sm font-bold shadow-sm transition-all active:scale-95">
                 <Filter className="w-4 h-4" />
                 {t('filter')}
             </button>
+          )}
             <div className="flex bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl p-1 shadow-sm">
-                <button 
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300'}`}
-                >
-                  <LayoutList className="w-5 h-5" />
-                </button>
                 <button 
                   onClick={() => setViewMode('calendar')}
                   className={`p-2 rounded-xl transition-all ${viewMode === 'calendar' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300'}`}
                 >
                   <Calendar className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300'}`}
+                >
+                  <LayoutList className="w-5 h-5" />
                 </button>
             </div>
             <button 
@@ -520,33 +522,35 @@ export default function BookingsClient({
         </div>
       </div>
 
-      {/* Filters & Search */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-        <div className="lg:col-span-8 flex items-center gap-4 overflow-x-auto no-scrollbar py-4 -my-4 px-4 -mx-4">
-            {['Todas', 'Pendientes', 'Confirmadas', 'Finalizadas', 'Canceladas'].map((tab) => (
-                <button 
-                  key={tab} 
-                  onClick={() => setActiveTab(tab)}
-                  className={`text-sm font-bold whitespace-nowrap px-6 py-3 rounded-2xl transition-all ${
-                    activeTab === tab 
-                    ? 'bg-purple-600 text-white shadow-xl shadow-purple-500/20 scale-105' 
-                    : 'bg-white dark:bg-zinc-900 text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/5'
-                }`}>
-                    {t(`tabs.${tab}`)}
-                </button>
-            ))}
+      {/* Filters & Search - Only in List Mode */}
+      {viewMode === 'list' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-8 flex items-center gap-4 overflow-x-auto no-scrollbar py-4 -my-4 px-4 -mx-4">
+              {['Todas', 'Pendientes', 'Confirmadas', 'Finalizadas', 'Canceladas'].map((tab) => (
+                  <button 
+                    key={tab} 
+                    onClick={() => setActiveTab(tab)}
+                    className={`text-sm font-bold whitespace-nowrap px-6 py-3 rounded-2xl transition-all ${
+                      activeTab === tab 
+                      ? 'bg-purple-600 text-white shadow-xl shadow-purple-500/20 scale-105' 
+                      : 'bg-white dark:bg-zinc-900 text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/5'
+                  }`}>
+                      {t(`tabs.${tab}`)}
+                  </button>
+              ))}
+          </div>
+          <div className="lg:col-span-4 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input 
+                  type="text" 
+                  placeholder={t('searchPlaceholder')} 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm text-slate-900 dark:text-white outline-none focus:border-purple-500/50 transition-all placeholder:text-slate-400 shadow-sm"
+              />
+          </div>
         </div>
-        <div className="lg:col-span-4 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input 
-                type="text" 
-                placeholder={t('searchPlaceholder')} 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm text-slate-900 dark:text-white outline-none focus:border-purple-500/50 transition-all placeholder:text-slate-400 shadow-sm"
-            />
-        </div>
-      </div>
+      )}
 
        {/* Bookings View */}
       {viewMode === 'list' ? (
@@ -809,7 +813,11 @@ export default function BookingsClient({
                                     {booking.customerName}
                                   </h4>
                                   {booking.notes && booking.notes.trim().length > 0 && (
-                                    <MessageSquare className="w-3.5 h-3.5 text-orange-500 shrink-0 fill-orange-500/20" />
+                                    <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${
+                                      booking.session?.zoneId 
+                                        ? 'text-purple-500 fill-purple-500/20' 
+                                        : 'text-orange-500 fill-orange-500/20'
+                                    }`} />
                                   )}
                                 </div>
                                 <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
@@ -882,8 +890,8 @@ export default function BookingsClient({
                             const hour = i + calendarStartHour;
                             return (
                               <>
-                                <div key={`h-${hour}`} className="row-span-1" style={{ gridColumn: 1, gridRow: i + 1, height: '96px', borderBottom: '1px solid', borderColor: 'rgba(148,163,184,0.1)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '8px', backgroundColor: 'rgba(248,250,252,0.3)' }}>
-                                  <span className="text-xs font-black text-slate-400 dark:text-zinc-500 tracking-tighter whitespace-nowrap uppercase">
+                                <div key={`h-${hour}`} className="row-span-1 border-b border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.02] flex items-start justify-center pt-2" style={{ gridColumn: 1, gridRow: i + 1, height: '96px' }}>
+                                  <span className="text-[11px] font-black text-slate-400 dark:text-zinc-500 tracking-tighter whitespace-nowrap uppercase">
                                     {format(parse(hour.toString(), "H", new Date()), "h:mm a")}
                                   </span>
                                 </div>
@@ -946,7 +954,11 @@ export default function BookingsClient({
                                         {booking.customerName}
                                       </p>
                                       {booking.notes && booking.notes.trim().length > 0 && (
-                                        <MessageSquare className="w-3 h-3 text-purple-500 shrink-0 fill-purple-500/20" />
+                                        <MessageSquare className={`w-3 h-3 shrink-0 ${
+                                          booking.session?.zoneId 
+                                            ? 'text-purple-500 fill-purple-500/20' 
+                                            : 'text-orange-500 fill-orange-500/20'
+                                        }`} />
                                       )}
                                     </div>
                                     <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap opacity-60">{format(start, "h:mm a")}</span>

@@ -92,8 +92,14 @@
     "selected_services": "Servicios seleccionados",
     "resume": "Resumen",
     "continue": "Continuar",
+    "back": "Volver",
     "comments": "Comentarios / Notas",
-    "comments_placeholder": "¿Algo que debamos saber? (Opcional)"
+    "comments_placeholder": "¿Algo que debamos saber? (Opcional)",
+    "address": "Dirección de atención *",
+    "address_placeholder": "Ej: Calle principal #123, Colonia Escalón",
+    "sync_individual": "Sincronizar",
+    "transfer_fee_detail": "{count} traslados x ${fee}",
+    "service_date": "Fecha del servicio"
   },
   "Login": {
     "title": "Iniciar sesión",

@@ -7,7 +7,7 @@ import { es } from "date-fns/locale";
 import { ThemeToggle } from "./ThemeToggle";
 import { LangToggle } from "./LangToggle";
 import { getAvailableSlots, createBookingAction, createBookingSessionAction } from "@/app/actions/booking";
-import { Calendar, Clock, ChevronRight, Check, X, ArrowLeft, User, MapPin, Truck, Mail, Phone, UserCircle, Loader2, CheckCircle2, XCircle, Instagram, Facebook, Music, Layers, CalendarRange, Crown, Download, Globe } from "lucide-react";
+import { Calendar, Clock, ChevronRight, Check, X, ArrowLeft, User, MapPin, Truck, Mail, Phone, UserCircle, Loader2, CheckCircle2, XCircle, Instagram, Facebook, Music, Layers, CalendarRange, Crown, Download, Globe, MessageCircle } from "lucide-react";
 import { canUseFeature, getPlanFeatures } from "@/core/plans";
 import { getGoogleCalendarUrl, getOutlookCalendarUrl, generateICSFile } from "@/lib/calendar";
 
@@ -151,6 +151,7 @@ export default function BookingWidget({
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [guestNotes, setGuestNotes] = useState("");
+  const [guestAddress, setGuestAddress] = useState("");
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
   const [showCountryList, setShowCountryList] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -229,10 +230,10 @@ export default function BookingWidget({
     guestName.trim() !== '' &&
     emailRegex.test(guestEmail) &&
     guestPhone.length >= (selectedCountry as any).minLen &&
-    (modality !== 'domicilio' || (selectedZone !== null && (!homeServiceTermsEnabled || agreedToTerms)));
+    (modality !== 'domicilio' || (guestAddress.trim() !== '' && selectedZone !== null && (!homeServiceTermsEnabled || agreedToTerms)));
 
-  const calculateTransferFees = () => {
-    if (modality !== 'domicilio' || !selectedZone || cartBookings.length === 0) return 0;
+  const getTransferInfo = () => {
+    if (modality !== 'domicilio' || !selectedZone || cartBookings.length === 0) return { total: 0, blocks: 0 };
 
     const zoneFee = parsePrice(selectedZone.fee);
     let transferBlocks = 1;
@@ -259,10 +260,11 @@ export default function BookingWidget({
       }
     }
 
-    return transferBlocks * zoneFee;
+    return { total: transferBlocks * zoneFee, blocks: transferBlocks };
   };
 
-  const transferTotal = calculateTransferFees();
+  const transferInfo = getTransferInfo();
+  const transferTotal = transferInfo.total;
 
 
   const servicesTotal = selectedServices.reduce((acc, s) => acc + parsePrice(s.price), 0);
@@ -337,7 +339,7 @@ export default function BookingWidget({
               let hasConflict = false;
 
               const currentAllowSimult = modality === 'domicilio' ? false : (res.allowSimultaneous ?? false);
-              const someParticipantDisallows = !currentAllowSimult || overlappingEntries.some(e => !e.service.allowSimultaneous);
+              const someParticipantDisallows = overlappingEntries.length > 0 && (!currentAllowSimult || overlappingEntries.some(e => !e.service.allowSimultaneous));
 
               if (someParticipantDisallows) {
                 hasConflict = true;
@@ -463,7 +465,7 @@ export default function BookingWidget({
         customerEmail: guestEmail,
         customerPhone: guestPhone ? `${selectedCountry.prefix} ${guestPhone}` : undefined,
         zoneId: selectedZone?.id,
-        notes: guestNotes,
+        notes: guestAddress ? `Dirección: ${guestAddress}\n${guestNotes}` : guestNotes,
         bookings: sessionBookingsData
       });
 
@@ -670,7 +672,7 @@ export default function BookingWidget({
         </>
       )}
 
-      <div className={`z-10 w-full max-w-7xl flex flex-col ${step < 5 ? 'lg:flex-row' : 'items-center'} gap-8 lg:gap-12 items-start justify-center p-4 sm:p-6 md:p-8 mt-4`}>
+      <div className={`z-10 w-full max-w-[1400px] flex flex-col ${step < 5 ? 'lg:flex-row' : 'items-center'} gap-8 lg:gap-12 items-start justify-center p-4 sm:p-6 md:p-8 mt-4`}>
 
         {/* ===== LEFT SIDE ===== */}
         {step < 5 && (
@@ -753,10 +755,10 @@ export default function BookingWidget({
                               <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-2">
                                 <Check className="w-3 h-3 text-emerald-500" /> {s.name}
                               </p>
-                              <span className="text-[10px] font-bold text-slate-400/60 transition-colors uppercase tracking-widest">{s.durationMinutes} min</span>
+                              <span className="text-xs font-bold text-slate-400/60 transition-colors uppercase tracking-widest">{s.durationMinutes} min</span>
                             </div>
                             {displayDate && displayTime && (
-                              <p className="text-[10px] font-bold text-slate-400 ml-5 opacity-80">
+                              <p className="text-xs font-bold text-slate-400 ml-5 opacity-80">
                                 {getDayName(displayDate).split(',')[0]} · {displayTime}
                               </p>
                             )}
@@ -778,7 +780,7 @@ export default function BookingWidget({
                 {selectedServices.length > 0 && (
                   <div className="pt-6 border-t border-slate-200 dark:border-white/10 mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <div className="flex flex-col gap-1 p-4 bg-purple-500/5 rounded-2xl border border-purple-500/10">
-                      <p className="text-[10px] font-black text-purple-400 tracking-[0.2em] mb-1">{t("resume")}</p>
+                      <p className="text-xs font-black text-purple-400 tracking-[0.2em] mb-1">{t("resume")}</p>
                       <div className="flex items-baseline justify-between">
                         <p className="text-2xl font-black text-slate-900 dark:text-white">
                           ${totalPrice.toFixed(2)}
@@ -787,11 +789,11 @@ export default function BookingWidget({
                           {totalDuration} min
                         </p>
                       </div>
-                      <p className="text-[11px] font-medium text-slate-400 mt-1">
+                      <p className="text-xs font-medium text-slate-400 mt-1">
                         {selectedServices.length} {selectedServices.length === 1 ? 'servicio seleccionado' : 'servicios seleccionados'}
                       </p>
                       {transferTotal > 0 && (
-                        <p className="text-[10px] font-bold text-emerald-500 mt-0.5 flex items-center gap-1">
+                        <p className="text-xs font-bold text-emerald-500 mt-0.5 flex items-center gap-1">
                           <Truck className="w-3 h-3" /> +${transferTotal.toFixed(2)} Tarifa de traslado
                           <span title="Esta tarifa cubre el costo de transporte del especialista a tu ubicación.">(?)</span>
                         </p>
@@ -806,7 +808,7 @@ export default function BookingWidget({
         )}
 
         {/* ===== RIGHT SIDE: Interactive Booking Widget ===== */}
-        <div className={`w-full ${step < 5 ? 'flex-[1.5]' : 'max-w-2xl text-center'} bg-white/95 dark:bg-zinc-950/85 backdrop-blur-2xl border border-slate-200 dark:border-white/10 p-5 sm:p-7 shadow-2xl relative min-h-[550px] flex flex-col rounded-3xl overflow-hidden text-left`}>
+        <div className={`w-full ${step < 5 ? 'flex-[1.5]' : 'max-w-5xl text-center'} bg-white/95 dark:bg-zinc-950/85 backdrop-blur-2xl border border-slate-200 dark:border-white/10 p-5 sm:p-7 shadow-2xl relative min-h-[550px] flex flex-col rounded-3xl overflow-hidden text-left`}>
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent dark:from-white/5 rounded-3xl pointer-events-none"></div>
 
           {/* STEP 1: Branch & Modality */}
@@ -882,12 +884,12 @@ export default function BookingWidget({
                         <div className="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:scale-110 transition-transform"><MapPin /></div>
                         <div>
                           <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-purple-400 leading-tight mb-0.5">{zone.name}</h3>
-                          <p className="text-slate-400 dark:text-zinc-500 text-[10px] font-bold uppercase tracking-wider">{zone.description || "COBERTURA DISPONIBLE"}</p>
+                          <p className="text-slate-400 dark:text-zinc-500 text-xs font-bold uppercase tracking-wider">{zone.description || "COBERTURA DISPONIBLE"}</p>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-emerald-500 text-xl font-black tracking-tighter">+${zone.fee}</p>
-                        <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest leading-none">Traslado</p>
+                        <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest leading-none">Traslado</p>
                       </div>
                     </button>
                   ))
@@ -919,62 +921,76 @@ export default function BookingWidget({
                   <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                     {bookingSettings?.step2Title || t("title_service")}
                   </h2>
-                  <p className="text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
+                  <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 mt-1">
                     {t("select_multiple_services")}
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 overflow-y-auto flex-1 pr-2 custom-scrollbar items-start content-start">
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto flex-1 pr-2 custom-scrollbar items-start content-start w-full">
                 {displayServices.map((srv) => {
                   const isSelected = selectedServices.some(s => s.id === srv.id);
                   return (
                     <button
                       key={srv.id}
                       onClick={() => handleToggleService(srv)}
-                      className={`w-full p-4 bg-white dark:bg-white/5 border rounded-xl text-left transition-all duration-300 group shadow-lg flex flex-col ${isSelected
-                        ? 'border-purple-500 bg-purple-500/10 shadow-[0_0_20px_rgba(139,92,246,0.1)]'
-                        : 'border-slate-200 dark:border-white/10 hover:border-purple-500/40'
+                      className={`w-full p-6 bg-white dark:bg-white/5 border-2 rounded-3xl text-left transition-all duration-300 group shadow-lg flex flex-col relative ${isSelected
+                        ? 'border-purple-500 bg-purple-500/10 shadow-[0_15px_40px_rgba(139,92,246,0.15)] ring-1 ring-purple-500/20'
+                        : 'border-slate-100 dark:border-white/5 hover:border-purple-500/40 hover:shadow-xl'
                         }`}
                     >
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`p-0.5 rounded-full transition-all duration-300 ${isSelected ? 'bg-purple-500 opacity-100 scale-100' : 'bg-transparent opacity-0 scale-75'}`}>
-                            <Check className="w-2.5 h-2.5 text-white" />
-                          </div>
-                          <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-purple-400 transition-colors tracking-tight">{srv.name}</h3>
+                      {isSelected && (
+                        <div className="absolute top-5 right-5 bg-purple-600 text-white p-1 rounded-full shadow-lg animate-in zoom-in-50 duration-300">
+                          <Check className="w-4 h-4" />
                         </div>
-                        <span className="text-purple-400 font-bold bg-purple-500/10 px-2.5 py-0.5 rounded-full text-xs inline-block self-start sm:self-auto">${srv.price}</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-zinc-400 mb-3">
-                        <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" /> {srv.durationMinutes} min</span>
+                      )}
+                      
+                      <div className="flex flex-col gap-1 mb-5">
+                        <h3 className={`text-xl font-black transition-colors tracking-tight ${isSelected ? 'text-purple-600 dark:text-purple-400' : 'text-slate-900 dark:text-white group-hover:text-purple-500'}`}>
+                          {srv.name}
+                        </h3>
+                        <div className="flex items-center gap-3">
+                          <span className="text-purple-500 dark:text-purple-400 font-black text-xl">${parsePrice(srv.price).toFixed(2)}</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-zinc-800"></span>
+                          <span className="flex items-center gap-1.5 text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
+                            <Clock className="w-3.5 h-3.5" /> {srv.durationMinutes} min
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-y-4 text-[11px] border-t border-slate-200 dark:border-white/5 pt-4">
-                        <div>
-                          <div className="flex items-center gap-1.5 mb-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                            <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">{t("includes")}</span>
+                      <div className="space-y-5 pt-5 border-t border-slate-100 dark:border-white/5 w-full">
+                        {srv.includes && srv.includes.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                              </div>
+                              <span className="text-xs font-black tracking-widest uppercase text-slate-400 dark:text-zinc-500">{t("includes")}</span>
+                            </div>
+                            <ul className="grid grid-cols-1 gap-2 pl-1">
+                              {srv.includes.map((inc, i) => (
+                                <li key={i} className="flex items-start gap-2.5 text-sm font-semibold text-slate-600 dark:text-zinc-300 leading-tight">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0"></span>
+                                  {inc}
+                                </li>
+                              ))}
+                            </ul>
                           </div>
-                          <ul className="space-y-1.5 ml-1">
-                            {srv.includes?.map((inc, i) => (
-                              <li key={i} className="flex items-start gap-2 text-slate-500 dark:text-zinc-400 leading-tight">
-                                <span className="w-1 h-1 rounded-full bg-emerald-500/50 mt-1.5 shrink-0"></span>
-                                <span className="flex-1">{inc}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                        )}
+                        
                         {srv.excludes && srv.excludes.length > 0 && (
                           <div>
-                            <div className="flex items-center gap-1.5 mb-2">
-                              <XCircle className="w-4 h-4 text-rose-500" />
-                              <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">{t("excludes")}</span>
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-6 h-6 rounded-lg bg-rose-500/10 flex items-center justify-center">
+                                <XCircle className="w-4 h-4 text-rose-500" />
+                              </div>
+                              <span className="text-xs font-black tracking-widest uppercase text-slate-400 dark:text-zinc-500">{t("excludes")}</span>
                             </div>
-                            <ul className="space-y-1.5 ml-1">
+                            <ul className="grid grid-cols-1 gap-2 pl-1">
                               {srv.excludes.map((exc, i) => (
-                                <li key={i} className="flex items-start gap-2 text-slate-500 dark:text-zinc-400 leading-tight">
-                                  <span className="w-1 h-1 rounded-full bg-rose-500/50 mt-1.5 shrink-0"></span>
-                                  <span className="flex-1">{exc}</span>
+                                <li key={i} className="flex items-start gap-2.5 text-sm font-medium text-slate-500/60 dark:text-zinc-400/60 leading-tight italic">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500/30 mt-1.5 shrink-0"></span>
+                                  {exc}
                                 </li>
                               ))}
                             </ul>
@@ -1128,45 +1144,45 @@ export default function BookingWidget({
                       <button
                         key={member.id}
                         onClick={() => handleSelectStaff(member)}
-                        className={`flex items-center gap-2 px-3 py-2 border rounded-full transition-all duration-300 shrink-0 ${selectedStaff?.id === member.id
-                          ? 'bg-blue-500/20 border-blue-500 text-blue-700 dark:text-blue-400 shadow-sm'
-                          : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/10'
+                        className={`flex items-center gap-2 px-4 py-2.5 border-2 rounded-full transition-all duration-300 shrink-0 ${selectedStaff?.id === member.id
+                          ? 'bg-blue-500/10 border-blue-500 text-blue-700 dark:text-blue-400 shadow-lg scale-105'
+                          : 'bg-white dark:bg-white/5 border-slate-100 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/10'
                           }`}
                       >
-                        <div className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-500 font-bold flex items-center justify-center text-[10px] border border-blue-500/30">
+                        <div className="w-6 h-6 rounded-full bg-blue-500 text-white font-black flex items-center justify-center text-[10px] shadow-sm">
                           {member.name.charAt(0)}
                         </div>
-                        <span className="text-sm">{member.name}</span>
+                        <span className="text-sm font-bold">{member.name}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-3 flex-1 overflow-hidden min-h-0">
+                <div className="flex flex-col lg:flex-row gap-8 flex-1 w-full min-h-0 overflow-hidden">
                   {/* DATE SELECTION - Interactive Calendar */}
-                  <div className="w-full md:w-[260px] lg:w-[300px] flex flex-col shrink-0">
-                    <p className="text-[10px] font-bold text-slate-400 tracking-widest mb-3 uppercase">
+                  <div className="w-full lg:w-[320px] flex flex-col shrink-0 overflow-hidden">
+                    <p className="text-xs font-black text-slate-400 dark:text-zinc-500 tracking-widest mb-3 uppercase">
                       {modality === 'domicilio' ? t("dates_home", { days: homeServiceLeadDays ?? 7 }) : t("dates")}
                     </p>
 
-                    <div className="bg-white/5 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 p-4 shadow-xl overflow-hidden relative group">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-black capitalize dark:text-white">
+                    <div className="bg-white dark:bg-white/5 rounded-3xl border border-slate-200 dark:border-white/10 p-3 sm:p-6 shadow-xl relative group w-full overflow-hidden">
+                      <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-black capitalize text-slate-900 dark:text-white truncate pr-2">
                           {format(currentMonth, "MMMM yyyy", { locale: es })}
                         </h3>
-                        <div className="flex gap-1">
-                          <button onClick={prevMonth} className="p-1 px-1.5 hover:bg-white/10 rounded-lg transition-colors border border-transparent hover:border-white/10">
+                        <div className="flex gap-1.5 shrink-0">
+                          <button onClick={prevMonth} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all border border-slate-200 dark:border-white/10">
                             <ArrowLeft className="w-4 h-4" />
                           </button>
-                          <button onClick={nextMonth} className="p-1 px-1.5 hover:bg-white/10 rounded-lg transition-colors border border-transparent hover:border-white/10">
+                          <button onClick={nextMonth} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all border border-slate-200 dark:border-white/10">
                             <ChevronRight className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-7 mb-2">
+                      <div className="grid grid-cols-7 mb-4">
                         {['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'].map(d => (
-                          <div key={d} className="text-[10px] font-bold text-slate-500 text-center">{d}</div>
+                          <div key={d} className="text-[10px] font-black text-slate-400 dark:text-zinc-500 text-center tracking-tighter">{d}</div>
                         ))}
                       </div>
 
@@ -1182,59 +1198,95 @@ export default function BookingWidget({
                               }
                             }}
                             className={`
-                              h-9 sm:h-10 text-xs font-bold rounded-lg transition-all duration-300 relative
-                              ${d.isDisabled ? 'text-slate-300 dark:text-zinc-700 opacity-50 cursor-not-allowed pointer-events-none' : 'hover:scale-110'}
-                              ${!d.isCurrentMonth ? 'opacity-40 grayscale-[0.5]' : ''}
-                              ${d.isClosed ? 'bg-rose-500/10 text-rose-500/50' : ''}
+                              h-10 sm:h-11 text-sm font-black rounded-xl transition-all duration-300 relative
+                              ${d.isDisabled ? 'text-slate-200 dark:text-zinc-800 cursor-not-allowed opacity-30 shadow-none' : 'hover:bg-purple-500/10 hover:text-purple-600'}
+                              ${!d.isCurrentMonth ? 'opacity-20' : ''}
+                              ${d.isClosed ? 'bg-rose-500/5 text-rose-500/30' : ''}
                               ${d.isSelected
-                                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30 ring-2 ring-purple-500/50 scale-105 !opacity-100 !grayscale-0'
-                                : d.isDisabled ? '' : 'bg-white dark:bg-white/5 text-slate-700 dark:text-white border border-transparent hover:border-purple-500/30'}
+                                ? 'bg-purple-600 !text-white shadow-xl shadow-purple-500/40 ring-2 ring-purple-500/50 scale-105 z-10'
+                                : d.isDisabled ? '' : 'bg-transparent text-slate-700 dark:text-zinc-200'}
                             `}
                           >
                             {format(d.day, "d")}
-                            {d.isClosed && !d.isSelected && <div className="absolute top-1 right-1 w-1 h-1 bg-rose-500 rounded-full"></div>}
-                            {d.isSelected && <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>}
+                            {d.isClosed && !d.isSelected && <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-400 rounded-full"></div>}
                           </button>
                         ))}
                       </div>
                     </div>
+
+                    {/* Navigation Buttons inside calendar column for better access */}
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4 mt-6 sm:mt-8">
+                      <button
+                        onClick={() => {
+                          if (schedulingMode === 'separate' && currentServiceIndex > 0) {
+                            const prevIndex = currentServiceIndex - 1;
+                            const prevBooking = cartBookings[prevIndex];
+                            setCurrentServiceIndex(prevIndex);
+                            setSelectedDate(prevBooking.date);
+                            setSelectedTime(prevBooking.time);
+                            setSelectedStaff(prevBooking.staff);
+                            setCartBookings(prev => prev.slice(0, -1));
+                          } else {
+                            setStep(2);
+                            setSelectedTime(null);
+                            setSelectedStaff(null);
+                          }
+                        }}
+                        className="py-4 px-2 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border-2 border-slate-100 dark:border-white/10 text-slate-700 dark:text-white rounded-2xl font-black tracking-widest uppercase transition-all text-xs shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
+                      >
+                        <ArrowLeft className="w-4 h-4 shrink-0" /> {t("back")}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (schedulingMode === 'separate') {
+                            const newBooking = { service: selectedServices[currentServiceIndex], staff: selectedStaff, date: selectedDate, time: selectedTime };
+                            setCartBookings(prev => [...prev, newBooking]);
+                            if (currentServiceIndex < selectedServices.length - 1) {
+                              setCurrentServiceIndex(prev => prev + 1);
+                              setSelectedDate(null); setSelectedTime(null); setSelectedStaff(null);
+                            } else { setStep(4); }
+                          } else {
+                            const bookingsInBulk = selectedServices.map((s) => ({ service: s, staff: selectedStaff, date: selectedDate, time: selectedTime }));
+                            setCartBookings(bookingsInBulk); setStep(4);
+                          }
+                        }}
+                        disabled={!selectedTime || !selectedDate}
+                        className="py-4 px-2 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-zinc-700 text-white rounded-2xl font-black tracking-widest uppercase transition-all shadow-2xl active:scale-[0.98] text-xs flex items-center justify-center gap-2"
+                      >
+                        {schedulingMode === 'separate' && currentServiceIndex < selectedServices.length - 1 ? 'Siguiente' : t("continue")} <ChevronRight className="w-4 h-4 shrink-0" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* TIME SELECTION */}
-                  <div className="flex-1 flex flex-col overflow-hidden w-full">
-                    <div className="flex flex-col h-full bg-slate-50/50 dark:bg-black/20 rounded-2xl border border-slate-200/60 dark:border-white/5 p-4 sm:p-6 w-full">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5" />
-                        Horarios disponibles
+                  <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+                    <div className="flex flex-col h-full bg-slate-100/30 dark:bg-zinc-900/40 rounded-3xl border border-slate-200/50 dark:border-white/5 p-4 sm:p-8 min-h-0 overflow-hidden">
+                      <h3 className="text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-6 sm:mb-8 flex items-center gap-2">
+                        <Clock className="w-5 h-5" />
+                        Horarios Disponibles
                       </h3>
 
-                      <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-6 pb-4">
+                      <div className="flex-1 overflow-y-auto custom-scrollbar pr-3 space-y-10 pb-6">
                         {isLoadingTimes ? (
-                          <div className="flex flex-col items-center justify-center py-12">
-                            <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
-                            <p className="mt-2 text-xs text-slate-400">Verificando disponibilidad...</p>
+                          <div className="flex flex-col items-center justify-center py-24">
+                            <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
+                            <p className="mt-6 text-xs font-black text-slate-400 uppercase tracking-widest">Calculando disponibilidad...</p>
                           </div>
                         ) : errorType || (selectedDate && availableTimes.length === 0) ? (
-                          <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-rose-500/5 dark:bg-rose-500/10 border border-dashed border-rose-500/20 rounded-2xl animate-in fade-in zoom-in-95 duration-500">
-                            {errorType === 'BRANCH_CLOSED' ? (
-                              <XCircle className="w-10 h-10 mb-3 text-rose-500/60" />
-                            ) : (
-                              <Clock className="w-10 h-10 mb-3 text-rose-500/60" />
-                            )}
-                            <p className="text-sm font-bold text-rose-600 dark:text-rose-400">
-                              {errorType === 'BRANCH_CLOSED'
-                                ? 'La sucursal no se encuentra disponible en este horario'
-                                : (modality === 'domicilio' ? 'No hay disponibilidad para servicio a domicilio' : 'No hay especialistas disponibles para esta fecha')}
+                          <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-rose-500/5 dark:bg-rose-500/10 border-2 border-dashed border-rose-500/20 rounded-3xl animate-in fade-in zoom-in-95 duration-500">
+                            <XCircle className="w-14 h-14 mb-5 text-rose-500/30" />
+                            <p className="text-base font-black text-rose-600 dark:text-rose-400 uppercase tracking-tight">
+                              {errorType === 'BRANCH_CLOSED' ? 'Sucursal Cerrada' : 'Sin disponibilidad'}
                             </p>
-                            <p className="mt-2 text-[10px] text-slate-400 leading-relaxed">
-                              Por favor intenta con otra fecha o {selectedStaff ? 'selecciona otro especialista' : 'verifica en un horario distinto'}.
+                            <p className="mt-3 text-sm font-bold text-slate-500 leading-relaxed max-w-[240px]">
+                              {errorType === 'BRANCH_CLOSED' ? 'La sucursal no abre en esta fecha seleccionada.' : 'No encontramos espacios libres con este especialista. Intenta con otra fecha.'}
                             </p>
                           </div>
                         ) : !selectedDate ? (
-                          <div className="flex flex-col items-center justify-center py-12 text-slate-400 border border-dashed border-slate-200 dark:border-white/10 rounded-2xl animate-in fade-in zoom-in-95 duration-500">
-                            <Calendar className="w-8 h-8 mb-2 opacity-20" />
-                            <p className="text-sm font-medium">Selecciona un día en el calendario</p>
-                            <p className="text-[10px] opacity-50 mt-1 max-w-[150px] text-center">Escoge una fecha para ver los horarios disponibles</p>
+                          <div className="flex flex-col items-center justify-center py-24 text-slate-300 dark:text-zinc-800 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-3xl group transition-colors">
+                            <Calendar className="w-16 h-16 mb-6 group-hover:scale-110 transition-transform opacity-30" />
+                            <p className="text-sm font-black uppercase tracking-widest text-slate-400">Elige una fecha</p>
                           </div>
                         ) : (
                           <>
@@ -1242,44 +1294,27 @@ export default function BookingWidget({
                               { label: "Mañana", icon: "🌅", range: [0, 11] },
                               { label: "Tarde", icon: "☀️", range: [12, 17] },
                               { label: "Noche", icon: "🌙", range: [18, 23] }
-                            ].map((section, sectionIdx) => {
-                              const sectionTimes = (availableTimes as any[]).filter(t => {
-                                const hour = parseInt(t.time.split(':')[0], 10);
-                                return hour >= section.range[0] && hour <= section.range[1];
-                              });
-
+                            ].map((section) => {
+                              const sectionTimes = (availableTimes as any[]).filter(t => { const h = parseInt(t.time.split(':')[0], 10); return h >= section.range[0] && h <= section.range[1]; });
                               if (sectionTimes.length === 0) return null;
-
                               return (
-                                <div key={section.label} className="space-y-3">
-                                  <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/5 pb-2">
-                                    <span className="text-lg">{section.icon}</span>
-                                    <h3 className="text-xs font-bold tracking-widest text-slate-600 dark:text-zinc-400">
-                                      {section.label}
-                                    </h3>
-                                  </div>
-                                  {hasTzDifference && sectionIdx === 0 && (
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg mb-2">
-                                      <Globe className="w-3.5 h-3.5 text-amber-500" />
-                                      <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                                        Horarios mostrados en la hora local del negocio ({businessOffsetLabel})
-                                      </p>
+                                <div key={section.label} className="space-y-5">
+                                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/5 pb-3">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-2xl">{section.icon}</span>
+                                      <h3 className="text-sm font-black tracking-widest text-slate-600 dark:text-zinc-400 uppercase">{section.label}</h3>
                                     </div>
-                                  )}
-                                  <div className="grid grid-cols-4 gap-1.5">
+                                    <span className="text-xs font-black text-slate-400 dark:text-zinc-500 px-3 py-1 bg-slate-200/50 dark:bg-white/5 rounded-full">{sectionTimes.length} Libres</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                                     {sectionTimes.map(({ time, available }: { time: string, available: boolean }) => (
                                       <button
                                         key={time}
                                         onClick={() => available && setSelectedTime(time)}
                                         disabled={!available}
-                                        className={`px-1 py-3 rounded-xl transition-all duration-300 flex flex-col items-center justify-center border ${!available
-                                          ? "bg-slate-50 dark:bg-black/40 text-slate-300 dark:text-zinc-700 border-slate-100 dark:border-white/5 cursor-not-allowed hidden"
-                                          : selectedTime === time
-                                            ? "bg-purple-600 text-white border-purple-500 shadow-md ring-2 ring-purple-500/20"
-                                            : "bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border-slate-200 dark:border-white/10 text-slate-600 dark:text-zinc-300"
-                                          }`}
+                                        className={`py-4 px-1 rounded-2xl transition-all duration-300 flex flex-col items-center justify-center border-2 ${!available ? "hidden" : selectedTime === time ? "bg-purple-600 text-white border-purple-500 shadow-xl scale-105 z-10" : "bg-white dark:bg-white/5 hover:border-purple-500/40 border-slate-100 dark:border-white/5 text-slate-700 dark:text-zinc-300 shadow-md font-bold"}`}
                                       >
-                                        <span className="font-bold text-[10px]">{formatTo12h(time)}</span>
+                                        <span className="font-black text-sm">{formatTo12h(time)}</span>
                                       </button>
                                     ))}
                                   </div>
@@ -1294,49 +1329,6 @@ export default function BookingWidget({
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-white/10 w-full">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-
-                    if (schedulingMode === 'separate') {
-                      const newBooking = {
-                        service: selectedServices[currentServiceIndex],
-                        staff: selectedStaff,
-                        date: selectedDate,
-                        time: selectedTime,
-                      };
-                      setCartBookings(prev => [...prev, newBooking]);
-
-                      if (currentServiceIndex < selectedServices.length - 1) {
-                        setCurrentServiceIndex(prev => prev + 1);
-                        setSelectedDate(null);
-                        setSelectedTime(null);
-                        setSelectedStaff(null);
-                      } else {
-                        setStep(4);
-                      }
-                    } else {
-                      const bookingsInBulk = selectedServices.map((s) => ({
-                        service: s,
-                        staff: selectedStaff,
-                        date: selectedDate,
-                        time: selectedTime
-                      }));
-                      setCartBookings(bookingsInBulk);
-                      setStep(4);
-                    }
-                  }}
-                  disabled={!selectedTime || !selectedDate}
-                  className="w-full py-5 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-zinc-600 text-white rounded-xl font-black tracking-widest transition-all duration-300 shadow-xl active:scale-[0.98] uppercase text-sm"
-                >
-                  {schedulingMode === 'separate' && currentServiceIndex < selectedServices.length - 1
-                    ? `Siguiente Servicio (${currentServiceIndex + 2}/${selectedServices.length}) →`
-                    : t("go_to_data")
-                  }
-                </button>
-              </div>
             </div>
           )}
 
@@ -1417,6 +1409,24 @@ export default function BookingWidget({
                   </div>
                 </div>
 
+                {modality === 'domicilio' && (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className="block text-sm font-semibold text-slate-500 dark:text-zinc-400 tracking-wider mb-2">
+                      {t("address")} <span className="text-rose-500 font-bold">({t("required")})</span>
+                    </label>
+                    <div className="relative">
+                      <MapPin className={`w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${guestAddress.trim() === '' ? 'text-rose-400' : 'text-slate-400 dark:text-zinc-500'}`} />
+                      <input 
+                        type="text" 
+                        value={guestAddress} 
+                        onChange={e => setGuestAddress(e.target.value)} 
+                        placeholder="Ej. Av. Las Magnolias #123, San Salvador"
+                        className={`w-full bg-white dark:bg-white/5 border rounded-xl py-4 pl-12 pr-4 text-slate-900 dark:text-white focus:outline-none focus:ring-1 transition-all ${guestAddress.trim() === '' ? 'border-rose-500/50 ring-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.1)]' : 'border-slate-200 dark:border-white/10 focus:border-purple-500 focus:ring-purple-500'}`}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-semibold text-slate-500 dark:text-zinc-400 tracking-wider mb-2">{t("comments")}</label>
                   <textarea
@@ -1467,137 +1477,259 @@ export default function BookingWidget({
             </div>
           )}
 
-          {/* STEP 5: Success Screen */}
-          {step === 5 && (
+           {/* STEP 5: Success Screen */}
+           {step === 5 && (
             <div className="relative z-10 flex flex-col w-full items-center justify-start text-center animate-in fade-in zoom-in-95 duration-700 pt-2">
               <div className={`w-16 h-16 ${modality === 'domicilio' ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.2)] text-emerald-400' : 'bg-purple-500/10 border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.2)] text-purple-400'} border rounded-full flex items-center justify-center mb-3`}>
                 {modality === 'domicilio' ? <Phone className="w-8 h-8" /> : <Check className="w-10 h-10" />}
               </div>
 
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 leading-tight">
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-2 leading-tight">
                 {modality === 'domicilio' ? "¡Espacio reservado!" : t("success")}
-              </h2>
+              </h1>
 
-              <div className="space-y-4 text-slate-600 dark:text-zinc-300 mb-6 max-w-4xl w-full">
-                <p className="text-sm">
+              <div className="space-y-4 text-slate-600 dark:text-zinc-300 mb-6 max-w-5xl w-full">
+                <p className="text-sm px-4">
                   {modality === 'domicilio'
                     ? "Recuerda que debes de terminar de ajustar los últimos detalles, puedes contactarte con nosotros en el botón de WhatsApp en este momento o espera a que te contactemos para confirmar tu cita."
                     : t("success_desc", { name: guestName.split(' ')[0], branch: selectedBranch?.name || '', service: selectedServices.map(s => s.name).join(", ") })
                   }
                 </p>
 
-                <div className="flex flex-col md:flex-row gap-8 items-stretch w-full mt-6">
-                  {/* Card Resumen Servicios */}
-                  <div className="flex-1 bg-slate-50 dark:bg-black/30 p-8 rounded-[2.5rem] border border-slate-200 dark:border-white/5 flex flex-col shadow-inner">
-                    <div className="flex items-center gap-2 mb-4 border-b border-slate-200 dark:border-white/5 pb-3">
-                      <Layers className="w-4 h-4 text-purple-400" />
-                      <h3 className="text-[10px] uppercase font-black tracking-widest text-slate-400">{t("selected_services")}</h3>
+                <div className="flex flex-col md:flex-row gap-6 items-stretch w-full mt-6 px-4 text-left">
+                  {/* Summary Side */}
+                  <div className="flex-[1.5] space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Layers className="w-4 h-4 text-purple-500" />
+                      <h2 className="text-xs uppercase font-black tracking-widest text-slate-400">{t("selected_services")}</h2>
                     </div>
-                    <div className="space-y-4 flex-1">
-                      {cartBookings.map((b, idx) => (
-                        <div key={idx} className="flex items-start gap-3 group">
-                          <div className="w-6 h-6 rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-purple-500/10 transition-colors">
-                            <span className="text-[10px] font-black text-purple-400">{idx + 1}</span>
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                      {cartBookings.map((b, idx) => {
+                        // Logic to check if this service starts a new transfer block
+                        let showsTransferInCard = false;
+                        if (modality === 'domicilio' && selectedZone) {
+                          if (idx === 0) showsTransferInCard = true;
+                          else {
+                            const prev = cartBookings[idx - 1];
+                            const prevEndTime = new Date(`${prev.date}T${formatTimeToMilitary(prev.time!)}`).getTime() + (prev.service.durationMinutes * 60000);
+                            const currStartTime = new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`).getTime();
+                            if (prev.date !== b.date || prev.staff?.id !== b.staff?.id || currStartTime > prevEndTime) {
+                              showsTransferInCard = true;
+                            }
+                          }
+                        }
+
+                        return (
+                          <div key={idx} className="group relative bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-3xl p-6 flex flex-col gap-5 hover:border-purple-500/30 transition-all shadow-md">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+                                  <span className="text-sm font-black text-purple-500">{idx + 1}</span>
+                                </div>
+                                <div className="min-w-0">
+                                  <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight mb-2">{b.service.name}</h3>
+                                  <div className="flex flex-wrap items-center gap-y-2 gap-x-4">
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-purple-500 bg-purple-500/5 px-3 py-1 rounded-full border border-purple-500/10">
+                                      <Calendar className="w-3.5 h-3.5" /> 
+                                      {getDayName(b.date!).split(',')[0]} {b.date}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-zinc-400">
+                                      <Clock className="w-3.5 h-3.5 text-slate-400" /> {formatTo12h(b.time!)}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                                      <User className="w-3.5 h-3.5" /> {b.staff?.name || t("any_staff")}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="hidden sm:flex flex-col items-end shrink-0">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("price")}</p>
+                                <p className="text-lg font-black text-slate-900 dark:text-white">${parsePrice(b.service.price).toFixed(2)}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-5 border-t border-slate-100 dark:border-white/5">
+                              <div className="flex flex-col gap-1">
+                                {showsTransferInCard && (
+                                  <div className="flex items-center gap-2 text-emerald-500">
+                                    <Truck className="w-4 h-4" />
+                                    <span className="text-[10px] font-black uppercase tracking-wider">
+                                      {t("transfer_included")} (+${parsePrice(selectedZone?.fee).toFixed(2)})
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="relative group/sync shrink-0">
+                                <button className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-white/10 hover:bg-purple-600 dark:hover:bg-purple-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95">
+                                  <Download className="w-3.5 h-3.5" />
+                                  {t("sync_calendar")}
+                                </button>
+                                <div className="absolute right-0 bottom-full mb-3 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover/sync:opacity-100 group-hover/sync:visible transition-all z-[99] p-2 ring-1 ring-black/5">
+                                  <p className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-white/5 mb-1">{t("choose_platform")}</p>
+                                  <a
+                                    href={getGoogleCalendarUrl({
+                                      title: `${b.service.name} @ ${tenantName}`,
+                                      description: `Especialista: ${b.staff?.name || 'Cualquiera'}\nCliente: ${guestName}`,
+                                      location: guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio',
+                                      startTime: new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`),
+                                      endTime: new Date(new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`).getTime() + b.service.durationMinutes * 60000)
+                                    })}
+                                    target="_blank"
+                                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-purple-500/10 hover:text-purple-500 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors"
+                                  >
+                                    <Globe className="w-4 h-4" /> Google Calendar
+                                  </a>
+                                  <a
+                                    href={getOutlookCalendarUrl({
+                                      title: `${b.service.name} @ ${tenantName}`,
+                                      description: `Especialista: ${b.staff?.name || 'Cualquiera'}\nCliente: ${guestName}`,
+                                      location: guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio',
+                                      startTime: new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`),
+                                      endTime: new Date(new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`).getTime() + b.service.durationMinutes * 60000)
+                                    })}
+                                    target="_blank"
+                                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-blue-500/10 hover:text-blue-500 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors"
+                                  >
+                                    <Mail className="w-4 h-4" /> Outlook (Web)
+                                  </a>
+                                  <button
+                                    onClick={() => {
+                                      const start = new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`);
+                                      const end = new Date(start.getTime() + b.service.durationMinutes * 60000);
+                                      const icsContent = [
+                                        'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
+                                        `DTSTART:${start.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+                                        `DTEND:${end.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+                                        `SUMMARY:${b.service.name} @ ${tenantName}`,
+                                        `DESCRIPTION:Especialista: ${b.staff?.name || 'Cualquiera'}`,
+                                        `LOCATION:${guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio'}`,
+                                        'END:VEVENT', 'END:VCALENDAR'
+                                      ].join('\n');
+                                      const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                                      const link = document.createElement('a');
+                                      link.href = window.URL.createObjectURL(blob);
+                                      link.setAttribute('download', `cita-${b.service.name.toLowerCase()}.ics`);
+                                      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 text-left transition-colors"
+                                  >
+                                    <Download className="w-4 h-4" /> Apple / iOS
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">{b.service.name}</p>
-                            <p className="text-[10px] font-medium text-slate-500 mt-0.5">
-                              {formatTo12h(b.time!)} · {b.service.durationMinutes} min
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
-                    <div className="mt-6 pt-4 border-t border-slate-200 dark:border-white/5">
-                      <div className="space-y-2 mb-4 border-b border-slate-200 dark:border-white/5 pb-4">
-                        <div className="flex items-center justify-between opacity-60">
-                          <p className="text-[10px] font-bold tracking-widest uppercase">{t("selected_services")}</p>
-                          <p className="text-sm font-bold">${servicesTotal.toFixed(2)}</p>
+
+                    {/* Pricing Breakdown Card */}
+                    <div className="bg-white dark:bg-white/5 p-6 rounded-3xl border border-slate-200 dark:border-white/10 mt-6 shadow-sm">
+                      <div className="space-y-3 mb-6">
+                        <div className="flex items-center justify-between text-slate-500">
+                          <p className="text-xs font-black uppercase tracking-[0.2em]">{t("subtotal_services")}</p>
+                          <p className="text-sm font-black">${servicesTotal.toFixed(2)}</p>
                         </div>
                         {transferTotal > 0 && (
-                          <div className="flex items-center justify-between text-emerald-500">
-                            <p className="text-[10px] font-bold tracking-widest uppercase flex items-center gap-1">
-                              <Truck className="w-3 h-3" /> Tarifa de traslado
-                            </p>
-                            <p className="text-sm font-bold">+${transferTotal.toFixed(2)}</p>
+                          <div className="flex flex-col gap-2 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                            <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                              <p className="text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                                <Truck className="w-4 h-4" /> {t("transfer_fee")}
+                              </p>
+                              <p className="text-sm font-black">${transferTotal.toFixed(2)}</p>
+                            </div>
+                            {transferInfo.blocks > 1 && (
+                              <div className="pt-2 border-t border-emerald-500/10">
+                                <p className="text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest leading-relaxed">
+                                  {t("transfer_fee_detail", { count: transferInfo.blocks, fee: parsePrice(selectedZone?.fee).toFixed(2) })}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">Total</p>
-                        <p className="text-2xl font-black text-purple-400 animate-in fade-in duration-700">${totalPrice.toFixed(2)}</p>
+                      <div className="flex items-center justify-between pt-5 border-t border-slate-200 dark:border-white/10">
+                        <div>
+                          <p className="text-xs font-black tracking-[0.2em] text-slate-400 uppercase mb-1">{t("total_to_pay")}</p>
+                          <p className="text-[10px] font-bold text-slate-400 opacity-60 uppercase">{t("tax_included")}</p>
+                        </div>
+                        <p className="text-4xl font-black text-purple-600 dark:text-purple-400 tracking-tighter">${totalPrice.toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Card Info Cliente */}
-                  <div className="flex-1 bg-slate-50 dark:bg-black/30 p-8 rounded-[2.5rem] border border-slate-200 dark:border-white/5 flex flex-col shadow-inner">
-                    <div className="flex items-center gap-2 mb-4 border-b border-slate-200 dark:border-white/5 pb-3">
-                      <UserCircle className="w-4 h-4 text-emerald-400" />
-                      <h3 className="text-[10px] uppercase font-black tracking-widest text-slate-400">{t("title_data")}</h3>
+                  {/* Info Side */}
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <UserCircle className="w-4 h-4 text-emerald-500" />
+                      <h2 className="text-xs uppercase font-black tracking-widest text-slate-400">{t("title_data")}</h2>
                     </div>
 
-                    <div className="space-y-4 flex-1">
-                      <div className={`grid ${selectedServices.length > 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-4 pb-2`}>
-                        <div>
-                          <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">{t("date")}</p>
-                          <p className="text-purple-500 font-bold text-sm tracking-tight">{selectedDate || t("date_tbd")}</p>
-                        </div>
-                        {selectedServices.length === 1 && (
-                          <div className="text-right">
-                            <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">{t("time")}</p>
-                            <p className="text-slate-900 dark:text-white font-bold text-sm tracking-tight">{selectedTime ? formatTo12h(selectedTime) : '--'}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500">
-                            <User className="w-4 h-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">{t("customer")}</p>
-                            <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">{guestName}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500">
-                            <Phone className="w-4 h-4" />
+                    <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 space-y-6 shadow-sm">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center text-slate-500">
+                            <User className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">{t("contact")}</p>
-                            <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{`${selectedCountry.prefix} ${guestPhone}`}</p>
+                            <p className="text-xs uppercase font-black tracking-widest text-slate-400">{t("customer")}</p>
+                            <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">{guestName}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center text-slate-500">
+                            <Phone className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase font-black tracking-widest text-slate-400">{t("contact")}</p>
+                            <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">{`${selectedCountry.prefix} ${guestPhone}`}</p>
                           </div>
                         </div>
 
                         {guestEmail && (
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500">
-                              <Mail className="w-4 h-4" />
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center text-slate-500">
+                              <Mail className="w-5 h-5" />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">{t("email_label")}</p>
-                              <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight break-all truncate">{guestEmail}</p>
+                              <p className="text-xs uppercase font-black tracking-widest text-slate-400">{t("email_label")}</p>
+                              <p className="text-sm font-black text-slate-900 dark:text-white leading-tight break-all">{guestEmail}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {modality === 'domicilio' && guestAddress && (
+                          <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+                              <MapPin className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs uppercase font-black tracking-widest text-slate-400">{t("address")}</p>
+                              <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">{guestAddress}</p>
+                              <p className="text-xs font-bold text-emerald-500 mt-1 uppercase tracking-tighter">Zona: {selectedZone?.name}</p>
                             </div>
                           </div>
                         )}
                       </div>
-                    </div>
 
-                    <div className="mt-6 pt-4 border-t border-slate-200 dark:border-white/5 flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                      <p className="text-[11px] font-bold text-slate-500 truncate">{selectedBranch?.name || 'Servicio a domicilio'}</p>
+                      <div className="pt-6 border-t border-slate-100 dark:border-white/5 flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-slate-300" />
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                          {modality === 'domicilio' ? 'Servicio a domicilio' : selectedBranch?.name}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Botones Finales */}
-              <div className={`grid grid-cols-1 ${modality === 'domicilio' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3 w-full mt-4`}>
-                {modality === 'domicilio' && (
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 w-full max-w-5xl px-4 mt-4">
+                {modality === 'domicilio' ? (
                   <button
                     onClick={() => {
                       const waNumber = whatsappNumber?.replace(/\D/g, '') || '';
@@ -1606,80 +1738,23 @@ export default function BookingWidget({
                         .replace(/{servicios}/g, cartBookings.map(b => b.service.name).join(", "))
                         .replace(/{total}/g, `$${totalPrice.toFixed(2)}`)
                         .replace(/{fecha}/g, cartBookings[0]?.date || '')
-                        .replace(/{hora}/g, cartBookings[0]?.time || '')
-                        .replace(/{cliente}/g, guestName);
-                      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(formattedMsg)}`, '_blank');
+                        .replace(/{hora}/g, cartBookings[0]?.time ? formatTo12h(cartBookings[0]?.time) : '')
+                        .replace(/{cliente}/g, guestName)
+                        .replace(/{direccion}/g, guestAddress || '');
+                      
+                      const finalMsg = formattedMsg.includes('{direccion}') ? formattedMsg : `${formattedMsg}\n\nDirección: ${guestAddress}`;
+                      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(finalMsg)}`, '_blank');
                     }}
-                    className="w-full flex items-center justify-center py-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-black tracking-widest uppercase transition-all text-[11px] shadow-lg shadow-emerald-500/20"
+                    className="flex-1 flex items-center justify-center gap-3 py-6 px-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-2xl font-black tracking-widest uppercase transition-all text-xs shadow-2xl shadow-emerald-500/30 active:scale-[0.98] ring-4 ring-emerald-500/10"
                   >
-                    Confirmar por WhatsApp
+                    <MessageCircle className="w-5 h-5 !text-white" />
+                    <span>Confirmar por WhatsApp</span>
                   </button>
-                )}
-                <div className="relative group">
-                  <button className="w-full flex items-center justify-center py-4 bg-white dark:bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-xl font-black tracking-widest uppercase transition-all text-[11px] shadow-sm">
-                    Sincronizar
-                  </button>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[99] p-2 text-left ring-1 ring-black/5 dark:ring-white/5">
-                    <a
-                      href={getGoogleCalendarUrl({
-                        title: `Cita en ${tenantName}`,
-                        description: `Servicio: ${selectedServices.map(s => s.name).join(", ")}\nEspecialista: ${selectedStaff?.name || 'Cualquiera'}`,
-                        location: (selectedBranch as any)?.address || 'Servicio a domicilio',
-                        startTime: new Date(`${selectedDate}T${formatTimeToMilitary(selectedTime || '09:00 AM')}`),
-                        endTime: new Date(new Date(`${selectedDate}T${formatTimeToMilitary(selectedTime || '09:00 AM')}`).getTime() + totalDuration * 60000)
-                      })}
-                      target="_blank"
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300"
-                    >
-                      <Globe className="w-3.5 h-3.5" /> Google Calendar
-                    </a>
-                    <a
-                      href={getOutlookCalendarUrl({
-                        title: `Cita en ${tenantName}`,
-                        description: `Servicio: ${selectedServices.map(s => s.name).join(", ")}\nEspecialista: ${selectedStaff?.name || 'Cualquiera'}`,
-                        location: (selectedBranch as any)?.address || 'Servicio a domicilio',
-                        startTime: new Date(`${selectedDate}T${formatTimeToMilitary(selectedTime || '09:00 AM')}`),
-                        endTime: new Date(new Date(`${selectedDate}T${formatTimeToMilitary(selectedTime || '09:00 AM')}`).getTime() + totalDuration * 60000)
-                      })}
-                      target="_blank"
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300"
-                    >
-                      <Mail className="w-3.5 h-3.5" /> Outlook (Web)
-                    </a>
-                    <button
-                      onClick={() => {
-                        const start = new Date(`${selectedDate}T${formatTimeToMilitary(selectedTime || '09:00 AM')}`);
-                        const end = new Date(start.getTime() + totalDuration * 60000);
-                        const icsContent = [
-                          'BEGIN:VCALENDAR',
-                          'VERSION:2.0',
-                          'BEGIN:VEVENT',
-                          `DTSTART:${start.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
-                          `DTEND:${end.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
-                          `SUMMARY:Cita en ${tenantName}`,
-                          `DESCRIPTION:Servicio: ${selectedServices.map(s => s.name).join(", ")}`,
-                          `LOCATION:${(selectedBranch as any)?.address || 'Servicio a domicilio'}`,
-                          'END:VEVENT',
-                          'END:VCALENDAR'
-                        ].join('\n');
-                        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                        const link = document.createElement('a');
-                        link.href = window.URL.createObjectURL(blob);
-                        link.setAttribute('download', 'cita-zyncslot.ics');
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 text-left"
-                    >
-                      <Download className="w-3.5 h-3.5" /> Apple / iOS Calendar
-                    </button>
-                  </div>
-                </div>
-
+                ) : null}
+                
                 <button
-                  onClick={() => { setStep(1); setSelectedDate(null); setSelectedTime(null); setSelectedServices([]); setSelectedStaff(null); setModality(null); setGuestName(""); setGuestEmail(""); setGuestPhone(""); setGuestNotes(""); setSelectedZone(null); setCartBookings([]); }}
-                  className="w-full py-4 bg-white dark:bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-xl font-black tracking-widest uppercase transition-all text-[11px] shadow-sm hover:shadow-md"
+                  onClick={() => { window.location.reload(); }}
+                  className={`${modality === 'domicilio' ? 'flex-1 sm:flex-[0.5]' : 'flex-1'} py-5 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-2xl font-black tracking-[0.2em] uppercase transition-all text-xs shadow-sm shadow-black/5 active:scale-[0.98]`}
                 >
                   {t("back_to_start")}
                 </button>
@@ -1690,7 +1765,7 @@ export default function BookingWidget({
           {/* Persistent Widget Footer */}
           {bookingSettings?.footerText && (
             <div className="mt-8 pt-6 border-t border-slate-200 dark:border-white/5 text-center">
-              <p className="text-xs text-slate-500 dark:text-zinc-500 whitespace-pre-wrap leading-relaxed opacity-80 max-w-sm mx-auto">
+              <p className="text-xs text-slate-500 dark:text-zinc-500 whitespace-pre-wrap leading-relaxed opacity-80 max-w-2xl mx-auto">
                 {bookingSettings.footerText}
               </p>
             </div>
