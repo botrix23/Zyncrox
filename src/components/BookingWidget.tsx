@@ -7,7 +7,7 @@ import { es } from "date-fns/locale";
 import { ThemeToggle } from "./ThemeToggle";
 import { LangToggle } from "./LangToggle";
 import { getAvailableSlots, createBookingAction, createBookingSessionAction } from "@/app/actions/booking";
-import { Calendar, Clock, ChevronRight, Check, X, ArrowLeft, User, MapPin, Truck, Mail, Phone, UserCircle, Loader2, CheckCircle2, XCircle, Instagram, Facebook, Music, Layers, CalendarRange, Crown, Download, Globe, MessageCircle } from "lucide-react";
+import { Calendar, Clock, ChevronRight, ChevronDown, Check, X, ArrowLeft, User, MapPin, Truck, Mail, Phone, UserCircle, Loader2, CheckCircle2, XCircle, Instagram, Facebook, Music, Layers, CalendarRange, Crown, Download, Globe, MessageCircle } from "lucide-react";
 import { canUseFeature, getPlanFeatures } from "@/core/plans";
 import { getGoogleCalendarUrl, getOutlookCalendarUrl, generateICSFile } from "@/lib/calendar";
 
@@ -163,6 +163,12 @@ export default function BookingWidget({
   const businessTimezone = (branches[0] as any)?.tenant?.timezone || 'America/El_Salvador';
   const [hasTzDifference, setHasTzDifference] = useState(false);
   const [businessOffsetLabel, setBusinessOffsetLabel] = useState("");
+  const [openTimeSections, setOpenTimeSections] = useState<Set<string>>(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return new Set(['Mañana']);
+    if (hour < 18) return new Set(['Tarde']);
+    return new Set(['Noche']);
+  });
 
   useEffect(() => {
     try {
@@ -204,6 +210,33 @@ export default function BookingWidget({
     }
   }, [forcedTheme]);
 
+  useEffect(() => {
+    if (!selectedDate) return;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isToday = selectedDate === todayStr;
+    const [y, mo, d] = selectedDate.split('-').map(Number);
+    const dateObj = new Date(y, mo - 1, d);
+    const schedule = getBranchSchedule(dateObj);
+
+    if (isToday) {
+      // For today: open the section that covers the current hour
+      const hour = new Date().getHours();
+      if (hour < 12) setOpenTimeSections(new Set(['Mañana']));
+      else if (hour < 18) setOpenTimeSections(new Set(['Tarde']));
+      else setOpenTimeSections(new Set(['Noche']));
+    } else {
+      // For future dates: open the section that covers the branch's opening hour
+      if (schedule.isOpen && schedule.slots.length > 0) {
+        const openH = parseInt(schedule.slots[0].open.split(':')[0], 10);
+        if (openH < 12) setOpenTimeSections(new Set(['Mañana']));
+        else if (openH < 18) setOpenTimeSections(new Set(['Tarde']));
+        else setOpenTimeSections(new Set(['Noche']));
+      } else {
+        setOpenTimeSections(new Set(['Mañana']));
+      }
+    }
+  }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const displayServices = useMemo(() => {
@@ -232,13 +265,13 @@ export default function BookingWidget({
     guestPhone.length >= (selectedCountry as any).minLen &&
     (modality !== 'domicilio' || (guestAddress.trim() !== '' && selectedZone !== null && (!homeServiceTermsEnabled || agreedToTerms)));
 
-  const getTransferInfo = () => {
-    if (modality !== 'domicilio' || !selectedZone || cartBookings.length === 0) return { total: 0, blocks: 0 };
+  const getTransferInfo = (bks = cartBookings) => {
+    if (modality !== 'domicilio' || !selectedZone || bks.length === 0) return { total: 0, blocks: 0 };
 
     const zoneFee = parsePrice(selectedZone.fee);
     let transferBlocks = 1;
 
-    const sortedBookings = [...cartBookings].sort((a, b) => {
+    const sortedBookings = [...bks].sort((a, b) => {
       const timeA = new Date(`${a.date}T${formatTimeToMilitary(a.time!)}`).getTime();
       const timeB = new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`).getTime();
       return timeA - timeB;
@@ -263,8 +296,22 @@ export default function BookingWidget({
     return { total: transferBlocks * zoneFee, blocks: transferBlocks };
   };
 
+  // Preview bookings: incluye la selección actual para actualizar el total en tiempo real
+  const previewCartBookings = useMemo(() => {
+    if (schedulingMode !== 'separate' || !selectedDate || !selectedTime) return cartBookings;
+    return [...cartBookings, {
+      service: selectedServices[currentServiceIndex],
+      staff: selectedStaff,
+      date: selectedDate,
+      time: selectedTime,
+    }];
+  }, [cartBookings, selectedDate, selectedTime, schedulingMode, currentServiceIndex, selectedServices, selectedStaff]);
+
   const transferInfo = getTransferInfo();
   const transferTotal = transferInfo.total;
+
+  const sidebarTransferInfo = getTransferInfo(previewCartBookings);
+  const sidebarTransferTotal = sidebarTransferInfo.total;
 
 
   const servicesTotal = selectedServices.reduce((acc, s) => acc + parsePrice(s.price), 0);
@@ -377,7 +424,25 @@ export default function BookingWidget({
         }
       };
       if (selectedDate) fetchTimes();
-      else if (nextDays.length > 0) setSelectedDate(nextDays[0].fullDate);
+      else if (nextDays.length > 0) {
+        // Check against the actual branch closing time for today
+        const todayEntry = nextDays[0];
+        const schedule = getBranchSchedule(todayEntry.date);
+        let todayIsClosed = !schedule.isOpen;
+
+        if (!todayIsClosed && schedule.slots.length > 0) {
+          const lastSlot = schedule.slots[schedule.slots.length - 1];
+          const [h, m] = lastSlot.close.split(':').map(Number);
+          const closingTime = new Date();
+          closingTime.setHours(h, m, 0, 0);
+          if (new Date() >= closingTime) todayIsClosed = true;
+        } else if (!todayIsClosed && schedule.slots.length === 0) {
+          // No schedule data — fall back to 18:00
+          todayIsClosed = new Date().getHours() >= 18;
+        }
+
+        setSelectedDate((todayIsClosed && nextDays.length > 1) ? nextDays[1].fullDate : nextDays[0].fullDate);
+      }
     }
   }, [step, selectedDate, selectedServices, selectedStaff, selectedBranch, branches, totalDuration, schedulingMode, currentServiceIndex]);
 
@@ -521,10 +586,10 @@ export default function BookingWidget({
     };
   });
 
-  const getDayName = (dateStr: string) => {
+  const formatShortDate = (dateStr: string) => {
     const [y, m, d] = dateStr.split('-').map(Number);
     const dt = new Date(y, m - 1, d);
-    return dt.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+    return dt.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
@@ -726,11 +791,11 @@ export default function BookingWidget({
 
                 {selectedServices.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
-                      <Clock className="w-5 h-5 text-blue-400" />
-                      <span className="font-bold text-sm tracking-wider">{t("selected_services")}:</span>
+                    <div className="flex items-center gap-2 text-slate-600 dark:text-zinc-300">
+                      <Clock className="w-4 h-4 text-blue-400 shrink-0" />
+                      <span className="font-bold text-xs tracking-wider uppercase text-slate-400">{t("selected_services")}</span>
                     </div>
-                    <div className="pl-8 space-y-2">
+                    <div className="space-y-2.5">
                       {selectedServices.map((s, idx) => {
                         const booking = cartBookings[idx];
                         const isCurrent = schedulingMode === 'separate' && currentServiceIndex === idx;
@@ -750,18 +815,19 @@ export default function BookingWidget({
                         }
 
                         return (
-                          <div key={`${s.id}-${idx}`} className="flex flex-col gap-0.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-2">
-                                <Check className="w-3 h-3 text-emerald-500" /> {s.name}
-                              </p>
-                              <span className="text-xs font-bold text-slate-400/60 transition-colors uppercase tracking-widest">{s.durationMinutes} min</span>
+                          <div key={`${s.id}-${idx}`} className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-1.5 min-w-0">
+                              <Check className="w-3 h-3 text-emerald-500 mt-0.5 shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-slate-600 dark:text-zinc-300 leading-tight truncate">{s.name}</p>
+                                {displayDate && displayTime && (
+                                  <p className="text-xs font-bold text-slate-400 opacity-80 mt-0.5">
+                                    {formatShortDate(displayDate)} · {displayTime}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                            {displayDate && displayTime && (
-                              <p className="text-xs font-bold text-slate-400 ml-5 opacity-80">
-                                {getDayName(displayDate).split(',')[0]} · {displayTime}
-                              </p>
-                            )}
+                            <span className="text-xs font-bold text-slate-400/60 uppercase tracking-widest shrink-0">{s.durationMinutes} min</span>
                           </div>
                         );
                       })}
@@ -783,7 +849,7 @@ export default function BookingWidget({
                       <p className="text-xs font-black text-purple-400 tracking-[0.2em] mb-1">{t("resume")}</p>
                       <div className="flex items-baseline justify-between">
                         <p className="text-2xl font-black text-slate-900 dark:text-white">
-                          ${totalPrice.toFixed(2)}
+                          ${(servicesTotal + sidebarTransferTotal).toFixed(2)}
                         </p>
                         <p className="text-xs font-bold text-slate-500 dark:text-zinc-500">
                           {totalDuration} min
@@ -792,9 +858,12 @@ export default function BookingWidget({
                       <p className="text-xs font-medium text-slate-400 mt-1">
                         {selectedServices.length} {selectedServices.length === 1 ? 'servicio seleccionado' : 'servicios seleccionados'}
                       </p>
-                      {transferTotal > 0 && (
+                      {modality === 'domicilio' && selectedZone && (
                         <p className="text-xs font-bold text-emerald-500 mt-0.5 flex items-center gap-1">
-                          <Truck className="w-3 h-3" /> +${transferTotal.toFixed(2)} Tarifa de traslado
+                          <Truck className="w-3 h-3" />
+                          {sidebarTransferTotal > 0
+                            ? `+$${sidebarTransferTotal.toFixed(2)} Tarifa de traslado`
+                            : `+$${parsePrice(selectedZone.fee).toFixed(2)} Tarifa de traslado (est.)`}
                           <span title="Esta tarifa cubre el costo de transporte del especialista a tu ubicación.">(?)</span>
                         </p>
                       )}
@@ -1046,8 +1115,8 @@ export default function BookingWidget({
 
           {/* STEP 2.5: Choose Scheduling Mode */}
           {step === 2.5 && (
-            <div className="relative z-10 flex flex-col w-full items-start animate-in fade-in zoom-in-95 duration-500">
-              <div className="flex items-center gap-3 mb-6">
+            <div className="relative z-10 flex flex-col w-full flex-1 animate-in fade-in zoom-in-95 duration-500">
+              <div className="flex items-center gap-3 mb-8">
                 <button
                   onClick={() => setStep(2)}
                   className="p-2 bg-white dark:bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl text-slate-600 dark:text-zinc-300 transition-colors"
@@ -1059,34 +1128,34 @@ export default function BookingWidget({
                 </h2>
               </div>
 
-              <div className="space-y-4">
+              <div className="flex-1 flex flex-col justify-center gap-5">
                 <button
                   onClick={() => { setSchedulingMode('bulk'); setStep(3); }}
-                  className="w-full p-6 bg-white dark:bg-white/5 hover:bg-purple-500/10 border border-slate-200 dark:border-white/10 hover:border-purple-500/40 rounded-2xl flex items-center gap-5 transition-all duration-300 group shadow-lg text-left"
+                  className="w-full p-7 bg-white dark:bg-white/5 hover:bg-purple-500/10 border border-slate-200 dark:border-white/10 hover:border-purple-500/40 rounded-2xl flex items-center gap-5 transition-all duration-300 group shadow-lg text-left"
                 >
-                  <div className="bg-purple-500/20 p-4 rounded-full text-purple-400 group-hover:scale-110 transition-transform"><Layers className="w-8 h-8" /></div>
+                  <div className="bg-purple-500/20 p-4 rounded-full text-purple-400 group-hover:scale-110 transition-transform shrink-0"><Layers className="w-8 h-8" /></div>
                   <div>
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-purple-400">Todo seguido (Recomendado)</h3>
-                    <p className="text-slate-400 dark:text-zinc-500 text-sm">Realiza todos tus servicios en una sola visita, uno tras otro.</p>
+                    <p className="text-slate-400 dark:text-zinc-500 text-sm mt-1">Realiza todos tus servicios en una sola visita, uno tras otro.</p>
                   </div>
                 </button>
 
                 <button
                   onClick={() => { setSchedulingMode('separate'); setStep(3); setCurrentServiceIndex(0); }}
-                  className="w-full p-6 bg-white dark:bg-white/5 hover:bg-blue-500/10 border border-slate-200 dark:border-white/10 hover:border-blue-500/40 rounded-2xl flex items-center gap-5 transition-all duration-300 group shadow-lg text-left"
+                  className="w-full p-7 bg-white dark:bg-white/5 hover:bg-blue-500/10 border border-slate-200 dark:border-white/10 hover:border-blue-500/40 rounded-2xl flex items-center gap-5 transition-all duration-300 group shadow-lg text-left"
                 >
-                  <div className="bg-blue-500/20 p-4 rounded-full text-blue-400 group-hover:scale-110 transition-transform"><CalendarRange className="w-8 h-8" /></div>
+                  <div className="bg-blue-500/20 p-4 rounded-full text-blue-400 group-hover:scale-110 transition-transform shrink-0"><CalendarRange className="w-8 h-8" /></div>
                   <div>
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-400">En días u horas distintas</h3>
-                    <p className="text-slate-400 dark:text-zinc-500 text-sm">Elige una fecha y especialista diferente para cada servicio.</p>
+                    <p className="text-slate-400 dark:text-zinc-500 text-sm mt-1">Elige una fecha y especialista diferente para cada servicio.</p>
                   </div>
                 </button>
 
                 {!canUseFeature(tenantPlan, 'separateServiceScheduling') && (
-                  <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-3">
-                    <Crown className="w-5 h-5 text-amber-500" />
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-3">
+                    <Crown className="w-5 h-5 text-amber-500 shrink-0" />
                     <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                      El agendamiento dividido es una función **PRO**. Actualiza tu suscripción para activarla.
+                      El agendamiento dividido es una función PRO. Actualiza tu suscripción para activarla.
                     </p>
                   </div>
                 )}
@@ -1096,7 +1165,7 @@ export default function BookingWidget({
 
           {/* STEP 3: Select Date & Time (and STAFF) */}
           {step === 3 && (
-            <div className="relative z-10 flex flex-col w-full items-start animate-in fade-in slide-in-from-right-8 duration-500 text-slate-900 dark:text-white max-h-screen">
+            <div className="relative z-10 flex flex-col w-full items-start animate-in fade-in slide-in-from-right-8 duration-500 text-slate-900 dark:text-white">
               <div className="flex items-center gap-3 mb-4">
                 <button
                   onClick={() => {
@@ -1118,21 +1187,28 @@ export default function BookingWidget({
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <h2 className="text-2xl font-bold tracking-tight">
-                  {schedulingMode === 'separate'
-                    ? `Agendando ${currentServiceIndex + 1} de ${selectedServices.length}: ${selectedServices[currentServiceIndex]?.name}`
-                    : (bookingSettings?.step3Title || t("title_specialist"))
-                  }
-                </h2>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    {schedulingMode === 'separate'
+                      ? `Cita ${currentServiceIndex + 1} de ${selectedServices.length}`
+                      : (bookingSettings?.step3Title || t("title_specialist"))
+                    }
+                  </h2>
+                  {schedulingMode === 'separate' && (
+                    <p className="text-sm font-semibold text-purple-500 dark:text-purple-400 truncate max-w-[200px] sm:max-w-xs mt-0.5">
+                      {selectedServices[currentServiceIndex]?.name}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              <div className="flex flex-col gap-4 flex-1 overflow-hidden">
+              <div className="flex flex-col gap-4 flex-1">
                 {/* STAFF SELECTION */}
                 <div>
-                  <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar no-scrollbar">
+                  <div className="flex flex-wrap gap-2 pb-2 -mx-0.5 px-0.5">
                     <button
                       onClick={() => handleSelectStaff(null)}
-                      className={`flex items-center gap-2 px-3 py-2 border rounded-full transition-all duration-300 shrink-0 ${selectedStaff === null
+                      className={`flex items-center gap-2 px-3 py-2 border rounded-full transition-all duration-300 ${selectedStaff === null
                         ? 'bg-purple-500/20 border-purple-500 text-purple-700 dark:text-purple-400 shadow-sm'
                         : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/10'
                         }`}
@@ -1144,7 +1220,7 @@ export default function BookingWidget({
                       <button
                         key={member.id}
                         onClick={() => handleSelectStaff(member)}
-                        className={`flex items-center gap-2 px-4 py-2.5 border-2 rounded-full transition-all duration-300 shrink-0 ${selectedStaff?.id === member.id
+                        className={`flex items-center gap-2 px-4 py-2.5 border-2 rounded-full transition-all duration-300 ${selectedStaff?.id === member.id
                           ? 'bg-blue-500/10 border-blue-500 text-blue-700 dark:text-blue-400 shadow-lg scale-105'
                           : 'bg-white dark:bg-white/5 border-slate-100 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/10'
                           }`}
@@ -1158,9 +1234,9 @@ export default function BookingWidget({
                   </div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-8 flex-1 w-full min-h-0 overflow-hidden">
+                <div className="flex flex-col lg:flex-row gap-8 w-full">
                   {/* DATE SELECTION - Interactive Calendar */}
-                  <div className="w-full lg:w-[320px] flex flex-col shrink-0 overflow-hidden">
+                  <div className="w-full lg:w-[320px] flex flex-col shrink-0">
                     <p className="text-xs font-black text-slate-400 dark:text-zinc-500 tracking-widest mb-3 uppercase">
                       {modality === 'domicilio' ? t("dates_home", { days: homeServiceLeadDays ?? 7 }) : t("dates")}
                     </p>
@@ -1214,8 +1290,8 @@ export default function BookingWidget({
                       </div>
                     </div>
 
-                    {/* Navigation Buttons inside calendar column for better access */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-4 mt-6 sm:mt-8">
+                    {/* Navigation Buttons - desktop only, mobile version is below the time slots */}
+                    <div className="hidden lg:grid grid-cols-2 gap-2 sm:gap-4 mt-6 sm:mt-8">
                       <button
                         onClick={() => {
                           if (schedulingMode === 'separate' && currentServiceIndex > 0) {
@@ -1260,14 +1336,14 @@ export default function BookingWidget({
                   </div>
 
                   {/* TIME SELECTION */}
-                  <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-                    <div className="flex flex-col h-full bg-slate-100/30 dark:bg-zinc-900/40 rounded-3xl border border-slate-200/50 dark:border-white/5 p-4 sm:p-8 min-h-0 overflow-hidden">
+                  <div className="flex-1 flex flex-col min-w-0">
+                    <div className="flex flex-col bg-slate-100/30 dark:bg-zinc-900/40 rounded-3xl border border-slate-200/50 dark:border-white/5 p-4 sm:p-8">
                       <h3 className="text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-6 sm:mb-8 flex items-center gap-2">
                         <Clock className="w-5 h-5" />
                         Horarios Disponibles
                       </h3>
 
-                      <div className="flex-1 overflow-y-auto custom-scrollbar pr-3 space-y-10 pb-6">
+                      <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar pr-3 space-y-10 pb-6">
                         {isLoadingTimes ? (
                           <div className="flex flex-col items-center justify-center py-24">
                             <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
@@ -1277,10 +1353,12 @@ export default function BookingWidget({
                           <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-rose-500/5 dark:bg-rose-500/10 border-2 border-dashed border-rose-500/20 rounded-3xl animate-in fade-in zoom-in-95 duration-500">
                             <XCircle className="w-14 h-14 mb-5 text-rose-500/30" />
                             <p className="text-base font-black text-rose-600 dark:text-rose-400 uppercase tracking-tight">
-                              {errorType === 'BRANCH_CLOSED' ? 'Sucursal Cerrada' : 'Sin disponibilidad'}
+                              Sin disponibilidad
                             </p>
                             <p className="mt-3 text-sm font-bold text-slate-500 leading-relaxed max-w-[240px]">
-                              {errorType === 'BRANCH_CLOSED' ? 'La sucursal no abre en esta fecha seleccionada.' : 'No encontramos espacios libres con este especialista. Intenta con otra fecha.'}
+                              {errorType === 'BRANCH_CLOSED'
+                                ? 'No hay especialistas disponibles para esta fecha. Intenta con otro día.'
+                                : 'No encontramos espacios libres con este especialista. Intenta con otra fecha.'}
                             </p>
                           </div>
                         ) : !selectedDate ? (
@@ -1297,27 +1375,41 @@ export default function BookingWidget({
                             ].map((section) => {
                               const sectionTimes = (availableTimes as any[]).filter(t => { const h = parseInt(t.time.split(':')[0], 10); return h >= section.range[0] && h <= section.range[1]; });
                               if (sectionTimes.length === 0) return null;
+                              const isOpen = openTimeSections.has(section.label);
                               return (
-                                <div key={section.label} className="space-y-5">
-                                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/5 pb-3">
+                                <div key={section.label} className="space-y-4">
+                                  <button
+                                    onClick={() => setOpenTimeSections(prev => {
+                                      const next = new Set(prev);
+                                      if (next.has(section.label)) next.delete(section.label);
+                                      else next.add(section.label);
+                                      return next;
+                                    })}
+                                    className="w-full flex items-center justify-between border-b border-slate-200 dark:border-white/5 pb-3 group"
+                                  >
                                     <div className="flex items-center gap-3">
                                       <span className="text-2xl">{section.icon}</span>
                                       <h3 className="text-sm font-black tracking-widest text-slate-600 dark:text-zinc-400 uppercase">{section.label}</h3>
                                     </div>
-                                    <span className="text-xs font-black text-slate-400 dark:text-zinc-500 px-3 py-1 bg-slate-200/50 dark:bg-white/5 rounded-full">{sectionTimes.length} Libres</span>
-                                  </div>
-                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                    {sectionTimes.map(({ time, available }: { time: string, available: boolean }) => (
-                                      <button
-                                        key={time}
-                                        onClick={() => available && setSelectedTime(time)}
-                                        disabled={!available}
-                                        className={`py-4 px-1 rounded-2xl transition-all duration-300 flex flex-col items-center justify-center border-2 ${!available ? "hidden" : selectedTime === time ? "bg-purple-600 text-white border-purple-500 shadow-xl scale-105 z-10" : "bg-white dark:bg-white/5 hover:border-purple-500/40 border-slate-100 dark:border-white/5 text-slate-700 dark:text-zinc-300 shadow-md font-bold"}`}
-                                      >
-                                        <span className="font-black text-sm">{formatTo12h(time)}</span>
-                                      </button>
-                                    ))}
-                                  </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-black text-slate-400 dark:text-zinc-500 px-3 py-1 bg-slate-200/50 dark:bg-white/5 rounded-full">{sectionTimes.filter((t: any) => t.available).length} libres</span>
+                                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
+                                    </div>
+                                  </button>
+                                  {isOpen && (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                                      {sectionTimes.map(({ time, available }: { time: string, available: boolean }) => (
+                                        <button
+                                          key={time}
+                                          onClick={() => available && setSelectedTime(time)}
+                                          disabled={!available}
+                                          className={`py-3 px-3 rounded-2xl transition-all duration-300 flex items-center justify-center border-2 ${!available ? "hidden" : selectedTime === time ? "bg-purple-600 text-white border-purple-500 shadow-xl scale-105 z-10" : "bg-white dark:bg-white/5 hover:border-purple-500/40 border-slate-100 dark:border-white/5 text-slate-700 dark:text-zinc-300 shadow-md font-bold"}`}
+                                        >
+                                          <span className="font-black text-sm whitespace-nowrap">{formatTo12h(time)}</span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
@@ -1327,6 +1419,50 @@ export default function BookingWidget({
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Mobile-only nav buttons - appear below time slots */}
+              <div className="lg:hidden grid grid-cols-2 gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    if (schedulingMode === 'separate' && currentServiceIndex > 0) {
+                      const prevIndex = currentServiceIndex - 1;
+                      const prevBooking = cartBookings[prevIndex];
+                      setCurrentServiceIndex(prevIndex);
+                      setSelectedDate(prevBooking.date);
+                      setSelectedTime(prevBooking.time);
+                      setSelectedStaff(prevBooking.staff);
+                      setCartBookings(prev => prev.slice(0, -1));
+                    } else {
+                      setStep(2);
+                      setSelectedTime(null);
+                      setSelectedStaff(null);
+                    }
+                  }}
+                  className="py-4 px-2 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border-2 border-slate-100 dark:border-white/10 text-slate-700 dark:text-white rounded-2xl font-black tracking-widest uppercase transition-all text-xs shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4 shrink-0" /> {t("back")}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (schedulingMode === 'separate') {
+                      const newBooking = { service: selectedServices[currentServiceIndex], staff: selectedStaff, date: selectedDate, time: selectedTime };
+                      setCartBookings(prev => [...prev, newBooking]);
+                      if (currentServiceIndex < selectedServices.length - 1) {
+                        setCurrentServiceIndex(prev => prev + 1);
+                        setSelectedDate(null); setSelectedTime(null); setSelectedStaff(null);
+                      } else { setStep(4); }
+                    } else {
+                      const bookingsInBulk = selectedServices.map((s) => ({ service: s, staff: selectedStaff, date: selectedDate, time: selectedTime }));
+                      setCartBookings(bookingsInBulk); setStep(4);
+                    }
+                  }}
+                  disabled={!selectedTime || !selectedDate}
+                  className="py-4 px-2 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-zinc-700 text-white rounded-2xl font-black tracking-widest uppercase transition-all shadow-2xl active:scale-[0.98] text-xs flex items-center justify-center gap-2"
+                >
+                  {schedulingMode === 'separate' && currentServiceIndex < selectedServices.length - 1 ? 'Siguiente' : t("continue")} <ChevronRight className="w-4 h-4 shrink-0" />
+                </button>
               </div>
 
             </div>
@@ -1412,7 +1548,7 @@ export default function BookingWidget({
                 {modality === 'domicilio' && (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                     <label className="block text-sm font-semibold text-slate-500 dark:text-zinc-400 tracking-wider mb-2">
-                      {t("address")} <span className="text-rose-500 font-bold">({t("required")})</span>
+                      {t("address")}
                     </label>
                     <div className="relative">
                       <MapPin className={`w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${guestAddress.trim() === '' ? 'text-rose-400' : 'text-slate-400 dark:text-zinc-500'}`} />
@@ -1531,8 +1667,8 @@ export default function BookingWidget({
                                   <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight mb-2">{b.service.name}</h3>
                                   <div className="flex flex-wrap items-center gap-y-2 gap-x-4">
                                     <div className="flex items-center gap-1.5 text-xs font-bold text-purple-500 bg-purple-500/5 px-3 py-1 rounded-full border border-purple-500/10">
-                                      <Calendar className="w-3.5 h-3.5" /> 
-                                      {getDayName(b.date!).split(',')[0]} {b.date}
+                                      <Calendar className="w-3.5 h-3.5" />
+                                      {formatShortDate(b.date!)}
                                     </div>
                                     <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-zinc-400">
                                       <Clock className="w-3.5 h-3.5 text-slate-400" /> {formatTo12h(b.time!)}

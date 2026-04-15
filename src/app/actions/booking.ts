@@ -567,13 +567,38 @@ export async function createBookingSessionAction(data: {
             if (bData.staffId) {
                 assignedStaffId = bData.staffId;
             } else {
-                // Si es cualquiera, elegimos uno de los disponibles en ese slot que NO esté ya tomado en la sesión
-                const possibleStaffIds = (randomSlot.availableStaffIds || []).filter((id: string) => 
-                   !sessionStaffAssignments.some(sas => sas.staffId === id && sas.start < utcEnd && sas.end > utcStart)
+                // Candidatos disponibles en ese slot que no estén ya asignados en esta sesión
+                const possibleStaffIds = (randomSlot.availableStaffIds || []).filter((id: string) =>
+                  !sessionStaffAssignments.some(sas => sas.staffId === id && sas.start < utcEnd && sas.end > utcStart)
                 );
-                
+
                 if (possibleStaffIds.length === 0) throw new Error("STAFF_UNAVAILABLE");
-                assignedStaffId = possibleStaffIds[Math.floor(Math.random() * possibleStaffIds.length)];
+
+                // Asignación equitativa: preferir al staff con menos citas ese día
+                const dayStart = new Date(`${format(utcStart, 'yyyy-MM-dd')}T00:00:00Z`);
+                const dayEnd   = new Date(`${format(utcStart, 'yyyy-MM-dd')}T23:59:59Z`);
+
+                const dayBookings = await tx
+                  .select({ staffId: bookings.staffId })
+                  .from(bookings)
+                  .where(
+                    and(
+                      eq(bookings.tenantId, data.tenantId),
+                      not(eq(bookings.status, 'CANCELLED')),
+                      gte(bookings.startTime, dayStart),
+                      lte(bookings.startTime, dayEnd)
+                    )
+                  );
+
+                const loadMap = new Map<string, number>();
+                for (const b of dayBookings) {
+                  if (b.staffId) loadMap.set(b.staffId, (loadMap.get(b.staffId) ?? 0) + 1);
+                }
+
+                const minLoad = Math.min(...possibleStaffIds.map((id: string) => loadMap.get(id) ?? 0));
+                const leastLoaded = possibleStaffIds.filter((id: string) => (loadMap.get(id) ?? 0) === minLoad);
+
+                assignedStaffId = leastLoaded[Math.floor(Math.random() * leastLoaded.length)];
             }
         }
 

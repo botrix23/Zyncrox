@@ -93,7 +93,17 @@
     "address_placeholder": "e.g. 123 Main St, Springfield",
     "sync_individual": "Sync",
     "transfer_fee_detail": "{count} transfers x ${fee}",
-    "service_date": "Service Date"
+    "service_date": "Service Date",
+    "sync_calendar": "ADD TO CALENDAR",
+    "transfer_included": "TRANSFER INCLUDED",
+    "any_staff": "Anyone",
+    "price": "PRICE",
+    "required": "required",
+    "choose_platform": "Choose a platform",
+    "subtotal_services": "Services subtotal",
+    "total_to_pay": "Total to pay",
+    "tax_included": "Taxes included",
+    "transfer_fee": "Transfer fee"
   },
   "Login": {
     "title": "Login",

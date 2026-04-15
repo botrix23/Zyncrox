@@ -99,7 +99,17 @@
     "address_placeholder": "Ej: Calle principal #123, Colonia Escalón",
     "sync_individual": "Sincronizar",
     "transfer_fee_detail": "{count} traslados x ${fee}",
-    "service_date": "Fecha del servicio"
+    "service_date": "Fecha del servicio",
+    "sync_calendar": "AGREGAR A CALENDARIO",
+    "transfer_included": "TRASLADO INCLUIDO",
+    "any_staff": "Cualquiera",
+    "price": "PRECIO",
+    "required": "obligatorio",
+    "choose_platform": "Elige una plataforma",
+    "subtotal_services": "Subtotal servicios",
+    "total_to_pay": "Total a pagar",
+    "tax_included": "Impuestos incluidos",
+    "transfer_fee": "Tarifa de traslado"
   },
   "Login": {
     "title": "Iniciar sesión",
