@@ -15,15 +15,29 @@ export default async function Home({ params }: { params: { locale: string, slug:
 
   // 2. Extraer los datos reales si el tenant existe
   const tenantBranches = tenant ? await db.select().from(branches).where(eq(branches.tenantId, tenant.id)) : [];
-  const tenantServices = tenant ? await db.query.services.findMany({
-    where: (srv, { eq }) => eq(srv.tenantId, tenant.id),
-    with: {
-      branches: true
-    },
-    orderBy: (srv, { asc }) => [asc(srv.sortOrder)]
-  }) : [];
-  const tenantStaff = tenant ? await db.select().from(staff).where(eq(staff.tenantId, tenant.id)) : [];
-  const coverageZones = tenant ? await db.query.coverageZones.findMany({ where: (zones, { eq }) => eq(zones.tenantId, tenant.id) }) : [];
+
+  const [rawServices, rawStaff, coverageZones] = tenant ? await Promise.all([
+    db.query.services.findMany({
+      where: (srv, { eq }) => eq(srv.tenantId, tenant.id),
+      with: { branches: true, categories: true },
+      orderBy: (srv, { asc }) => [asc(srv.sortOrder)],
+    }),
+    db.query.staff.findMany({
+      where: (s, { eq }) => eq(s.tenantId, tenant.id),
+      with: { categories: true },
+    }),
+    db.query.coverageZones.findMany({ where: (zones, { eq }) => eq(zones.tenantId, tenant.id) }),
+  ]) : [[], [], []];
+
+  // Aplanar categoryIds a arrays de strings para el widget
+  const tenantServices = rawServices.map(s => ({
+    ...s,
+    categoryIds: (s.categories || []).map((c: any) => c.categoryId),
+  }));
+  const tenantStaff = rawStaff.map(s => ({
+    ...s,
+    categoryIds: (s.categories || []).map((c: any) => c.categoryId),
+  }));
 
   return (
     <>

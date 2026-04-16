@@ -26,6 +26,7 @@ export const tenants = pgTable('tenants', {
   homeServiceTermsEnabled: boolean('home_service_terms_enabled').default(false).notNull(),
   allowsHomeService: boolean('allows_home_service').default(true).notNull(),
   homeServiceLeadDays: integer('home_service_lead_days').notNull().default(7),
+  homeServiceTravelTime: integer('home_service_travel_time').notNull().default(0),
   slug: varchar('slug', { length: 255 }).notNull().unique(),
   coverUrl: text('cover_url'),
   primaryColor: varchar('primary_color', { length: 20 }).default('#9333ea').notNull(),
@@ -117,6 +118,7 @@ export const bookings = pgTable('bookings', {
   endTime: timestamp('end_time', { withTimezone: true, mode: 'date' }).notNull(),
   status: varchar('status', { length: 50 }).notNull().default('CONFIRMED'), 
   notes: text('notes'),
+  isHomeService: boolean('is_home_service').notNull().default(false),
   sessionId: uuid('session_id').references(() => bookingSessions.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
@@ -265,12 +267,14 @@ export const staffRelations = relations(staff, ({ one, many }) => ({
   bookings: many(bookings),
   assignments: many(staffAssignments),
   reviews: many(reviews),
+  categories: many(staffToCategories),
 }));
 
 export const servicesRelations = relations(services, ({ one, many }) => ({
   tenant: one(tenants, { fields: [services.tenantId], references: [tenants.id] }),
   bookings: many(bookings),
   branches: many(serviceBranches),
+  categories: many(serviceToCategories),
 }));
 
 export const serviceBranchesRelations = relations(serviceBranches, ({ one }) => ({
@@ -307,4 +311,47 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
 
 export const surveyQuestionsRelations = relations(surveyQuestions, ({ one }) => ({
   tenant: one(tenants, { fields: [surveyQuestions.tenantId], references: [tenants.id] }),
+}));
+
+// 13. ServiceCategories (Etiquetas de especialidad: "uñas", "cabello", "masajes", etc.)
+export const serviceCategories = pgTable('service_categories', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  color: varchar('color', { length: 20 }).notNull().default('#8b5cf6'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// 14. ServiceToCategories (M:N Servicio ↔ Categoría)
+export const serviceToCategories = pgTable('service_to_categories', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  serviceId: uuid('service_id').notNull().references(() => services.id, { onDelete: 'cascade' }),
+  categoryId: uuid('category_id').notNull().references(() => serviceCategories.id, { onDelete: 'cascade' }),
+});
+
+// 15. StaffToCategories (M:N Staff ↔ Categoría)
+export const staffToCategories = pgTable('staff_to_categories', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  staffId: uuid('staff_id').notNull().references(() => staff.id, { onDelete: 'cascade' }),
+  categoryId: uuid('category_id').notNull().references(() => serviceCategories.id, { onDelete: 'cascade' }),
+});
+
+export const serviceCategoriesRelations = relations(serviceCategories, ({ one, many }) => ({
+  tenant: one(tenants, { fields: [serviceCategories.tenantId], references: [tenants.id] }),
+  services: many(serviceToCategories),
+  staff: many(staffToCategories),
+}));
+
+export const serviceToCategoriessRelations = relations(serviceToCategories, ({ one }) => ({
+  tenant: one(tenants, { fields: [serviceToCategories.tenantId], references: [tenants.id] }),
+  service: one(services, { fields: [serviceToCategories.serviceId], references: [services.id] }),
+  category: one(serviceCategories, { fields: [serviceToCategories.categoryId], references: [serviceCategories.id] }),
+}));
+
+export const staffToCategoriessRelations = relations(staffToCategories, ({ one }) => ({
+  tenant: one(tenants, { fields: [staffToCategories.tenantId], references: [tenants.id] }),
+  staff: one(staff, { fields: [staffToCategories.staffId], references: [staff.id] }),
+  category: one(serviceCategories, { fields: [staffToCategories.categoryId], references: [serviceCategories.id] }),
 }));

@@ -21,20 +21,23 @@ import {
   Info
 } from 'lucide-react';
 import { createStaffAction, updateStaffAction, deleteStaffAction } from "@/app/actions/staff";
+import { Tag } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Portal } from "@/components/Portal";
 import PhoneInput from "@/components/PhoneInput";
 
-export default function StaffClient({ 
+export default function StaffClient({
   initialStaff,
   branches,
-  tenantId 
-}: { 
+  categories = [],
+  tenantId
+}: {
   initialStaff: any[],
   branches: any[],
-  tenantId: string 
+  categories?: any[],
+  tenantId: string
 }) {
   const t = useTranslations('Dashboard.staff');
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,7 +61,8 @@ export default function StaffClient({
     inheritBranchHours: false,
     branchId: branches[0]?.id || "", // Mantener para compatibilidad
     assignments: [] as any[],
-    allowsHomeService: true
+    allowsHomeService: true,
+    categoryIds: [] as string[]
   });
 
   const filteredStaff = initialStaff.filter(s => 
@@ -91,7 +95,8 @@ export default function StaffClient({
         inheritBranchHours: !!member.inheritBranchHours,
         branchId: member.branchId,
         assignments: assignments,
-        allowsHomeService: member.allowsHomeService ?? true
+        allowsHomeService: member.allowsHomeService ?? true,
+        categoryIds: (member.categories || []).map((c: any) => c.categoryId)
       });
     } else {
       setEditingMember(null);
@@ -112,7 +117,8 @@ export default function StaffClient({
           endTime: "",
           isPermanent: true
         }],
-        allowsHomeService: true
+        allowsHomeService: true,
+        categoryIds: []
       });
     }
     setIsModalOpen(true);
@@ -187,7 +193,8 @@ export default function StaffClient({
         tenantId,
         ...formData,
         branchId: finalBranchId,
-        assignments: processedAssignments
+        assignments: processedAssignments,
+        categoryIds: formData.categoryIds
       });
     } else {
       result = await createStaffAction({
@@ -195,7 +202,8 @@ export default function StaffClient({
         ...formData,
         branchId: finalBranchId,
         assignments: processedAssignments,
-        allowsHomeService: formData.allowsHomeService
+        allowsHomeService: formData.allowsHomeService,
+        categoryIds: formData.categoryIds
       });
     }
 
@@ -353,6 +361,16 @@ export default function StaffClient({
                       {t('form.homeServiceOk')}
                     </span>
                   )}
+                  {(member.categories || []).map((sc: any) => (
+                    <span
+                      key={sc.categoryId}
+                      className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-full"
+                      style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
+                    >
+                      <Tag className="w-3 h-3" />
+                      {sc.category?.name}
+                    </span>
+                  ))}
                 </div>
               </div>
 
@@ -483,7 +501,7 @@ export default function StaffClient({
                         </div>
                       </div>
                     </div>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setFormData({...formData, inheritBranchHours: !formData.inheritBranchHours})}
                       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${formData.inheritBranchHours ? 'bg-blue-600' : 'bg-slate-300 dark:bg-white/20'}`}
@@ -492,6 +510,38 @@ export default function StaffClient({
                     </button>
                   </div>
                 </div>
+
+                {categories.length > 0 && (
+                  <div className="space-y-4 p-5 bg-slate-50 dark:bg-white/5 rounded-[24px] border border-slate-200 dark:border-white/10">
+                    <div className="flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-purple-500" />
+                      <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">Categorías de especialidad</p>
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-medium -mt-2">Este miembro del equipo aparecerá solo en servicios que compartan al menos una de estas categorías.</p>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((cat: any) => {
+                        const isSelected = formData.categoryIds.includes(cat.id);
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setFormData(prev => ({
+                              ...prev,
+                              categoryIds: isSelected
+                                ? prev.categoryIds.filter(id => id !== cat.id)
+                                : [...prev.categoryIds, cat.id]
+                            }))}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all ${isSelected ? 'text-white border-transparent shadow-md' : 'bg-white dark:bg-zinc-800 border-slate-200 dark:border-white/10 text-slate-500'}`}
+                            style={isSelected ? { backgroundColor: cat.color, borderColor: cat.color } : {}}
+                          >
+                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.6)' : cat.color }} />
+                            {cat.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-6">
                   {formData.assignments.filter(a => a.isPermanent).map((assignment, idx) => {

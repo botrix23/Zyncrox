@@ -1,6 +1,6 @@
 "use client";
 
-import { 
+import {
   LayoutDashboard,
   Settings,
   Calendar,
@@ -36,7 +36,7 @@ export function AdminSidebar({ user, locale, tenantName }: { user: SessionUser |
     { name: t('dashboard'), icon: LayoutDashboard, href: `/${locale}/admin`, active: pathname === `/${locale}/admin` },
     { name: t('bookings'), icon: Calendar, href: `/${locale}/admin/bookings`, active: pathname.includes('/bookings') },
     { name: t('branches'), icon: MapPin, href: `/${locale}/admin/branches`, active: pathname.includes('/branches') },
-    { name: t('services'), icon: Sparkles, href: `/${locale}/admin/services`, active: pathname.includes('/services') },
+    { name: t('services'), icon: Sparkles, href: `/${locale}/admin/services`, active: pathname.includes('/services') || pathname.includes('/categories') },
     { name: t('staff'), icon: Users, href: `/${locale}/admin/staff`, active: pathname.includes('/staff') },
     { name: t('absences'), icon: CalendarOff, href: `/${locale}/admin/absences`, active: pathname.includes('/absences') },
     { name: t('clients'), icon: Contact, href: `/${locale}/admin/clients`, active: pathname.includes('/clients') },

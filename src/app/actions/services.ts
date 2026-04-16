@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { services, serviceBranches } from "@/db/schema";
+import { services, serviceBranches, serviceToCategories } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -17,6 +17,7 @@ export async function createServiceAction(data: {
   allowsHomeService?: boolean;
   allowSimultaneous?: boolean;
   branchIds?: string[];
+  categoryIds?: string[];
 }) {
   try {
     const newService = await db.transaction(async (tx) => {
@@ -42,6 +43,17 @@ export async function createServiceAction(data: {
           }))
         );
       }
+
+      if (data.categoryIds && data.categoryIds.length > 0) {
+        await tx.insert(serviceToCategories).values(
+          data.categoryIds.map(categoryId => ({
+            tenantId: data.tenantId,
+            serviceId: inserted.id,
+            categoryId,
+          }))
+        );
+      }
+
       return inserted;
     });
 
@@ -67,6 +79,7 @@ export async function updateServiceAction(data: {
   allowsHomeService?: boolean;
   allowSimultaneous?: boolean;
   branchIds?: string[];
+  categoryIds?: string[];
 }) {
   try {
     await db.transaction(async (tx) => {
@@ -86,15 +99,26 @@ export async function updateServiceAction(data: {
         .where(and(eq(services.id, data.id), eq(services.tenantId, data.tenantId)));
 
       if (data.branchIds !== undefined) {
-        // Sync branches: remove old and insert new
         await tx.delete(serviceBranches).where(eq(serviceBranches.serviceId, data.id));
-        
         if (data.branchIds.length > 0) {
           await tx.insert(serviceBranches).values(
             data.branchIds.map(branchId => ({
               tenantId: data.tenantId,
               serviceId: data.id,
               branchId,
+            }))
+          );
+        }
+      }
+
+      if (data.categoryIds !== undefined) {
+        await tx.delete(serviceToCategories).where(eq(serviceToCategories.serviceId, data.id));
+        if (data.categoryIds.length > 0) {
+          await tx.insert(serviceToCategories).values(
+            data.categoryIds.map(categoryId => ({
+              tenantId: data.tenantId,
+              serviceId: data.id,
+              categoryId,
             }))
           );
         }

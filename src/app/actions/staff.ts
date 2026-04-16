@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { staff, staffAssignments, branches } from "@/db/schema";
+import { staff, staffAssignments, branches, staffToCategories } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -15,6 +15,7 @@ export async function createStaffAction(data: {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   inheritBranchHours?: boolean;
+  categoryIds?: string[];
   assignments?: Array<{
     branchId: string;
     startDate?: Date;
@@ -86,6 +87,16 @@ export async function createStaffAction(data: {
       });
     }
 
+    if (data.categoryIds && data.categoryIds.length > 0) {
+      await db.insert(staffToCategories).values(
+        data.categoryIds.map(categoryId => ({
+          tenantId: data.tenantId,
+          staffId: newStaff.id,
+          categoryId,
+        }))
+      );
+    }
+
     revalidatePath("/[locale]/admin/staff", "page");
     revalidatePath("/[locale]/admin/bookings", "page");
     revalidatePath("/[locale]/[slug]", "page");
@@ -107,6 +118,7 @@ export async function updateStaffAction(data: {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   inheritBranchHours?: boolean;
+  categoryIds?: string[];
   assignments?: Array<{
     branchId: string;
     startDate?: Date;
@@ -176,6 +188,19 @@ export async function updateStaffAction(data: {
         }
       }
     });
+
+    if (data.categoryIds !== undefined) {
+      await db.delete(staffToCategories).where(eq(staffToCategories.staffId, data.id));
+      if (data.categoryIds.length > 0) {
+        await db.insert(staffToCategories).values(
+          data.categoryIds.map(categoryId => ({
+            tenantId: data.tenantId,
+            staffId: data.id,
+            categoryId,
+          }))
+        );
+      }
+    }
 
     revalidatePath("/[locale]/admin/staff", "page");
     revalidatePath("/[locale]/admin/bookings", "page");

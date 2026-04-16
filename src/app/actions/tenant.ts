@@ -55,6 +55,19 @@ export async function updateTenantSettingsAction(data: {
   }
 }
 
+export async function updateHomeServiceTravelTimeAction(tenantId: string, travelTime: number) {
+  try {
+    await db.update(tenants)
+      .set({ homeServiceTravelTime: Math.max(0, travelTime), updatedAt: new Date() })
+      .where(eq(tenants.id, tenantId));
+    revalidatePath("/", "layout");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating travel time:", error);
+    return { success: false };
+  }
+}
+
 export async function updatePortalSettingsAction(data: {
   tenantId: string;
   name: string;

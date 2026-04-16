@@ -89,7 +89,7 @@
     "back": "Back",
     "comments": "Comments / Notes",
     "comments_placeholder": "Anything we should know? (Optional)",
-    "address": "Service Address *",
+    "address": "Service Address",
     "address_placeholder": "e.g. 123 Main St, Springfield",
     "sync_individual": "Sync",
     "transfer_fee_detail": "{count} transfers x ${fee}",

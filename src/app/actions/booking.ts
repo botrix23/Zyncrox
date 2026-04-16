@@ -58,11 +58,12 @@ export async function getAvailableSlots(
   staffId?: string | null,
   durationOverride?: number,
   isHomeService: boolean = false,
-  allowPast: boolean = false
-): Promise<{ 
-  slots: any[], 
+  allowPast: boolean = false,
+  allowedStaffIds?: string[]
+): Promise<{
+  slots: any[],
   errorType: 'BRANCH_CLOSED' | 'STAFF_UNAVAILABLE' | null,
-  allowSimultaneous?: boolean 
+  allowSimultaneous?: boolean
 }> {
   try {
     let duration = durationOverride;
@@ -85,6 +86,7 @@ export async function getAvailableSlots(
     });
 
     const timezone = branch?.tenant?.timezone || 'America/El_Salvador';
+    const travelTime = (branch?.tenant as any)?.homeServiceTravelTime ?? 0;
     const offsetMinutes = getTimezoneOffsetInMinutes(timezone, parseISO(dateStr));
 
     let activeSlots: { open: string; close: string }[] = [];
@@ -189,6 +191,11 @@ export async function getAvailableSlots(
         .map(s => s.id);
     }
 
+    // 5b. Filtrar por categorías de servicio si se especificaron IDs permitidos
+    if (allowedStaffIds && allowedStaffIds.length > 0) {
+      finalActiveStaffIds = finalActiveStaffIds.filter(id => allowedStaffIds.includes(id));
+    }
+
     if (finalActiveStaffIds.length === 0) return { slots: [], errorType: 'BRANCH_CLOSED' };
 
     // Si se pidió un staff específico, verificar si quedó en la lista de activos resolviendo prioridad y domicilio
@@ -266,16 +273,24 @@ export async function getAvailableSlots(
         const checkStaffIsFree = (sId: string) => {
            // 1. ¿Está asignado para trabajar en este horario?
            if (!staffIsAssignedInTime(sId)) return false;
-           
+
+           // Buffer de traslado para el NUEVO slot si es a domicilio
+           const newSlotStart = isHomeService && travelTime > 0 ? addMinutes(slotStart, -travelTime) : slotStart;
+           const newSlotEnd   = isHomeService && travelTime > 0 ? addMinutes(slotEnd,   travelTime)  : slotEnd;
+
            // 2. ¿Tiene una cita que se solape?
-           const hasBookingConflict = existingBookings.some(b => 
-              b.staffId === sId && isBefore(slotStart, b.endTime) && isAfter(slotEnd, b.startTime)
-           );
+           // Las citas a domicilio existentes también expanden su ventana por el tiempo de traslado.
+           const hasBookingConflict = existingBookings.some(b => {
+              if (b.staffId !== sId) return false;
+              const existStart = (b as any).isHomeService && travelTime > 0 ? addMinutes(b.startTime, -travelTime) : b.startTime;
+              const existEnd   = (b as any).isHomeService && travelTime > 0 ? addMinutes(b.endTime,    travelTime)  : b.endTime;
+              return isBefore(newSlotStart, existEnd) && isAfter(newSlotEnd, existStart);
+           });
            if (hasBookingConflict) return false;
 
            // 3. ¿Tiene un bloqueo (descanso/vacación) que se solape?
-           const hasBlockConflict = relevantBlocks.some(b => 
-              b.staffId === sId && isBefore(slotStart, b.endTime) && isAfter(slotEnd, b.startTime)
+           const hasBlockConflict = relevantBlocks.some(b =>
+              b.staffId === sId && isBefore(newSlotStart, b.endTime) && isAfter(newSlotEnd, b.startTime)
            );
            if (hasBlockConflict) return false;
 
@@ -283,8 +298,10 @@ export async function getAvailableSlots(
         };
 
         // El bloque completo está bloqueado si la sucursal tiene un bloqueo global
-        const isBranchBlocked = relevantBlocks.some(b => 
-           !b.staffId && isBefore(slotStart, b.endTime) && isAfter(slotEnd, b.startTime)
+        const checkStart = isHomeService && travelTime > 0 ? addMinutes(slotStart, -travelTime) : slotStart;
+        const checkEnd   = isHomeService && travelTime > 0 ? addMinutes(slotEnd,    travelTime)  : slotEnd;
+        const isBranchBlocked = relevantBlocks.some(b =>
+           !b.staffId && isBefore(checkStart, b.endTime) && isAfter(checkEnd, b.startTime)
         );
 
         let isOccupied = false;
@@ -321,7 +338,7 @@ export async function getAvailableSlots(
     let errorType: 'BRANCH_CLOSED' | 'STAFF_UNAVAILABLE' | null = null;
     
     if (!anyAvailable) {
-      if (existingBlocks.some(b => !b.staffId)) {
+      if (relevantBlocks.some(b => !b.staffId)) {
         errorType = 'BRANCH_CLOSED';
       } else {
         errorType = 'STAFF_UNAVAILABLE';
@@ -437,6 +454,7 @@ export async function createBookingSessionAction(data: {
   customerPhone?: string;
   zoneId?: string;
   notes?: string;
+  isHomeService?: boolean;
   bookings: {
     branchId: string;
     serviceId: string;
@@ -444,6 +462,7 @@ export async function createBookingSessionAction(data: {
     startTime: string; // Recibimos como string local "YYYY-MM-DDTHH:mm:ss"
     endTime: string;   // Recibimos como string local "YYYY-MM-DDTHH:mm:ss"
     price: string;
+    allowedStaffIds?: string[]; // IDs de staff permitidos por filtro de categorías
   }[];
 }) {
   try {
@@ -523,6 +542,8 @@ export async function createBookingSessionAction(data: {
       // 3b. Crear cada booking individual, verificando conflictos primero
       const newBookings = [];
       const sessionStaffAssignments: { staffId: string, start: Date, end: Date }[] = [];
+      // Para modo bulk: el primer staff asignado se prefiere para el resto de la sesión
+      let sessionPreferredStaffId: string | null = null;
 
       for (const bData of data.bookings) {
         const utcStart = convertToUtc(bData.startTime);
@@ -532,27 +553,53 @@ export async function createBookingSessionAction(data: {
 
         // Si el staffId es vacío/null o fue "Cualquiera", intentamos buscar uno disponible
         if (!assignedStaffId || assignedStaffId === "" || assignedStaffId === "null") {
+          const slotTime = format(utcStart, 'HH:mm');
+
+          // Intentar asignar el staff preferido de la sesión (para bulk: misma persona para todos los servicios)
+          if (sessionPreferredStaffId) {
+            const isInSessionConflict = sessionStaffAssignments.some(sas =>
+              sas.staffId === sessionPreferredStaffId && sas.start < utcEnd && sas.end > utcStart
+            );
+            if (!isInSessionConflict) {
+              const preferredData = await getAvailableSlots(
+                format(utcStart, 'yyyy-MM-dd'),
+                bData.serviceId,
+                bData.branchId,
+                sessionPreferredStaffId,
+                undefined,
+                !!data.zoneId
+              );
+              const preferredSlot = preferredData.slots.find(s => s.time === slotTime && s.available);
+              if (preferredSlot) {
+                assignedStaffId = sessionPreferredStaffId;
+              }
+            }
+          }
+
+          // Si aún no fue asignado, buscar entre los staff permitidos por categorías
+          if (!assignedStaffId || assignedStaffId === "" || assignedStaffId === "null") {
            const availableData = await getAvailableSlots(
              format(utcStart, 'yyyy-MM-dd'),
              bData.serviceId,
              bData.branchId,
              null, // Cualquiera
              undefined,
-             !!data.zoneId
+             !!data.zoneId,
+             false,
+             bData.allowedStaffIds
            );
-           
+
            // IMPORTANTE: Filtrar staff que YA fue asignado en esta misma sesión para este mismo horario
             const eligibleSlots = availableData.slots.filter(s => {
-              const slotTime = format(utcStart, 'HH:mm');
               const isTimeMatch = s.time === slotTime && s.available;
               if (!isTimeMatch) return false;
-              
-              const isAlreadyTakenInSession = sessionStaffAssignments.some(sas => 
-                sas.staffId === s.staffId && 
-                sas.start < utcEnd && 
+
+              const isAlreadyTakenInSession = sessionStaffAssignments.some(sas =>
+                sas.staffId === s.staffId &&
+                sas.start < utcEnd &&
                 sas.end > utcStart
               );
-              
+
               return !isAlreadyTakenInSession;
             });
 
@@ -563,7 +610,7 @@ export async function createBookingSessionAction(data: {
             // Balanceo de Carga: Elegir uno al azar de los elegibles
             // IMPORTANTE: Un slot puede tener múltiples staff disponibles
             const randomSlot = eligibleSlots[Math.floor(Math.random() * eligibleSlots.length)];
-            
+
             if (bData.staffId) {
                 assignedStaffId = bData.staffId;
             } else {
@@ -600,6 +647,12 @@ export async function createBookingSessionAction(data: {
 
                 assignedStaffId = leastLoaded[Math.floor(Math.random() * leastLoaded.length)];
             }
+          } // end: inner if (!assignedStaffId after preferred check)
+        } // end: outer if (Cualquiera)
+
+        // Guardar el primer staff asignado como preferido para el resto de la sesión (bulk mode)
+        if (!sessionPreferredStaffId && assignedStaffId) {
+          sessionPreferredStaffId = assignedStaffId;
         }
 
         // 3c. Verificar solapamiento (Staff Ocupado en DB)
@@ -635,6 +688,7 @@ export async function createBookingSessionAction(data: {
           startTime: utcStart,
           endTime: utcEnd,
           notes: data.notes,
+          isHomeService: data.isHomeService ?? false,
           sessionId: session.id,
           status: data.zoneId ? 'PENDING' : 'CONFIRMED'
         }).returning();

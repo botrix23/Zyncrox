@@ -88,6 +88,52 @@ export default function BookingsClient({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const router = useRouter();
 
+  const travelTime: number = (tenantSettings as any)?.homeServiceTravelTime ?? 0;
+
+  // Auto-refresh: actualiza las citas cada 20 segundos sin que el admin tenga que recargar
+  useEffect(() => {
+    const interval = setInterval(() => { router.refresh(); }, 20000);
+    return () => clearInterval(interval);
+  }, [router]);
+
+  // Helper: separa la dirección del domicilio de los comentarios reales del cliente
+  const parseBookingNotes = (notes: string | null | undefined): { address: string; clientNotes: string } => {
+    if (!notes) return { address: '', clientNotes: '' };
+    if (notes.startsWith('Dirección: ')) {
+      const newlineIdx = notes.indexOf('\n');
+      if (newlineIdx === -1) return { address: notes.slice('Dirección: '.length), clientNotes: '' };
+      return { address: notes.slice('Dirección: '.length, newlineIdx), clientNotes: notes.slice(newlineIdx + 1) };
+    }
+    return { address: '', clientNotes: notes };
+  };
+
+  // Helper: ¿tiene comentarios reales del cliente (no solo dirección)?
+  const bookingHasClientNotes = (booking: any): boolean => {
+    if (!booking.notes || !booking.notes.trim()) return false;
+    if (booking.isHomeService) return parseBookingNotes(booking.notes).clientNotes.trim().length > 0;
+    return booking.notes.trim().length > 0;
+  };
+
+  // Pre-calcula el contexto de buffer de traslado por booking:
+  // En una sesión bulk, solo el PRIMERO muestra buffer antes y solo el ÚLTIMO muestra buffer después.
+  const homeServiceBufferCtx = (() => {
+    const map = new Map<string, { showPre: boolean; showPost: boolean }>();
+    const groups = new Map<string, any[]>();
+    initialBookings.forEach(b => {
+      if (!b.isHomeService) return;
+      const key = b.sessionId || b.id;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(b);
+    });
+    groups.forEach(group => {
+      const sorted = [...group].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      sorted.forEach((b, i) => {
+        map.set(b.id, { showPre: i === 0, showPost: i === sorted.length - 1 });
+      });
+    });
+    return map;
+  })();
+
   // Hora más temprana de apertura entre todas las sucursales
   const calendarStartHour = (() => {
     let earliest = 8; // fallback
@@ -141,7 +187,8 @@ export default function BookingsClient({
     date: format(new Date(), "yyyy-MM-dd"),
     time: "09:00",
     durationMinutes: services[0]?.durationMinutes || 30,
-    notes: ""
+    notes: "",
+    homeAddress: "" // Dirección de atención (solo para servicio a domicilio, read-only)
   });
 
   const isPastBooking = (() => {
@@ -383,6 +430,7 @@ export default function BookingsClient({
 
   const handleOpenEdit = (booking: any) => {
     setEditingBooking(booking);
+    const { address, clientNotes } = parseBookingNotes(booking.notes);
     setFormData({
       customerName: booking.customerName,
       customerEmail: booking.customerEmail || "",
@@ -394,7 +442,8 @@ export default function BookingsClient({
       date: format(new Date(booking.startTime), "yyyy-MM-dd"),
       time: format(new Date(booking.startTime), "HH:mm"),
       durationMinutes: Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000),
-      notes: booking.notes || ""
+      notes: clientNotes,
+      homeAddress: address
     });
     setDurationInput(Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000).toString());
     setIsEditModalOpen(true);
@@ -410,11 +459,17 @@ export default function BookingsClient({
         // Calcular startTime y endTime para edición de cita individual
         const start = parse(`${formData.date} ${formData.time}`, "yyyy-MM-dd HH:mm", new Date());
         const end = addMinutes(start, formData.durationMinutes);
-        
+
+        // Reconstruir notes preservando la dirección si existía
+        const fullNotes = formData.homeAddress
+          ? `Dirección: ${formData.homeAddress}${formData.notes ? '\n' + formData.notes : ''}`
+          : formData.notes;
+
         result = await updateBookingAction({
           id: editingBooking.id,
           tenantId,
           ...formData,
+          notes: fullNotes,
           startTime: start,
           endTime: end
         });
@@ -768,32 +823,56 @@ export default function BookingsClient({
                       const dayEvents = initialBookings.filter(b => isSameDay(new Date(b.startTime), calendarDate));
                       const layoutEvents = getEventLayout(dayEvents);
                       
-                      return layoutEvents.map((booking: any) => {
+                      return layoutEvents.flatMap((booking: any) => {
                         const start = new Date(booking.startTime);
                         const end = new Date(booking.endTime);
                         const startMinutes = (start.getHours() - calendarStartHour) * 60 + start.getMinutes();
                         const duration = (end.getTime() - start.getTime()) / 60000;
                         const top = (startMinutes * 96) / 60;
                         const height = (duration * 96) / 60;
-                        
                         const width = 100 / booking.totalCols;
                         const left = booking.colIndex * width;
-
                         const isCancelled = booking.status === 'CANCELLED';
+                        const bufferPx = travelTime > 0 && booking.isHomeService ? (travelTime * 96) / 60 : 0;
+                        const bufCtx = homeServiceBufferCtx.get(booking.id);
 
-                        return (
+                        const items: JSX.Element[] = [];
+
+                        if (bufferPx > 0 && !isCancelled) {
+                          if (bufCtx?.showPre) {
+                            items.push(
+                              <div
+                                key={`${booking.id}-buf-pre`}
+                                style={{ top: `${top - bufferPx}px`, height: `${bufferPx}px`, left: `calc(${left}% + 4px)`, width: `calc(${width}% - 8px)` }}
+                                className="absolute z-[9] rounded-t-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center"
+                                title={`Traslado: ${travelTime} min antes`}
+                              >
+                                <Truck className="w-3 h-3 text-amber-400/60" />
+                              </div>
+                            );
+                          }
+                          if (bufCtx?.showPost) {
+                            items.push(
+                              <div
+                                key={`${booking.id}-buf-post`}
+                                style={{ top: `${top + height}px`, height: `${bufferPx}px`, left: `calc(${left}% + 4px)`, width: `calc(${width}% - 8px)` }}
+                                className="absolute z-[9] rounded-b-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center"
+                                title={`Traslado: ${travelTime} min después`}
+                              >
+                                <Truck className="w-3 h-3 text-amber-400/60" />
+                              </div>
+                            );
+                          }
+                        }
+
+                        items.push(
                           <button
                             key={booking.id}
                             onClick={() => handleOpenEdit(booking)}
-                            style={{ 
-                              top: `${top}px`, 
-                              height: `${height}px`, 
-                              left: `calc(${left}% + 4px)`, 
-                              width: `calc(${width}% - 8px)` 
-                            }}
+                            style={{ top: `${top}px`, height: `${height}px`, left: `calc(${left}% + 4px)`, width: `calc(${width}% - 8px)` }}
                             className={`absolute z-10 p-3 rounded-2xl border transition-all text-left group overflow-hidden ${
-                              isCancelled 
-                                ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-60 grayscale-[0.5]' 
+                              isCancelled
+                                ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-60 grayscale-[0.5]'
                                 : booking.status === 'CONFIRMED'
                                   ? 'bg-purple-500/10 border-purple-500/25 hover:bg-purple-500/20'
                                   : booking.status === 'PENDING'
@@ -804,7 +883,6 @@ export default function BookingsClient({
                             }`}
                           >
                             <div className="flex flex-col h-full gap-0.5">
-                              {/* Fila Cliente y Horario */}
                               <div className="flex items-center justify-between gap-4 mb-0.5">
                                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                   <h4 className={`font-extrabold text-[14px] truncate leading-tight ${
@@ -812,10 +890,10 @@ export default function BookingsClient({
                                   }`} title={booking.customerName}>
                                     {booking.customerName}
                                   </h4>
-                                  {booking.notes && booking.notes.trim().length > 0 && (
+                                  {bookingHasClientNotes(booking) && (
                                     <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${
-                                      booking.session?.zoneId 
-                                        ? 'text-purple-500 fill-purple-500/20' 
+                                      booking.session?.zoneId
+                                        ? 'text-purple-500 fill-purple-500/20'
                                         : 'text-orange-500 fill-orange-500/20'
                                     }`} />
                                   )}
@@ -824,17 +902,13 @@ export default function BookingsClient({
                                   {format(start, "h:mm")} - {format(end, "h:mm a")}
                                 </span>
                               </div>
-
-                              {/* Fila Staff - Servicio */}
                               <div className="flex items-center gap-1.5 overflow-hidden">
                                 <User className="w-3 h-3 text-slate-400 shrink-0" />
                                 <p className="text-xs font-bold text-slate-600 dark:text-zinc-300 truncate">
-                                  {booking.staff?.name} <span className="mx-1 text-slate-300 dark:text-white/10">-</span> 
+                                  {booking.staff?.name} <span className="mx-1 text-slate-300 dark:text-white/10">-</span>
                                   <span className="text-purple-600 dark:text-purple-400 font-black">{booking.service?.name}</span>
                                 </p>
                               </div>
-
-                              {/* Fila Sucursal */}
                               {booking.branch?.name && (
                                 <div className="flex items-center gap-1.5 overflow-hidden">
                                   <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
@@ -846,6 +920,8 @@ export default function BookingsClient({
                             </div>
                           </button>
                         );
+
+                        return items;
                       });
                     })()}
                   </div>
@@ -908,31 +984,43 @@ export default function BookingsClient({
                           const dayBookings = initialBookings.filter(b => isSameDay(new Date(b.startTime), day));
                           const layoutEvents = getEventLayout(dayBookings);
                           
-                          return layoutEvents.map((booking: any) => {
+                          return layoutEvents.flatMap((booking: any) => {
                             const start = new Date(booking.startTime);
                             const end = new Date(booking.endTime);
                             const startMinutes = (start.getHours() - calendarStartHour) * 60 + start.getMinutes();
                             const duration = (end.getTime() - start.getTime()) / 60000;
                             const top = (startMinutes * 96) / 60;
                             const height = Math.max((duration * 96) / 60, 28);
-                            
-                            const colWidth = 100 / booking.totalCols;
                             const colLeft = `calc(64px + ${di} * (100% - 64px) / 7 + (${booking.colIndex} * (100% - 64px) / 7 / ${booking.totalCols}) + 2px)`;
                             const finalWidth = `calc((100% - 64px) / 7 / ${booking.totalCols} - 4px)`;
-
                             const isCancelled = booking.status === 'CANCELLED';
+                            const bufferPx = travelTime > 0 && booking.isHomeService ? (travelTime * 96) / 60 : 0;
+                            const bufCtx = homeServiceBufferCtx.get(booking.id);
 
-                            return (
+                            const items: JSX.Element[] = [];
+
+                            if (bufferPx > 0 && !isCancelled) {
+                              if (bufCtx?.showPre) {
+                                items.push(
+                                  <div key={`${booking.id}-wbuf-pre`} style={{ position: 'absolute', top: `${top - bufferPx}px`, height: `${bufferPx}px`, left: colLeft, width: finalWidth }} className="z-[9] rounded-t-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center" title={`Traslado: ${travelTime} min antes`}>
+                                    <Truck className="w-2.5 h-2.5 text-amber-400/60" />
+                                  </div>
+                                );
+                              }
+                              if (bufCtx?.showPost) {
+                                items.push(
+                                  <div key={`${booking.id}-wbuf-post`} style={{ position: 'absolute', top: `${top + height}px`, height: `${bufferPx}px`, left: colLeft, width: finalWidth }} className="z-[9] rounded-b-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center" title={`Traslado: ${travelTime} min después`}>
+                                    <Truck className="w-2.5 h-2.5 text-amber-400/60" />
+                                  </div>
+                                );
+                              }
+                            }
+
+                            items.push(
                               <button
                                 key={booking.id}
                                 onClick={() => handleOpenEdit(booking)}
-                                style={{ 
-                                  position: 'absolute', 
-                                  top: `${top}px`, 
-                                  height: `${height}px`, 
-                                  left: colLeft, 
-                                  width: finalWidth
-                                }}
+                                style={{ position: 'absolute', top: `${top}px`, height: `${height}px`, left: colLeft, width: finalWidth }}
                                 className={`z-10 p-1.5 rounded-xl border transition-all text-left overflow-hidden ${
                                   isCancelled
                                     ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-60 grayscale-[0.5]'
@@ -948,17 +1036,11 @@ export default function BookingsClient({
                                 <div className="flex flex-col h-full gap-0.5">
                                   <div className="flex items-center justify-between gap-1 overflow-hidden">
                                     <div className="flex items-center gap-1 flex-1 min-w-0">
-                                      <p className={`font-black text-xs truncate leading-tight ${
-                                        isCancelled ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'
-                                      }`}>
+                                      <p className={`font-black text-xs truncate leading-tight ${isCancelled ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}`}>
                                         {booking.customerName}
                                       </p>
-                                      {booking.notes && booking.notes.trim().length > 0 && (
-                                        <MessageSquare className={`w-3 h-3 shrink-0 ${
-                                          booking.session?.zoneId 
-                                            ? 'text-purple-500 fill-purple-500/20' 
-                                            : 'text-orange-500 fill-orange-500/20'
-                                        }`} />
+                                      {bookingHasClientNotes(booking) && (
+                                        <MessageSquare className={`w-3 h-3 shrink-0 ${booking.session?.zoneId ? 'text-purple-500 fill-purple-500/20' : 'text-orange-500 fill-orange-500/20'}`} />
                                       )}
                                     </div>
                                     <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap opacity-60">{format(start, "h:mm a")}</span>
@@ -974,6 +1056,8 @@ export default function BookingsClient({
                                 </div>
                               </button>
                             );
+
+                            return items;
                           });
                         })}
                       </div>
@@ -1051,9 +1135,20 @@ export default function BookingsClient({
                       />
                     </div>
 
+                    {formData.homeAddress && (
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-500 ml-1 flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-500" /> Dirección de atención
+                        </label>
+                        <div className="w-full p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl text-sm font-medium text-slate-900 dark:text-white opacity-80 select-text">
+                          {formData.homeAddress}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <label className="text-xs font-black text-slate-500 ml-1">{t('form.notes')}</label>
-                      <textarea 
+                      <textarea
                         value={formData.notes}
                         onChange={e => setFormData({...formData, notes: e.target.value})}
                         placeholder={t('form.notesPlaceholder')}

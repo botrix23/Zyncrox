@@ -12,8 +12,8 @@ import { canUseFeature, getPlanFeatures } from "@/core/plans";
 import { getGoogleCalendarUrl, getOutlookCalendarUrl, generateICSFile } from "@/lib/calendar";
 
 type Branch = { id: string; name: string; businessHours?: string | null };
-type Service = { id: string; name: string; durationMinutes: number; price: string; includes: string[]; excludes: string[]; allowsHomeService?: boolean; allowSimultaneous?: boolean; branches?: { id: string; branchId: string }[] };
-type Staff = { id: string; name: string; allowsHomeService?: boolean };
+type Service = { id: string; name: string; durationMinutes: number; price: string; includes: string[]; excludes: string[]; allowsHomeService?: boolean; allowSimultaneous?: boolean; branches?: { id: string; branchId: string }[]; categoryIds?: string[] };
+type Staff = { id: string; name: string; allowsHomeService?: boolean; categoryIds?: string[] };
 type CoverageZone = { id: string; name: string; fee: string; description?: string | null };
 
 const COUNTRIES = [
@@ -237,6 +237,36 @@ export default function BookingWidget({
     }
   }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-expand the first section with available slots when slots load
+  useEffect(() => {
+    if (!availableTimes || availableTimes.length === 0) return;
+    const sections = [
+      { label: "Mañana", range: [0, 11] },
+      { label: "Tarde", range: [12, 17] },
+      { label: "Noche", range: [18, 23] }
+    ];
+    setOpenTimeSections(prev => {
+      const openHasSlots = [...prev].some(label => {
+        const sec = sections.find(s => s.label === label);
+        if (!sec) return false;
+        return availableTimes.some(t => {
+          const h = parseInt(t.time.split(':')[0], 10);
+          return h >= sec.range[0] && h <= sec.range[1] && t.available;
+        });
+      });
+      if (openHasSlots) return prev;
+      for (const sec of sections) {
+        if (availableTimes.some(t => {
+          const h = parseInt(t.time.split(':')[0], 10);
+          return h >= sec.range[0] && h <= sec.range[1] && t.available;
+        })) {
+          return new Set([sec.label]);
+        }
+      }
+      return prev;
+    });
+  }, [availableTimes]);
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const displayServices = useMemo(() => {
@@ -253,11 +283,36 @@ export default function BookingWidget({
   }, [services, modality, selectedBranch]);
 
   const displayStaff = useMemo(() => {
-    if (modality === 'domicilio') {
-      return staff.filter(s => s.allowsHomeService !== false);
+    let filtered = modality === 'domicilio'
+      ? staff.filter(s => s.allowsHomeService !== false)
+      : [...staff];
+
+    if (selectedServices.length > 0) {
+      if (schedulingMode === 'separate') {
+        // En modo separado cada servicio elige su propio especialista:
+        // filtrar solo por el servicio que se está agendando en este momento.
+        const currentCategoryIds = selectedServices[currentServiceIndex]?.categoryIds || [];
+        if (currentCategoryIds.length > 0) {
+          filtered = filtered.filter(s =>
+            (s.categoryIds || []).some(cId => currentCategoryIds.includes(cId))
+          );
+        }
+      } else {
+        // En modo bulk un mismo especialista atiende TODOS los servicios:
+        // debe tener al menos una categoría de CADA servicio que tenga categorías asignadas.
+        const servicesWithCategories = selectedServices.filter(s => (s.categoryIds || []).length > 0);
+        if (servicesWithCategories.length > 0) {
+          filtered = filtered.filter(s =>
+            servicesWithCategories.every(service =>
+              (service.categoryIds || []).some(cId => (s.categoryIds || []).includes(cId))
+            )
+          );
+        }
+      }
     }
-    return staff;
-  }, [staff, modality]);
+
+    return filtered;
+  }, [staff, modality, selectedServices, schedulingMode, currentServiceIndex]);
 
   const isFormValid =
     guestName.trim() !== '' &&
@@ -332,13 +387,18 @@ export default function BookingWidget({
             ? serviceToQuery.durationMinutes
             : totalDuration;
 
+          // Cuando no hay staff específico seleccionado, restringir al equipo filtrado por categorías
+          const allowedStaffIds = !selectedStaff ? displayStaff.map(s => s.id) : undefined;
+
           const res = await getAvailableSlots(
             selectedDate || '',
             serviceToQuery?.id || '',
             selectedBranch?.id || branches[0]?.id || '',
             selectedStaff?.id,
             durationToQuery,
-            modality === 'domicilio'
+            modality === 'domicilio',
+            false,
+            allowedStaffIds
           );
 
           const slots = res.slots || [];
@@ -354,7 +414,9 @@ export default function BookingWidget({
                   selectedBranch?.id || branches[0]?.id || '',
                   selectedStaff?.id,
                   durationToQuery,
-                  modality === 'domicilio'
+                  modality === 'domicilio',
+                  false,
+                  allowedStaffIds
                 );
                 if (nextRes.slots?.some((s: any) => s.available)) {
                   setSelectedDate(day.fullDate);
@@ -520,7 +582,9 @@ export default function BookingWidget({
           staffId: item.staff?.id || '',
           startTime: formattedStart,
           endTime: formattedEnd,
-          price: item.service.price
+          price: item.service.price,
+          // Si no hay staff específico, restringir al staff que pasa el filtro de categorías
+          ...(!item.staff?.id ? { allowedStaffIds: displayStaff.map(s => s.id) } : {})
         };
       });
 
@@ -531,6 +595,7 @@ export default function BookingWidget({
         customerPhone: guestPhone ? `${selectedCountry.prefix} ${guestPhone}` : undefined,
         zoneId: selectedZone?.id,
         notes: guestAddress ? `Dirección: ${guestAddress}\n${guestNotes}` : guestNotes,
+        isHomeService: modality === 'domicilio',
         bookings: sessionBookingsData
       });
 
@@ -1166,7 +1231,7 @@ export default function BookingWidget({
           {/* STEP 3: Select Date & Time (and STAFF) */}
           {step === 3 && (
             <div className="relative z-10 flex flex-col w-full items-start animate-in fade-in slide-in-from-right-8 duration-500 text-slate-900 dark:text-white">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-2">
                 <button
                   onClick={() => {
                     if (schedulingMode === 'separate' && currentServiceIndex > 0) {
@@ -1187,20 +1252,32 @@ export default function BookingWidget({
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {schedulingMode === 'separate'
-                      ? `Cita ${currentServiceIndex + 1} de ${selectedServices.length}`
-                      : (bookingSettings?.step3Title || t("title_specialist"))
-                    }
-                  </h2>
-                  {schedulingMode === 'separate' && (
-                    <p className="text-sm font-semibold text-purple-500 dark:text-purple-400 truncate max-w-[200px] sm:max-w-xs mt-0.5">
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  {schedulingMode === 'separate'
+                    ? `Cita ${currentServiceIndex + 1} de ${selectedServices.length}`
+                    : (bookingSettings?.step3Title || t("title_specialist"))
+                  }
+                </h2>
+              </div>
+
+              {/* Service context banner — always visible so the client knows exactly what they're booking */}
+              {selectedServices.length > 0 && (
+                <div className="w-full mb-4 p-3 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 rounded-2xl flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-black text-purple-400 dark:text-purple-500 uppercase tracking-widest shrink-0">Agendando:</span>
+                  {schedulingMode === 'separate' ? (
+                    <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
                       {selectedServices[currentServiceIndex]?.name}
-                    </p>
+                    </span>
+                  ) : (
+                    selectedServices.map((s, i) => (
+                      <span key={s.id} className="flex items-center gap-1.5 text-sm font-bold text-purple-700 dark:text-purple-300">
+                        {i > 0 && <span className="text-purple-300 dark:text-purple-600 font-normal">+</span>}
+                        {s.name}
+                      </span>
+                    ))
                   )}
                 </div>
-              </div>
+              )}
 
               <div className="flex flex-col gap-4 flex-1">
                 {/* STAFF SELECTION */}
@@ -1337,8 +1414,8 @@ export default function BookingWidget({
 
                   {/* TIME SELECTION */}
                   <div className="flex-1 flex flex-col min-w-0">
-                    <div className="flex flex-col bg-slate-100/30 dark:bg-zinc-900/40 rounded-3xl border border-slate-200/50 dark:border-white/5 p-4 sm:p-8">
-                      <h3 className="text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-6 sm:mb-8 flex items-center gap-2">
+                    <div className="flex flex-col bg-slate-100/30 dark:bg-zinc-900/40 rounded-3xl border border-slate-200/50 dark:border-white/5 p-4 sm:p-5">
+                      <h3 className="text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-6 sm:mb-5 flex items-center gap-2">
                         <Clock className="w-5 h-5" />
                         Horarios Disponibles
                       </h3>
@@ -1640,8 +1717,18 @@ export default function BookingWidget({
                       <h2 className="text-xs uppercase font-black tracking-widest text-slate-400">{t("selected_services")}</h2>
                     </div>
                     
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 gap-3">
                       {cartBookings.map((b, idx) => {
+                        // Compute actual sequential start time for bulk mode (all same date/time → stacked)
+                        let actualStartTime: Date;
+                        if (schedulingMode === 'bulk') {
+                          const base = new Date(`${cartBookings[0].date}T${formatTimeToMilitary(cartBookings[0].time!)}`);
+                          const offsetMs = cartBookings.slice(0, idx).reduce((acc, prev) => acc + prev.service.durationMinutes * 60000, 0);
+                          actualStartTime = new Date(base.getTime() + offsetMs);
+                        } else {
+                          actualStartTime = new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`);
+                        }
+
                         // Logic to check if this service starts a new transfer block
                         let showsTransferInCard = false;
                         if (modality === 'domicilio' && selectedZone) {
@@ -1656,105 +1743,101 @@ export default function BookingWidget({
                           }
                         }
 
+                        // In bulk mode: only show calendar button on first card; it covers total duration
+                        const isBulkSession = schedulingMode === 'bulk' && cartBookings.length > 1;
+                        const showCalendarBtn = !isBulkSession || idx === 0;
+                        const calStart = isBulkSession && idx === 0
+                          ? new Date(`${cartBookings[0].date}T${formatTimeToMilitary(cartBookings[0].time!)}`)
+                          : actualStartTime;
+                        const calEnd = isBulkSession && idx === 0
+                          ? new Date(calStart.getTime() + cartBookings.reduce((acc, bk) => acc + bk.service.durationMinutes * 60000, 0))
+                          : new Date(actualStartTime.getTime() + b.service.durationMinutes * 60000);
+                        const calTitle = isBulkSession && idx === 0
+                          ? `${cartBookings.map(bk => bk.service.name).join(' + ')} @ ${tenantName}`
+                          : `${b.service.name} @ ${tenantName}`;
+
                         return (
-                          <div key={idx} className="group relative bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-3xl p-6 flex flex-col gap-5 hover:border-purple-500/30 transition-all shadow-md">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-                                  <span className="text-sm font-black text-purple-500">{idx + 1}</span>
+                          <div key={idx} className="group relative bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 flex flex-col gap-3 hover:border-purple-500/30 transition-all shadow-sm">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+                                  <span className="text-xs font-black text-purple-500">{idx + 1}</span>
                                 </div>
                                 <div className="min-w-0">
-                                  <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight mb-2">{b.service.name}</h3>
-                                  <div className="flex flex-wrap items-center gap-y-2 gap-x-4">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-purple-500 bg-purple-500/5 px-3 py-1 rounded-full border border-purple-500/10">
-                                      <Calendar className="w-3.5 h-3.5" />
+                                  <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight truncate">{b.service.name}</h3>
+                                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                                    <div className="flex items-center gap-1 text-xs font-bold text-purple-500">
+                                      <Calendar className="w-3 h-3" />
                                       {formatShortDate(b.date!)}
                                     </div>
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-zinc-400">
-                                      <Clock className="w-3.5 h-3.5 text-slate-400" /> {formatTo12h(b.time!)}
+                                    <div className="flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-zinc-400">
+                                      <Clock className="w-3 h-3 text-slate-400" /> {formatTo12h(format(actualStartTime, 'HH:mm') + ':00')}
                                     </div>
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
-                                      <User className="w-3.5 h-3.5" /> {b.staff?.name || t("any_staff")}
+                                    <div className="flex items-center gap-1 text-xs font-bold text-slate-400">
+                                      <User className="w-3 h-3" /> {b.staff?.name || t("any_staff")}
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs font-bold text-slate-400/70">
+                                      <Clock className="w-3 h-3" /> {b.service.durationMinutes} min
                                     </div>
                                   </div>
                                 </div>
                               </div>
-                              
-                              <div className="hidden sm:flex flex-col items-end shrink-0">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("price")}</p>
-                                <p className="text-lg font-black text-slate-900 dark:text-white">${parsePrice(b.service.price).toFixed(2)}</p>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-5 border-t border-slate-100 dark:border-white/5">
-                              <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-3 shrink-0">
+                                <p className="text-sm font-black text-slate-900 dark:text-white">${parsePrice(b.service.price).toFixed(2)}</p>
                                 {showsTransferInCard && (
-                                  <div className="flex items-center gap-2 text-emerald-500">
-                                    <Truck className="w-4 h-4" />
-                                    <span className="text-[10px] font-black uppercase tracking-wider">
-                                      {t("transfer_included")} (+${parsePrice(selectedZone?.fee).toFixed(2)})
+                                  <div className="flex items-center gap-1 text-emerald-500">
+                                    <Truck className="w-3.5 h-3.5" />
+                                    <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">
+                                      +${parsePrice(selectedZone?.fee).toFixed(2)}
                                     </span>
                                   </div>
                                 )}
-                              </div>
-
-                              <div className="relative group/sync shrink-0">
-                                <button className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-white/10 hover:bg-purple-600 dark:hover:bg-purple-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95">
-                                  <Download className="w-3.5 h-3.5" />
-                                  {t("sync_calendar")}
-                                </button>
-                                <div className="absolute right-0 bottom-full mb-3 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover/sync:opacity-100 group-hover/sync:visible transition-all z-[99] p-2 ring-1 ring-black/5">
-                                  <p className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-white/5 mb-1">{t("choose_platform")}</p>
-                                  <a
-                                    href={getGoogleCalendarUrl({
-                                      title: `${b.service.name} @ ${tenantName}`,
-                                      description: `Especialista: ${b.staff?.name || 'Cualquiera'}\nCliente: ${guestName}`,
-                                      location: guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio',
-                                      startTime: new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`),
-                                      endTime: new Date(new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`).getTime() + b.service.durationMinutes * 60000)
-                                    })}
-                                    target="_blank"
-                                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-purple-500/10 hover:text-purple-500 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors"
-                                  >
-                                    <Globe className="w-4 h-4" /> Google Calendar
-                                  </a>
-                                  <a
-                                    href={getOutlookCalendarUrl({
-                                      title: `${b.service.name} @ ${tenantName}`,
-                                      description: `Especialista: ${b.staff?.name || 'Cualquiera'}\nCliente: ${guestName}`,
-                                      location: guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio',
-                                      startTime: new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`),
-                                      endTime: new Date(new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`).getTime() + b.service.durationMinutes * 60000)
-                                    })}
-                                    target="_blank"
-                                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-blue-500/10 hover:text-blue-500 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors"
-                                  >
-                                    <Mail className="w-4 h-4" /> Outlook (Web)
-                                  </a>
-                                  <button
-                                    onClick={() => {
-                                      const start = new Date(`${b.date}T${formatTimeToMilitary(b.time!)}`);
-                                      const end = new Date(start.getTime() + b.service.durationMinutes * 60000);
-                                      const icsContent = [
-                                        'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
-                                        `DTSTART:${start.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
-                                        `DTEND:${end.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
-                                        `SUMMARY:${b.service.name} @ ${tenantName}`,
-                                        `DESCRIPTION:Especialista: ${b.staff?.name || 'Cualquiera'}`,
-                                        `LOCATION:${guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio'}`,
-                                        'END:VEVENT', 'END:VCALENDAR'
-                                      ].join('\n');
-                                      const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                                      const link = document.createElement('a');
-                                      link.href = window.URL.createObjectURL(blob);
-                                      link.setAttribute('download', `cita-${b.service.name.toLowerCase()}.ics`);
-                                      document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 text-left transition-colors"
-                                  >
-                                    <Download className="w-4 h-4" /> Apple / iOS
-                                  </button>
-                                </div>
+                                {showCalendarBtn && (
+                                  <div className="relative group/sync">
+                                    <button className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 dark:bg-white/10 hover:bg-purple-600 dark:hover:bg-purple-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all active:scale-95">
+                                      <Download className="w-3 h-3" />
+                                      <span className="hidden sm:inline">{t("sync_calendar")}</span>
+                                    </button>
+                                    <div className="absolute right-0 bottom-full mb-3 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover/sync:opacity-100 group-hover/sync:visible transition-all z-[99] p-2 ring-1 ring-black/5">
+                                      <p className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-white/5 mb-1">{t("choose_platform")}</p>
+                                      <a
+                                        href={getGoogleCalendarUrl({ title: calTitle, description: `Especialista: ${b.staff?.name || 'Cualquiera'}\nCliente: ${guestName}`, location: guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio', startTime: calStart, endTime: calEnd })}
+                                        target="_blank"
+                                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-purple-500/10 hover:text-purple-500 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors"
+                                      >
+                                        <Globe className="w-4 h-4" /> Google Calendar
+                                      </a>
+                                      <a
+                                        href={getOutlookCalendarUrl({ title: calTitle, description: `Especialista: ${b.staff?.name || 'Cualquiera'}\nCliente: ${guestName}`, location: guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio', startTime: calStart, endTime: calEnd })}
+                                        target="_blank"
+                                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-blue-500/10 hover:text-blue-500 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors"
+                                      >
+                                        <Mail className="w-4 h-4" /> Outlook (Web)
+                                      </a>
+                                      <button
+                                        onClick={() => {
+                                          const icsContent = [
+                                            'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
+                                            `DTSTART:${calStart.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+                                            `DTEND:${calEnd.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+                                            `SUMMARY:${calTitle}`,
+                                            `DESCRIPTION:Especialista: ${b.staff?.name || 'Cualquiera'}`,
+                                            `LOCATION:${guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio'}`,
+                                            'END:VEVENT', 'END:VCALENDAR'
+                                          ].join('\n');
+                                          const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                                          const link = document.createElement('a');
+                                          link.href = window.URL.createObjectURL(blob);
+                                          link.setAttribute('download', `cita-${tenantName.toLowerCase()}.ics`);
+                                          document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 text-left transition-colors"
+                                      >
+                                        <Download className="w-4 h-4" /> Apple / iOS
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1763,7 +1846,7 @@ export default function BookingWidget({
                     </div>
 
                     {/* Pricing Breakdown Card */}
-                    <div className="bg-white dark:bg-white/5 p-6 rounded-3xl border border-slate-200 dark:border-white/10 mt-6 shadow-sm">
+                    <div className="bg-white dark:bg-white/5 p-6 rounded-3xl border border-slate-200 dark:border-white/10 mt-3 shadow-sm">
                       <div className="space-y-3 mb-6">
                         <div className="flex items-center justify-between text-slate-500">
                           <p className="text-xs font-black uppercase tracking-[0.2em]">{t("subtotal_services")}</p>
@@ -1864,7 +1947,7 @@ export default function BookingWidget({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 w-full max-w-5xl px-4 mt-4">
+              <div className="flex flex-col sm:flex-row gap-4 w-full max-w-5xl px-4 mt-2">
                 {modality === 'domicilio' ? (
                   <button
                     onClick={() => {

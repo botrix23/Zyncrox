@@ -95,7 +95,7 @@
     "back": "Volver",
     "comments": "Comentarios / Notas",
     "comments_placeholder": "¿Algo que debamos saber? (Opcional)",
-    "address": "Dirección de atención *",
+    "address": "Dirección de atención",
     "address_placeholder": "Ej: Calle principal #123, Colonia Escalón",
     "sync_individual": "Sincronizar",
     "transfer_fee_detail": "{count} traslados x ${fee}",
