@@ -195,7 +195,21 @@ export const blocks = pgTable('blocks', {
   endTime: timestamp('end_time', { withTimezone: true, mode: 'date' }).notNull(),
 });
 
-// 9. Users (Usuarios con Roles: ADMIN, SUPER_ADMIN)
+// 9. SlotLocks (Reservas temporales de slots — expiran en ~10 min si no se confirma)
+export const slotLocks = pgTable('slot_locks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  branchId: uuid('branch_id').notNull().references(() => branches.id, { onDelete: 'cascade' }),
+  serviceId: uuid('service_id').notNull().references(() => services.id, { onDelete: 'cascade' }),
+  staffId: uuid('staff_id').references(() => staff.id, { onDelete: 'cascade' }), // null = cualquier staff
+  date: varchar('date', { length: 10 }).notNull(), // YYYY-MM-DD
+  time: varchar('time', { length: 5 }).notNull(),  // HH:MM
+  sessionToken: varchar('session_token', { length: 64 }).notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// 10. Users (Usuarios con Roles: ADMIN, SUPER_ADMIN)
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }), // Null si es Super Admin

@@ -511,7 +511,11 @@ export default function ServicesClient({
                         required
                         type="number" 
                         value={formData.durationMinutes}
-                        onChange={e => setFormData({...formData, durationMinutes: parseInt(e.target.value)})}
+                        min={1}
+                        onChange={e => {
+                          const n = parseInt(e.target.value, 10);
+                          if (!isNaN(n) && n > 0) setFormData({...formData, durationMinutes: n});
+                        }}
                         className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium"
                       />
                     </div>

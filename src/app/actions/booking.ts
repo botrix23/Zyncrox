@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { bookings, services, staff, blocks, branches, tenants, staffAssignments, bookingSessions } from "@/db/schema";
-import { eq, and, gte, lte, or, isNull, desc, not, lt, gt } from "drizzle-orm";
+import { bookings, services, staff, blocks, branches, tenants, staffAssignments, bookingSessions, slotLocks } from "@/db/schema";
+import { eq, and, gte, lte, or, isNull, desc, not, lt, gt, ne } from "drizzle-orm";
 import { addMinutes, format, parseISO, startOfDay, endOfDay, isBefore, isAfter, max, min } from "date-fns";
 import { resend } from "@/lib/resend";
 import { BookingConfirmationEmail } from "@/components/emails/BookingConfirmationEmail";
@@ -59,7 +59,9 @@ export async function getAvailableSlots(
   durationOverride?: number,
   isHomeService: boolean = false,
   allowPast: boolean = false,
-  allowedStaffIds?: string[]
+  allowedStaffIds?: string[],
+  simultaneousCount: number = 1,
+  sessionToken?: string  // token de la sesión actual (sus propios locks NO bloquean)
 ): Promise<{
   slots: any[],
   errorType: 'BRANCH_CLOSED' | 'STAFF_UNAVAILABLE' | null,
@@ -203,6 +205,21 @@ export async function getAvailableSlots(
         return { slots: [], errorType: 'STAFF_UNAVAILABLE' };
     }
 
+    // 5c. Cargar soft locks activos para este servicio+fecha (de OTRAS sesiones)
+    // Cada lock reduce la disponibilidad: si staffId está en el lock, ese staff queda reservado;
+    // si staffId es null en el lock, reserva un cupo anónimo (reduce el conteo disponible por 1).
+    const activeLocks = sessionToken
+      ? await db.select().from(slotLocks).where(
+          and(
+            eq(slotLocks.tenantId, branch?.tenantId || ''),
+            eq(slotLocks.serviceId, serviceId),
+            eq(slotLocks.date, dateStr),
+            ne(slotLocks.sessionToken, sessionToken),
+            gt(slotLocks.expiresAt, new Date())
+          )
+        )
+      : [];
+
     const effectiveStaffIds = staffId ? [staffId] : finalActiveStaffIds;
     const totalStaffCount = effectiveStaffIds.length;
 
@@ -315,7 +332,19 @@ export async function getAvailableSlots(
             if (!isOccupied) availableStaffForThisSlot = [sanitizedStaffId];
           } else {
             availableStaffForThisSlot = finalActiveStaffIds.filter(id => checkStaffIsFree(id));
-            isOccupied = availableStaffForThisSlot.length === 0;
+            // Aplicar soft locks: locks con staffId específico eliminan ese staff del pool;
+            // locks sin staffId (cualquiera) reducen el conteo en 1 por cada lock activo en este slot.
+            const slotTimeStr = format(slotStart, "HH:mm");
+            const locksForThisSlot = activeLocks.filter(l => l.time === slotTimeStr);
+            for (const lock of locksForThisSlot) {
+              if (lock.staffId) {
+                availableStaffForThisSlot = availableStaffForThisSlot.filter(id => id !== lock.staffId);
+              } else {
+                availableStaffForThisSlot = availableStaffForThisSlot.slice(1); // quita uno anónimo
+              }
+            }
+            // En modo simultáneo: necesitamos ≥ simultaneousCount staff libres al mismo tiempo
+            isOccupied = availableStaffForThisSlot.length < simultaneousCount;
           }
         }
 
@@ -455,6 +484,7 @@ export async function createBookingSessionAction(data: {
   zoneId?: string;
   notes?: string;
   isHomeService?: boolean;
+  sessionToken?: string; // para liberar soft locks al confirmar
   bookings: {
     branchId: string;
     serviceId: string;
@@ -463,6 +493,7 @@ export async function createBookingSessionAction(data: {
     endTime: string;   // Recibimos como string local "YYYY-MM-DDTHH:mm:ss"
     price: string;
     allowedStaffIds?: string[]; // IDs de staff permitidos por filtro de categorías
+    isSimultaneous?: boolean; // Servicio marcado como simultáneo (cada uno viaja aparte en domicilio)
   }[];
 }) {
   try {
@@ -493,13 +524,16 @@ export async function createBookingSessionAction(data: {
         for (let i = 1; i < sorted.length; i++) {
           const prev = sorted[i-1];
           const curr = sorted[i];
-          
+
           const isDifferentDay = format(prev.parsedDate, 'yyyy-MM-dd') !== format(curr.parsedDate, 'yyyy-MM-dd');
           const isDifferentStaff = prev.staffId !== curr.staffId;
           const prevEndTimeMs = new Date(prev.endTime).getTime();
           const hasGap = curr.parsedDate.getTime() > prevEndTimeMs;
-          
-          if (isDifferentDay || isDifferentStaff || hasGap) {
+          // Simultaneous: each staff member makes a separate trip
+          const isSimultaneous = prev.isSimultaneous && curr.isSimultaneous
+            && prev.parsedDate.getTime() === curr.parsedDate.getTime();
+
+          if (isSimultaneous || isDifferentDay || isDifferentStaff || hasGap) {
             blocksCount++;
           }
         }
@@ -734,6 +768,11 @@ export async function createBookingSessionAction(data: {
       }
     });
 
+    // Liberar soft locks de esta sesión (booking confirmado)
+    if (data.sessionToken) {
+      await db.delete(slotLocks).where(eq(slotLocks.sessionToken, data.sessionToken));
+    }
+
     return { success: true, session: result.session, bookings: result.bookings };
   } catch (error) {
     console.error("Error creating booking session:", error);
@@ -857,5 +896,94 @@ export async function getBookingsAction(tenantId: string) {
   } catch (error) {
     console.error("Error fetching bookings:", error);
     return [];
+  }
+}
+
+// ─── SOFT SLOT LOCKS ───────────────────────────────────────────────────────────
+
+const LOCK_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+/**
+ * Crea o renueva un soft lock para un slot específico.
+ * Llamado cuando el usuario selecciona una hora en el widget (paso 3).
+ */
+export async function lockSlotAction(data: {
+  tenantId: string;
+  branchId: string;
+  serviceId: string;
+  staffId?: string | null;
+  date: string;    // YYYY-MM-DD
+  time: string;    // HH:MM
+  sessionToken: string;
+}) {
+  try {
+    // Borrar locks expirados del tenant de paso (cleanup pasivo)
+    await db.delete(slotLocks).where(
+      and(eq(slotLocks.tenantId, data.tenantId), lt(slotLocks.expiresAt, new Date()))
+    );
+
+    // Upsert: si ya existe un lock del mismo token+service+date+time, lo renueva
+    const existing = await db.query.slotLocks.findFirst({
+      where: and(
+        eq(slotLocks.tenantId, data.tenantId),
+        eq(slotLocks.serviceId, data.serviceId),
+        eq(slotLocks.date, data.date),
+        eq(slotLocks.time, data.time),
+        eq(slotLocks.sessionToken, data.sessionToken)
+      )
+    });
+
+    const expiresAt = new Date(Date.now() + LOCK_TTL_MS);
+
+    if (existing) {
+      await db.update(slotLocks)
+        .set({ expiresAt })
+        .where(eq(slotLocks.id, existing.id));
+    } else {
+      await db.insert(slotLocks).values({
+        tenantId: data.tenantId,
+        branchId: data.branchId,
+        serviceId: data.serviceId,
+        staffId: data.staffId || null,
+        date: data.date,
+        time: data.time,
+        sessionToken: data.sessionToken,
+        expiresAt,
+      });
+    }
+    return { success: true };
+  } catch (error) {
+    console.error("lockSlotAction error:", error);
+    return { success: false };
+  }
+}
+
+/**
+ * Libera todos los locks de una sesión.
+ * Llamado cuando el usuario vuelve al paso 1 o cierra el widget.
+ */
+export async function releaseSlotLocksAction(sessionToken: string) {
+  try {
+    await db.delete(slotLocks).where(eq(slotLocks.sessionToken, sessionToken));
+    return { success: true };
+  } catch (error) {
+    console.error("releaseSlotLocksAction error:", error);
+    return { success: false };
+  }
+}
+
+/**
+ * Libera los locks de un service específico de una sesión.
+ * Usado cuando el usuario vuelve atrás para cambiar la hora de un servicio.
+ */
+export async function releaseServiceSlotLockAction(sessionToken: string, serviceId: string) {
+  try {
+    await db.delete(slotLocks).where(
+      and(eq(slotLocks.sessionToken, sessionToken), eq(slotLocks.serviceId, serviceId))
+    );
+    return { success: true };
+  } catch (error) {
+    console.error("releaseServiceSlotLockAction error:", error);
+    return { success: false };
   }
 }

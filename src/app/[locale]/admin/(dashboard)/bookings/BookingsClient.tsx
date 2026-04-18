@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+const BookingWidget = lazy(() => import('@/components/BookingWidget'));
 import { 
   Calendar, 
   Search, 
@@ -80,6 +81,7 @@ export default function BookingsClient({
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("Todas");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("calendar");
@@ -114,8 +116,9 @@ export default function BookingsClient({
     return booking.notes.trim().length > 0;
   };
 
-  // Pre-calcula el contexto de buffer de traslado por booking:
-  // En una sesión bulk, solo el PRIMERO muestra buffer antes y solo el ÚLTIMO muestra buffer después.
+  // Pre-calcula el contexto de buffer de traslado por booking.
+  // Dos citas son "consecutivas" (mismo viaje) si: mismo staff, mismo día y sin hueco entre ellas.
+  // Si NO son consecutivas, cada cita necesita buffer antes (ir) Y después (volver) de forma independiente.
   const homeServiceBufferCtx = (() => {
     const map = new Map<string, { showPre: boolean; showPost: boolean }>();
     const groups = new Map<string, any[]>();
@@ -128,7 +131,18 @@ export default function BookingsClient({
     groups.forEach(group => {
       const sorted = [...group].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
       sorted.forEach((b, i) => {
-        map.set(b.id, { showPre: i === 0, showPost: i === sorted.length - 1 });
+        const prev = i > 0 ? sorted[i - 1] : null;
+        const next = i < sorted.length - 1 ? sorted[i + 1] : null;
+        const sameDay = (a: any, b: any) =>
+          new Date(a.startTime).toISOString().slice(0, 10) === new Date(b.startTime).toISOString().slice(0, 10);
+        const isConsecutiveWith = (a: any, b: any) =>
+          sameDay(a, b) &&
+          a.staffId === b.staffId &&
+          new Date(a.endTime).getTime() >= new Date(b.startTime).getTime() - travelTime * 60000;
+        map.set(b.id, {
+          showPre:  !prev || !isConsecutiveWith(prev, b),
+          showPost: !next || !isConsecutiveWith(b, next),
+        });
       });
     });
     return map;
@@ -391,26 +405,35 @@ export default function BookingsClient({
   useEffect(() => {
     const fetchSlots = async () => {
       // Solo cargar si estamos en el paso 4 de creación
-      if (modalStep !== 4 || !formData.date || !formData.staffId || editingBooking) return;
-      
+      const isSimulBulk = schedulingMode === 'bulk' && simultaneousMode && simulGroups;
+      if (modalStep !== 4 || !formData.date || (!formData.staffId && !isSimulBulk) || editingBooking) return;
+
       setLoadingSlots(true);
       try {
         const currentService = selectedServicesList[currentServiceIndex];
-        
+
         // Calcular duración a validar: En modo bulk, sumamos todos los servicios seleccionados
         // para asegurar que el bloque completo quepa sin traslapes.
         const durationToValidate = schedulingMode === 'bulk'
           ? selectedServicesList.reduce((acc, s) => acc + s.durationMinutes, 0)
           : currentService.durationMinutes;
 
+        const simCount = isSimulBulk
+          ? Math.max(...(simulGroups || [[1]]).map(g => g.length))
+          : 1;
+        const staffIdParam = isSimulBulk ? undefined : formData.staffId;
+        const allowedStaffParam = isSimulBulk ? filteredStaff.map((s: any) => s.id) : undefined;
+
         const res = await getAvailableSlots(
           formData.date,
           currentService.id,
           selectedBranch?.id || formData.branchId || staff[0]?.branchId,
-          formData.staffId,
+          staffIdParam,
           durationToValidate,
           modality === 'domicilio',
-          true // allowPast: true para el administrador
+          true, // allowPast: true para el administrador
+          allowedStaffParam,
+          simCount
         );
         
         if (res.slots) {
@@ -456,7 +479,7 @@ export default function BookingsClient({
     };
 
     fetchSlots();
-  }, [modalStep, formData.date, formData.staffId, currentServiceIndex, modality]);
+  }, [modalStep, formData.date, formData.staffId, currentServiceIndex, modality, simultaneousMode, simulGroups]);
 
   // Reemplazar el anterior handleOpenCreate para resetear estados
   const handleOpenCreateInternal = () => {
@@ -493,7 +516,7 @@ export default function BookingsClient({
     setIsEditModalOpen(true);
   };
 
-  const handleOpenCreate = handleOpenCreateInternal;
+  const handleOpenCreate = () => setIsWidgetModalOpen(true);
 
   const filteredBookings = initialBookings.filter(b => {
     const matchesSearch = b.customerName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -566,14 +589,16 @@ export default function BookingsClient({
               const item = cart[i];
               if (!item) continue;
               const end = addMinutes(groupStart, item.service.durationMinutes);
-              entries.push({
-                branchId: selectedBranch?.id || item.staff.branchId || formData.branchId,
+              const entry: any = {
+                branchId: selectedBranch?.id || item.staff?.branchId || formData.branchId,
                 serviceId: item.service.id,
-                staffId: item.staff.id,
+                staffId: item.staff?.id || '',
                 startTime: formatLocalIso(groupStart),
                 endTime: formatLocalIso(end),
                 price: item.service.price.toString()
-              });
+              };
+              if (!item.staff?.id) entry.allowedStaffIds = filteredStaff.map((s: any) => s.id);
+              entries.push(entry);
             }
             groupStart = addMinutes(groupStart, maxDur);
           }
@@ -587,14 +612,16 @@ export default function BookingsClient({
             const dur = item.duration || item.service.durationMinutes;
             const end = addMinutes(actualStart, dur);
             if (schedulingMode === 'bulk') currentStart = end;
-            return {
-              branchId: item.staff.branchId || formData.branchId,
+            const entry: any = {
+              branchId: item.staff?.branchId || formData.branchId,
               serviceId: item.service.id,
-              staffId: item.staff.id,
+              staffId: item.staff?.id || '',
               startTime: formatLocalIso(actualStart),
               endTime: formatLocalIso(end),
               price: item.service.price.toString()
             };
+            if (!item.staff?.id) entry.allowedStaffIds = filteredStaff.map((s: any) => s.id);
+            return entry;
           });
         }
 
@@ -1175,6 +1202,45 @@ export default function BookingsClient({
         </div>
       )}
 
+      {/* Widget Modal - Nueva Cita */}
+      {isWidgetModalOpen && (
+        <Portal>
+          <div className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsWidgetModalOpen(false)} />
+            <div className="relative z-10 w-full min-h-screen animate-in fade-in slide-in-from-bottom-4 duration-300">
+              <button
+                onClick={() => setIsWidgetModalOpen(false)}
+                className="fixed top-4 right-4 z-[10000] p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-full text-slate-500 hover:text-slate-900 dark:hover:text-white shadow-xl transition-all hover:scale-110"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>}>
+                <BookingWidget
+                  isAdmin
+                  onBookingCreated={() => { setIsWidgetModalOpen(false); router.refresh(); }}
+                  branches={branches}
+                  services={services}
+                  staff={staff}
+                  tenantId={tenantId}
+                  tenantName={tenantSettings?.name || ''}
+                  tenantLogo={tenantSettings?.logoUrl || undefined}
+                  whatsappNumber={tenantSettings?.whatsappNumber || ''}
+                  homeServiceTerms={tenantSettings?.homeServiceTerms || ''}
+                  homeServiceTermsEnabled={tenantSettings?.homeServiceTermsEnabled}
+                  waMessageTemplate={tenantSettings?.waMessageTemplate}
+                  bookingSettings={tenantSettings?.bookingSettings}
+                  primaryColor={tenantSettings?.primaryColor}
+                  allowsHomeService={tenantSettings?.allowsHomeService}
+                  homeServiceLeadDays={tenantSettings?.homeServiceLeadDays}
+                  coverageZones={coverageZones}
+                  tenantPlan={tenantSettings?.plan}
+                />
+              </Suspense>
+            </div>
+          </div>
+        </Portal>
+      )}
+
       {/* Edit Modal */}
       {isEditModalOpen && (
         <Portal>
@@ -1703,18 +1769,34 @@ export default function BookingsClient({
                         <div className="p-7 space-y-4 flex-1">
                            <h4 className="text-lg font-black">{schedulingMode === 'separate' ? `${t('form.scheduling')} - ${selectedServicesList[currentServiceIndex]?.name} (${currentServiceIndex + 1}/${selectedServicesList.length})` : t('form.schedulingBulk')}</h4>
                             <div className="space-y-6 bg-slate-50 dark:bg-white/5 p-6 rounded-[24px] border border-slate-100 dark:border-white/5">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.staff')}</label>
-                                   <select value={formData.staffId} onChange={e => setFormData({...formData, staffId: e.target.value})} className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-slate-100 dark:border-white/5 rounded-2xl font-bold text-sm appearance-none shadow-sm">
-                                     {filteredStaff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                   </select>
+                              {schedulingMode === 'bulk' && simultaneousMode ? (
+                                <div className="p-4 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 rounded-2xl flex items-start gap-3">
+                                  <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="text-sm font-bold text-purple-900 dark:text-purple-200">Modo simultáneo activo</p>
+                                    <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">El sistema asignará automáticamente especialistas disponibles para cada servicio simultáneo.</p>
+                                  </div>
                                 </div>
-                                <div className="space-y-2">
-                                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.date')}</label>
-                                   <input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-slate-100 dark:border-white/5 rounded-2xl font-black text-sm" />
+                              ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.staff')}</label>
+                                     <select value={formData.staffId} onChange={e => setFormData({...formData, staffId: e.target.value})} className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-slate-100 dark:border-white/5 rounded-2xl font-bold text-sm appearance-none shadow-sm">
+                                       {filteredStaff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                     </select>
+                                  </div>
+                                  <div className="space-y-2">
+                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.date')}</label>
+                                     <input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-slate-100 dark:border-white/5 rounded-2xl font-black text-sm" />
+                                  </div>
                                 </div>
-                              </div>
+                              )}
+                              {(schedulingMode === 'bulk' && simultaneousMode) && (
+                                <div className="space-y-2">
+                                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.date')}</label>
+                                  <input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-slate-100 dark:border-white/5 rounded-2xl font-black text-sm" />
+                                </div>
+                              )}
                               
                               {isPastBooking && (
                                 <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl flex items-start gap-3 animate-in fade-in zoom-in-95">
@@ -1773,7 +1855,7 @@ export default function BookingsClient({
                                 setCurrentServiceIndex(currentServiceIndex - 1);
                                 const prevAppt = cart[currentServiceIndex - 1];
                                 if (prevAppt) {
-                                  setFormData({...formData, date: prevAppt.date, time: prevAppt.time, staffId: prevAppt.staff.id});
+                                  setFormData({...formData, date: prevAppt.date, time: prevAppt.time, staffId: prevAppt.staff?.id || ''});
                                 }
                               } else {
                                 setModalStep(3);
@@ -1788,8 +1870,9 @@ export default function BookingsClient({
                               const currentService = selectedServicesList[currentServiceIndex];
                               if (schedulingMode === 'bulk') {
                                 let currentStartTime = parse(`${formData.date} ${formData.time}`, "yyyy-MM-dd HH:mm", new Date());
+                                const assignedStaff = (simultaneousMode) ? null : staff.find(s => s.id === formData.staffId);
                                 const bulkCart = selectedServicesList.map(srv => {
-                                   const appt = { service: srv, staff: staff.find(s => s.id === formData.staffId), date: formData.date, time: format(currentStartTime, "HH:mm"), duration: srv.durationMinutes };
+                                   const appt = { service: srv, staff: assignedStaff, date: formData.date, time: format(currentStartTime, "HH:mm"), duration: srv.durationMinutes };
                                    currentStartTime = addMinutes(currentStartTime, srv.durationMinutes);
                                    return appt;
                                 });
@@ -1806,7 +1889,7 @@ export default function BookingsClient({
                                 }
                               }
                             }}
-                            disabled={!formData.time || !formData.date || !formData.staffId || loadingSlots || !availableSlots.find(s => s.time === formData.time)?.available}
+                            disabled={!formData.time || !formData.date || (!(schedulingMode === 'bulk' && simultaneousMode) && !formData.staffId) || loadingSlots || !availableSlots.find(s => s.time === formData.time)?.available}
                             className="flex-[2] py-4 bg-purple-600 text-white rounded-2xl font-black disabled:opacity-50 disabled:cursor-not-allowed"
                           >{schedulingMode === 'separate' && currentServiceIndex < selectedServicesList.length - 1 ? t('nextService') : t('continue')}</button>
                         </div>
@@ -1822,7 +1905,7 @@ export default function BookingsClient({
                                 <div key={idx} className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10 flex items-center justify-between gap-4">
                                    <div className="flex items-center gap-3 truncate">
                                       <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center font-black text-purple-500 shrink-0 shadow-sm">{item.service.name.charAt(0)}</div>
-                                      <div className="truncate"><p className="font-bold text-sm truncate">{item.service.name}</p><p className="text-[10px] text-slate-500 font-bold truncate">{item.staff.name} • {item.date} • {item.time}</p></div>
+                                      <div className="truncate"><p className="font-bold text-sm truncate">{item.service.name}</p><p className="text-[10px] text-slate-500 font-bold truncate">{item.staff?.name || 'Auto-asignado'} • {item.date} • {item.time}</p></div>
                                    </div>
                                    <p className="font-black text-sm shrink-0">${item.service.price}</p>
                                 </div>
@@ -1862,7 +1945,7 @@ export default function BookingsClient({
                               if (schedulingMode === 'separate' && cart.length > 0) {
                                 const lastAppt = cart[selectedServicesList.length - 1];
                                 if (lastAppt) {
-                                  setFormData({...formData, date: lastAppt.date, time: lastAppt.time, staffId: lastAppt.staff.id});
+                                  setFormData({...formData, date: lastAppt.date, time: lastAppt.time, staffId: lastAppt.staff?.id || ''});
                                 }
                               }
                               setModalStep(4);
