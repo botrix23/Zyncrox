@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { 
-  Palette, CheckCircle2, AlertCircle, Upload, Save, Eye, MonitorSmartphone, Monitor, Moon, Sun, MonitorCheck, LayoutTemplate, Link as LinkIcon, ExternalLink, Instagram, Facebook, Music, Building2, ImageIcon, Truck, Info, Phone, Settings, Share2, Copy, Trash2, Lock, Mail
+  Palette, CheckCircle2, AlertCircle, Upload, Save, Eye, MonitorSmartphone, Monitor, Moon, Sun, MonitorCheck, LayoutTemplate, Link as LinkIcon, ExternalLink, Instagram, Facebook, Music, Building2, ImageIcon, Truck, Info, Phone, Settings, Share2, Copy, Trash2, Lock, Mail, User
 } from "lucide-react";
 import { updatePortalSettingsAction } from "@/app/actions/tenant";
 import { 
@@ -38,6 +38,7 @@ waMessageTemplate?: string | null;
 allowsHomeService?: boolean;
 homeServiceLeadDays: number;
 vipThreshold: number;
+showStaffSelection?: boolean;
 heroTitle?: string | null;
 heroSubtitle?: string | null;
 emailBodyTemplate?: string | null;
@@ -81,6 +82,7 @@ const [footerText, setFooterText] = useState(tenant.bookingSettings?.footerText 
   const [waMessageTemplate, setWaMessageTemplate] = useState(tenant.waMessageTemplate || "");
   const [homeServiceLeadDays, setHomeServiceLeadDays] = useState(tenant.homeServiceLeadDays || 0);
   const [vipThreshold, setVipThreshold] = useState(tenant.vipThreshold || 5);
+  const [showStaffSelection, setShowStaffSelection] = useState(tenant.showStaffSelection ?? true);
   
   // Zonas de Cobertura
   const [zones, setZones] = useState<any[]>(initialZones || []);
@@ -125,6 +127,7 @@ const [footerText, setFooterText] = useState(tenant.bookingSettings?.footerText 
 allowsHomeService,
 homeServiceLeadDays,
 vipThreshold,
+showStaffSelection,
 heroTitle,
 heroSubtitle,
 emailBodyTemplate,
@@ -687,6 +690,29 @@ className="w-full min-h-[150px] p-4 bg-slate-50 dark:bg-white/5 border border-sl
 </div>
 </div>
 </div>
+
+            {/* Configuración del Widget de Reservas */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
+                <div className="p-2 bg-purple-500/10 rounded-lg">
+                  <User className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Configuración del widget</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Controla qué opciones ve el cliente al agendar</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
+                <div className="pr-4">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Mostrar selección de personal</p>
+                  <p className="text-xs text-slate-500 italic mt-0.5">Si está desactivado, el cliente no podrá elegir a un especialista — el sistema asigna uno automáticamente</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input type="checkbox" checked={showStaffSelection} onChange={e => setShowStaffSelection(e.target.checked)} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+              </div>
+            </div>
 
             {/* Configuración de Fidelización */}
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-6">

@@ -85,6 +85,7 @@ export async function updatePortalSettingsAction(data: {
   allowsHomeService: boolean;
   homeServiceLeadDays: number;
   vipThreshold: number;
+  showStaffSelection: boolean;
   heroTitle?: string | null;
   heroSubtitle?: string | null;
   emailBodyTemplate?: string | null;
@@ -109,6 +110,7 @@ export async function updatePortalSettingsAction(data: {
         allowsHomeService: data.allowsHomeService,
         homeServiceLeadDays: data.homeServiceLeadDays,
         vipThreshold: data.vipThreshold,
+        showStaffSelection: data.showStaffSelection,
         heroTitle: data.heroTitle || null,
         heroSubtitle: data.heroSubtitle || null,
         emailBodyTemplate: data.emailBodyTemplate || null,

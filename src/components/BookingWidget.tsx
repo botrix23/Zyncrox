@@ -92,6 +92,7 @@ export default function BookingWidget({
   heroSubtitle,
   isAdmin,
   onBookingCreated,
+  showStaffSelection,
 }: {
   branches: Branch[],
   services: Service[],
@@ -125,6 +126,7 @@ export default function BookingWidget({
   heroSubtitle?: string | null;
   isAdmin?: boolean;
   onBookingCreated?: () => void;
+  showStaffSelection?: boolean;
 }) {
   const t = useTranslations('BookingWidget');
   const [step, setStep] = useState(1);
@@ -944,7 +946,7 @@ export default function BookingWidget({
                     </h1>
                   </div>
                 ) : (
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-slate-900 to-slate-500 dark:from-white dark:to-white/50 break-words leading-tight">
+                  <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
                     {heroTitle || tenantName}
                   </h1>
                 )}
@@ -971,72 +973,40 @@ export default function BookingWidget({
 
             {/* Appointment Summary Card */}
             {(modality || selectedServices.length > 0) && (
-              <div className="bg-white dark:bg-white/5 backdrop-blur-md rounded-2xl p-6 space-y-4 border-l-4 border-l-purple-500 border border-slate-200 dark:border-white/10 transition-all duration-300 shadow-xl">
-                <h3 className="text-slate-500 dark:text-zinc-400 font-medium tracking-wide text-xs">{t("your_appointment")}</h3>
-
-                {modality && (
-                  <div className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
-                    {modality === 'domicilio' ? <Truck className="w-5 h-5 text-purple-400" /> : <MapPin className="w-5 h-5 text-purple-400" />}
-                    <span className="font-medium">
-                      {modality === 'domicilio' ? t("home_address") : t("branch_address", { branch: selectedBranch?.name || '' })}
-                    </span>
-                  </div>
-                )}
+              <div className="bg-white/50 dark:bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-white/10 transition-all duration-300 shadow-xl">
+                <div>
+                  <h3 className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">{t("your_appointment")}</h3>
+                  
+                  {modality && (
+                    <div className="flex items-start gap-3 text-slate-900 dark:text-white animate-in fade-in slide-in-from-left-2 duration-300">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                        {modality === 'domicilio' ? <Truck className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-0.5">
+                          {modality === 'domicilio' ? t("home_address") : "Sucursal"}
+                        </p>
+                        <p className="font-bold text-sm leading-tight">
+                          {modality === 'domicilio' ? "Servicio a domicilio" : (selectedBranch?.name || "Seleccionar sucursal")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {selectedServices.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-zinc-300">
-                      <Clock className="w-4 h-4 text-blue-400 shrink-0" />
-                      <span className="font-bold text-xs tracking-wider uppercase text-slate-400">{t("selected_services")}</span>
-                    </div>
-                    <div className="space-y-2.5">
+                  <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-white/5">
+                    <h3 className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">Servicios seleccionados</h3>
+                    <div className="space-y-3">
                       {selectedServices.map((s, idx) => {
                         const booking = cartBookings[idx];
-                        const isCurrent = schedulingMode === 'separate' && currentServiceIndex === idx;
-                        const displayDate = booking?.date || (isCurrent ? selectedDate : null);
-
-                        let displayTime = booking?.time || (isCurrent ? selectedTime : null);
-                        if (schedulingMode === 'bulk' && selectedTime) {
-                          try {
-                            let offsetMinutes = 0;
-                            if (simultaneousMode && simulGroups) {
-                              // Calcular offset según grupos: servicios en el mismo grupo → mismo tiempo
-                              let groupOffset = 0;
-                              for (const group of simulGroups) {
-                                if (group.includes(idx)) { offsetMinutes = groupOffset; break; }
-                                groupOffset += Math.max(...group.map(i => selectedServices[i]?.durationMinutes ?? 0));
-                              }
-                            } else if (idx > 0) {
-                              // Secuencial: suma de duraciones previas
-                              offsetMinutes = selectedServices.slice(0, idx).reduce((acc, curr) => acc + curr.durationMinutes, 0);
-                            }
-                            if (offsetMinutes > 0) {
-                              const [h, m] = formatTimeToMilitary(selectedTime).split(':').map(Number);
-                              const d = new Date(2000, 0, 1, h, m);
-                              d.setMinutes(d.getMinutes() + offsetMinutes);
-                              displayTime = formatTo12h(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
-                            } else {
-                              displayTime = formatTo12h(formatTimeToMilitary(selectedTime));
-                            }
-                          } catch (e) {
-                            displayTime = selectedTime;
-                          }
-                        }
-
                         return (
-                          <div key={`${s.id}-${idx}`} className="flex items-start justify-between gap-2">
-                            <div className="flex items-start gap-1.5 min-w-0">
-                              <Check className="w-3 h-3 text-emerald-500 mt-0.5 shrink-0" />
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-slate-600 dark:text-zinc-300 leading-tight truncate">{s.name}</p>
-                                {displayDate && displayTime && (
-                                  <p className="text-xs font-bold text-slate-400 opacity-80 mt-0.5">
-                                    {formatShortDate(displayDate)} · {displayTime}
-                                  </p>
-                                )}
-                              </div>
+                          <div key={`${s.id}-${idx}`} className="flex items-center justify-between group">
+                            <div className="flex items-center gap-3">
+                              <Check className="w-4 h-4 text-emerald-500" />
+                              <span className="text-sm font-bold text-slate-700 dark:text-zinc-300">{s.name}</span>
                             </div>
-                            <span className="text-xs font-bold text-slate-400/60 uppercase tracking-widest shrink-0">{s.durationMinutes} min</span>
+                            <span className="text-xs font-black text-slate-400">{s.durationMinutes} min</span>
                           </div>
                         );
                       })}
@@ -1044,38 +1014,19 @@ export default function BookingWidget({
                   </div>
                 )}
 
-                {selectedStaff && schedulingMode !== 'separate' && (
-                  <div className="flex items-center gap-3 text-slate-600 dark:text-zinc-300 animate-in fade-in slide-in-from-left-2 duration-300">
-                    <UserCircle className="w-5 h-5 text-emerald-400" />
-                    <span className="font-medium text-sm">{t("with_staff", { staff: selectedStaff.name })}</span>
-                  </div>
-                )}
-
-                {/* Enhanced Summary Info on Left */}
+                {/* Resumen Box matches the screenshot exactly */}
                 {selectedServices.length > 0 && (
-                  <div className="pt-6 border-t border-slate-200 dark:border-white/10 mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    <div className="flex flex-col gap-1 p-4 bg-purple-500/5 rounded-2xl border border-purple-500/10">
-                      <p className="text-xs font-black text-purple-400 tracking-[0.2em] mb-1">{t("resume")}</p>
-                      <div className="flex items-baseline justify-between">
-                        <p className="text-2xl font-black text-slate-900 dark:text-white">
+                  <div className="pt-6 border-t border-slate-100 dark:border-white/5 mt-4">
+                    <div className="p-6 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-inner">
+                      <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 tracking-[0.2em] mb-3 text-center uppercase">{t("resume")}</p>
+                      <div className="flex flex-col items-center gap-1">
+                        <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
                           ${(servicesTotal + sidebarTransferTotal).toFixed(2)}
                         </p>
-                        <p className="text-xs font-bold text-slate-500 dark:text-zinc-500">
-                          {totalDuration} min
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                          {totalDuration} min · {selectedServices.length} {selectedServices.length === 1 ? 'servicio' : 'servicios'}
                         </p>
                       </div>
-                      <p className="text-xs font-medium text-slate-400 mt-1">
-                        {selectedServices.length} {selectedServices.length === 1 ? 'servicio seleccionado' : 'servicios seleccionados'}
-                      </p>
-                      {modality === 'domicilio' && selectedZone && (
-                        <p className="text-xs font-bold text-emerald-500 mt-0.5 flex items-center gap-1">
-                          <Truck className="w-3 h-3" />
-                          {sidebarTransferTotal > 0
-                            ? `+$${sidebarTransferTotal.toFixed(2)} Tarifa de traslado`
-                            : `+$${parsePrice(selectedZone.fee).toFixed(2)} Tarifa de traslado (est.)`}
-                          <span title="Esta tarifa cubre el costo de transporte del especialista a tu ubicación.">(?)</span>
-                        </p>
-                      )}
                     </div>
                   </div>
                 )}
@@ -1473,54 +1424,76 @@ export default function BookingWidget({
 
               {/* Service context banner — always visible so the client knows exactly what they're booking */}
               {selectedServices.length > 0 && (
-                <div className="w-full mb-4 p-3 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 rounded-2xl flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-black text-purple-400 dark:text-purple-500 uppercase tracking-widest shrink-0">Agendando:</span>
-                  {schedulingMode === 'separate' ? (
-                    <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
-                      {selectedServices[currentServiceIndex]?.name}
-                    </span>
-                  ) : (
-                    selectedServices.map((s, i) => (
-                      <span key={s.id} className="flex items-center gap-1.5 text-sm font-bold text-purple-700 dark:text-purple-300">
-                        {i > 0 && <span className="text-purple-300 dark:text-purple-600 font-normal">+</span>}
-                        {s.name}
+                <div className="w-full mb-6 p-1.5 bg-purple-500/5 dark:bg-white/5 border border-purple-500/10 dark:border-white/10 rounded-2xl flex items-center gap-2">
+                  <div className="bg-purple-600 px-4 py-1.5 rounded-xl shadow-lg shadow-purple-500/20">
+                    <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">AGENDANDO:</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 px-2">
+                    {schedulingMode === 'separate' ? (
+                      <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
+                        {selectedServices[currentServiceIndex]?.name}
                       </span>
-                    ))
-                  )}
+                    ) : (
+                      selectedServices.map((s, i) => (
+                        <span key={s.id} className="flex items-center gap-1.5 text-sm font-bold text-purple-600 dark:text-purple-400">
+                          {i > 0 && <span className="text-slate-300 dark:text-zinc-600 font-normal">+</span>}
+                          {s.name}
+                        </span>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
 
               <div className="flex flex-col gap-4 flex-1">
                 {/* STAFF SELECTION */}
+                {showStaffSelection !== false && (
                 <div>
-                  <div className="flex flex-wrap gap-2 pb-2 -mx-0.5 px-0.5">
+                  <div className="flex flex-wrap gap-4 pb-2 px-0.5">
                     <button
                       onClick={() => handleSelectStaff(null)}
-                      className={`flex items-center gap-2 px-3 py-2 border rounded-full transition-all duration-300 ${selectedStaff === null
-                        ? 'bg-purple-500/20 border-purple-500 text-purple-700 dark:text-purple-400 shadow-sm'
-                        : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/10'
+                      className={`flex flex-col items-center gap-2 group transition-all duration-300 ${selectedStaff === null
+                        ? 'scale-105'
+                        : 'opacity-60 hover:opacity-100'
                         }`}
                     >
-                      <span className="text-sm">✨ {t("anyone")}</span>
+                      <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl shadow-lg transition-all duration-300 ${selectedStaff === null
+                        ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white ring-4 ring-amber-500/20'
+                        : 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-400'
+                        }`}>
+                        ✨
+                      </div>
+                      <span className={`text-xs font-black tracking-tight ${selectedStaff === null ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                        {t("anyone")}
+                      </span>
                     </button>
 
-                    {displayStaff.map((member) => (
-                      <button
-                        key={member.id}
-                        onClick={() => handleSelectStaff(member)}
-                        className={`flex items-center gap-2 px-4 py-2.5 border-2 rounded-full transition-all duration-300 ${selectedStaff?.id === member.id
-                          ? 'bg-blue-500/10 border-blue-500 text-blue-700 dark:text-blue-400 shadow-lg scale-105'
-                          : 'bg-white dark:bg-white/5 border-slate-100 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/10'
-                          }`}
-                      >
-                        <div className="w-6 h-6 rounded-full bg-blue-500 text-white font-black flex items-center justify-center text-[10px] shadow-sm">
-                          {member.name.charAt(0)}
-                        </div>
-                        <span className="text-sm font-bold">{member.name}</span>
-                      </button>
-                    ))}
+                    {displayStaff.map((member) => {
+                      const isSelected = selectedStaff?.id === member.id;
+                      return (
+                        <button
+                          key={member.id}
+                          onClick={() => handleSelectStaff(member)}
+                          className={`flex flex-col items-center gap-2 group transition-all duration-300 ${isSelected
+                            ? 'scale-105'
+                            : 'opacity-60 hover:opacity-100'
+                            }`}
+                        >
+                          <div className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-black shadow-lg transition-all duration-300 ${isSelected
+                            ? 'bg-purple-600 text-white ring-4 ring-purple-500/20'
+                            : 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500'
+                            }`}>
+                            {member.name.charAt(0)}
+                          </div>
+                          <span className={`text-xs font-black tracking-tight ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                            {member.name}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
+                )}
 
                 <div className="flex flex-col lg:flex-row gap-8 w-full">
                   {/* DATE SELECTION - Interactive Calendar */}
@@ -1529,28 +1502,28 @@ export default function BookingWidget({
                       {modality === 'domicilio' ? t("dates_home", { days: homeServiceLeadDays ?? 7 }) : t("dates")}
                     </p>
 
-                    <div className="bg-white dark:bg-white/5 rounded-3xl border border-slate-200 dark:border-white/10 p-3 sm:p-6 shadow-xl relative group w-full overflow-hidden">
-                      <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-black capitalize text-slate-900 dark:text-white truncate pr-2">
+                    <div className="bg-white dark:bg-white/5 rounded-[32px] border border-slate-200 dark:border-white/10 p-4 sm:p-7 shadow-xl relative group w-full overflow-hidden">
+                      <div className="flex items-center justify-between mb-8">
+                        <h3 className="text-base font-black capitalize text-slate-900 dark:text-white truncate pr-2 tracking-tight">
                           {format(currentMonth, "MMMM yyyy", { locale: es })}
                         </h3>
-                        <div className="flex gap-1.5 shrink-0">
-                          <button onClick={prevMonth} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all border border-slate-200 dark:border-white/10">
+                        <div className="flex gap-2 shrink-0">
+                          <button onClick={prevMonth} className="p-2.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all border border-slate-100 dark:border-white/10">
                             <ArrowLeft className="w-4 h-4" />
                           </button>
-                          <button onClick={nextMonth} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all border border-slate-200 dark:border-white/10">
+                          <button onClick={nextMonth} className="p-2.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all border border-slate-100 dark:border-white/10">
                             <ChevronRight className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-7 mb-4">
+                      <div className="grid grid-cols-7 mb-6">
                         {['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'].map(d => (
-                          <div key={d} className="text-[10px] font-black text-slate-400 dark:text-zinc-500 text-center tracking-tighter">{d}</div>
+                          <div key={d} className="text-[10px] font-black text-slate-400 dark:text-zinc-500 text-center tracking-[0.1em]">{d}</div>
                         ))}
                       </div>
 
-                      <div className="grid grid-cols-7 gap-1">
+                      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                         {calendarDays.flat().map((d, i) => (
                           <button
                             key={i}
@@ -1562,18 +1535,19 @@ export default function BookingWidget({
                               }
                             }}
                             className={`
-                              h-10 sm:h-11 text-sm font-black rounded-xl transition-all duration-300 relative
+                              h-10 sm:h-12 text-sm font-bold rounded-2xl transition-all duration-300 relative flex items-center justify-center
                               ${d.isDisabled ? 'text-slate-200 dark:text-zinc-800 cursor-not-allowed opacity-30 shadow-none' : ''}
                               ${!d.isCurrentMonth ? 'opacity-20' : ''}
                               ${d.isClosed ? 'bg-rose-500/5 text-rose-500/30' : ''}
                               ${d.isSelected
                                 ? '!text-white scale-105 z-10'
-                                : d.isDisabled ? '' : 'bg-transparent text-slate-700 dark:text-zinc-200 hover:opacity-80'}
+                                : d.isDisabled ? '' : 'bg-transparent text-slate-700 dark:text-zinc-200 hover:bg-purple-500/5'}
                             `}
-                            style={d.isSelected ? { backgroundColor: brand, boxShadow: `0 8px 20px ${brand}40` } : {}}
+                            style={d.isSelected ? { backgroundColor: brand, boxShadow: `0 10px 25px ${brand}50` } : {}}
                           >
                             {format(d.day, "d")}
-                            {d.isClosed && !d.isSelected && <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-400 rounded-full"></div>}
+                            {d.isClosed && !d.isSelected && <div className="absolute bottom-2 w-1 h-1 bg-rose-400 rounded-full"></div>}
+                            {!d.isDisabled && !d.isSelected && <div className="absolute bottom-2 w-1 h-1 bg-purple-500/20 rounded-full"></div>}
                           </button>
                         ))}
                       </div>
@@ -1626,45 +1600,45 @@ export default function BookingWidget({
 
                   {/* TIME SELECTION */}
                   <div className="flex-1 flex flex-col min-w-0">
-                    <div className="flex flex-col bg-slate-100/30 dark:bg-zinc-900/40 rounded-3xl border border-slate-200/50 dark:border-white/5 p-4 sm:p-5">
-                      <h3 className="text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-6 sm:mb-5 flex items-center gap-2">
-                        <Clock className="w-5 h-5" />
+                    <div className="flex flex-col bg-white dark:bg-white/5 rounded-3xl border border-slate-200 dark:border-white/10 p-4 sm:p-6 shadow-sm">
+                      <h3 className="text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
                         Horarios Disponibles
                       </h3>
 
-                      <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar pr-3 space-y-10 pb-6">
+                      <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar pr-1 space-y-6">
                         {isLoadingTimes ? (
-                          <div className="flex flex-col items-center justify-center py-24">
-                            <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
-                            <p className="mt-6 text-xs font-black text-slate-400 uppercase tracking-widest">Calculando disponibilidad...</p>
+                          <div className="flex flex-col items-center justify-center py-20">
+                            <Loader2 className="w-10 h-10 text-purple-500 animate-spin" />
+                            <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Calculando...</p>
                           </div>
                         ) : errorType || (selectedDate && availableTimes.length === 0) ? (
-                          <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-rose-500/5 dark:bg-rose-500/10 border-2 border-dashed border-rose-500/20 rounded-3xl animate-in fade-in zoom-in-95 duration-500">
-                            <XCircle className="w-14 h-14 mb-5 text-rose-500/30" />
-                            <p className="text-base font-black text-rose-600 dark:text-rose-400 uppercase tracking-tight">
-                              Sin disponibilidad
-                            </p>
-                            <p className="mt-3 text-sm font-bold text-slate-500 leading-relaxed max-w-[240px]">
-                              {errorType === 'BRANCH_CLOSED'
-                                ? 'No hay especialistas disponibles para esta fecha. Intenta con otro día.'
-                                : 'No encontramos espacios libres con este especialista. Intenta con otra fecha.'}
-                            </p>
+                          <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-rose-500/5 dark:bg-rose-500/10 border-2 border-dashed border-rose-500/20 rounded-3xl">
+                            <XCircle className="w-10 h-10 mb-4 text-rose-500/30" />
+                            <p className="text-xs font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Sin disponibilidad</p>
                           </div>
                         ) : !selectedDate ? (
-                          <div className="flex flex-col items-center justify-center py-24 text-slate-300 dark:text-zinc-800 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-3xl group transition-colors">
-                            <Calendar className="w-16 h-16 mb-6 group-hover:scale-110 transition-transform opacity-30" />
-                            <p className="text-sm font-black uppercase tracking-widest text-slate-400">Elige una fecha</p>
+                          <div className="flex flex-col items-center justify-center py-20 text-slate-300 dark:text-zinc-800 border-2 border-dashed border-slate-100 dark:border-zinc-800 rounded-3xl">
+                            <Calendar className="w-12 h-12 mb-4 opacity-30" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Elige una fecha</p>
                           </div>
                         ) : (
                           <>
                             {[
-                              { label: "Mañana", icon: "🌅", range: [0, 11] },
-                              { label: "Tarde", icon: "☀️", range: [12, 17] },
-                              { label: "Noche", icon: "🌙", range: [18, 23] }
+                              { label: "MAÑANA", icon: "🌅", range: [0, 11] },
+                              { label: "TARDE", icon: "☀️", range: [12, 17] },
+                              { label: "NOCHE", icon: "🌙", range: [18, 23] }
                             ].map((section) => {
-                              const sectionTimes = (availableTimes as any[]).filter(t => { const h = parseInt(t.time.split(':')[0], 10); return h >= section.range[0] && h <= section.range[1]; });
+                              const sectionTimes = (availableTimes as any[]).filter(t => { 
+                                const h = parseInt(t.time.split(':')[0], 10); 
+                                const isPM = t.time.includes('PM');
+                                const militaryH = (isPM && h !== 12) ? h + 12 : (!isPM && h === 12) ? 0 : h;
+                                return militaryH >= section.range[0] && militaryH <= section.range[1]; 
+                              });
                               if (sectionTimes.length === 0) return null;
                               const isOpen = openTimeSections.has(section.label);
+                              const availableCount = sectionTimes.filter((t: any) => t.available).length;
+
                               return (
                                 <div key={section.label} className="space-y-4">
                                   <button
@@ -1674,28 +1648,32 @@ export default function BookingWidget({
                                       else next.add(section.label);
                                       return next;
                                     })}
-                                    className="w-full flex items-center justify-between border-b border-slate-200 dark:border-white/5 pb-3 group"
+                                    className="w-full flex items-center justify-between group transition-all"
                                   >
-                                    <div className="flex items-center gap-3">
-                                      <span className="text-2xl">{section.icon}</span>
-                                      <h3 className="text-sm font-black tracking-widest text-slate-600 dark:text-zinc-400 uppercase">{section.label}</h3>
-                                    </div>
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs font-black text-white px-3 py-1 rounded-full" style={{ backgroundColor: brand }}>{sectionTimes.filter((t: any) => t.available).length} libres</span>
-                                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
+                                      <span className="text-sm font-black tracking-widest text-slate-900 dark:text-white uppercase">{section.label}</span>
+                                      <span className="text-[10px] font-black text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">{availableCount} libres</span>
                                     </div>
+                                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
                                   </button>
+                                  
                                   {isOpen && (
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
                                       {sectionTimes.map(({ time, available }: { time: string, available: boolean }) => (
                                         <button
                                           key={time}
                                           onClick={() => available && setSelectedTime(time)}
                                           disabled={!available}
-                                          className={`py-2 px-3 rounded-2xl transition-all duration-200 flex items-center justify-center border-2 active:scale-95 ${!available ? "hidden" : selectedTime === time ? "text-white border-transparent shadow-lg scale-105 z-10" : "bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border-slate-200 dark:border-white/10 text-slate-800 dark:text-zinc-200 shadow-sm hover:scale-[1.03]"}`}
-                                          style={selectedTime === time ? { backgroundColor: brand, boxShadow: `0 8px 20px ${brand}40` } : {}}
+                                          className={`
+                                            py-2.5 px-4 rounded-xl transition-all duration-200 border-2 font-black text-sm
+                                            ${!available ? "hidden" : 
+                                              selectedTime === time 
+                                              ? "text-white border-transparent shadow-lg shadow-purple-500/30 scale-[1.02]" 
+                                              : "bg-white dark:bg-white/5 border-slate-100 dark:border-white/10 text-slate-700 dark:text-zinc-300 hover:border-purple-500/30 hover:bg-purple-500/5"}
+                                          `}
+                                          style={selectedTime === time ? { backgroundColor: brand } : {}}
                                         >
-                                          <span className="font-black text-sm whitespace-nowrap">{formatTo12h(time)}</span>
+                                          {formatTo12h(time)}
                                         </button>
                                       ))}
                                     </div>

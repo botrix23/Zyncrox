@@ -61,6 +61,7 @@ export default async function Home({ params }: { params: { locale: string, slug:
           facebookUrl={tenant.facebookUrl || undefined}
           tiktokUrl={tenant.tiktokUrl || undefined}
           allowsHomeService={tenant.allowsHomeService}
+          showStaffSelection={tenant.showStaffSelection}
           homeServiceLeadDays={tenant.homeServiceLeadDays}
           coverageZones={coverageZones}
           tenantPlan={tenant.plan}
