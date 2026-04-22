@@ -121,7 +121,9 @@
     "date": "Date",
     "email_label": "Email Address",
     "specialist": "Specialist",
-    "time": "Time"
+    "time": "Time",
+    "scheduling": "Scheduling",
+    "branch": "Branch"
   },
   "Login": {
     "title": "Login",

@@ -121,7 +121,9 @@
     "back_to_calendar": "Volver al Calendario",
     "full_name_placeholder": "Nombre y Apellido",
     "separate_days_title": "En días u horas distintas",
-    "separate_days_desc": "Elige una fecha y especialista diferente para cada servicio."
+    "separate_days_desc": "Elige una fecha y especialista diferente para cada servicio.",
+    "scheduling": "Agendando",
+    "branch": "Sucursal"
   },
   "Login": {
     "title": "Iniciar sesión",

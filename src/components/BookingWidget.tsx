@@ -899,13 +899,13 @@ export default function BookingWidget({
       <style
         dangerouslySetInnerHTML={{
           __html: `
-         #widget-${tenantId} .bg-purple-600 { background-color: ${brand} !important; }
-         #widget-${tenantId} .hover\\:bg-purple-500:hover { background-color: ${brand} !important; filter: brightness(1.2); }
-         #widget-${tenantId} .text-purple-600 { color: ${brand} !important; }
-         #widget-${tenantId} .text-purple-500 { color: ${brand} !important; }
-         #widget-${tenantId} .text-purple-400 { color: ${brand} !important; filter: brightness(1.2); }
-         #widget-${tenantId} .border-purple-500 { border-color: ${brand} !important; }
-         #widget-${tenantId} .border-l-purple-500 { border-left-color: ${brand} !important; }
+         #widget-${tenantId} .bg-purple-600:not(:disabled) { background-color: ${brand} !important; }
+         #widget-${tenantId} .hover\\:bg-purple-500:not(:disabled):hover { background-color: ${brand} !important; filter: brightness(1.2); }
+         #widget-${tenantId} .text-purple-600:not(:disabled) { color: ${brand} !important; }
+         #widget-${tenantId} .text-purple-500:not(:disabled) { color: ${brand} !important; }
+         #widget-${tenantId} .text-purple-400:not(:disabled) { color: ${brand} !important; filter: brightness(1.2); }
+         #widget-${tenantId} .border-purple-500:not(:disabled) { border-color: ${brand} !important; }
+         #widget-${tenantId} .border-l-purple-500:not(:disabled) { border-left-color: ${brand} !important; }
          #widget-${tenantId} .hover\\:border-purple-500\\/40:hover { border-color: ${brand}66 !important; }
          #widget-${tenantId} .bg-purple-500\\/5 { background-color: ${brand}0D !important; }
          #widget-${tenantId} .bg-purple-500\\/10 { background-color: ${brand}1A !important; }
@@ -986,7 +986,7 @@ export default function BookingWidget({
                       </div>
                       <div>
                         <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-0.5">
-                          {modality === 'domicilio' ? t("home_address") : "Sucursal"}
+                          {modality === 'domicilio' ? t("home_address") : (t("branch") || "Sucursal")}
                         </p>
                         <p className="font-bold text-sm leading-tight">
                           {modality === 'domicilio' ? "Servicio a domicilio" : (selectedBranch?.name || "Seleccionar sucursal")}
@@ -998,7 +998,7 @@ export default function BookingWidget({
 
                 {selectedServices.length > 0 && (
                   <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-white/5">
-                    <h3 className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">Servicios seleccionados</h3>
+                    <h3 className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">{t("selected_services")}</h3>
                     <div className="space-y-3">
                       {selectedServices.map((s, idx) => {
                         const booking = cartBookings[idx];
@@ -1427,8 +1427,10 @@ export default function BookingWidget({
               {/* Service context banner — always visible so the client knows exactly what they're booking */}
               {selectedServices.length > 0 && (
                 <div className="w-full mb-6 p-1.5 bg-purple-500/5 dark:bg-white/5 border border-purple-500/10 dark:border-white/10 rounded-2xl flex items-center gap-2">
-                  <div className="bg-purple-600 px-4 py-1.5 rounded-xl shadow-lg shadow-purple-500/20">
-                    <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">AGENDANDO:</span>
+                  <div className="bg-purple-600 px-4 py-1.5 rounded-xl shadow-lg shadow-purple-500/20 flex items-center justify-center">
+                    <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] leading-none translate-y-[0.5px]">
+                      {t("scheduling") || "Agendando"}:
+                    </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 px-2">
                     {schedulingMode === 'separate' ? (
@@ -1540,7 +1542,7 @@ export default function BookingWidget({
                               }
                             }}
                             className={`
-                              h-10 sm:h-12 text-sm font-bold rounded-2xl transition-all duration-300 relative flex items-center justify-center
+                              w-10 h-10 sm:w-11 sm:h-11 mx-auto text-sm font-bold rounded-full transition-all duration-300 relative flex items-center justify-center
                               ${d.isDisabled ? 'text-slate-200 dark:text-zinc-800 cursor-not-allowed opacity-30 shadow-none' : ''}
                               ${!d.isCurrentMonth ? 'opacity-20' : ''}
                               ${d.isClosed ? 'bg-rose-500/5 text-rose-500/30' : ''}
@@ -1596,7 +1598,7 @@ export default function BookingWidget({
                           }
                         }}
                         disabled={!selectedTime || !selectedDate}
-                        className="py-4 px-2 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-zinc-700 text-white rounded-2xl font-black tracking-widest uppercase transition-all shadow-2xl active:scale-[0.98] text-xs flex items-center justify-center gap-2"
+                        className="py-4 px-2 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-zinc-700 text-white rounded-2xl font-black tracking-widest uppercase transition-all shadow-lg shadow-purple-500/20 disabled:shadow-none active:scale-[0.98] text-xs flex items-center justify-center gap-2"
                       >
                         {schedulingMode === 'separate' && currentServiceIndex < selectedServices.length - 1 ? t("next") : t("continue")} <ChevronRight className="w-4 h-4 shrink-0" />
                       </button>
@@ -1670,10 +1672,10 @@ export default function BookingWidget({
                                           onClick={() => available && setSelectedTime(time)}
                                           disabled={!available}
                                           className={`
-                                            py-2.5 px-4 rounded-xl transition-all duration-200 border-2 font-black text-sm
+                                            w-full py-2.5 px-4 rounded-xl transition-all duration-200 border-2 font-black text-sm
                                             ${!available ? "hidden" : 
                                               selectedTime === time 
-                                              ? "text-white border-transparent shadow-lg shadow-purple-500/30 scale-[1.02]" 
+                                              ? "text-white border-transparent shadow-lg shadow-purple-500/30" 
                                               : "bg-white dark:bg-white/5 border-slate-100 dark:border-white/10 text-slate-700 dark:text-zinc-300 hover:border-purple-500/30 hover:bg-purple-500/5"}
                                           `}
                                           style={selectedTime === time ? { backgroundColor: brand } : {}}
@@ -1734,7 +1736,7 @@ export default function BookingWidget({
                     }
                   }}
                   disabled={!selectedTime || !selectedDate}
-                  className="py-4 px-2 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-zinc-700 text-white rounded-2xl font-black tracking-widest uppercase transition-all shadow-2xl active:scale-[0.98] text-xs flex items-center justify-center gap-2"
+                  className="py-4 px-2 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-zinc-700 text-white rounded-2xl font-black tracking-widest uppercase transition-all shadow-lg shadow-purple-500/20 disabled:shadow-none active:scale-[0.98] text-xs flex items-center justify-center gap-2"
                 >
                   {schedulingMode === 'separate' && currentServiceIndex < selectedServices.length - 1 ? t("next") : t("continue")} <ChevronRight className="w-4 h-4 shrink-0" />
                 </button>
@@ -1891,7 +1893,7 @@ export default function BookingWidget({
                 <button
                   onClick={handleFinalCheckout}
                   disabled={!isFormValid || isFinishing}
-                  className="w-full py-5 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:border-zinc-700 disabled:cursor-not-allowed text-white rounded-xl font-black tracking-widest shadow-xl shadow-purple-500/20 disabled:shadow-none transition-all duration-300 border border-purple-500/50 flex items-center justify-center gap-2 uppercase text-sm"
+                  className="w-full py-5 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-zinc-700 disabled:border-transparent disabled:cursor-not-allowed text-white rounded-2xl font-black tracking-widest shadow-lg shadow-purple-500/20 disabled:shadow-none transition-all duration-300 border border-purple-500/50 flex items-center justify-center gap-2 uppercase text-sm"
                 >
                   {isFinishing && <Loader2 className="w-5 h-5 animate-spin" />}
                   {modality === 'domicilio' ? t("finish_booking") : t("finish_booking")}
