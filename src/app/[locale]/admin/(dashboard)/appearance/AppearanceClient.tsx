@@ -628,38 +628,6 @@ try {
               )}
             </div>
 
-            {/* Template WhatsApp */}
-            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-6">
-              <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
-                <div className="p-2 bg-emerald-500/10 rounded-lg">
-                  <Phone className="w-5 h-5 text-emerald-600" />
-                </div>
-                <h2 className="text-xl font-bold">{tPortal('sections.whatsapp')}</h2>
-              </div>
-              <div className="space-y-4">
-                 <div className="space-y-2">
-                   <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">{tPortal('form.waTemplate')}</label>
-                   <textarea value={waMessageTemplate} onChange={e => setWaMessageTemplate(e.target.value)} placeholder="Ejemplo: ¡Hola! Confirmo mi cita para {servicio} el {fecha} a las {hora}. Mi nombre es {cliente} y mi número es {telefono}." className="w-full min-h-[150px] p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none text-sm font-mono" />
-                 </div>
-                 <div className="bg-slate-50 dark:bg-white/5 p-4 rounded-2xl border border-slate-200 dark:border-white/10 space-y-4">
-                   <div className="flex items-center gap-2 text-xs font-bold text-purple-500 tracking-widest"><Info className="w-3 h-3" /> {tPortal('form.variablesGuide')}</div>
-                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                     {['{servicio}', '{fecha}', '{hora}', '{cliente}', '{telefono}'].map(v => (
-                       <code key={v} className="text-[11px] bg-purple-500/10 text-purple-400 p-1 rounded text-center">{v}</code>
-                     ))}
-                   </div>
-                   <div className="pt-2 border-t border-slate-200 dark:border-white/5">
-                     <p className="text-xs font-bold text-zinc-400 mb-2">{tPortal('form.quickEmojis')}</p>
-                     <div className="flex flex-wrap gap-2">
-                       {['📍', '📅', '⏰', '👤', '📞', '✨', '✂️', '💅', '✅'].map(emoji => (
-                         <button key={emoji} type="button" onClick={() => setWaMessageTemplate(prev => prev + emoji)} className="p-1.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg hover:border-purple-500 transition-all">{emoji}</button>
-                       ))}
-                     </div>
-                   </div>
-                 </div>
-              </div>
-</div>
-
 {/* Email de Confirmación */}
 <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-6">
 <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
