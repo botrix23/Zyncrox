@@ -31,19 +31,22 @@ export function AdminSidebar({ user, locale, tenantName }: { user: SessionUser |
   const [endingImpersonation, setEndingImpersonation] = useState(false);
 
   const isImpersonating = user?.role === 'SUPER_ADMIN' && !!user?.impersonatedTenantId;
-  
-  const baseItems = [
-    { name: t('dashboard'), icon: LayoutDashboard, href: `/${locale}/admin`, active: pathname === `/${locale}/admin` },
-    { name: t('bookings'), icon: Calendar, href: `/${locale}/admin/bookings`, active: pathname.includes('/bookings') },
-    { name: t('branches'), icon: MapPin, href: `/${locale}/admin/branches`, active: pathname.includes('/branches') },
-    { name: t('services'), icon: Sparkles, href: `/${locale}/admin/services`, active: pathname.includes('/services') || pathname.includes('/categories') },
-    { name: t('staff'), icon: Users, href: `/${locale}/admin/staff`, active: pathname.includes('/staff') },
-    { name: t('absences'), icon: CalendarOff, href: `/${locale}/admin/absences`, active: pathname.includes('/absences') },
-    { name: t('clients'), icon: Contact, href: `/${locale}/admin/clients`, active: pathname.includes('/clients') },
-    { name: t('appearance'), icon: Palette, href: `/${locale}/admin/appearance`, active: pathname.includes('/appearance') },
-    { name: t('surveys'), icon: ClipboardList, href: `/${locale}/admin/surveys`, active: pathname.includes('/surveys') },
-    { name: t('products'), icon: Package, href: `/${locale}/admin/products`, active: pathname.includes('/products') },
+  const isStaff = user?.role === 'STAFF';
+
+  const allItems = [
+    { name: t('dashboard'), icon: LayoutDashboard, href: `/${locale}/admin`, active: pathname === `/${locale}/admin`, staffVisible: false },
+    { name: t('bookings'), icon: Calendar, href: `/${locale}/admin/bookings`, active: pathname.includes('/bookings'), staffVisible: true },
+    { name: t('branches'), icon: MapPin, href: `/${locale}/admin/branches`, active: pathname.includes('/branches'), staffVisible: false },
+    { name: t('services'), icon: Sparkles, href: `/${locale}/admin/services`, active: pathname.includes('/services') || pathname.includes('/categories'), staffVisible: false },
+    { name: t('staff'), icon: Users, href: `/${locale}/admin/staff`, active: pathname.includes('/staff'), staffVisible: false },
+    { name: t('absences'), icon: CalendarOff, href: `/${locale}/admin/absences`, active: pathname.includes('/absences'), staffVisible: true },
+    { name: t('clients'), icon: Contact, href: `/${locale}/admin/clients`, active: pathname.includes('/clients'), staffVisible: false },
+    { name: t('appearance'), icon: Palette, href: `/${locale}/admin/appearance`, active: pathname.includes('/appearance'), staffVisible: false },
+    { name: t('surveys'), icon: ClipboardList, href: `/${locale}/admin/surveys`, active: pathname.includes('/surveys'), staffVisible: false },
+    { name: t('products'), icon: Package, href: `/${locale}/admin/products`, active: pathname.includes('/products'), staffVisible: false },
   ];
+
+  const baseItems = isStaff ? allItems.filter(i => i.staffVisible) : allItems;
 
   const handleEndImpersonation = async () => {
     setEndingImpersonation(true);

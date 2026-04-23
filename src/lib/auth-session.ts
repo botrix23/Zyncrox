@@ -2,12 +2,13 @@ import { cookies } from "next/headers";
 
 export type SessionUser = {
   email: string;
-  role: 'ADMIN' | 'SUPER_ADMIN';
+  role: 'ADMIN' | 'SUPER_ADMIN' | 'STAFF';
   tenantId?: string | null;
   userId?: string;
-  impersonatedBy?: string;      // Email del Super Admin que está impersonando (en sesión del admin)
-  impersonatedTenantId?: string; // ID del tenant que el SUPER_ADMIN está visitando
-  impersonatedTenantName?: string; // Nombre del tenant (para el banner)
+  staffId?: string | null;
+  impersonatedBy?: string;
+  impersonatedTenantId?: string;
+  impersonatedTenantName?: string;
 };
 
 /**
@@ -34,4 +35,8 @@ export function getEffectiveTenantId(session: SessionUser | null): string | null
     return session.impersonatedTenantId || null;
   }
   return session.tenantId || null;
+}
+
+export function isStaff(session: SessionUser | null): boolean {
+  return session?.role === 'STAFF';
 }

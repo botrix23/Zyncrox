@@ -6,6 +6,7 @@ import { eq, desc, and, lt } from 'drizzle-orm';
 import { bookings as bookingsTable, branches, coverageZones, tenants } from '@/db/schema';
 import BookingsClient from './BookingsClient';
 
+
 export default async function BookingsPage() {
   const session = await getSession();
 
@@ -27,9 +28,14 @@ export default async function BookingsPage() {
       )
     );
 
+  // Si el rol es STAFF, filtrar solo sus citas
+  const staffId = session?.role === 'STAFF' ? session.staffId : null;
+
   const [dbBookings, dbServices, dbStaff, dbBranches, dbZones, tenant] = await Promise.all([
     db.query.bookings.findMany({
-      where: eq(bookingsTable.tenantId, tenantId),
+      where: staffId
+        ? and(eq(bookingsTable.tenantId, tenantId), eq(bookingsTable.staffId, staffId))
+        : eq(bookingsTable.tenantId, tenantId),
       with: {
         service: true,
         staff: true,

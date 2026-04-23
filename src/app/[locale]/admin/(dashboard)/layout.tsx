@@ -3,8 +3,9 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { AdminHeader } from "@/components/AdminHeader";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { tenants } from "@/db/schema";
+import { tenants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 
 export default async function AdminLayout({
   children,
@@ -15,6 +16,18 @@ export default async function AdminLayout({
 }) {
   const session = await getSession();
   const locale = params.locale || 'es';
+
+  // Cierre inmediato de sesión: si el usuario tiene userId, verificar isActive en BD
+  if (session?.userId) {
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.id, session.userId),
+      columns: { isActive: true },
+    });
+    if (dbUser && !dbUser.isActive) {
+      cookies().delete("zync_session");
+      redirect(`/${locale}/admin/login`);
+    }
+  }
 
   // Obtener nombre de la empresa para el sidebar
   let tenantName = "";
@@ -29,7 +42,7 @@ export default async function AdminLayout({
         tenantName = tenant?.name || "";
       } catch (error) {
         console.error("Error fetching tenant details:", error);
-        tenantName = ""; // Fallback to empty string if query fails
+        tenantName = "";
       }
     }
   }

@@ -792,6 +792,9 @@ export async function updateBookingAction(data: {
   startTime?: Date;
   endTime?: Date;
   status?: string;
+  staffId?: string | null;
+  notes?: string | null;
+  [key: string]: any;
 }) {
   try {
     // 1. Verificar solapamiento si se cambió el horario o personal
@@ -822,7 +825,7 @@ export async function updateBookingAction(data: {
         startTime: data.startTime,
         endTime: data.endTime,
         status: data.status as any,
-        notes: (data as any).notes,
+        notes: data.notes,
       })
       .where(and(eq(bookings.id, data.id), eq(bookings.tenantId, data.tenantId)));
 

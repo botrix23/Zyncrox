@@ -210,16 +210,30 @@ export const slotLocks = pgTable('slot_locks', {
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
-// 10. Users (Usuarios con Roles: ADMIN, SUPER_ADMIN)
+// 10. Users (Usuarios con Roles: ADMIN, SUPER_ADMIN, STAFF)
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
-  tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }), // Null si es Super Admin
+  tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }),
+  staffId: uuid('staff_id').references(() => staff.id, { onDelete: 'cascade' }), // Solo para rol STAFF
   name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
-  password: text('password').notNull(), 
-  role: varchar('role', { length: 50 }).notNull().default('ADMIN'), // 'ADMIN' | 'SUPER_ADMIN'
+  password: text('password').notNull(),
+  role: varchar('role', { length: 50 }).notNull().default('ADMIN'), // 'ADMIN' | 'SUPER_ADMIN' | 'STAFF'
+  isActive: boolean('is_active').notNull().default(true),
   resetPasswordToken: text('reset_password_token'),
   resetPasswordExpiresAt: timestamp('reset_password_expires_at', { withTimezone: true, mode: 'date' }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// 13. AbsenceRequests (Solicitudes de ausencia enviadas por el staff, requieren aprobación)
+export const absenceRequests = pgTable('absence_requests', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  staffId: uuid('staff_id').notNull().references(() => staff.id, { onDelete: 'cascade' }),
+  reason: text('reason'),
+  startTime: timestamp('start_time', { withTimezone: true, mode: 'date' }).notNull(),
+  endTime: timestamp('end_time', { withTimezone: true, mode: 'date' }).notNull(),
+  status: varchar('status', { length: 20 }).notNull().default('PENDING'), // 'PENDING' | 'APPROVED' | 'REJECTED'
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
@@ -242,7 +256,7 @@ export const reviews = pgTable('reviews', {
   staffId: uuid('staff_id').notNull().references(() => staff.id, { onDelete: 'cascade' }),
   rating: decimal('rating', { precision: 3, scale: 2 }).notNull(), // Permite promedios (ej 4.5)
   comment: text('comment'),
-  responses: json('responses').$type<Array<{ questionId: string; answer: any; questionText?: string; questionType?: string }>>().default([]).notNull(),
+  responses: json('responses').$type<Array<{ questionId: string; answer: any; questionText?: string; questionType?: string; category?: string }>>().default([]).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
@@ -270,6 +284,10 @@ export const usersRelations = relations(users, ({ one }) => ({
     fields: [users.tenantId],
     references: [tenants.id],
   }),
+  staff: one(staff, {
+    fields: [users.staffId],
+    references: [staff.id],
+  }),
 }));
 export const branchesRelations = relations(branches, ({ one, many }) => ({
   tenant: one(tenants, { fields: [branches.tenantId], references: [tenants.id] }),
@@ -280,6 +298,7 @@ export const branchesRelations = relations(branches, ({ one, many }) => ({
 export const staffRelations = relations(staff, ({ one, many }) => ({
   tenant: one(tenants, { fields: [staff.tenantId], references: [tenants.id] }),
   branch: one(branches, { fields: [staff.branchId], references: [branches.id] }),
+  user: one(users, { fields: [staff.id], references: [users.staffId] }),
   bookings: many(bookings),
   assignments: many(staffAssignments),
   reviews: many(reviews),
@@ -370,4 +389,9 @@ export const staffToCategoriessRelations = relations(staffToCategories, ({ one }
   tenant: one(tenants, { fields: [staffToCategories.tenantId], references: [tenants.id] }),
   staff: one(staff, { fields: [staffToCategories.staffId], references: [staff.id] }),
   category: one(serviceCategories, { fields: [staffToCategories.categoryId], references: [serviceCategories.id] }),
+}));
+
+export const absenceRequestsRelations = relations(absenceRequests, ({ one }) => ({
+  tenant: one(tenants, { fields: [absenceRequests.tenantId], references: [tenants.id] }),
+  staff: one(staff, { fields: [absenceRequests.staffId], references: [staff.id] }),
 }));

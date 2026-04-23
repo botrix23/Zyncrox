@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  Plus, 
-  Search, 
-  User, 
-  Mail, 
+import {
+  Plus,
+  Search,
+  User,
+  Mail,
   Trash2,
   Edit2,
   X,
@@ -18,10 +18,16 @@ import {
   Phone,
   Star,
   MessageSquare,
-  Info
+  Info,
+  ShieldCheck,
+  ShieldOff,
+  KeyRound,
+  Copy,
+  Check
 } from 'lucide-react';
 import { createStaffAction, updateStaffAction, deleteStaffAction } from "@/app/actions/staff";
 import { updateShowStaffSelectionAction } from "@/app/actions/tenant";
+import { createStaffAccessAction, revokeStaffAccessAction, reactivateStaffAccessAction } from "@/app/actions/staffAccess";
 import { Tag } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useCallback } from "react";
@@ -58,6 +64,8 @@ export default function StaffClient({
   const menuRef = useRef<HTMLDivElement>(null);
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
   const [selectedStaffReviews, setSelectedStaffReviews] = useState<any | null>(null);
+  const [tempPasswordModal, setTempPasswordModal] = useState<{ name: string; email: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   const router = useRouter();
 
   // Form State
@@ -275,6 +283,39 @@ export default function StaffClient({
     setOpenMenu(memberId);
   }, [openMenu]);
 
+  const handleCreateAccess = async (member: any) => {
+    if (!member.email) {
+      alert('Este profesional no tiene email registrado. Agrégalo primero para crear acceso.');
+      return;
+    }
+    const result = await createStaffAccessAction(member.id, tenantId);
+    if (result.success && result.tempPassword) {
+      setTempPasswordModal({ name: member.name, email: member.email, password: result.tempPassword });
+      router.refresh();
+    } else {
+      alert(result.error || 'Error al crear acceso');
+    }
+  };
+
+  const handleRevokeAccess = async (member: any) => {
+    if (!confirm(`¿Revocar el acceso de ${member.name}? Su sesión se cerrará en la próxima acción.`)) return;
+    const result = await revokeStaffAccessAction(member.id, tenantId);
+    if (result.success) {
+      router.refresh();
+    } else {
+      alert(result.error || 'Error al revocar acceso');
+    }
+  };
+
+  const handleReactivateAccess = async (member: any) => {
+    const result = await reactivateStaffAccessAction(member.id, tenantId);
+    if (result.success) {
+      router.refresh();
+    } else {
+      alert(result.error || 'Error al reactivar acceso');
+    }
+  };
+
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
   return (
@@ -436,6 +477,49 @@ export default function StaffClient({
                      <Clock className="w-3.5 h-3.5" />
                      {t('nextRotationScheduled')}
                    </div>
+                )}
+              </div>
+
+              {/* Acceso al sistema */}
+              <div className="w-full pt-3 mt-1 border-t border-slate-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
+                {member.user ? (
+                  member.user.isActive ? (
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 dark:text-emerald-400">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        Acceso activo
+                      </span>
+                      <button
+                        onClick={() => handleRevokeAccess(member)}
+                        className="flex items-center gap-1 text-[10px] font-black text-slate-400 hover:text-rose-500 px-2.5 py-1.5 rounded-xl hover:bg-rose-500/5 transition-all"
+                      >
+                        <ShieldOff className="w-3 h-3" />
+                        Revocar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-400">
+                        <ShieldOff className="w-3.5 h-3.5" />
+                        Acceso inactivo
+                      </span>
+                      <button
+                        onClick={() => handleReactivateAccess(member)}
+                        className="flex items-center gap-1 text-[10px] font-black text-slate-400 hover:text-emerald-500 px-2.5 py-1.5 rounded-xl hover:bg-emerald-500/5 transition-all"
+                      >
+                        <ShieldCheck className="w-3 h-3" />
+                        Reactivar
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <button
+                    onClick={() => handleCreateAccess(member)}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 text-[10px] font-black text-purple-600 dark:text-purple-400 bg-purple-500/5 hover:bg-purple-500/10 rounded-xl transition-all border border-purple-500/10"
+                  >
+                    <KeyRound className="w-3 h-3" />
+                    Crear acceso al portal
+                  </button>
                 )}
               </div>
             </div>
@@ -791,15 +875,15 @@ export default function StaffClient({
 
       {openMenu && menuPos && (
         <Portal>
-          <div 
+          <div
             ref={menuRef}
             className="fixed z-[10000] w-48 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-200"
-            style={{ 
-              top: menuPos.top, 
-              left: menuPos.left 
+            style={{
+              top: menuPos.top,
+              left: menuPos.left
             }}
           >
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 const member = initialStaff.find(s => s.id === openMenu);
@@ -810,6 +894,59 @@ export default function StaffClient({
               <Trash2 className="w-4 h-4" />
               {t('form.deleteProfile')}
             </button>
+          </div>
+        </Portal>
+      )}
+
+      {/* Modal de contraseña temporal */}
+      {tempPasswordModal && (
+        <Portal>
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setTempPasswordModal(null)} />
+            <div className="relative z-10 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-[32px] w-full max-w-md shadow-2xl p-8 animate-in zoom-in-95 duration-300 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
+                  <KeyRound className="w-6 h-6 text-emerald-500" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black tracking-tight">Acceso creado</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Comparte estos datos con {tempPasswordModal.name}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 space-y-1">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">{tempPasswordModal.email}</p>
+                </div>
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-500/5 rounded-2xl border border-emerald-200 dark:border-emerald-500/20 space-y-1">
+                  <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Contraseña temporal</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-lg font-black text-slate-900 dark:text-white tracking-widest font-mono">{tempPasswordModal.password}</p>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(tempPasswordModal.password);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl text-xs font-bold transition-all shrink-0"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copied ? 'Copiado' : 'Copiar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-400 font-medium text-center">El profesional puede cambiar su contraseña después de iniciar sesión.</p>
+
+              <button
+                onClick={() => setTempPasswordModal(null)}
+                className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold text-sm transition-all hover:opacity-80"
+              >
+                Entendido
+              </button>
+            </div>
           </div>
         </Portal>
       )}

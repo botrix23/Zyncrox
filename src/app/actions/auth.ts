@@ -58,7 +58,12 @@ const rememberMe = formData.get("rememberMe") === 'true';
     return { success: false, error: "Credenciales inválidas" };
   }
 
-  // 2. Verificar que el Tenant no esté suspendido o expirado
+  // 2. Verificar que la cuenta esté activa
+  if (!user.isActive) {
+    return { success: false, error: "Tu acceso ha sido desactivado. Contacta al administrador." };
+  }
+
+  // 3. Verificar que el Tenant no esté suspendido o expirado
   if (user.role === 'ADMIN' && user.tenant) {
     if (user.tenant.status === 'SUSPENDED') {
       return { success: false, error: "Tu cuenta de negocio está suspendida. Contacta a soporte." };
@@ -71,21 +76,22 @@ const rememberMe = formData.get("rememberMe") === 'true';
     }
   }
 
-  // 3. Comparar contraseñas hasheadas
+  // 4. Comparar contraseñas hasheadas
   const isMatch = await bcrypt.compare(password, user.password);
-  
+
   if (isMatch) {
-cookies().set("zync_session", JSON.stringify({ 
-email: user.email, 
-role: user.role,
-userId: user.id,
-tenantId: user.tenantId 
-}), {
-httpOnly: true,
-secure: process.env.NODE_ENV === "production",
-maxAge: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24, // 30 días o 1 día
-path: "/",
-});
+    cookies().set("zync_session", JSON.stringify({
+      email: user.email,
+      role: user.role,
+      userId: user.id,
+      tenantId: user.tenantId,
+      staffId: user.staffId ?? null,
+    }), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24,
+      path: "/",
+    });
     await logAuditEvent({ action: 'LOGIN_SUCCESS', userId: user.id, tenantId: user.tenantId, details: { email: user.email } });
     return { success: true, role: user.role };
   }

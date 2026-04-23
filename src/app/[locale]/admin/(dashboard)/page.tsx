@@ -31,7 +31,9 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
   // - Para SUPER_ADMIN: el tenant impersonado (si está en modo soporte)
   let tenantId: string | null = null;
 
-  if (session?.role === 'SUPER_ADMIN') {
+  if (session?.role === 'STAFF') {
+    redirect(`/${locale}/admin/bookings`);
+  } else if (session?.role === 'SUPER_ADMIN') {
     if (session.impersonatedTenantId) {
       tenantId = session.impersonatedTenantId;
     } else {

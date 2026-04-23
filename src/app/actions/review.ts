@@ -48,7 +48,7 @@ export async function createReviewAction(data: {
       tenantId: data.tenantId,
       bookingId: data.bookingId,
       staffId: data.staffId,
-      rating: finalRating,
+      rating: String(finalRating),
       comment: data.comment,
       responses: data.responses || [],
     }).returning();

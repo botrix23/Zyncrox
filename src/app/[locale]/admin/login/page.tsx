@@ -32,6 +32,8 @@ export default function LoginPage() {
     if (result.success) {
       if (result.role === 'SUPER_ADMIN') {
         window.location.href = `/${locale}/admin/super`;
+      } else if (result.role === 'STAFF') {
+        window.location.href = `/${locale}/admin/bookings`;
       } else {
         window.location.href = `/${locale}/admin`;
       }

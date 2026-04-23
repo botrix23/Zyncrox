@@ -23,6 +23,7 @@ export default async function StaffPage() {
         assignments: true,
         reviews: true,
         categories: { with: { category: true } },
+        user: { columns: { id: true, isActive: true } },
       },
       orderBy: desc(staffTable.createdAt),
     }),
