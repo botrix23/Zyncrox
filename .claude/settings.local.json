@@ -42,7 +42,8 @@
       "Bash(psql --version)",
       "Bash(grep -E \"^pg$|^postgres$\")",
       "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")",
-      "Bash(git -C \"/Users/BorisGuardado/Documents/Desarrollos/Zyncrox/Zyncrox\" remote -v)"
+      "Bash(git -C \"/Users/BorisGuardado/Documents/Desarrollos/Zyncrox/Zyncrox\" remote -v)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
     ]
   }
 }

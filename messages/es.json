@@ -815,7 +815,7 @@
       "avgStaffRating": "Rating Promedio Staff"
     },
     "audit": {
-      "title": "Audit de Respuestas",
+      "title": "Historial de evaluaciones",
       "noReviews": "No se han recibido encuestas aún.",
       "table": {
         "rating": "Calif.",

@@ -6,6 +6,8 @@ import { eq, and, gte, lte, or, isNull, desc, not, lt, gt, ne } from "drizzle-or
 import { addMinutes, format, parseISO, startOfDay, endOfDay, isBefore, isAfter, max, min } from "date-fns";
 import { resend } from "@/lib/resend";
 import { BookingConfirmationEmail } from "@/components/emails/BookingConfirmationEmail";
+import { BookingCancellationEmail } from "@/components/emails/BookingCancellationEmail";
+import { BookingRescheduleEmail } from "@/components/emails/BookingRescheduleEmail";
 import { SurveyInviteEmail } from "@/components/emails/SurveyInviteEmail";
 import { es } from "date-fns/locale";
 import { getPlanFeatures } from "@/core/plans";
@@ -798,13 +800,19 @@ export async function updateBookingAction(data: {
   [key: string]: any;
 }) {
   try {
-    // 1. Verificar solapamiento si se cambió el horario o personal
+    // 1. Fetch booking before update to detect time changes
+    const existing = await db.query.bookings.findFirst({
+      where: and(eq(bookings.id, data.id), eq(bookings.tenantId, data.tenantId)),
+      with: { service: true, branch: true, staff: true, tenant: true },
+    });
+
+    // 2. Verificar solapamiento si se cambió el horario o personal
     if (data.startTime && data.endTime) {
       const conflict = await db.query.bookings.findFirst({
         where: and(
           eq(bookings.tenantId, data.tenantId),
           eq(bookings.staffId, data.staffId || ''),
-          not(eq(bookings.id, data.id)), // Ignorar la cita actual
+          not(eq(bookings.id, data.id)),
           not(eq(bookings.status, 'CANCELLED')),
           and(
             lt(bookings.startTime, data.endTime),
@@ -836,6 +844,42 @@ export async function updateBookingAction(data: {
       );
     }
 
+    // 3. Send reschedule email if time changed
+    const timeChanged = data.startTime && existing &&
+      new Date(existing.startTime).getTime() !== new Date(data.startTime).getTime();
+
+    if (timeChanged && existing && existing.customerEmail) {
+      const emailData = data.customerEmail || existing.customerEmail;
+      const name = data.customerName || existing.customerName;
+      const newStaff = data.staffId
+        ? await db.query.staff.findFirst({ where: eq(staff.id, data.staffId) })
+        : existing.staff;
+
+      Promise.resolve().then(async () => {
+        try {
+          await resend.emails.send({
+            from: 'Zyncrox <onboarding@resend.dev>',
+            to: emailData,
+            subject: `Cita reagendada - ${existing.tenant.name}`,
+            react: BookingRescheduleEmail({
+              customerName: name,
+              serviceName: existing.service.name,
+              oldDate: format(existing.startTime, "EEEE, d 'de' MMMM", { locale: es }),
+              oldTime: format(existing.startTime, "hh:mm a"),
+              newDate: format(data.startTime!, "EEEE, d 'de' MMMM", { locale: es }),
+              newTime: format(data.startTime!, "hh:mm a"),
+              branchName: existing.branch.name,
+              staffName: newStaff?.name,
+              tenantName: existing.tenant.name,
+              tenantLogo: existing.tenant.logoUrl || undefined,
+            }),
+          });
+        } catch (e) {
+          console.error('[Email] Error sending reschedule email:', e);
+        }
+      });
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Error updating booking:", error);
@@ -844,11 +888,41 @@ export async function updateBookingAction(data: {
 }
 
 /**
- * Elimina (cancela) una reserva.
+ * Elimina (cancela) una reserva y notifica al cliente por email.
  */
 export async function deleteBookingAction(id: string, tenantId: string) {
   try {
+    const existing = await db.query.bookings.findFirst({
+      where: and(eq(bookings.id, id), eq(bookings.tenantId, tenantId)),
+      with: { service: true, branch: true, tenant: true },
+    });
+
     await db.delete(bookings).where(and(eq(bookings.id, id), eq(bookings.tenantId, tenantId)));
+
+    if (existing?.customerEmail) {
+      const cancelEmail = existing.customerEmail;
+      Promise.resolve().then(async () => {
+        try {
+          await resend.emails.send({
+            from: 'Zyncrox <onboarding@resend.dev>',
+            to: cancelEmail,
+            subject: `Cita cancelada - ${existing.tenant.name}`,
+            react: BookingCancellationEmail({
+              customerName: existing.customerName,
+              serviceName: existing.service.name,
+              date: format(existing.startTime, "EEEE, d 'de' MMMM", { locale: es }),
+              time: format(existing.startTime, "hh:mm a"),
+              branchName: existing.branch.name,
+              tenantName: existing.tenant.name,
+              tenantLogo: existing.tenant.logoUrl || undefined,
+            }),
+          });
+        } catch (e) {
+          console.error('[Email] Error sending cancellation email:', e);
+        }
+      });
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Error deleting booking:", error);

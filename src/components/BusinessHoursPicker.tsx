@@ -220,24 +220,18 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
                       {schedule.slots.map((slot, idx) => (
                         <div key={idx} className="flex items-center gap-2">
                           <div className="flex-1 grid grid-cols-2 gap-2">
-                            <div className="relative">
-                              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                              <input
-                                type="time"
-                                value={slot.open}
-                                onChange={e => updateSlot(day.id, idx, 'open', e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 pl-10 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
-                              />
-                            </div>
-                            <div className="relative">
-                              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                              <input
-                                type="time"
-                                value={slot.close}
-                                onChange={e => updateSlot(day.id, idx, 'close', e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 pl-10 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
-                              />
-                            </div>
+                            <input
+                              type="time"
+                              value={slot.open}
+                              onChange={e => updateSlot(day.id, idx, 'open', e.target.value)}
+                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
+                            />
+                            <input
+                              type="time"
+                              value={slot.close}
+                              onChange={e => updateSlot(day.id, idx, 'close', e.target.value)}
+                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
+                            />
                           </div>
                           {schedule.slots.length > 1 && (
                             <button
@@ -338,25 +332,19 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
                     <div className="space-y-3 pl-13">
                       {schedule.slots.map((slot, idx) => (
                         <div key={idx} className="flex items-center gap-2">
-                           <div className="flex-1 grid grid-cols-2 gap-2">
-                            <div className="relative">
-                              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                              <input
-                                type="time"
-                                value={slot.open}
-                                onChange={e => updateSlot("", idx, 'open', e.target.value, true, dateKey)}
-                                className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 pl-10 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
-                              />
-                            </div>
-                            <div className="relative">
-                              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                              <input
-                                type="time"
-                                value={slot.close}
-                                onChange={e => updateSlot("", idx, 'close', e.target.value, true, dateKey)}
-                                className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 pl-10 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
-                              />
-                            </div>
+                          <div className="flex-1 grid grid-cols-2 gap-2">
+                            <input
+                              type="time"
+                              value={slot.open}
+                              onChange={e => updateSlot("", idx, 'open', e.target.value, true, dateKey)}
+                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
+                            />
+                            <input
+                              type="time"
+                              value={slot.close}
+                              onChange={e => updateSlot("", idx, 'close', e.target.value, true, dateKey)}
+                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
+                            />
                           </div>
                           <button
                             type="button"

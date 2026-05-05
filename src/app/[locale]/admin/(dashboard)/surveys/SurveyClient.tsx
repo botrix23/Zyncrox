@@ -380,70 +380,101 @@ export default function SurveyClient({
               </div>
            </div>
 
-           {/* Results Table */}
-           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-8 shadow-sm overflow-hidden">
+           {/* Results — title + content */}
+           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-6 md:p-8 shadow-sm overflow-hidden">
               <h3 className="text-xl font-black tracking-tight mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
                 <MessageSquare className="w-5 h-5 text-purple-600" />
                 {t('audit.title')}
               </h3>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-slate-50 dark:border-white/5">
-                      <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-2 text-center">{t('audit.table.rating')}</th>
-                      <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.staffService')}</th>
-                      <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.comment')}</th>
-                      <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.date')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 dark:divide-white/5">
-                    {initialReviews.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="py-20 text-center space-y-4">
-                           <Info className="w-12 h-12 text-slate-100 dark:text-zinc-800 mx-auto" />
-                           <p className="text-sm font-bold text-slate-400 italic">{t('audit.noReviews')}</p>
-                        </td>
-                      </tr>
-                    ) : (
-                      initialReviews.map((r: any) => (
-                        <tr key={r.id} className="group hover:bg-slate-50 dark:hover:bg-white/5 transition-all">
-                          <td className="py-5 px-2">
-                             <div className="flex flex-col items-center">
-                               <span className="text-lg font-black text-slate-900 dark:text-white leading-none">{Number(r.rating).toFixed(1)}</span>
-                               <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                             </div>
-                          </td>
-                          <td className="py-5 px-4 max-w-[200px]">
-                             <div className="space-y-0.5">
-                               <p className="text-sm font-black text-slate-900 dark:text-white truncate">{r.booking?.staff?.name || t('audit.table.staffFallback')}</p>
-                               <p className="text-[11px] font-bold text-slate-400 truncate">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
-                             </div>
-                          </td>
-                          <td className="py-5 px-4 min-w-[200px] max-w-[300px]">
-                             <div className="space-y-2">
-                               {r.comment && (
-                                 <p className="text-sm text-slate-700 dark:text-zinc-300 font-medium italic">"{r.comment}"</p>
-                               )}
-                               <div className="flex flex-wrap gap-2">
-                                 {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).slice(0, 2).map((resp: any, i: number) => (
-                                   <div key={i} className="px-2 py-1 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                                      <p className="text-[10px] font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
-                                      <p className="text-[11px] text-purple-600 font-bold truncate max-w-[150px]">{resp.answer}</p>
-                                   </div>
-                                 ))}
-                               </div>
-                             </div>
-                          </td>
-                          <td className="py-5 px-4">
-                             <span className="text-[11px] font-bold text-slate-400">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
-                          </td>
+              {initialReviews.length === 0 ? (
+                <div className="py-16 text-center space-y-3">
+                  <Info className="w-12 h-12 text-slate-100 dark:text-zinc-800 mx-auto" />
+                  <p className="text-sm font-bold text-slate-400 italic">{t('audit.noReviews')}</p>
+                </div>
+              ) : (
+                <>
+                  {/* Mobile cards */}
+                  <div className="md:hidden space-y-3">
+                    {initialReviews.map((r: any) => (
+                      <div key={r.id} className="bg-slate-50 dark:bg-white/5 rounded-2xl p-4 space-y-2.5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-col items-center bg-white dark:bg-zinc-800 rounded-xl px-2.5 py-1.5 shadow-sm border border-slate-100 dark:border-white/5">
+                              <span className="text-base font-black text-slate-900 dark:text-white leading-none">{Number(r.rating).toFixed(1)}</span>
+                              <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-black text-slate-900 dark:text-white">{r.booking?.staff?.name || t('audit.table.staffFallback')}</p>
+                              <p className="text-[11px] font-bold text-slate-400">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
+                            </div>
+                          </div>
+                          <span className="text-[11px] font-bold text-slate-400 shrink-0">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
+                        </div>
+                        {r.comment && (
+                          <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium italic border-l-2 border-purple-500/30 pl-3">"{r.comment}"</p>
+                        )}
+                        {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).slice(0, 2).map((resp: any, i: number) => (
+                          <div key={i} className="px-2.5 py-1.5 bg-purple-500/5 rounded-lg border border-purple-500/10">
+                            <p className="text-[10px] font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
+                            <p className="text-[11px] text-purple-600 font-bold break-words">{resp.answer}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-slate-50 dark:border-white/5">
+                          <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-2 text-center">{t('audit.table.rating')}</th>
+                          <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.staffService')}</th>
+                          <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.comment')}</th>
+                          <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.date')}</th>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50 dark:divide-white/5">
+                        {initialReviews.map((r: any) => (
+                          <tr key={r.id} className="group hover:bg-slate-50 dark:hover:bg-white/5 transition-all">
+                            <td className="py-5 px-2">
+                               <div className="flex flex-col items-center">
+                                 <span className="text-lg font-black text-slate-900 dark:text-white leading-none">{Number(r.rating).toFixed(1)}</span>
+                                 <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                               </div>
+                            </td>
+                            <td className="py-5 px-4 max-w-[200px]">
+                               <div className="space-y-0.5">
+                                 <p className="text-sm font-black text-slate-900 dark:text-white truncate">{r.booking?.staff?.name || t('audit.table.staffFallback')}</p>
+                                 <p className="text-[11px] font-bold text-slate-400 truncate">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
+                               </div>
+                            </td>
+                            <td className="py-5 px-4 min-w-[200px] max-w-[300px]">
+                               <div className="space-y-2">
+                                 {r.comment && (
+                                   <p className="text-sm text-slate-700 dark:text-zinc-300 font-medium italic">"{r.comment}"</p>
+                                 )}
+                                 <div className="flex flex-wrap gap-2">
+                                   {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).slice(0, 2).map((resp: any, i: number) => (
+                                     <div key={i} className="px-2 py-1 bg-purple-500/5 rounded-lg border border-purple-500/10">
+                                        <p className="text-[10px] font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
+                                        <p className="text-[11px] text-purple-600 font-bold truncate max-w-[150px]">{resp.answer}</p>
+                                     </div>
+                                   ))}
+                                 </div>
+                               </div>
+                            </td>
+                            <td className="py-5 px-4">
+                               <span className="text-[11px] font-bold text-slate-400">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
            </div>
         </div>
       )}

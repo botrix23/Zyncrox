@@ -3,12 +3,12 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 const BookingWidget = lazy(() => import('@/components/BookingWidget'));
 import { 
-  Calendar, 
-  Search, 
-  Filter, 
-  User, 
-  Clock, 
-  Sparkles, 
+  Calendar,
+  Search,
+  Filter,
+  User,
+  Clock,
+  Sparkles,
   MoreHorizontal,
   CheckCircle2,
   XCircle,
@@ -21,7 +21,7 @@ import {
   ChevronRight,
   LayoutList,
   MapPin,
-  Copy,
+  Link2,
   Check,
   Loader2,
   Plus,
@@ -848,7 +848,7 @@ export default function BookingsClient({
                                 : 'bg-slate-50 dark:bg-white/5 text-slate-400 hover:bg-purple-500 hover:text-white'
                               }`}
                             >
-                                {copiedId === booking.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                {copiedId === booking.id ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
                             </button>
                           )}
                           <button 

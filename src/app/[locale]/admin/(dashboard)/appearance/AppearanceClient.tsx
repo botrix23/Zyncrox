@@ -502,12 +502,12 @@ try {
 
               <div className="space-y-2">
                  <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">{tPortal('form.allowsHomeService')}</label>
-                 <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 h-[64px]">
+                 <div className="flex items-start justify-between gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 min-h-[64px]">
                     <div className="pr-4">
                        <p className="text-sm font-medium text-slate-900 dark:text-white">{tPortal('form.allowsHomeServiceLabel')}</p>
                        <p className="text-xs text-slate-500 italic">{tPortal('form.allowsHomeServiceHint')}</p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
                        <input type="checkbox" checked={allowsHomeService} onChange={e => setAllowsHomeService(e.target.checked)} className="sr-only peer" />
                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                     </label>

@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Bell,
-  Search,
   User,
   ShieldCheck,
   UserCircle,
@@ -105,16 +104,6 @@ export function AdminHeader({ user }: { user: SessionUser | null }) {
           <Menu className="w-6 h-6" />
         </button>
         <span className="text-lg font-bold tracking-tight">Zyncrox</span>
-      </div>
-
-      {/* Desktop: search bar */}
-      <div className="hidden lg:flex items-center gap-4 bg-slate-100 dark:bg-white/5 px-4 py-2 rounded-xl border border-transparent focus-within:border-purple-500/50 transition-all w-96">
-        <Search className="w-4 h-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder={t('searchPlaceholder')}
-          className="bg-transparent border-none focus:outline-none text-sm w-full placeholder:text-slate-500 dark:placeholder:text-zinc-500"
-        />
       </div>
 
       <div className="flex items-center gap-2 lg:gap-6">
