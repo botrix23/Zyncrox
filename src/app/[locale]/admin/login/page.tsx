@@ -16,6 +16,14 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError]         = useState('');
 
+  React.useEffect(() => {
+    const savedEmail = localStorage.getItem('login-remembered-email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -30,6 +38,11 @@ export default function LoginPage() {
     const result = await loginAction(formData, locale);
 
     if (result.success) {
+      if (rememberMe) {
+        localStorage.setItem('login-remembered-email', email);
+      } else {
+        localStorage.removeItem('login-remembered-email');
+      }
       if (result.mustChangePassword) {
         window.location.href = `/${locale}/admin/change-password`;
       } else if (result.role === 'SUPER_ADMIN') {
@@ -109,22 +122,23 @@ export default function LoginPage() {
                   {showPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              <div className="flex items-center justify-between px-1">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input 
-                    type="checkbox" 
-                    checked={rememberMe}
-                    onChange={e => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 bg-slate-100 dark:bg-white/5 border-transparent"
-                  />
-                  <span className="text-xs font-bold text-slate-500 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300 transition-colors">
-                    {t('rememberMe')}
-                  </span>
-                </label>
-                <a href={`/${locale}/admin/forgot-password`} className="text-xs font-bold text-purple-600 hover:text-purple-500 transition-colors">
-                  {t('forgotPassword')}
-                </a>
-              </div>
+            </div>
+
+            <div className="flex items-center justify-between px-1">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 bg-slate-100 dark:bg-white/5 border-transparent"
+                />
+                <span className="text-xs font-bold text-slate-500 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300 transition-colors">
+                  {t('rememberMe')}
+                </span>
+              </label>
+              <a href={`/${locale}/admin/forgot-password`} className="text-xs font-bold text-purple-600 hover:text-purple-500 transition-colors">
+                {t('forgotPassword')}
+              </a>
             </div>
 
             {error && (

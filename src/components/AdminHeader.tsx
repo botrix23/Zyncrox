@@ -10,6 +10,7 @@ import {
   Ban,
   X,
   Menu,
+  CalendarPlus,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LangToggle } from '@/components/LangToggle';
@@ -20,16 +21,32 @@ import { approveAbsenceRequestAction, rejectAbsenceRequestAction } from '@/app/a
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 
+const BELL_LAST_SEEN_KEY = 'bell-last-seen';
+const BELL_DISMISSED_KEY = 'bell-dismissed-ids';
+
 export function AdminHeader({ user }: { user: SessionUser | null }) {
   const t = useTranslations('Dashboard.header');
   const router = useRouter();
   const [bellOpen, setBellOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [dismissed, setDismissed] = useState(false);
   const [loadingBell, setLoadingBell] = useState(false);
+  const [lastSeen, setLastSeen] = useState<number>(0);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const bellRef = useRef<HTMLDivElement>(null);
+  const markReadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const hasUnread = !dismissed && notifications.some(n => !n.read);
+  // Load persisted state from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(BELL_LAST_SEEN_KEY);
+    if (stored) setLastSeen(Number(stored));
+    const ids = localStorage.getItem(BELL_DISMISSED_KEY);
+    if (ids) setDismissedIds(new Set(JSON.parse(ids)));
+  }, []);
+
+  const isUnread = (n: any) =>
+    !dismissedIds.has(n.id) && new Date(n.date).getTime() > lastSeen;
+
+  const hasUnread = notifications.some(isUnread);
 
   const fetchNotifications = async () => {
     setLoadingBell(true);
@@ -41,39 +58,66 @@ export function AdminHeader({ user }: { user: SessionUser | null }) {
   // Carga inicial + polling cada 30s + re-fetch al recuperar foco
   useEffect(() => {
     fetchNotifications();
-
     const interval = setInterval(fetchNotifications, 30_000);
-
     const onFocus = () => fetchNotifications();
     window.addEventListener('focus', onFocus);
-
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
     };
   }, []);
 
-  const handleBellClick = async () => {
-    if (!bellOpen) {
-      setDismissed(false);
-      await fetchNotifications();
+  // Al abrir la campanita, marcar todo como leído después de 2s
+  useEffect(() => {
+    if (bellOpen) {
+      markReadTimer.current = setTimeout(() => {
+        const now = Date.now();
+        setLastSeen(now);
+        localStorage.setItem(BELL_LAST_SEEN_KEY, String(now));
+      }, 2000);
+    } else {
+      if (markReadTimer.current) clearTimeout(markReadTimer.current);
     }
+    return () => {
+      if (markReadTimer.current) clearTimeout(markReadTimer.current);
+    };
+  }, [bellOpen]);
+
+  const handleBellClick = async () => {
+    if (!bellOpen) await fetchNotifications();
     setBellOpen(prev => !prev);
   };
 
-  const handleClearNotifications = () => {
-    setDismissed(true);
+  const handleDismiss = (id: string) => {
+    setDismissedIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      localStorage.setItem(BELL_DISMISSED_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const handleClearAll = () => {
+    const now = Date.now();
+    setLastSeen(now);
+    localStorage.setItem(BELL_LAST_SEEN_KEY, String(now));
+    // Dismiss all current notification IDs
+    const ids = new Set(notifications.map(n => n.id));
+    setDismissedIds(ids);
+    localStorage.setItem(BELL_DISMISSED_KEY, JSON.stringify([...ids]));
     setBellOpen(false);
   };
 
   const handleApprove = async (id: string) => {
     await approveAbsenceRequestAction(id);
+    handleDismiss(id);
     await fetchNotifications();
     router.refresh();
   };
 
   const handleReject = async (id: string) => {
     await rejectAbsenceRequestAction(id);
+    handleDismiss(id);
     await fetchNotifications();
     router.refresh();
   };
@@ -106,7 +150,7 @@ export function AdminHeader({ user }: { user: SessionUser | null }) {
         <span className="text-lg font-bold tracking-tight">Zyncrox</span>
       </div>
 
-      <div className="flex items-center gap-2 lg:gap-6">
+      <div className="flex items-center gap-2 lg:gap-6 lg:ml-auto">
         <div className="flex items-center gap-1 lg:gap-2 bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200 dark:border-white/10">
           <ThemeToggle />
           <LangToggle />
@@ -130,14 +174,19 @@ export function AdminHeader({ user }: { user: SessionUser | null }) {
           {bellOpen && (
             <div className="fixed lg:absolute right-4 lg:right-0 top-20 lg:top-12 w-[calc(100vw-2rem)] max-w-sm lg:w-96 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-[24px] shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
               <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/5">
-                <p className="text-sm font-black text-slate-900 dark:text-white">Notificaciones</p>
+                <div>
+                  <p className="text-sm font-black text-slate-900 dark:text-white">Notificaciones</p>
+                  {hasUnread && (
+                    <p className="text-[10px] text-slate-400 mt-0.5">Se marcarán como leídas en 2s</p>
+                  )}
+                </div>
                 <div className="flex items-center gap-1">
                   {notifications.length > 0 && (
                     <button
-                      onClick={handleClearNotifications}
+                      onClick={handleClearAll}
                       className="text-[11px] font-bold text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
                     >
-                      Limpiar
+                      Limpiar todo
                     </button>
                   )}
                   <button onClick={() => setBellOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
@@ -158,25 +207,47 @@ export function AdminHeader({ user }: { user: SessionUser | null }) {
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-100 dark:divide-white/5">
-                    {notifications.map((n) => (
-                      <div key={n.id} className={`p-4 space-y-2 ${!n.read ? 'bg-purple-50/50 dark:bg-purple-500/5' : ''}`}>
+                    {notifications.filter(n => !dismissedIds.has(n.id)).map((n) => (
+                      <div key={n.id} className={`p-4 space-y-2 transition-colors ${isUnread(n) ? (n.type === 'booking' ? 'bg-emerald-50/60 dark:bg-emerald-500/5' : 'bg-purple-50/50 dark:bg-purple-500/5') : ''}`}>
                         <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-xs font-black text-slate-900 dark:text-white">{n.title}</p>
-                            <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{n.body}</p>
-                            {n.date && (
-                              <p className="text-[10px] text-slate-400 mt-1">{format(new Date(n.date), "dd MMM, HH:mm")}</p>
+                          <div className="flex items-start gap-2 min-w-0">
+                            {n.type === 'booking' ? (
+                              <span className="shrink-0 mt-0.5 p-1 bg-emerald-100 dark:bg-emerald-500/10 rounded-lg">
+                                <CalendarPlus className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                              </span>
+                            ) : (
+                              <span className="shrink-0 mt-0.5 p-1 bg-amber-100 dark:bg-amber-500/10 rounded-lg">
+                                <Bell className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                              </span>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-xs font-black text-slate-900 dark:text-white">{n.title}</p>
+                              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{n.body}</p>
+                              {n.date && (
+                                <p className="text-[10px] text-slate-400 mt-1">{format(new Date(n.date), "dd MMM, HH:mm")}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {n.status && (
+                              <span className={`text-[9px] font-black px-2 py-1 rounded-full ${
+                                n.status === 'APPROVED' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600' :
+                                n.status === 'REJECTED' ? 'bg-rose-100 dark:bg-rose-500/10 text-rose-600' :
+                                'bg-amber-100 dark:bg-amber-500/10 text-amber-600'
+                              }`}>
+                                {n.status === 'APPROVED' ? 'Aprobada' : n.status === 'REJECTED' ? 'Rechazada' : 'Pendiente'}
+                              </span>
+                            )}
+                            {!n.canAct && (
+                              <button
+                                onClick={() => handleDismiss(n.id)}
+                                className="p-1 text-slate-300 hover:text-slate-500 dark:text-zinc-600 dark:hover:text-zinc-400 rounded-lg transition-colors"
+                                title="Descartar"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
                             )}
                           </div>
-                          {n.status && (
-                            <span className={`shrink-0 text-[9px] font-black px-2 py-1 rounded-full ${
-                              n.status === 'APPROVED' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600' :
-                              n.status === 'REJECTED' ? 'bg-rose-100 dark:bg-rose-500/10 text-rose-600' :
-                              'bg-amber-100 dark:bg-amber-500/10 text-amber-600'
-                            }`}>
-                              {n.status === 'APPROVED' ? 'Aprobada' : n.status === 'REJECTED' ? 'Rechazada' : 'Pendiente'}
-                            </span>
-                          )}
                         </div>
                         {n.canAct && n.requestId && (
                           <div className="flex gap-2 pt-1">
