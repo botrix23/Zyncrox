@@ -199,6 +199,10 @@ export const blocks = pgTable('blocks', {
   reason: varchar('reason', { length: 255 }),
   startTime: timestamp('start_time', { withTimezone: true, mode: 'date' }).notNull(),
   endTime: timestamp('end_time', { withTimezone: true, mode: 'date' }).notNull(),
+  // 'ACTIVE' | 'CANCELLED'
+  status: varchar('status', { length: 20 }).notNull().default('ACTIVE'),
+  cancelReason: varchar('cancel_reason', { length: 255 }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
 // 9. SlotLocks (Reservas temporales de slots — expiran en ~10 min si no se confirma)

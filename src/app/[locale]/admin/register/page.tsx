@@ -34,23 +34,31 @@ function getStrength(password: string): StrengthLevel {
 export default function RegisterPage() {
   const t = useTranslations('Register');
 
-  const [businessName, setBusinessName] = useState('');
-  const [adminName,    setAdminName]    = useState('');
-  const [email,        setEmail]        = useState('');
-  const [password,     setPassword]     = useState('');
-  const [showPass,     setShowPass]     = useState(false);
-  const [isLoading,    setIsLoading]    = useState(false);
-  const [error,        setError]        = useState('');
-  const [touched,      setTouched]      = useState(false); // Mostrar errores de contraseña solo si ya escribió
+  const [businessName,     setBusinessName]     = useState('');
+  const [adminName,        setAdminName]        = useState('');
+  const [email,            setEmail]            = useState('');
+  const [password,         setPassword]         = useState('');
+  const [confirmPassword,  setConfirmPassword]  = useState('');
+  const [showPass,         setShowPass]         = useState(false);
+  const [showConfirmPass,  setShowConfirmPass]  = useState(false);
+  const [isLoading,        setIsLoading]        = useState(false);
+  const [error,            setError]            = useState('');
+  const [touched,          setTouched]          = useState(false); // Mostrar errores de contraseña solo si ya escribió
 
   const ruleResults  = useMemo(() => PASSWORD_RULE_TESTS.map(r => ({ ...r, passed: r.test(password) })), [password]);
   const allPassed    = ruleResults.every(r => r.passed);
   const strength     = getStrength(password);
 
+  const passwordsMatch = confirmPassword === password;
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setTouched(true);
     if (!allPassed) return;
+    if (!passwordsMatch) {
+      setError(t('errorPasswordMismatch'));
+      return;
+    }
 
     setIsLoading(true);
     setError('');
@@ -209,6 +217,41 @@ export default function RegisterPage() {
               )}
             </div>
 
+            {/* Confirmar contraseña */}
+            {allPassed && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                <label className="text-xs font-bold text-slate-500 dark:text-zinc-500 tracking-widest ml-1">{t('confirmPassword')}</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type={showConfirmPass ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className={`w-full bg-slate-100 dark:bg-white/5 border rounded-2xl py-3 pl-11 pr-12 text-slate-900 dark:text-white outline-none transition-all text-sm ${
+                      confirmPassword.length > 0
+                        ? passwordsMatch
+                          ? 'border-emerald-500/50'
+                          : 'border-rose-500/50'
+                        : 'border-transparent focus:border-purple-500/50'
+                    }`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPass(p => !p)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {confirmPassword.length > 0 && !passwordsMatch && (
+                  <p className="text-xs font-bold text-rose-400 ml-1">{t('errorPasswordMismatch')}</p>
+                )}
+              </div>
+            )}
+
             {/* Error general */}
             {error && (
               <div className="flex items-center gap-2 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-500 text-xs font-bold">
@@ -220,7 +263,7 @@ export default function RegisterPage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={isLoading || (touched && !allPassed)}
+              disabled={isLoading || (touched && !allPassed) || (allPassed && confirmPassword.length > 0 && !passwordsMatch)}
               className="w-full py-4 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-300 dark:disabled:bg-zinc-800 disabled:text-slate-400 dark:disabled:text-zinc-600 disabled:cursor-not-allowed text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-purple-600/20 transition-all mt-2"
             >
               {isLoading ? (

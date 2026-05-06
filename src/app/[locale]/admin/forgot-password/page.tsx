@@ -24,7 +24,7 @@ export default function ForgotPasswordPage({ params: { locale } }: { params: { l
     setIsLoading(true);
     setMessage(null);
 
-    const result = await forgotPasswordAction(email);
+    const result = await forgotPasswordAction(email, locale);
 
     if (result.success) {
       setMessage({

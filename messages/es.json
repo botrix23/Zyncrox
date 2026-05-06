@@ -165,6 +165,7 @@
     "adminNamePlaceholder": "Tu nombre",
     "email": "Email",
     "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
     "showPassword": "Mostrar contraseña",
     "hidePassword": "Ocultar contraseña",
     "submit": "Empezar ahora",
@@ -172,6 +173,7 @@
     "login": "Inicia sesión",
     "errorRegister": "Error al registrar. Intenta de nuevo.",
     "errorEmailExists": "Este correo electrónico ya está registrado.",
+    "errorPasswordMismatch": "Las contraseñas no coinciden.",
     "strength": {
       "veryWeak": "Muy débil",
       "weak": "Débil",
@@ -499,6 +501,9 @@
         "create": "Registrar ausencia"
       },
       "confirmDelete": "¿Estás seguro de eliminar el registro de ausencia?",
+      "confirmCancel": "¿Cancelar esta ausencia?",
+      "confirmCancelMessage": "El registro quedará guardado como cancelado para mantener el historial.",
+      "confirmCancelLabel": "Sí, cancelar ausencia",
       "errorSave": "Error al guardar el registro de ausencia",
       "errorDelete": "Error al eliminar la ausencia",
       "subtitleStaff": "Solicita días libres o ausencias. El administrador deberá aprobarlas.",

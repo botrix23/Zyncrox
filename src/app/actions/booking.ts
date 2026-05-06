@@ -240,13 +240,13 @@ export async function getAvailableSlots(
       )
     );
 
-    // Consultar bloqueos (vacaciones, descansos, etc)
-    // TECH LEAD: Obtenemos todos los bloqueos relevantes de una vez para filtrar en memoria
+    // Consultar bloqueos (vacaciones, descansos, etc) — excluye cancelados
     const allBlocks = await db.select().from(blocks).where(
       and(
         or(eq(blocks.branchId, branchId), isNull(blocks.branchId)),
         lte(blocks.startTime, dayEndRange),
-        gte(blocks.endTime, dayStartRange)
+        gte(blocks.endTime, dayStartRange),
+        not(eq(blocks.status as any, 'CANCELLED'))
       )
     );
 
@@ -735,41 +735,40 @@ export async function createBookingSessionAction(data: {
       return { session, bookings: newBookings };
     });
 
-    // 4. Enviar Correo de Confirmación (fire-and-forget: no bloqueamos la respuesta al usuario)
-    // El await es intencional para no bloquear el return del success.
-    // Si el correo falla, simplemente se loguea y el usuario recibe la confirmación de todas formas.
-    Promise.resolve().then(async () => {
-      try {
-        const firstBooking = data.bookings[0];
-        const [service, branch, staffMember] = await Promise.all([
-          db.query.services.findFirst({ where: eq(services.id, firstBooking.serviceId) }),
-          db.query.branches.findFirst({ where: eq(branches.id, firstBooking.branchId) }),
-          db.query.staff.findFirst({ where: eq(staff.id, firstBooking.staffId) }),
-        ]);
+    // 4. Enviar Correo de Confirmación
+    try {
+      const firstBooking = data.bookings[0];
+      const assignedFirstBooking = result.bookings[0];
+      const [service, branch, staffMember] = await Promise.all([
+        db.query.services.findFirst({ where: eq(services.id, firstBooking.serviceId) }),
+        db.query.branches.findFirst({ where: eq(branches.id, firstBooking.branchId) }),
+        assignedFirstBooking?.staffId
+          ? db.query.staff.findFirst({ where: eq(staff.id, assignedFirstBooking.staffId) })
+          : Promise.resolve(null),
+      ]);
 
-        if (service && branch) {
-          const startDate = parseISO(firstBooking.startTime);
-          await resend.emails.send({
-            from: 'Zyncrox <noreply@zyncrox.com>',
-            to: data.customerEmail,
-            subject: `${data.bookings.length > 1 ? 'Sesión de Reservas Confirmada' : 'Cita Confirmada'} - ${tenant.name}`,
-            react: BookingConfirmationEmail({
-              customerName: data.customerName,
-              serviceName: service.name + (data.bookings.length > 1 ? ` (+${data.bookings.length - 1} más)` : ''),
-              date: format(startDate, "EEEE, d 'de' MMMM", { locale: es }),
-              time: format(startDate, "hh:mm a"),
-              branchName: branch.name,
-              staffName: staffMember?.name,
-              tenantName: tenant.name,
-              tenantLogo: tenant.logoUrl || undefined,
-              customBody: tenant.emailBodyTemplate
-            }),
-          });
-        }
-      } catch (emailError) {
-        console.error("[createBookingSessionAction] Email send failed (non-critical):", emailError);
+      if (service && branch) {
+        const startDate = parseISO(firstBooking.startTime);
+        await resend.emails.send({
+          from: 'Zyncrox <noreply@zyncrox.com>',
+          to: data.customerEmail,
+          subject: `${data.bookings.length > 1 ? 'Sesión de Reservas Confirmada' : 'Cita Confirmada'} - ${tenant.name}`,
+          react: BookingConfirmationEmail({
+            customerName: data.customerName,
+            serviceName: service.name + (data.bookings.length > 1 ? ` (+${data.bookings.length - 1} más)` : ''),
+            date: format(startDate, "EEEE, d 'de' MMMM", { locale: es }),
+            time: format(startDate, "hh:mm a"),
+            branchName: branch.name,
+            staffName: staffMember?.name,
+            tenantName: tenant.name,
+            tenantLogo: tenant.logoUrl || undefined,
+            customBody: tenant.emailBodyTemplate
+          }),
+        });
       }
-    });
+    } catch (emailError) {
+      console.error("[createBookingSessionAction] Email send failed (non-critical):", emailError);
+    }
 
     // Liberar soft locks de esta sesión (booking confirmado)
     if (data.sessionToken) {
@@ -855,29 +854,27 @@ export async function updateBookingAction(data: {
         ? await db.query.staff.findFirst({ where: eq(staff.id, data.staffId) })
         : existing.staff;
 
-      Promise.resolve().then(async () => {
-        try {
-          await resend.emails.send({
-            from: 'Zyncrox <noreply@zyncrox.com>',
-            to: emailData,
-            subject: `Cita reagendada - ${existing.tenant.name}`,
-            react: BookingRescheduleEmail({
-              customerName: name,
-              serviceName: existing.service.name,
-              oldDate: format(existing.startTime, "EEEE, d 'de' MMMM", { locale: es }),
-              oldTime: format(existing.startTime, "hh:mm a"),
-              newDate: format(data.startTime!, "EEEE, d 'de' MMMM", { locale: es }),
-              newTime: format(data.startTime!, "hh:mm a"),
-              branchName: existing.branch.name,
-              staffName: newStaff?.name,
-              tenantName: existing.tenant.name,
-              tenantLogo: existing.tenant.logoUrl || undefined,
-            }),
-          });
-        } catch (e) {
-          console.error('[Email] Error sending reschedule email:', e);
-        }
-      });
+      try {
+        await resend.emails.send({
+          from: 'Zyncrox <noreply@zyncrox.com>',
+          to: emailData,
+          subject: `Cita reagendada - ${existing.tenant.name}`,
+          react: BookingRescheduleEmail({
+            customerName: name,
+            serviceName: existing.service.name,
+            oldDate: format(existing.startTime, "EEEE, d 'de' MMMM", { locale: es }),
+            oldTime: format(existing.startTime, "hh:mm a"),
+            newDate: format(data.startTime!, "EEEE, d 'de' MMMM", { locale: es }),
+            newTime: format(data.startTime!, "hh:mm a"),
+            branchName: existing.branch.name,
+            staffName: newStaff?.name,
+            tenantName: existing.tenant.name,
+            tenantLogo: existing.tenant.logoUrl || undefined,
+          }),
+        });
+      } catch (e) {
+        console.error('[Email] Error sending reschedule email:', e);
+      }
     }
 
     return { success: true };
@@ -900,27 +897,24 @@ export async function deleteBookingAction(id: string, tenantId: string) {
     await db.delete(bookings).where(and(eq(bookings.id, id), eq(bookings.tenantId, tenantId)));
 
     if (existing?.customerEmail) {
-      const cancelEmail = existing.customerEmail;
-      Promise.resolve().then(async () => {
-        try {
-          await resend.emails.send({
-            from: 'Zyncrox <noreply@zyncrox.com>',
-            to: cancelEmail,
-            subject: `Cita cancelada - ${existing.tenant.name}`,
-            react: BookingCancellationEmail({
-              customerName: existing.customerName,
-              serviceName: existing.service.name,
-              date: format(existing.startTime, "EEEE, d 'de' MMMM", { locale: es }),
-              time: format(existing.startTime, "hh:mm a"),
-              branchName: existing.branch.name,
-              tenantName: existing.tenant.name,
-              tenantLogo: existing.tenant.logoUrl || undefined,
-            }),
-          });
-        } catch (e) {
-          console.error('[Email] Error sending cancellation email:', e);
-        }
-      });
+      try {
+        await resend.emails.send({
+          from: 'Zyncrox <noreply@zyncrox.com>',
+          to: existing.customerEmail,
+          subject: `Cita cancelada - ${existing.tenant.name}`,
+          react: BookingCancellationEmail({
+            customerName: existing.customerName,
+            serviceName: existing.service.name,
+            date: format(existing.startTime, "EEEE, d 'de' MMMM", { locale: es }),
+            time: format(existing.startTime, "hh:mm a"),
+            branchName: existing.branch.name,
+            tenantName: existing.tenant.name,
+            tenantLogo: existing.tenant.logoUrl || undefined,
+          }),
+        });
+      } catch (e) {
+        console.error('[Email] Error sending cancellation email:', e);
+      }
     }
 
     return { success: true };

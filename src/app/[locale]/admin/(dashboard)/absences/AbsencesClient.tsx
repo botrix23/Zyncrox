@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, CalendarOff, MapPin, User, Trash2, X, Clock, Edit2, Check, Ban } from 'lucide-react';
-import { createBlockAction, deleteBlockAction, updateBlockAction } from "@/app/actions/blocks";
+import { createBlockAction, cancelBlockAction, updateBlockAction } from "@/app/actions/blocks";
 import { createAbsenceRequestAction, approveAbsenceRequestAction, rejectAbsenceRequestAction } from "@/app/actions/absenceRequests";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -141,15 +141,16 @@ export default function AbsencesClient({
 
   const [deleteBlockId, setDeleteBlockId] = useState<string | null>(null);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     setDeleteBlockId(id);
   };
 
-  const confirmDeleteBlock = async () => {
+  const confirmCancelBlock = async () => {
     if (!deleteBlockId) return;
     const id = deleteBlockId;
     setDeleteBlockId(null);
-    await deleteBlockAction(id, tenantId);
+    await cancelBlockAction(id, tenantId);
     router.refresh();
   };
 
@@ -157,11 +158,11 @@ export default function AbsencesClient({
     <>
       <ConfirmDialog
         open={!!deleteBlockId}
-        title={t('confirmDelete')}
-        message="Esta acción no se puede deshacer."
-        confirmLabel="Sí, eliminar"
+        title={t('confirmCancel')}
+        message={t('confirmCancelMessage')}
+        confirmLabel={t('confirmCancelLabel')}
         variant="danger"
-        onConfirm={confirmDeleteBlock}
+        onConfirm={confirmCancelBlock}
         onCancel={() => setDeleteBlockId(null)}
       />
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -374,7 +375,7 @@ export default function AbsencesClient({
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(block.id)}
+                          onClick={(e) => handleDelete(e, block.id)}
                           className="p-2 text-slate-400 hover:text-white hover:bg-rose-500 rounded-xl transition-all"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -464,7 +465,7 @@ export default function AbsencesClient({
                                         <Edit2 className="w-4 h-4" />
                                       </button>
                                       <button
-                                        onClick={() => handleDelete(block.id)}
+                                        onClick={(e) => handleDelete(e, block.id)}
                                         className="p-2 text-slate-400 hover:text-white hover:bg-rose-500 rounded-xl transition-all inline-flex"
                                       >
                                         <Trash2 className="w-4 h-4" />

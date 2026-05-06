@@ -187,7 +187,7 @@ export async function logoutAction(locale: string) {
 /**
  * Genera un token de recuperación y lo guarda.
  */
-export async function forgotPasswordAction(email: string) {
+export async function forgotPasswordAction(email: string, locale: string = 'es') {
   try {
     const user = await db.query.users.findFirst({
       where: eq(users.email, email)
@@ -210,7 +210,7 @@ export async function forgotPasswordAction(email: string) {
       .where(eq(users.id, user.id));
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://zyncrox.com';
-    const resetLink = `${appUrl}/es/admin/reset-password?token=${token}`;
+    const resetLink = `${appUrl}/${locale}/admin/reset-password?token=${token}`;
 
     await resend.emails.send({
       from: 'Zyncrox <noreply@zyncrox.com>',
