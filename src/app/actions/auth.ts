@@ -213,7 +213,7 @@ export async function forgotPasswordAction(email: string) {
     const resetLink = `${appUrl}/es/admin/reset-password?token=${token}`;
 
     await resend.emails.send({
-      from: 'Zyncrox <onboarding@resend.dev>',
+      from: 'Zyncrox <noreply@zyncrox.com>',
       to: email,
       subject: 'Recupera tu contraseña - Zyncrox',
       html: `

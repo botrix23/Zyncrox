@@ -444,7 +444,7 @@ export async function createBookingAction(data: {
         console.log(`[Email] Intentando enviar a ${data.customerEmail} para tenant ${tenant.name}`);
         try {
           const result = await resend.emails.send({
-            from: 'Zyncrox <onboarding@resend.dev>', // Cambiado temporalmente para asegurar entrega en cuentas no verificadas
+            from: 'Zyncrox <noreply@zyncrox.com>', // Cambiado temporalmente para asegurar entrega en cuentas no verificadas
             to: data.customerEmail,
             subject: `Cita Confirmada - ${tenant.name}`,
             react: BookingConfirmationEmail({
@@ -750,7 +750,7 @@ export async function createBookingSessionAction(data: {
         if (service && branch) {
           const startDate = parseISO(firstBooking.startTime);
           await resend.emails.send({
-            from: 'Zyncrox <onboarding@resend.dev>',
+            from: 'Zyncrox <noreply@zyncrox.com>',
             to: data.customerEmail,
             subject: `${data.bookings.length > 1 ? 'Sesión de Reservas Confirmada' : 'Cita Confirmada'} - ${tenant.name}`,
             react: BookingConfirmationEmail({
@@ -858,7 +858,7 @@ export async function updateBookingAction(data: {
       Promise.resolve().then(async () => {
         try {
           await resend.emails.send({
-            from: 'Zyncrox <onboarding@resend.dev>',
+            from: 'Zyncrox <noreply@zyncrox.com>',
             to: emailData,
             subject: `Cita reagendada - ${existing.tenant.name}`,
             react: BookingRescheduleEmail({
@@ -904,7 +904,7 @@ export async function deleteBookingAction(id: string, tenantId: string) {
       Promise.resolve().then(async () => {
         try {
           await resend.emails.send({
-            from: 'Zyncrox <onboarding@resend.dev>',
+            from: 'Zyncrox <noreply@zyncrox.com>',
             to: cancelEmail,
             subject: `Cita cancelada - ${existing.tenant.name}`,
             react: BookingCancellationEmail({
@@ -1099,7 +1099,7 @@ export async function sendPendingSurveyEmailsAction(tenantId: string) {
       try {
         const surveyUrl = `${baseUrl}/es/review/${booking.id}`;
         await resend.emails.send({
-          from: 'Zyncrox <onboarding@resend.dev>',
+          from: 'Zyncrox <noreply@zyncrox.com>',
           to: booking.customerEmail,
           subject: `¿Cómo fue tu experiencia? - ${tenant.name}`,
           react: SurveyInviteEmail({

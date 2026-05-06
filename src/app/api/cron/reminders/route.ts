@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
       if (!booking.customerEmail) continue;
       try {
         await resend.emails.send({
-          from: 'Zyncrox <onboarding@resend.dev>',
+          from: 'Zyncrox <noreply@zyncrox.com>',
           to: booking.customerEmail,
           subject: `Recordatorio: tu cita mañana en ${booking.tenant.name}`,
           react: BookingReminderEmail({
