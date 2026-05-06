@@ -937,7 +937,7 @@ export default function BookingWidget({
 
         {/* ===== LEFT SIDE ===== */}
         {step < 5 && (
-          <div className="w-full lg:flex-1 space-y-6 pt-0 lg:sticky top-4">
+          <div className="w-full lg:flex-1 space-y-6 pt-0 lg:sticky top-4 order-2 lg:order-1">
             <div className="space-y-4 px-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
                 {tenantLogo ? (
@@ -1039,7 +1039,7 @@ export default function BookingWidget({
         )}
 
         {/* ===== RIGHT SIDE: Interactive Booking Widget ===== */}
-        <div className={`w-full ${step < 5 ? 'flex-[1.5]' : 'max-w-5xl text-center'} bg-white/95 dark:bg-zinc-950/85 backdrop-blur-2xl border border-slate-200 dark:border-white/10 p-5 sm:p-7 shadow-2xl relative min-h-[550px] flex flex-col rounded-3xl overflow-hidden text-left`}>
+        <div className={`w-full ${step < 5 ? 'flex-[1.5] order-1 lg:order-2' : 'max-w-5xl text-center'} bg-white/95 dark:bg-zinc-950/85 backdrop-blur-2xl border border-slate-200 dark:border-white/10 p-5 sm:p-7 shadow-2xl relative min-h-[550px] flex flex-col rounded-3xl overflow-hidden text-left`}>
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent dark:from-white/5 rounded-3xl pointer-events-none"></div>
 
           {/* STEP 1: Branch & Modality */}
@@ -1256,15 +1256,15 @@ export default function BookingWidget({
 
               {selectedServices.length > 0 && !bookingSettings?.showSummaryOnLeft && (
                 <div className="mt-6 pt-6 border-t border-slate-200 dark:border-white/5 animate-in slide-in-from-bottom-4 duration-300">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
+                  <div className="flex items-center justify-between gap-4 p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
                     <div>
                       <p className="text-xs font-bold text-slate-400 tracking-widest">{t("resume")}</p>
-                      <p className="text-lg font-black text-slate-900 dark:text-white">
+                      <p className="text-sm sm:text-lg font-black text-slate-900 dark:text-white">
                         {selectedServices.length} {selectedServices.length === 1 ? 'servicio' : 'servicios'} · {totalDuration} min
                       </p>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <p className="text-2xl font-black text-purple-400">${totalPrice.toFixed(2)}</p>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <p className="text-xl sm:text-2xl font-black text-purple-400">${totalPrice.toFixed(2)}</p>
                       <button
                         onClick={() => {
                           if (selectedServices.length > 1) {
@@ -1274,7 +1274,7 @@ export default function BookingWidget({
                             setStep(3);
                           }
                         }}
-                        className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95"
+                        className="px-5 sm:px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 text-sm"
                       >
                         {t("continue")} →
                       </button>
@@ -1392,7 +1392,7 @@ export default function BookingWidget({
 
           {/* STEP 3: Select Date & Time (and STAFF) */}
           {step === 3 && (
-            <div className="relative z-10 flex flex-col w-full items-start animate-in fade-in slide-in-from-right-8 duration-500 text-slate-900 dark:text-white">
+            <div className="relative z-10 flex flex-col w-full animate-in fade-in slide-in-from-right-8 duration-500 text-slate-900 dark:text-white">
               <div className="flex items-center gap-3 mb-2">
                 <button
                   onClick={() => {
@@ -1449,7 +1449,7 @@ export default function BookingWidget({
                 </div>
               )}
 
-              <div className="flex flex-col gap-4 flex-1">
+              <div className="flex flex-col gap-4 flex-1 w-full">
                 {/* STAFF SELECTION */}
                 {showStaffSelection !== false && (
                 <div>

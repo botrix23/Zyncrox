@@ -245,18 +245,19 @@ export async function getAvailableSlots(
       and(
         or(eq(blocks.branchId, branchId), isNull(blocks.branchId)),
         lte(blocks.startTime, dayEndRange),
-        gte(blocks.endTime, dayStartRange),
-        not(eq(blocks.status as any, 'CANCELLED'))
+        gte(blocks.endTime, dayStartRange)
       )
     );
+    // Filtrar cancelados en memoria: compatibilidad si la columna status aún no existe en la DB
+    const activeBlocks = allBlocks.filter(b => !(b as any).status || (b as any).status !== 'CANCELLED');
 
     // Filtrar bloqueos según si es consulta individual o global
-    const relevantBlocks = allBlocks.filter(b => {
+    const relevantBlocks = activeBlocks.filter(b => {
         // Bloqueo de sucursal (staffId es nulo en el bloque) aplica a todos
         if (!b.staffId) return true;
         // Bloqueo de staff específico aplica solo si consultamos a ese staff o si es búsqueda global
         if (sanitizedStaffId) return b.staffId === sanitizedStaffId;
-        return true; 
+        return true;
     });
 
     // 5. Generar todos los slots posibles según los tramos horarios activos

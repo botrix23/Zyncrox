@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { blocks } from "@/db/schema";
-import { eq, and, gte, lte, ne } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function createBlockAction(data: {
@@ -39,11 +39,12 @@ export async function getBlocksAction(branchId: string, tenantId: string) {
     const results = await db.select().from(blocks).where(
       and(
         eq(blocks.branchId, branchId),
-        eq(blocks.tenantId, tenantId),
-        ne(blocks.status, 'CANCELLED')
+        eq(blocks.tenantId, tenantId)
       )
     );
-    return { success: true, blocks: results };
+    // Filtrar cancelados en memoria: compatibilidad si la columna status aún no existe en la DB
+    const active = results.filter(b => !(b as any).status || (b as any).status !== 'CANCELLED');
+    return { success: true, blocks: active };
   } catch (error) {
     console.error("Error fetching blocks:", error);
     return { success: false, error: "Error al obtener bloqueos" };
