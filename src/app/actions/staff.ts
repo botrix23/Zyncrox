@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { staff, staffAssignments, branches, staffToCategories } from "@/db/schema";
+import { staff, staffAssignments, branches, staffToCategories, users } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { checkPlanLimit } from "@/lib/plan-guard";
@@ -156,6 +156,13 @@ export async function updateStaffAction(data: {
           updatedAt: new Date(),
         })
         .where(and(eq(staff.id, data.id), eq(staff.tenantId, data.tenantId)));
+
+      // 2. Si cambió el email, sincronizarlo en la tabla users (para login y reset de contraseña)
+      if (data.email) {
+        await tx.update(users)
+          .set({ email: data.email, name: data.name })
+          .where(and(eq(users.staffId, data.id), eq(users.tenantId, data.tenantId)));
+      }
 
       // 2. Si vienen asignaciones, reemplazar las anteriores
       let finalAssignments = data.assignments;
