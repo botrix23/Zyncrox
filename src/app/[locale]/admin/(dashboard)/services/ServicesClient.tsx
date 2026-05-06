@@ -21,6 +21,7 @@ import {
   Users
 } from 'lucide-react';
 import { Portal } from "@/components/Portal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createServiceAction, updateServiceAction, deleteServiceAction, reorderServicesAction } from "@/app/actions/services";
 import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from "@/app/actions/categories";
 import { updateHomeServiceTravelTimeAction } from "@/app/actions/tenant";
@@ -105,11 +106,18 @@ export default function ServicesClient({
     setIsCatLoading(false);
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    if (!confirm("¿Eliminar esta categoría? Se desvinculará de todos los servicios y personal asociados.")) return;
-    const result = await deleteCategoryAction(id, tenantId);
-    if (result.success) router.refresh();
-    else alert("Error al eliminar la categoría");
+  const [deleteCatIdSvc, setDeleteCatIdSvc] = useState<string | null>(null);
+
+  const handleDeleteCategory = (id: string) => {
+    setDeleteCatIdSvc(id);
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!deleteCatIdSvc) return;
+    const id = deleteCatIdSvc;
+    setDeleteCatIdSvc(null);
+    await deleteCategoryAction(id, tenantId);
+    router.refresh();
   };
 
   // Form State
@@ -211,14 +219,19 @@ export default function ServicesClient({
     setIsLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t('confirmDelete'))) return;
-    
+  const [deleteServiceId, setDeleteServiceId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    setDeleteServiceId(id);
+  };
+
+  const confirmDeleteService = async () => {
+    if (!deleteServiceId) return;
+    const id = deleteServiceId;
+    setDeleteServiceId(null);
     const result = await deleteServiceAction(id, tenantId);
     if (result.success) {
       router.refresh();
-    } else {
-      alert(t('errorDelete'));
     }
   };
 
@@ -261,6 +274,25 @@ export default function ServicesClient({
   );
 
   return (
+    <>
+    <ConfirmDialog
+      open={!!deleteServiceId}
+      title={t('confirmDelete')}
+      message="El servicio se eliminará permanentemente. Esta acción no se puede deshacer."
+      confirmLabel="Sí, eliminar"
+      variant="danger"
+      onConfirm={confirmDeleteService}
+      onCancel={() => setDeleteServiceId(null)}
+    />
+    <ConfirmDialog
+      open={!!deleteCatIdSvc}
+      title="¿Eliminar categoría?"
+      message="Se desvinculará de todos los servicios y personal asociados. Esta acción no se puede deshacer."
+      confirmLabel="Sí, eliminar"
+      variant="danger"
+      onConfirm={confirmDeleteCategory}
+      onCancel={() => setDeleteCatIdSvc(null)}
+    />
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Page header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1024,5 +1056,6 @@ export default function ServicesClient({
         )}
       </>)}
     </div>
+    </>
   );
 }

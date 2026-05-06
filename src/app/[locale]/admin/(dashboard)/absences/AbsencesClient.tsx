@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { Portal } from "@/components/Portal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function AbsencesClient({
   initialBlocks,
@@ -138,18 +139,31 @@ export default function AbsencesClient({
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t('confirmDelete'))) return;
-    const result = await deleteBlockAction(id, tenantId);
-    if (result.success) {
-      router.refresh();
-    } else {
-      alert(t('errorDelete'));
-    }
+  const [deleteBlockId, setDeleteBlockId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    setDeleteBlockId(id);
+  };
+
+  const confirmDeleteBlock = async () => {
+    if (!deleteBlockId) return;
+    const id = deleteBlockId;
+    setDeleteBlockId(null);
+    await deleteBlockAction(id, tenantId);
+    router.refresh();
   };
 
   return (
     <>
+      <ConfirmDialog
+        open={!!deleteBlockId}
+        title={t('confirmDelete')}
+        message="Esta acción no se puede deshacer."
+        confirmLabel="Sí, eliminar"
+        variant="danger"
+        onConfirm={confirmDeleteBlock}
+        onCancel={() => setDeleteBlockId(null)}
+      />
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

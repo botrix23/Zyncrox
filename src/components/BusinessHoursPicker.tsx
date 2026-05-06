@@ -188,22 +188,22 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
               const schedule = data.regular[day.id];
               return (
                 <div key={day.id} className="group p-4 bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-white/5 rounded-2xl hover:border-purple-500/30 transition-all">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${schedule.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-                      <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight">{day.name}</span>
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${schedule.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                      <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight truncate">{day.name}</span>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
                         onClick={() => copyToAll(day.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all hover:bg-purple-600 hover:text-white active:scale-95 shadow-sm border border-purple-100 dark:border-purple-500/20"
+                        className="flex items-center gap-1 px-2 py-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all hover:bg-purple-600 hover:text-white active:scale-95 shadow-sm border border-purple-100 dark:border-purple-500/20"
                         title="Copiar horario a todos los días"
                       >
-                        <Copy className="w-3.5 h-3.5" />
-                        Copiar a todos
+                        <Copy className="w-3 h-3 shrink-0" />
+                        <span>Copiar a todos</span>
                       </button>
-                      <label className="relative inline-flex items-center cursor-pointer">
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
                         <input
                           type="checkbox"
                           checked={schedule.isOpen}

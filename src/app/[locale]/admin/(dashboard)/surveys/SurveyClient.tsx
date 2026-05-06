@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Portal } from "@/components/Portal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { 
   updateSurveySettingsAction, 
   upsertSurveyQuestionAction, 
@@ -128,17 +129,20 @@ export default function SurveyClient({
     }
   };
 
-  const handleDeleteQuestion = async (id: string) => {
-    if (!confirm(t('confirmDelete'))) return;
+  const [deleteQuestionId, setDeleteQuestionId] = useState<string | null>(null);
 
+  const handleDeleteQuestion = (id: string) => {
+    setDeleteQuestionId(id);
+  };
+
+  const confirmDeleteQuestion = async () => {
+    if (!deleteQuestionId) return;
+    const id = deleteQuestionId;
+    setDeleteQuestionId(null);
     try {
       const result = await deleteSurveyQuestionAction(id);
-      if (result.success) {
-        router.refresh();
-      }
-    } catch (error) {
-      alert(t('errors.delete'));
-    }
+      if (result.success) router.refresh();
+    } catch { /* noop */ }
   };
 
   const handleMove = async (index: number, direction: 'up' | 'down') => {
@@ -171,6 +175,16 @@ export default function SurveyClient({
   }
 
   return (
+    <>
+    <ConfirmDialog
+      open={!!deleteQuestionId}
+      title={t('confirmDelete')}
+      message="Esta pregunta se eliminará permanentemente de la encuesta."
+      confirmLabel="Sí, eliminar"
+      variant="danger"
+      onConfirm={confirmDeleteQuestion}
+      onCancel={() => setDeleteQuestionId(null)}
+    />
     <div className="space-y-6">
       {/* Tabs */}
       <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-zinc-800/50 rounded-2xl w-fit">
@@ -595,5 +609,6 @@ export default function SurveyClient({
         </Portal>
       )}
     </div>
+    </>
   );
 }

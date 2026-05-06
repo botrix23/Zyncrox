@@ -46,7 +46,8 @@
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
       "Bash(gh run *)",
       "Bash(vercel ls *)",
-      "Bash(gh api *)"
+      "Bash(gh api *)",
+      "Bash(PGPASSWORD=zyncslot_password psql -U zyncslot_user -d zyncslot_db -h localhost -c \"UPDATE tenants SET plan = 'ENTERPRISE', status = 'ACTIVE', \\\\\"subscriptionExpiresAt\\\\\" = NULL WHERE id = \\(SELECT t.id FROM tenants t JOIN users u ON u.\\\\\"tenantId\\\\\" = t.id WHERE u.email = 'boris90alejandro@gmail.com' LIMIT 1\\) RETURNING id, name, plan, status;\")"
     ]
   }
 }

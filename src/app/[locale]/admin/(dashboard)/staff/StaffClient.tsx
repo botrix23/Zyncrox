@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Portal } from "@/components/Portal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import PhoneInput from "@/components/PhoneInput";
 
 export default function StaffClient({
@@ -242,16 +243,19 @@ export default function StaffClient({
     setIsLoading(false);
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(t('confirmDelete', { name }))) return;
-    
+  const [deleteStaffTarget, setDeleteStaffTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const handleDelete = (id: string, name: string) => {
     setOpenMenu(null);
-    const result = await deleteStaffAction(id, tenantId);
-    if (result.success) {
-      router.refresh();
-    } else {
-      alert(t('errorDelete'));
-    }
+    setDeleteStaffTarget({ id, name });
+  };
+
+  const confirmDeleteStaff = async () => {
+    if (!deleteStaffTarget) return;
+    const { id } = deleteStaffTarget;
+    setDeleteStaffTarget(null);
+    await deleteStaffAction(id, tenantId);
+    router.refresh();
   };
 
   useEffect(() => {
@@ -300,14 +304,18 @@ export default function StaffClient({
     }
   };
 
-  const handleRevokeAccess = async (member: any) => {
-    if (!confirm(`¿Revocar el acceso de ${member.name}? Su sesión se cerrará en la próxima acción.`)) return;
-    const result = await revokeStaffAccessAction(member.id, tenantId);
-    if (result.success) {
-      router.refresh();
-    } else {
-      alert(result.error || 'Error al revocar acceso');
-    }
+  const [revokeTarget, setRevokeTarget] = useState<any | null>(null);
+
+  const handleRevokeAccess = (member: any) => {
+    setRevokeTarget(member);
+  };
+
+  const confirmRevokeAccess = async () => {
+    if (!revokeTarget) return;
+    const member = revokeTarget;
+    setRevokeTarget(null);
+    await revokeStaffAccessAction(member.id, tenantId);
+    router.refresh();
   };
 
   const handleReactivateAccess = async (member: any) => {
@@ -323,6 +331,24 @@ export default function StaffClient({
 
   return (
     <>
+      <ConfirmDialog
+        open={!!deleteStaffTarget}
+        title={`¿Eliminar a ${deleteStaffTarget?.name}?`}
+        message="Se eliminará permanentemente del equipo. Esta acción no se puede deshacer."
+        confirmLabel="Sí, eliminar"
+        variant="danger"
+        onConfirm={confirmDeleteStaff}
+        onCancel={() => setDeleteStaffTarget(null)}
+      />
+      <ConfirmDialog
+        open={!!revokeTarget}
+        title={`¿Revocar acceso de ${revokeTarget?.name}?`}
+        message="Su sesión se cerrará en la próxima acción. Podrás reactivarla después."
+        confirmLabel="Sí, revocar"
+        variant="warning"
+        onConfirm={confirmRevokeAccess}
+        onCancel={() => setRevokeTarget(null)}
+      />
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

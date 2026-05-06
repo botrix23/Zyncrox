@@ -48,6 +48,30 @@ export async function getAllTenantsAction() {
   }));
 }
 
+// ─── Cambiar plan de un tenant ───────────────────────────────────────────────
+export async function updateTenantPlanAction(
+  tenantId: string,
+  plan: 'FREE' | 'PRO' | 'ENTERPRISE'
+) {
+  const session = await assertSuperAdmin();
+
+  const prevTenant = await db.query.tenants.findFirst({ where: eq(tenants.id, tenantId) });
+
+  await db.update(tenants)
+    .set({ plan, updatedAt: new Date() })
+    .where(eq(tenants.id, tenantId));
+
+  await logAuditEvent({
+    action: 'TENANT_STATUS_CHANGED',
+    userId: session.userId,
+    tenantId,
+    details: { fromPlan: prevTenant?.plan, toPlan: plan, tenantName: prevTenant?.name },
+  });
+
+  revalidatePath('/[locale]/admin/super', 'page');
+  return { success: true };
+}
+
 // ─── Cambiar estado de un tenant ─────────────────────────────────────────────
 export async function updateTenantStatusAction(
   tenantId: string,

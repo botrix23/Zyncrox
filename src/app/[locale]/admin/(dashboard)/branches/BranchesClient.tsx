@@ -21,6 +21,7 @@ import BusinessHoursPicker from "@/components/BusinessHoursPicker";
 
 import { useTranslations } from "next-intl";
 import { Portal } from "@/components/Portal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function BranchesClient({
   initialBranches,
@@ -111,16 +112,20 @@ export default function BranchesClient({
     setIsLoading(false);
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(t('confirmDelete', { name }))) return;
-    
+  const [deleteBranchTarget, setDeleteBranchTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const handleDelete = (id: string, name: string) => {
     setOpenMenu(null);
-    const result = await deleteBranchAction(id, tenantId);
-    if (result.success) {
-      router.refresh();
-    } else {
-      alert(result.error || t('errorDelete'));
-    }
+    setMenuPos(null);
+    setDeleteBranchTarget({ id, name });
+  };
+
+  const confirmDeleteBranch = async () => {
+    if (!deleteBranchTarget) return;
+    const { id } = deleteBranchTarget;
+    setDeleteBranchTarget(null);
+    await deleteBranchAction(id, tenantId);
+    router.refresh();
   };
 
   // Close menu on click outside
@@ -152,6 +157,16 @@ export default function BranchesClient({
   }, [openMenu]);
 
   return (
+    <>
+    <ConfirmDialog
+      open={!!deleteBranchTarget}
+      title={`¿Eliminar "${deleteBranchTarget?.name}"?`}
+      message="Se eliminarán todos los datos de esta sucursal. Esta acción no se puede deshacer."
+      confirmLabel="Sí, eliminar"
+      variant="danger"
+      onConfirm={confirmDeleteBranch}
+      onCancel={() => setDeleteBranchTarget(null)}
+    />
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -318,7 +333,7 @@ export default function BranchesClient({
                 </button>
               </div>
               
-              <form onSubmit={handleSave} className="p-8 space-y-8 overflow-y-auto custom-scrollbar flex-1">
+              <form onSubmit={handleSave} className="p-4 sm:p-8 space-y-6 sm:space-y-8 overflow-y-auto custom-scrollbar flex-1">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 ml-1">{t('nameLabel')}</label>
                   <input 
@@ -404,5 +419,6 @@ export default function BranchesClient({
         </Portal>
       )}
     </div>
+    </>
   );
 }

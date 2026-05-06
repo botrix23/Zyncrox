@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Search, Tag, Trash2, X, Edit2 } from 'lucide-react';
 import { Portal } from "@/components/Portal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from "@/app/actions/categories";
 import { useRouter } from "next/navigation";
 
@@ -61,14 +62,31 @@ export default function CategoriesClient({
     setIsLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar esta categoría? Se desvinculará de todos los servicios y personal asociados.")) return;
-    const result = await deleteCategoryAction(id, tenantId);
-    if (result.success) router.refresh();
-    else alert("Error al eliminar la categoría");
+  const [deleteCatId, setDeleteCatId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    setDeleteCatId(id);
+  };
+
+  const confirmDeleteCat = async () => {
+    if (!deleteCatId) return;
+    const id = deleteCatId;
+    setDeleteCatId(null);
+    await deleteCategoryAction(id, tenantId);
+    router.refresh();
   };
 
   return (
+    <>
+    <ConfirmDialog
+      open={!!deleteCatId}
+      title="¿Eliminar categoría?"
+      message="Se desvinculará de todos los servicios y personal asociados. Esta acción no se puede deshacer."
+      confirmLabel="Sí, eliminar"
+      variant="danger"
+      onConfirm={confirmDeleteCat}
+      onCancel={() => setDeleteCatId(null)}
+    />
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -212,5 +230,6 @@ export default function CategoriesClient({
         </Portal>
       )}
     </div>
+    </>
   );
 }

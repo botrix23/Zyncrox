@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import PhoneInput from "@/components/PhoneInput";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function AppearanceClient({
   tenant,
@@ -231,8 +232,16 @@ try {
     }
   };
 
-  const handleDeleteZone = async (id: string) => {
-    if (!confirm(tPortal('form.deleteZoneConfirm'))) return;
+  const [deleteZoneId, setDeleteZoneId] = useState<string | null>(null);
+
+  const handleDeleteZone = (id: string) => {
+    setDeleteZoneId(id);
+  };
+
+  const confirmDeleteZone = async () => {
+    if (!deleteZoneId) return;
+    const id = deleteZoneId;
+    setDeleteZoneId(null);
     const res = await deleteCoverageZoneAction(id);
     if (res.success) {
       setZones(zones.filter(z => z.id !== id));
@@ -241,6 +250,16 @@ try {
   };
 
   return (
+    <>
+    <ConfirmDialog
+      open={!!deleteZoneId}
+      title={tPortal('form.deleteZoneConfirm')}
+      message="La zona de cobertura se eliminará. Esta acción no se puede deshacer."
+      confirmLabel="Sí, eliminar"
+      variant="danger"
+      onConfirm={confirmDeleteZone}
+      onCancel={() => setDeleteZoneId(null)}
+    />
     <div className="flex flex-col xl:flex-row h-[calc(100vh-8rem)] gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {/* LEFT COLUMN - CONTROLS */}
@@ -767,5 +786,6 @@ className="w-full min-h-[150px] p-4 bg-slate-50 dark:bg-white/5 border border-sl
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -37,7 +37,8 @@ export default async function AuditLogsPage() {
         <p className="text-zinc-500 mt-1">Registro completo de eventos críticos de la plataforma. Últimos {logs.length} eventos.</p>
       </div>
 
-      <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden">
+      {/* Desktop table */}
+      <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -81,6 +82,35 @@ export default async function AuditLogsPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="space-y-3 md:hidden">
+        {logs.length === 0 ? (
+          <div className="py-12 text-center text-zinc-600 bg-white/5 rounded-3xl border border-white/5">
+            No hay eventos registrados aún.
+          </div>
+        ) : logs.map(log => {
+          const cfg = actionConfig[log.action] || { icon: FileText, color: 'text-zinc-400', label: log.action };
+          const Icon = cfg.icon;
+          const details = log.details as Record<string, unknown> | null;
+          return (
+            <div key={log.id} className="bg-white/5 border border-white/5 rounded-2xl p-4 space-y-2">
+              <span className={`inline-flex items-center gap-2 font-semibold text-sm ${cfg.color}`}>
+                <Icon className="w-4 h-4 shrink-0" />
+                {cfg.label}
+              </span>
+              {details && (
+                <p className="text-zinc-500 font-mono text-xs truncate">{JSON.stringify(details)}</p>
+              )}
+              <p className="text-zinc-600 text-xs">
+                {log.createdAt
+                  ? format(new Date(log.createdAt), "dd MMM yyyy 'a las' HH:mm:ss", { locale: es })
+                  : '—'}
+              </p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

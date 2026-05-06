@@ -56,6 +56,7 @@ import { es, enUS } from "date-fns/locale";
 import PhoneInput from "@/components/PhoneInput";
 import { useTranslations, useLocale } from "next-intl";
 import { Portal } from "@/components/Portal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function BookingsClient({ 
   initialBookings,
@@ -656,21 +657,35 @@ export default function BookingsClient({
   };
 
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t('confirmCancel'))) return;
-    
+  const [deleteBookingId, setDeleteBookingId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    setDeleteBookingId(id);
+  };
+
+  const confirmDeleteBooking = async () => {
+    if (!deleteBookingId) return;
+    const id = deleteBookingId;
+    setDeleteBookingId(null);
     const result = await deleteBookingAction(id, tenantId);
     if (result.success) {
       setIsEditModalOpen(false);
       setEditingBooking(null);
       router.refresh();
-    } else {
-      alert(t('errorDelete'));
     }
   };
 
   return (
     <>
+    <ConfirmDialog
+      open={!!deleteBookingId}
+      title={t('confirmCancel')}
+      message="La cita se cancelará permanentemente y no se puede deshacer."
+      confirmLabel="Sí, cancelar"
+      variant="danger"
+      onConfirm={confirmDeleteBooking}
+      onCancel={() => setDeleteBookingId(null)}
+    />
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
