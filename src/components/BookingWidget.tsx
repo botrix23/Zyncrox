@@ -937,7 +937,7 @@ export default function BookingWidget({
 
         {/* ===== LEFT SIDE ===== */}
         {step < 5 && (
-          <div className="w-full lg:flex-1 space-y-6 pt-0 lg:sticky top-4 order-2 lg:order-1">
+          <div className="w-full lg:flex-1 space-y-6 pt-0 lg:sticky top-4">
             <div className="space-y-4 px-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
                 {tenantLogo ? (
@@ -978,7 +978,7 @@ export default function BookingWidget({
               <div className="bg-white/50 dark:bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-white/10 transition-all duration-300 shadow-xl">
                 <div>
                   <h3 className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">{t("your_appointment")}</h3>
-                  
+
                   {modality && (
                     <div className="flex items-start gap-3 text-slate-900 dark:text-white animate-in fade-in slide-in-from-left-2 duration-300">
                       <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
@@ -1039,7 +1039,7 @@ export default function BookingWidget({
         )}
 
         {/* ===== RIGHT SIDE: Interactive Booking Widget ===== */}
-        <div className={`w-full ${step < 5 ? 'flex-[1.5] order-1 lg:order-2' : 'max-w-5xl text-center'} bg-white/95 dark:bg-zinc-950/85 backdrop-blur-2xl border border-slate-200 dark:border-white/10 p-5 sm:p-7 shadow-2xl relative min-h-[550px] flex flex-col rounded-3xl overflow-hidden text-left`}>
+        <div className={`w-full ${step < 5 ? 'flex-[1.5]' : 'max-w-5xl text-center'} bg-white/95 dark:bg-zinc-950/85 backdrop-blur-2xl border border-slate-200 dark:border-white/10 p-5 sm:p-7 shadow-2xl relative min-h-[550px] flex flex-col rounded-3xl overflow-hidden text-left`}>
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent dark:from-white/5 rounded-3xl pointer-events-none"></div>
 
           {/* STEP 1: Branch & Modality */}
