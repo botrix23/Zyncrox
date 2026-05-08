@@ -48,6 +48,7 @@ bookingSettings?: {
   footerText?: string;
   [key: string]: any;
 };
+timezone?: string | null;
 },
 initialZones: any[];
 initialTab?: 'design' | 'rules';
@@ -87,6 +88,57 @@ const [footerText, setFooterText] = useState(tenant.bookingSettings?.footerText 
   const [vipThreshold, setVipThreshold] = useState(tenant.vipThreshold || 5);
   const [showStaffSelection, setShowStaffSelection] = useState(tenant.showStaffSelection ?? true);
   
+  // Zona horaria
+  const [timezone, setTimezone] = useState(tenant.timezone || 'America/El_Salvador');
+
+  const TIMEZONES = [
+    { group: 'América Central', options: [
+      { value: 'America/El_Salvador', label: 'El Salvador, Guatemala, Honduras (GMT-6)' },
+      { value: 'America/Costa_Rica',  label: 'Costa Rica, Nicaragua (GMT-6)' },
+      { value: 'America/Panama',      label: 'Panamá (GMT-5)' },
+      { value: 'America/Mexico_City', label: 'México Centro (GMT-6)' },
+      { value: 'America/Monterrey',   label: 'México Norte (GMT-6)' },
+      { value: 'America/Tijuana',     label: 'México Noroeste (GMT-7)' },
+    ]},
+    { group: 'América del Sur', options: [
+      { value: 'America/Bogota',      label: 'Colombia, Ecuador, Perú (GMT-5)' },
+      { value: 'America/Caracas',     label: 'Venezuela (GMT-4)' },
+      { value: 'America/La_Paz',      label: 'Bolivia, Venezuela (GMT-4)' },
+      { value: 'America/Santiago',    label: 'Chile (GMT-4/-3)' },
+      { value: 'America/Argentina/Buenos_Aires', label: 'Argentina, Uruguay (GMT-3)' },
+      { value: 'America/Sao_Paulo',   label: 'Brasil Este (GMT-3)' },
+      { value: 'America/Manaus',      label: 'Brasil Oeste (GMT-4)' },
+    ]},
+    { group: 'América del Norte', options: [
+      { value: 'America/New_York',    label: 'Este de EE.UU. (GMT-5/-4)' },
+      { value: 'America/Chicago',     label: 'Centro de EE.UU. (GMT-6/-5)' },
+      { value: 'America/Denver',      label: 'Montaña de EE.UU. (GMT-7/-6)' },
+      { value: 'America/Los_Angeles', label: 'Pacífico de EE.UU. (GMT-8/-7)' },
+      { value: 'America/Anchorage',   label: 'Alaska (GMT-9/-8)' },
+      { value: 'Pacific/Honolulu',    label: 'Hawái (GMT-10)' },
+    ]},
+    { group: 'Caribe', options: [
+      { value: 'America/Puerto_Rico', label: 'Puerto Rico, Rep. Dominicana (GMT-4)' },
+      { value: 'America/Havana',      label: 'Cuba (GMT-5/-4)' },
+      { value: 'America/Jamaica',     label: 'Jamaica (GMT-5)' },
+    ]},
+    { group: 'Europa', options: [
+      { value: 'UTC',                 label: 'UTC (GMT+0)' },
+      { value: 'Europe/London',       label: 'Londres (GMT+0/+1)' },
+      { value: 'Europe/Madrid',       label: 'España, Francia (GMT+1/+2)' },
+      { value: 'Europe/Berlin',       label: 'Alemania, Italia (GMT+1/+2)' },
+      { value: 'Europe/Moscow',       label: 'Moscú (GMT+3)' },
+    ]},
+    { group: 'Asia / Pacífico', options: [
+      { value: 'Asia/Dubai',          label: 'Dubai (GMT+4)' },
+      { value: 'Asia/Kolkata',        label: 'India (GMT+5:30)' },
+      { value: 'Asia/Bangkok',        label: 'Tailandia, Vietnam (GMT+7)' },
+      { value: 'Asia/Singapore',      label: 'Singapur, Malasia (GMT+8)' },
+      { value: 'Asia/Tokyo',          label: 'Japón (GMT+9)' },
+      { value: 'Australia/Sydney',    label: 'Sídney (GMT+10/+11)' },
+    ]},
+  ];
+
   // Zonas de Cobertura
   const [zones, setZones] = useState<any[]>(initialZones || []);
   const [isAddingZone, setIsAddingZone] = useState(false);
@@ -137,7 +189,8 @@ emailBodyTemplate,
 bookingSettings: {
   ...tenant.bookingSettings,
   footerText
-}
+},
+timezone,
 });
 
     if (result.success) {
@@ -535,6 +588,39 @@ try {
         {/* CONTENIDO TAB Operación y Reglas */}
         {activeTab === 'rules' && (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+            {/* Zona Horaria */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-5">
+              <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <Settings className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Zona Horaria</h2>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Define el horario local de tu negocio. Los clientes verán sus citas en esta zona horaria.</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Zona horaria del negocio</label>
+                <select
+                  value={timezone}
+                  onChange={e => setTimezone(e.target.value)}
+                  className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm"
+                >
+                  {TIMEZONES.map(group => (
+                    <optgroup key={group.group} label={group.group}>
+                      {group.options.map(tz => (
+                        <option key={tz.value} value={tz.value}>{tz.label}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-400 dark:text-zinc-500 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 shrink-0" />
+                  Zona actual: <span className="font-mono font-bold text-slate-600 dark:text-zinc-300">{timezone}</span>
+                </p>
+              </div>
+            </div>
+
             {/* Servicio a domicilio */}
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-8">
               <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">

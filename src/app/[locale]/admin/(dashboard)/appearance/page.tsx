@@ -46,7 +46,8 @@ export default async function AppearancePage({ params, searchParams }: { params:
         allowsHomeService: tenantData.allowsHomeService,
         homeServiceLeadDays: tenantData.homeServiceLeadDays,
         vipThreshold: tenantData.vipThreshold,
-        bookingSettings: tenantData.bookingSettings as any
+        bookingSettings: tenantData.bookingSettings as any,
+        timezone: tenantData.timezone,
       }} 
       initialZones={coverageZones}
     />

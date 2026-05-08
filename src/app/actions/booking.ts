@@ -591,7 +591,12 @@ export async function createBookingSessionAction(data: {
 
         // Si el staffId es vacío/null o fue "Cualquiera", intentamos buscar uno disponible
         if (!assignedStaffId || assignedStaffId === "" || assignedStaffId === "null") {
-          const slotTime = format(utcStart, 'HH:mm');
+          // Convertir utcStart a hora local del tenant para comparar con los slots de getAvailableSlots
+          // (getAvailableSlots devuelve tiempos en hora local, no UTC)
+          const tzOffset = getTimezoneOffsetInMinutes(tenantTz, utcStart);
+          const localStartForSlot = new Date(utcStart.getTime() + tzOffset * 60000);
+          const slotTime = `${String(localStartForSlot.getUTCHours()).padStart(2, '0')}:${String(localStartForSlot.getUTCMinutes()).padStart(2, '0')}`;
+          const slotDate = format(localStartForSlot, 'yyyy-MM-dd');
 
           // Intentar asignar el staff preferido de la sesión (para bulk: misma persona para todos los servicios)
           if (sessionPreferredStaffId) {
@@ -600,7 +605,7 @@ export async function createBookingSessionAction(data: {
             );
             if (!isInSessionConflict) {
               const preferredData = await getAvailableSlots(
-                format(utcStart, 'yyyy-MM-dd'),
+                slotDate,
                 bData.serviceId,
                 bData.branchId,
                 sessionPreferredStaffId,
@@ -617,7 +622,7 @@ export async function createBookingSessionAction(data: {
           // Si aún no fue asignado, buscar entre los staff permitidos por categorías
           if (!assignedStaffId || assignedStaffId === "" || assignedStaffId === "null") {
            const availableData = await getAvailableSlots(
-             format(utcStart, 'yyyy-MM-dd'),
+             slotDate,
              bData.serviceId,
              bData.branchId,
              null, // Cualquiera

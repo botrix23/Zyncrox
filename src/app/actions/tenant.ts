@@ -103,6 +103,7 @@ export async function updatePortalSettingsAction(data: {
   heroSubtitle?: string | null;
   emailBodyTemplate?: string | null;
   bookingSettings?: any;
+  timezone?: string;
 }) {
   try {
     const session = await getSession();
@@ -128,6 +129,7 @@ export async function updatePortalSettingsAction(data: {
         heroSubtitle: data.heroSubtitle || null,
         emailBodyTemplate: data.emailBodyTemplate || null,
         bookingSettings: data.bookingSettings,
+        timezone: data.timezone || 'America/El_Salvador',
         updatedAt: new Date()
       })
       .where(eq(tenants.id, data.tenantId));

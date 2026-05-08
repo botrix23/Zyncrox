@@ -752,7 +752,13 @@ export default function BookingWidget({
         }
         setStep(5);
       } else {
-        alert("Error al crear la sesión: " + (result.error || "Unknown error"));
+        const errorCode = result.error || "";
+        if (errorCode === "STAFF_UNAVAILABLE" || errorCode === "STAFF_BUSY") {
+          alert("El horario seleccionado ya no está disponible. Por favor elige otro horario e intenta de nuevo.");
+          setStep(3);
+        } else {
+          alert("Ocurrió un error al procesar tu reserva. Por favor intenta de nuevo.");
+        }
       }
     } catch (err) {
       console.error("Critical error during session checkout:", err);
@@ -975,7 +981,7 @@ export default function BookingWidget({
 
             {/* Appointment Summary Card */}
             {(modality || selectedServices.length > 0) && (
-              <div className="bg-white/50 dark:bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-white/10 transition-all duration-300 shadow-xl">
+              <div className="hidden lg:block bg-white/50 dark:bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-white/10 transition-all duration-300 shadow-xl">
                 <div>
                   <h3 className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">{t("your_appointment")}</h3>
 
