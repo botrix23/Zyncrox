@@ -6,6 +6,7 @@ import { addHours, format } from "date-fns";
 import { es } from "date-fns/locale";
 import { resend } from "@/lib/resend";
 import { BookingReminderEmail } from "@/components/emails/BookingReminderEmail";
+import { logAuditEvent } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get("secret");
@@ -57,9 +58,18 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    await logAuditEvent({
+      action: 'CRON_REMINDERS_RUN',
+      details: { sent, failed, total: upcoming.length, success: true },
+    });
+
     return NextResponse.json({ ok: true, sent, failed, total: upcoming.length });
   } catch (error) {
     console.error("[Reminder Cron] Error:", error);
+    await logAuditEvent({
+      action: 'CRON_REMINDERS_RUN',
+      details: { success: false, error: String(error) },
+    }).catch(() => {});
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

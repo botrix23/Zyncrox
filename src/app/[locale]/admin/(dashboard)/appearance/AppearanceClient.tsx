@@ -409,8 +409,8 @@ try {
                   <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">{tPortal('form.logoLabel')}</label>
                   <div className="flex items-center gap-4">
                     {logoUrl ? (
-                      <div className="relative group w-20 h-20 rounded-xl border border-slate-200 dark:border-white/10 bg-white flex items-center justify-center overflow-hidden shrink-0">
-                        <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
+                      <div className="relative group w-20 h-20 rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden shrink-0">
+                        <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <button onClick={() => setLogoUrl('')} className="text-white hover:text-rose-400 p-1">
                             <Trash2 className="w-4 h-4" />
@@ -424,8 +424,11 @@ try {
                       </button>
                     )}
                     <div className="flex-1">
-                      <input type="text" value={logoUrl.startsWith('data:') ? tPortal('form.localImage') : logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder={tPortal('form.logoPlaceholder')} readOnly={logoUrl.startsWith('data:')} className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white" />
-                      <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">{tPortal('form.logoSpecs')}</p>
+                      <p className="text-xs text-slate-400 dark:text-zinc-500 mb-2">{tPortal('form.logoSpecs')}</p>
+                      {logoUrl
+                        ? <button onClick={() => setLogoUrl('')} className="text-xs font-bold text-rose-500 hover:underline">{tPortal('logo.delete')}</button>
+                        : <button onClick={() => logoInputRef.current?.click()} className="text-xs font-bold text-purple-600 hover:underline">{tPortal('logo.hint')}</button>
+                      }
                     </div>
                     <input type="file" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" accept="image/*" />
                   </div>

@@ -693,6 +693,10 @@
         "specs": "Recommended: 1200x500px, max 2MB",
         "delete": "Remove current cover"
       },
+      "logo": {
+        "hint": "Upload your logo",
+        "delete": "Remove current logo"
+      },
       "mockup": {
         "selectService": "Select a service",
         "schedule": "Schedule Appointment",
@@ -838,5 +842,186 @@
     },
     "upgradeRequired": "Premium Feature",
     "upgradeDesc": "To customize your survey system with specific questions you need a PRO or ENTERPRISE subscription."
+  },
+  "SuperAdmin": {
+    "title": "Super Admin Panel",
+    "subtitle": "Global view of Zyncrox · Updated now",
+    "nav": {
+      "dashboard": "Dashboard",
+      "companies": "Companies",
+      "payments": "Wompi Payments",
+      "logs": "Audit Logs",
+      "superAdmin": "Super Admin",
+      "activeSession": "Active session",
+      "logout": "Log out",
+      "openMenu": "Open menu"
+    },
+    "platform": {
+      "title": "Platform overview",
+      "registeredCompanies": "Registered companies",
+      "registeredCompaniesSub": "{active} active · {trial} trial · {suspended} suspended",
+      "newThisMonth": "New this month",
+      "newThisMonthSub": "Companies registered this month",
+      "totalUsers": "Total users",
+      "totalUsersSub": "Admins + staff across all tenants",
+      "bookingsThisMonth": "Bookings this month",
+      "bookingsThisMonthSub": "Across the platform"
+    },
+    "chart": {
+      "title": "Global bookings",
+      "subtitle": "Last 6 months across the platform",
+      "yearTotal": "Year to date",
+      "yearTotalSub": "bookings since January 1st",
+      "expiringTitle": "Subscriptions expiring soon",
+      "expiringMore": "+{count} more"
+    },
+    "activity": {
+      "title": "Activity by company",
+      "subtitle": "Bookings, staff and last access this month",
+      "manageCompanies": "Manage companies",
+      "company": "Company",
+      "status": "Status",
+      "bookingsMonth": "Month bookings",
+      "staff": "Staff",
+      "lastAccess": "Last access",
+      "noRecord": "No record",
+      "noCitasMonth": "No bookings this month yet"
+    },
+    "top5": {
+      "title": "Top 5 most active",
+      "subtitle": "By bookings this month"
+    },
+    "churn": {
+      "title": "Churn risk",
+      "subtitle": "No activity in 30 days",
+      "allActive": "All companies active"
+    },
+    "revenue": {
+      "title": "Platform revenue",
+      "wompiConfigured": "Wompi configured",
+      "wompiNotConfigured": "Wompi not configured — subscription revenue unavailable",
+      "configureWompi": "Configure Wompi",
+      "activeSubscriptions": "Active subscriptions",
+      "activeSubscriptionsSub": "of {total} total companies",
+      "onTrial": "On trial",
+      "onTrialSub": "active trial period",
+      "expiringIn7": "Expiring in 7 days",
+      "expiringIn7Sub": "subscriptions about to expire"
+    },
+    "audit": {
+      "title": "Recent audit",
+      "subtitle": "Last 7 recorded actions",
+      "viewAll": "View all logs",
+      "noEvents": "No events recorded yet.",
+      "actions": {
+        "LOGIN_SUCCESS": "Successful login",
+        "LOGIN_FAILED": "Failed login",
+        "LOGOUT": "Logout",
+        "TENANT_REGISTERED": "Company registered",
+        "TENANT_STATUS_CHANGED": "Status changed",
+        "TENANT_DELETED": "Company deleted",
+        "IMPERSONATION_STARTED": "Impersonation started",
+        "IMPERSONATION_ENDED": "Impersonation ended",
+        "SETTINGS_UPDATED": "Settings updated",
+        "BOOKING_CREATED": "Booking created",
+        "SERVICE_CREATED": "Service created",
+        "SERVICE_UPDATED": "Service updated",
+        "SERVICE_DELETED": "Service deleted",
+        "STAFF_CREATED": "Staff created",
+        "STAFF_UPDATED": "Staff updated",
+        "STAFF_DELETED": "Staff deleted",
+        "CRON_REMINDERS_RUN": "Cron reminders"
+      }
+    },
+    "system": {
+      "title": "System status",
+      "wompi": "Wompi (platform)",
+      "wompiConfigured": "Configured",
+      "wompiNotConfigured": "Not config.",
+      "cron": "Reminders cron",
+      "cronSuccess": "Successful",
+      "cronFailed": "Failed",
+      "cronNoRecord": "No execution record",
+      "cronSent": "{sent} sent · {failed} failed",
+      "manageCompanies": "Manage companies",
+      "wompiConfig": "Wompi configuration",
+      "auditLogs": "Audit logs"
+    },
+    "plans": {
+      "title": "Plan distribution"
+    },
+    "tenantStatus": {
+      "ACTIVE": "Active",
+      "TRIAL": "Trial",
+      "SUSPENDED": "Suspended"
+    },
+    "tenantsPage": {
+      "title": "Company Management",
+      "subtitle": "{count} company(ies) registered on the platform.",
+      "colCompany": "Company",
+      "colSlug": "Slug / URL",
+      "colStatus": "Status",
+      "colPlan": "Plan",
+      "colBookings": "Bookings",
+      "colTrial": "Trial",
+      "colActions": "Actions",
+      "impersonateTitle": "Access as support",
+      "changePlan": "Change plan",
+      "activate": "Activate",
+      "suspend": "Suspend",
+      "delete": "Delete",
+      "deleteTitle": "Delete company?",
+      "deleteMessage": "You are about to permanently delete \"{name}\" and all its data. This action cannot be undone.",
+      "deleteConfirm": "Yes, delete",
+      "cancel": "Cancel",
+      "apply": "Apply",
+      "changePlanTitle": "Change plan",
+      "planFreeDesc": "1 branch · 3 staff · 5 services",
+      "planProDesc": "3 branches · 15 staff · 30 services",
+      "planEnterpriseDesc": "No limits · All features",
+      "adminCount": "{count} admin(s) · {branches} branch(es)",
+      "bookingsAndBranches": "{bookings} bookings · {branches} br.",
+      "trialDays": "Trial: {days}d"
+    },
+    "logsPage": {
+      "title": "Audit Logs",
+      "subtitle": "Complete record of critical platform events. Last {count} events.",
+      "colEvent": "Event",
+      "colDetails": "Details",
+      "colDate": "Date / Time",
+      "noEvents": "No events recorded yet.",
+      "dateFormat": "MMM dd, yyyy 'at' hh:mm:ss a"
+    },
+    "paymentsPage": {
+      "title": "Payments — Wompi",
+      "configSubtitle": "Platform configuration",
+      "description": "Configure Wompi El Salvador credentials to receive subscription payments from companies using Zyncrox. These credentials are platform-wide, they don't belong to any specific company.",
+      "configuredBanner": "Wompi credentials saved",
+      "configuredMode": "Mode: {mode}",
+      "production": "Production",
+      "sandbox": "Sandbox (Testing)",
+      "notConfiguredBanner": "You haven't configured Wompi credentials for the platform yet.",
+      "sectionTitle": "Wompi Credentials",
+      "sectionHint": "Get your App ID and API Secret from the Wompi panel → General settings → your business.",
+      "appIdLabel": "App ID",
+      "apiSecretLabel": "API Secret",
+      "apiSecretPlaceholder": "Your Wompi secret key",
+      "secureNote": "Credentials are stored securely in the database.",
+      "testSuccess": "Connection successful",
+      "testAccount": "Account:",
+      "testEmail": "Email:",
+      "testBusinesses": "Businesses found:",
+      "testProd": "Production",
+      "testSandbox": "Testing",
+      "savedSuccess": "Credentials saved successfully.",
+      "testButton": "Test connection",
+      "saving": "Saving...",
+      "saveButton": "Save credentials",
+      "howTitle": "How to get your credentials?",
+      "step1": "Log in to panel.wompi.sv with your account.",
+      "step2": "Go to General settings and select your business.",
+      "step3": "Copy the App ID and API Secret shown there.",
+      "step4": "Paste them above, test the connection and save. Done!"
+    }
   }
 }

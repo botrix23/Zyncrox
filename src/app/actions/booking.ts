@@ -48,7 +48,7 @@ function getTimezoneOffsetInMinutes(timeZone: string, date: Date = new Date()): 
  */
 function getDayNameInEnglish(date: Date): string {
   const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  return days[date.getDay()];
+  return days[date.getUTCDay()];
 }
 
 /**
@@ -338,7 +338,7 @@ export async function getAvailableSlots(
             availableStaffForThisSlot = finalActiveStaffIds.filter(id => checkStaffIsFree(id));
             // Aplicar soft locks: locks con staffId específico eliminan ese staff del pool;
             // locks sin staffId (cualquiera) reducen el conteo en 1 por cada lock activo en este slot.
-            const slotTimeStr = format(slotStart, "HH:mm");
+            const slotTimeStr = localSlotStartStr;
             const locksForThisSlot = activeLocks.filter(l => l.time === slotTimeStr);
             for (const lock of locksForThisSlot) {
               if (lock.staffId) {
@@ -356,7 +356,7 @@ export async function getAvailableSlots(
 
         if (!isPast || allowPast) {
           slots.push({
-            time: format(slotStart, "HH:mm"),
+            time: localSlotStartStr,
             available: !isOccupied && (!isPast || allowPast),
             staffId: sanitizedStaffId || undefined,
             availableStaffIds: !sanitizedStaffId ? availableStaffForThisSlot : undefined

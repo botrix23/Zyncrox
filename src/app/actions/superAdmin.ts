@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { tenants, users, bookings, auditLogs } from "@/db/schema";
-import { eq, desc, count, and } from "drizzle-orm";
+import { tenants, users, bookings, auditLogs, staff, platformConfig } from "@/db/schema";
+import { eq, desc, count, and, gte, lte, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth-session";
 import { logAuditEvent } from "@/lib/audit";
@@ -195,4 +195,141 @@ export async function getAuditLogsAction(filters?: {
   });
 
   return logs;
+}
+
+// ─── Dashboard completo del Super Admin ──────────────────────────────────────
+export async function getSuperAdminDashboardDataAction() {
+  await assertSuperAdmin();
+
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const [
+    allTenants,
+    totalUsersResult,
+    bookingsThisMonthResult,
+    totalYearResult,
+    bookingsByMonthRaw,
+    bookingsThisMonthByTenant,
+    staffCounts,
+    loginLogs,
+    recentLogs,
+    lastCronLog,
+    platformCfg,
+  ] = await Promise.all([
+    db.query.tenants.findMany({
+      orderBy: [desc(tenants.createdAt)],
+      with: { users: true, branches: true },
+    }),
+    db.select({ total: count() }).from(users),
+    db.select({ total: count() }).from(bookings).where(
+      and(gte(bookings.createdAt, startOfMonth), lte(bookings.createdAt, endOfMonth))
+    ),
+    db.select({ total: count() }).from(bookings).where(gte(bookings.createdAt, startOfYear)),
+    db.select({
+      month: sql<string>`to_char(${bookings.createdAt}, 'YYYY-MM')`,
+      total: count(),
+    })
+      .from(bookings)
+      .where(gte(bookings.createdAt, sixMonthsAgo))
+      .groupBy(sql`to_char(${bookings.createdAt}, 'YYYY-MM')`)
+      .orderBy(sql`to_char(${bookings.createdAt}, 'YYYY-MM')`),
+    db.select({ tenantId: bookings.tenantId, total: count() })
+      .from(bookings)
+      .where(and(gte(bookings.createdAt, startOfMonth), lte(bookings.createdAt, endOfMonth)))
+      .groupBy(bookings.tenantId),
+    db.select({ tenantId: staff.tenantId, total: count() })
+      .from(staff)
+      .groupBy(staff.tenantId),
+    db.query.auditLogs.findMany({
+      where: eq(auditLogs.action, 'LOGIN_SUCCESS'),
+      orderBy: [desc(auditLogs.createdAt)],
+      limit: 500,
+    }),
+    db.query.auditLogs.findMany({
+      orderBy: [desc(auditLogs.createdAt)],
+      limit: 7,
+    }),
+    db.query.auditLogs.findFirst({
+      where: eq(auditLogs.action, 'CRON_REMINDERS_RUN'),
+      orderBy: [desc(auditLogs.createdAt)],
+    }),
+    db.select().from(platformConfig).limit(1).then(rows => rows[0] ?? null),
+  ]);
+
+  const staffMap = Object.fromEntries(staffCounts.map(s => [s.tenantId, s.total]));
+  const bookingsMonthMap = Object.fromEntries(bookingsThisMonthByTenant.map(b => [b.tenantId, b.total]));
+
+  // Último login por tenant
+  const lastLoginMap: Record<string, Date> = {};
+  for (const log of loginLogs) {
+    if (log.tenantId && !lastLoginMap[log.tenantId]) {
+      lastLoginMap[log.tenantId] = new Date(log.createdAt);
+    }
+  }
+
+  // Actividad compuesta por tenant
+  const tenantActivity = allTenants.map(t => ({
+    id: t.id,
+    name: t.name,
+    slug: t.slug,
+    status: t.status,
+    plan: t.plan,
+    bookingsThisMonth: bookingsMonthMap[t.id] ?? 0,
+    staffCount: staffMap[t.id] ?? 0,
+    adminCount: t.users?.filter(u => u.role === 'ADMIN').length ?? 0,
+    lastAccessAt: lastLoginMap[t.id] ?? null,
+    subscriptionExpiresAt: t.subscriptionExpiresAt,
+    daysLeft: t.subscriptionExpiresAt
+      ? Math.ceil((new Date(t.subscriptionExpiresAt).getTime() - now.getTime()) / 86400000)
+      : null,
+    createdAt: t.createdAt,
+  }));
+
+  // Construir array de últimos 6 meses con ceros donde no hay datos
+  const monthLabels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const bookingsByMonth = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const found = bookingsByMonthRaw.find(r => r.month === key);
+    return { month: monthLabels[d.getMonth()], year: d.getFullYear(), total: Number(found?.total ?? 0) };
+  });
+
+  const top5Active = [...tenantActivity]
+    .sort((a, b) => b.bookingsThisMonth - a.bookingsThisMonth)
+    .slice(0, 5);
+
+  const churnRisk = tenantActivity
+    .filter(t => {
+      const noBookings = t.bookingsThisMonth === 0;
+      const noRecentLogin = !t.lastAccessAt || new Date(t.lastAccessAt) < thirtyDaysAgo;
+      return noBookings && noRecentLogin && t.status !== 'SUSPENDED';
+    })
+    .slice(0, 8);
+
+  return {
+    totalTenants: allTenants.length,
+    activeTenants: allTenants.filter(t => t.status === 'ACTIVE').length,
+    trialTenants: allTenants.filter(t => t.status === 'TRIAL').length,
+    suspendedTenants: allTenants.filter(t => t.status === 'SUSPENDED').length,
+    newTenantsThisMonth: allTenants.filter(t => new Date(t.createdAt) >= startOfMonth).length,
+    totalUsers: totalUsersResult[0]?.total ?? 0,
+    totalBookingsThisMonth: bookingsThisMonthResult[0]?.total ?? 0,
+    totalBookingsThisYear: totalYearResult[0]?.total ?? 0,
+    tenantActivity,
+    top5Active,
+    churnRisk,
+    bookingsByMonth,
+    recentLogs,
+    lastCronRun: lastCronLog
+      ? { at: new Date(lastCronLog.createdAt), details: lastCronLog.details as Record<string, unknown> }
+      : null,
+    wompiConfigured: !!(platformCfg?.wompiAppId && platformCfg?.wompiApiSecret),
+    expiringIn7Days: tenantActivity.filter(t => t.daysLeft !== null && t.daysLeft >= 0 && t.daysLeft <= 7),
+    expiredTenants: tenantActivity.filter(t => t.daysLeft !== null && t.daysLeft < 0),
+  };
 }

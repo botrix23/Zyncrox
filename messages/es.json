@@ -693,6 +693,10 @@
         "specs": "Recomendado: 1200x500px, máx 2MB",
         "delete": "Eliminar portada actual"
       },
+      "logo": {
+        "hint": "Sube tu logo",
+        "delete": "Eliminar logo actual"
+      },
       "mockup": {
         "selectService": "Selecciona un servicio",
         "schedule": "Agendar Cita",
@@ -838,5 +842,186 @@
     },
     "upgradeRequired": "Funcionalidad Premium",
     "upgradeDesc": "Para personalizar tu sistema de encuestas con preguntas específicas necesitas una suscripción PRO o ENTERPRISE."
+  },
+  "SuperAdmin": {
+    "title": "Panel Super Admin",
+    "subtitle": "Vista global de Zyncrox · Actualizado ahora",
+    "nav": {
+      "dashboard": "Dashboard",
+      "companies": "Empresas",
+      "payments": "Pagos Wompi",
+      "logs": "Logs de Auditoría",
+      "superAdmin": "Super Admin",
+      "activeSession": "Sesión activa",
+      "logout": "Cerrar sesión",
+      "openMenu": "Abrir menú"
+    },
+    "platform": {
+      "title": "Resumen de la plataforma",
+      "registeredCompanies": "Empresas registradas",
+      "registeredCompaniesSub": "{active} activas · {trial} trial · {suspended} suspendidas",
+      "newThisMonth": "Nuevas este mes",
+      "newThisMonthSub": "Empresas registradas en el mes actual",
+      "totalUsers": "Usuarios totales",
+      "totalUsersSub": "Admins + staff de todos los tenants",
+      "bookingsThisMonth": "Citas este mes",
+      "bookingsThisMonthSub": "En toda la plataforma"
+    },
+    "chart": {
+      "title": "Citas globales",
+      "subtitle": "Últimos 6 meses en toda la plataforma",
+      "yearTotal": "Acumulado del año",
+      "yearTotalSub": "citas desde el 1 de enero",
+      "expiringTitle": "Suscripciones por vencer",
+      "expiringMore": "+{count} más"
+    },
+    "activity": {
+      "title": "Actividad por empresa",
+      "subtitle": "Citas, staff y último acceso este mes",
+      "manageCompanies": "Gestionar empresas",
+      "company": "Empresa",
+      "status": "Estado",
+      "bookingsMonth": "Citas mes",
+      "staff": "Staff",
+      "lastAccess": "Último acceso",
+      "noRecord": "Sin registro",
+      "noCitasMonth": "Sin citas este mes aún"
+    },
+    "top5": {
+      "title": "Top 5 más activas",
+      "subtitle": "Por citas este mes"
+    },
+    "churn": {
+      "title": "Riesgo de churn",
+      "subtitle": "Sin actividad en 30 días",
+      "allActive": "Todas las empresas activas"
+    },
+    "revenue": {
+      "title": "Ingresos de la plataforma",
+      "wompiConfigured": "Wompi configurado",
+      "wompiNotConfigured": "Wompi no configurado — ingresos por suscripción no disponibles",
+      "configureWompi": "Configurar Wompi",
+      "activeSubscriptions": "Suscripciones activas",
+      "activeSubscriptionsSub": "de {total} empresas totales",
+      "onTrial": "En trial",
+      "onTrialSub": "periodo de prueba activo",
+      "expiringIn7": "Vencen en 7 días",
+      "expiringIn7Sub": "suscripciones próximas a vencer"
+    },
+    "audit": {
+      "title": "Auditoría reciente",
+      "subtitle": "Últimas 7 acciones registradas",
+      "viewAll": "Ver todos los logs",
+      "noEvents": "No hay eventos registrados aún.",
+      "actions": {
+        "LOGIN_SUCCESS": "Login exitoso",
+        "LOGIN_FAILED": "Login fallido",
+        "LOGOUT": "Logout",
+        "TENANT_REGISTERED": "Empresa registrada",
+        "TENANT_STATUS_CHANGED": "Estado cambiado",
+        "TENANT_DELETED": "Empresa eliminada",
+        "IMPERSONATION_STARTED": "Impersonación iniciada",
+        "IMPERSONATION_ENDED": "Impersonación terminada",
+        "SETTINGS_UPDATED": "Configuración actualizada",
+        "BOOKING_CREATED": "Reserva creada",
+        "SERVICE_CREATED": "Servicio creado",
+        "SERVICE_UPDATED": "Servicio actualizado",
+        "SERVICE_DELETED": "Servicio eliminado",
+        "STAFF_CREATED": "Staff creado",
+        "STAFF_UPDATED": "Staff actualizado",
+        "STAFF_DELETED": "Staff eliminado",
+        "CRON_REMINDERS_RUN": "Cron recordatorios"
+      }
+    },
+    "system": {
+      "title": "Estado del sistema",
+      "wompi": "Wompi (plataforma)",
+      "wompiConfigured": "Configurado",
+      "wompiNotConfigured": "No config.",
+      "cron": "Cron de recordatorios",
+      "cronSuccess": "Exitoso",
+      "cronFailed": "Fallido",
+      "cronNoRecord": "Sin registro de ejecución",
+      "cronSent": "{sent} enviados · {failed} fallidos",
+      "manageCompanies": "Gestionar empresas",
+      "wompiConfig": "Configuración Wompi",
+      "auditLogs": "Logs de auditoría"
+    },
+    "plans": {
+      "title": "Distribución de planes"
+    },
+    "tenantStatus": {
+      "ACTIVE": "Activa",
+      "TRIAL": "Trial",
+      "SUSPENDED": "Suspendida"
+    },
+    "tenantsPage": {
+      "title": "Gestión de Empresas",
+      "subtitle": "{count} empresa(s) registrada(s) en la plataforma.",
+      "colCompany": "Empresa",
+      "colSlug": "Slug / URL",
+      "colStatus": "Estado",
+      "colPlan": "Plan",
+      "colBookings": "Reservas",
+      "colTrial": "Trial",
+      "colActions": "Acciones",
+      "impersonateTitle": "Acceder como soporte",
+      "changePlan": "Cambiar plan",
+      "activate": "Activar",
+      "suspend": "Suspender",
+      "delete": "Eliminar",
+      "deleteTitle": "¿Eliminar empresa?",
+      "deleteMessage": "Vas a eliminar permanentemente \"{name}\" y todos sus datos. Esta acción no se puede deshacer.",
+      "deleteConfirm": "Sí, eliminar",
+      "cancel": "Cancelar",
+      "apply": "Aplicar",
+      "changePlanTitle": "Cambiar plan",
+      "planFreeDesc": "1 sucursal · 3 staff · 5 servicios",
+      "planProDesc": "3 sucursales · 15 staff · 30 servicios",
+      "planEnterpriseDesc": "Sin límites · Todas las funciones",
+      "adminCount": "{count} admin(s) · {branches} sucursal(es)",
+      "bookingsAndBranches": "{bookings} reservas · {branches} suc.",
+      "trialDays": "Trial: {days}d"
+    },
+    "logsPage": {
+      "title": "Logs de Auditoría",
+      "subtitle": "Registro completo de eventos críticos de la plataforma. Últimos {count} eventos.",
+      "colEvent": "Evento",
+      "colDetails": "Detalles",
+      "colDate": "Fecha / Hora",
+      "noEvents": "No hay eventos registrados aún.",
+      "dateFormat": "dd MMM yyyy 'a las' HH:mm:ss"
+    },
+    "paymentsPage": {
+      "title": "Pagos — Wompi",
+      "configSubtitle": "Configuración de plataforma",
+      "description": "Configura las credenciales de Wompi El Salvador para recibir pagos de suscripción de las empresas que usen Zyncrox. Estas credenciales son globales de la plataforma, no pertenecen a ninguna empresa en particular.",
+      "configuredBanner": "Credenciales de Wompi guardadas",
+      "configuredMode": "Modo: {mode}",
+      "production": "Producción",
+      "sandbox": "Pruebas (Sandbox)",
+      "notConfiguredBanner": "Aún no has configurado las credenciales de Wompi para la plataforma.",
+      "sectionTitle": "Credenciales de Wompi",
+      "sectionHint": "Obtén tu App ID y API Secret desde el panel de Wompi → Configuraciones generales → tu negocio.",
+      "appIdLabel": "App ID",
+      "apiSecretLabel": "API Secret",
+      "apiSecretPlaceholder": "Tu clave secreta de Wompi",
+      "secureNote": "Las credenciales se almacenan de forma segura en la base de datos.",
+      "testSuccess": "Conexión exitosa",
+      "testAccount": "Cuenta:",
+      "testEmail": "Email:",
+      "testBusinesses": "Negocios encontrados:",
+      "testProd": "Producción",
+      "testSandbox": "Pruebas",
+      "savedSuccess": "Credenciales guardadas correctamente.",
+      "testButton": "Probar conexión",
+      "saving": "Guardando...",
+      "saveButton": "Guardar credenciales",
+      "howTitle": "¿Cómo obtener tus credenciales?",
+      "step1": "Ingresa a panel.wompi.sv con tu cuenta.",
+      "step2": "Ve a Configuraciones generales y selecciona tu negocio.",
+      "step3": "Copia el App ID y el API Secret que aparecen ahí.",
+      "step4": "Pégalos arriba, prueba la conexión y guarda. ¡Listo!"
+    }
   }
 }

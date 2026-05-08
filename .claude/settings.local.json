@@ -64,7 +64,8 @@
       "Bash(curl -s \"http://localhost:3000/es/zyncsalon-spa\")",
       "Bash(curl -s \"http://localhost:3000/api/booking/slots\")",
       "Bash(curl -s \"http://localhost:3000/es/test\" -o /dev/null -w \"%{http_code}\")",
-      "Bash(curl -s \"http://localhost:3000/es/zyncsalon-spa\" -o /dev/null -w \"%{http_code}\")"
+      "Bash(curl -s \"http://localhost:3000/es/zyncsalon-spa\" -o /dev/null -w \"%{http_code}\")",
+      "Bash(env)"
     ]
   }
 }
