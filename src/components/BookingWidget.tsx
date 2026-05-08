@@ -2079,7 +2079,7 @@ export default function BookingWidget({
                     </div>
 
                     {/* Pricing Breakdown Card */}
-                    <div className="bg-white dark:bg-white/5 p-6 rounded-3xl border border-slate-200 dark:border-white/10 mt-3 shadow-sm">
+                    <div className="hidden md:block bg-white dark:bg-white/5 p-6 rounded-3xl border border-slate-200 dark:border-white/10 mt-3 shadow-sm">
                       <div className="space-y-3 mb-6">
                         <div className="flex items-center justify-between text-slate-500">
                           <p className="text-xs font-black uppercase tracking-[0.2em]">{t("subtotal_services")}</p>
@@ -2186,6 +2186,42 @@ export default function BookingWidget({
                         )}
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing Breakdown Card - mobile only, above action button */}
+              <div className="md:hidden w-full max-w-5xl px-4 mt-2">
+                <div className="bg-white dark:bg-white/5 p-6 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm">
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center justify-between text-slate-500">
+                      <p className="text-xs font-black uppercase tracking-[0.2em]">{t("subtotal_services")}</p>
+                      <p className="text-sm font-black">${servicesTotal.toFixed(2)}</p>
+                    </div>
+                    {transferTotal > 0 && (
+                      <div className="flex flex-col gap-2 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                        <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                          <p className="text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                            <Truck className="w-4 h-4" /> {t("transfer_fee")}
+                          </p>
+                          <p className="text-sm font-black">${transferTotal.toFixed(2)}</p>
+                        </div>
+                        {transferInfo.blocks > 1 && (
+                          <div className="pt-2 border-t border-emerald-500/10">
+                            <p className="text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest leading-relaxed">
+                              {t("transfer_fee_detail", { count: transferInfo.blocks, fee: parsePrice(selectedZone?.fee).toFixed(2) })}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between pt-5 border-t border-slate-200 dark:border-white/10">
+                    <div>
+                      <p className="text-xs font-black tracking-[0.2em] text-slate-400 uppercase mb-1">{t("total_to_pay")}</p>
+                      <p className="text-[10px] font-bold text-slate-400 opacity-60 uppercase">{t("tax_included")}</p>
+                    </div>
+                    <p className="text-4xl font-black text-purple-600 dark:text-purple-400 tracking-tighter">${totalPrice.toFixed(2)}</p>
                   </div>
                 </div>
               </div>

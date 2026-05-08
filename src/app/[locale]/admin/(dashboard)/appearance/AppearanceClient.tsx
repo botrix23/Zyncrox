@@ -432,6 +432,12 @@ try {
                   />
                 </div>
 
+                {/* Business Phone */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">{tPortal('form.phone')}</label>
+                  <PhoneInput value={whatsappNumber || ""} onChange={val => setWhatsappNumber(val)} placeholder="Teléfono del negocio" />
+                </div>
+
                 {/* Subtitle */}
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">{tPortal('form.heroSubtitle')}</label>
@@ -628,11 +634,6 @@ try {
                   <Truck className="w-5 h-5 text-purple-500" />
                 </div>
                 <h2 className="text-xl font-bold">{tPortal('sections.homeService')}</h2>
-              </div>
-
-              <div className="space-y-2">
-                 <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">{tPortal('form.phone')}</label>
-                 <PhoneInput value={whatsappNumber || ""} onChange={val => setWhatsappNumber(val)} placeholder="Teléfono del negocio" />
               </div>
 
               <div className="space-y-2">

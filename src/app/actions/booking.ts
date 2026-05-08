@@ -440,6 +440,8 @@ export async function createBookingAction(data: {
       const service = await db.query.services.findFirst({ where: eq(services.id, data.serviceId) });
       const branch = await db.query.branches.findFirst({ where: eq(branches.id, data.branchId) });
       const staffMember = await db.query.staff.findFirst({ where: eq(staff.id, data.staffId) });
+      const tenantStaffCount = await db.query.staff.findMany({ where: eq(staff.tenantId, data.tenantId) });
+      const showStaffName = staffMember && tenantStaffCount.length > 1;
 
       if (tenant && service && branch) {
         console.log(`[Email] Intentando enviar a ${data.customerEmail} para tenant ${tenant.name}`);
@@ -454,10 +456,11 @@ export async function createBookingAction(data: {
               date: format(data.startTime, "EEEE, d 'de' MMMM", { locale: es }),
               time: format(data.startTime, "hh:mm a"),
               branchName: branch.name,
-              staffName: staffMember?.name,
+              staffName: showStaffName ? staffMember.name : undefined,
               tenantName: tenant.name,
               tenantLogo: tenant.logoUrl || undefined,
-              customBody: tenant.emailBodyTemplate
+              customBody: tenant.emailBodyTemplate,
+              whatsappNumber: tenant.whatsappNumber || undefined,
             }),
           });
           console.log(`[Email] Respuesta de Resend:`, result);

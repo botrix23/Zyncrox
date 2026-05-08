@@ -46,9 +46,13 @@ export default async function AppearancePage({ params, searchParams }: { params:
         allowsHomeService: tenantData.allowsHomeService,
         homeServiceLeadDays: tenantData.homeServiceLeadDays,
         vipThreshold: tenantData.vipThreshold,
+        showStaffSelection: tenantData.showStaffSelection,
+        heroTitle: tenantData.heroTitle,
+        heroSubtitle: tenantData.heroSubtitle,
+        emailBodyTemplate: tenantData.emailBodyTemplate,
         bookingSettings: tenantData.bookingSettings as any,
         timezone: tenantData.timezone,
-      }} 
+      }}
       initialZones={coverageZones}
     />
   );

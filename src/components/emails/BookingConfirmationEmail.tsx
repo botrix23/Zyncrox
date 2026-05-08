@@ -22,6 +22,7 @@ interface BookingEmailProps {
   tenantName: string;
   tenantLogo?: string;
   customBody?: string | null;
+  whatsappNumber?: string | null;
 }
 
 export const BookingConfirmationEmail = ({
@@ -33,7 +34,8 @@ export const BookingConfirmationEmail = ({
   staffName,
   tenantName,
   tenantLogo,
-  customBody
+  customBody,
+  whatsappNumber,
 }: BookingEmailProps) => {
   const getFormattedBody = () => {
     if (!customBody) return null;
@@ -80,15 +82,13 @@ export const BookingConfirmationEmail = ({
             <Text style={detailText}>
               <strong>Sucursal:</strong> {branchName}
             </Text>
-            {staffName && (
-              <Text style={detailText}>
-                <strong>Especialista:</strong> {staffName}
-              </Text>
-            )}
+            <Text style={detailText}>
+              <strong>Especialista:</strong> {staffName || "De acuerdo a disponibilidad"}
+            </Text>
           </Section>
           <Hr style={hr} />
           <Text style={footer}>
-            Gracias por confiar en {tenantName}. Si necesitas realizar algún cambio, por favor contáctanos.
+            Gracias por confiar en {tenantName}. Si necesitas realizar algún cambio, por favor contáctanos{whatsappNumber ? ` al ${whatsappNumber}` : ""}.
           </Text>
         </Container>
       </Body>
