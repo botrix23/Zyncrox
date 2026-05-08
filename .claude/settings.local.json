@@ -72,7 +72,8 @@
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('Dashboard', {}\\).get\\('home', {}\\), indent=2, ensure_ascii=False\\)\\)\")",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); deps={**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}; [print\\(k,v\\) for k,v in deps.items\\(\\)]\")",
       "Bash(mkdir -p /Users/BorisGuardado/Documents/Desarrollos/Zyncrox/Zyncrox/src/components/dashboard)",
-      "Bash(mkdir -p /Users/BorisGuardado/Documents/Desarrollos/Zyncrox/Zyncrox/src/app/api/admin/dashboard/export)"
+      "Bash(mkdir -p /Users/BorisGuardado/Documents/Desarrollos/Zyncrox/Zyncrox/src/app/api/admin/dashboard/export)",
+      "Bash(node -e \"const r = require\\('/Users/BorisGuardado/Documents/Desarrollos/Zyncrox/Zyncrox/node_modules/resend/dist/index.js'\\); console.log\\('resend ok'\\)\")"
     ]
   }
 }

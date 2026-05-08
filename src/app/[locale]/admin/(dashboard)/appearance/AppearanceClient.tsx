@@ -784,7 +784,7 @@ className="w-full min-h-[150px] p-4 bg-slate-50 dark:bg-white/5 border border-sl
 <div className="bg-blue-500/5 p-4 rounded-2xl border border-blue-500/10">
 <p className="text-xs font-bold text-blue-600 mb-2 uppercase tracking-widest">{tPortal('form.emailVariables')}</p>
 <div className="flex flex-wrap gap-2">
-{['{cliente}', '{servicio}', '{fecha}', '{hora}', '{negocio}'].map(v => (
+{['{cliente}', '{servicio}', '{fecha}', '{hora}', '{negocio}', '{sucursal}'].map(v => (
 <code key={v} className="text-[11px] bg-white dark:bg-white/5 text-blue-500 px-2 py-1 rounded border border-blue-500/20">{v}</code>
 ))}
 </div>

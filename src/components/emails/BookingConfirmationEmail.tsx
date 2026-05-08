@@ -42,7 +42,8 @@ export const BookingConfirmationEmail = ({
       .replace(/{servicio}/g, serviceName)
       .replace(/{fecha}/g, date)
       .replace(/{hora}/g, time)
-      .replace(/{negocio}/g, tenantName);
+      .replace(/{negocio}/g, tenantName)
+      .replace(/{sucursal}/g, branchName);
   };
 
   const formattedBody = getFormattedBody();
