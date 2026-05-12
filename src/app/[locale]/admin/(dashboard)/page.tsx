@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { db } from '@/db';
 import { bookings, absenceRequests, reviews, branches, tenants } from '@/db/schema';
-import { eq, and, gte, lte, desc, ne, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, ne, sql, isNull } from 'drizzle-orm';
 import { getSession } from '@/lib/auth-session';
 import { redirect } from 'next/navigation';
 import {
@@ -59,6 +59,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
     reviewsThisMonthRaw,
     branchesData,
     tenantData,
+    unassignedBookingsRaw,
   ] = await Promise.all([
     db.query.bookings.findMany({
       where: and(
@@ -112,6 +113,15 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
     }),
     db.query.branches.findMany({ where: eq(branches.tenantId, tenantId) }),
     db.query.tenants.findFirst({ where: eq(tenants.id, tenantId) }),
+    db.query.bookings.findMany({
+      where: and(
+        eq(bookings.tenantId, tenantId),
+        isNull(bookings.staffId),
+        eq(bookings.status, 'PENDING_ASSIGNMENT')
+      ),
+      with: { service: true, branch: true },
+      orderBy: [bookings.startTime],
+    }),
   ]);
 
   // ── TODAY ──────────────────────────────────────────────────────────────────
@@ -205,8 +215,8 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
   const staffMap = new Map<string, StaffEntry>();
 
   for (const b of bookingsThisMonthRaw) {
-    const key = b.staffId;
-    const name = b.staff?.name ?? 'N/A';
+    const key = b.staffId ?? '__unassigned__';
+    const name = b.staff?.name ?? 'Sin asignar';
     if (!staffMap.has(key)) staffMap.set(key, { name, attended: 0, cancelled: 0, pending: 0, absenceCount: 0, absenceMinutes: 0 });
     const e = staffMap.get(key)!;
     if (b.status === 'FINALIZADA') e.attended++;
@@ -258,6 +268,14 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
   const monthLabel = format(now, "MMMM yyyy", { locale: dateLocale });
   const todayLabel = format(now, "EEEE d 'de' MMMM", { locale: dateLocale });
 
+  const unassignedBookings = unassignedBookingsRaw.map(b => ({
+    id: b.id,
+    customer: b.customerName,
+    service: b.service?.name ?? 'N/A',
+    branch: b.branch?.name ?? '—',
+    date: format(b.startTime, "d MMM, HH:mm", { locale: dateLocale }),
+  }));
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
 
@@ -276,6 +294,39 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
           <DashboardExport />
         </div>
       </div>
+
+      {/* ═══ CITAS SIN ASIGNAR ═══ */}
+      {unassignedBookings.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-700/30 rounded-2xl p-5">
+          <div className="flex items-start gap-3 mb-4">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-black text-amber-800 dark:text-amber-300 uppercase tracking-widest">
+                Citas por asignar
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
+                {unassignedBookings.length} cita{unassignedBookings.length !== 1 ? 's' : ''} quedaron sin profesional al eliminar un miembro del equipo. Asígnalas o cancélalas manualmente.
+              </p>
+            </div>
+            <Link
+              href={`/${locale}/admin/bookings?status=PENDING_ASSIGNMENT`}
+              className="ml-auto shrink-0 flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 px-3 py-1.5 rounded-xl transition-colors"
+            >
+              Ver todas <ExternalLink className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {unassignedBookings.slice(0, 5).map(b => (
+              <div key={b.id} className="flex items-center flex-wrap gap-x-4 gap-y-1 bg-white dark:bg-zinc-900/50 rounded-xl px-4 py-2.5">
+                <span className="font-semibold text-sm text-slate-900 dark:text-white w-36 truncate">{b.customer}</span>
+                <span className="text-sm text-slate-600 dark:text-zinc-300 flex-1 truncate">{b.service}</span>
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400">{b.date}</span>
+                <span className="text-xs text-slate-400 dark:text-zinc-500">{b.branch}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ═══ PORTAL LINK ═══ */}
       <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 shadow-sm">

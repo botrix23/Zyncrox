@@ -51,6 +51,7 @@
     "home_service_desc": "Termina de agendar vía WhatsApp (requiere {days} días de anticipación)",
     "title_service": "Paso 2: Elige tu servicio",
     "select_multiple_services": "Puedes seleccionar uno o más servicios",
+    "select_one_service": "Selecciona un servicio",
     "includes": "Incluye",
     "excludes": "No incluye",
     "title_specialist": "Paso 3: Especialista y fecha",

@@ -510,10 +510,9 @@ export async function createBookingSessionAction(data: {
 
     const features = getPlanFeatures(tenant.plan);
 
-    // Si intenta agendar más de 1 servicio pero su plan no lo permite (Omitido para admin temporario)
-    // if (data.bookings.length > 1 && !features.multiServiceBooking) {
-    //   return { success: false, error: "MULTI_SERVICE_NOT_ALLOWED" };
-    // }
+    if (data.bookings.length > 1 && !features.multiServiceBooking) {
+      return { success: false, error: "MULTI_SERVICE_NOT_ALLOWED" };
+    }
 
     // 2. Calcular Tarifa de Traslado (Servidor)
     let transferTotal = 0;

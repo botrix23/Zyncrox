@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { 
-  Palette, CheckCircle2, AlertCircle, Upload, Save, Eye, MonitorSmartphone, Monitor, Moon, Sun, MonitorCheck, LayoutTemplate, Link as LinkIcon, ExternalLink, Instagram, Facebook, Music, Building2, ImageIcon, Truck, Info, Phone, Settings, Share2, Copy, Trash2, Lock, Mail, User
+  Palette, CheckCircle2, AlertCircle, Upload, Save, Eye, MonitorSmartphone, Monitor, Moon, Sun, MonitorCheck, LayoutTemplate, Link as LinkIcon, ExternalLink, Instagram, Facebook, Music, Building2, ImageIcon, Truck, Info, Settings, Share2, Copy, Trash2, Lock, Mail, User
 } from "lucide-react";
 import { updatePortalSettingsAction } from "@/app/actions/tenant";
 import { 
@@ -14,9 +14,9 @@ import {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import PhoneInput from "@/components/PhoneInput";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PlanGateSection } from "@/components/PlanGate";
+import { canUseFeature } from "@/core/plans";
 
 export default function AppearanceClient({
   tenant,
@@ -58,6 +58,7 @@ initialTab?: 'design' | 'rules';
 }) {
   const t = useTranslations('Dashboard');
   const tPortal = useTranslations('Dashboard.portal');
+  const tWidget = useTranslations('BookingWidget');
   
   // Tabs
   const [activeTab, setActiveTab] = useState<'design' | 'rules'>(initialTab);
@@ -435,11 +436,6 @@ try {
                   />
                 </div>
 
-                {/* Business Phone */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">{tPortal('form.phone')}</label>
-                  <PhoneInput value={whatsappNumber || ""} onChange={val => setWhatsappNumber(val)} placeholder="Teléfono del negocio" />
-                </div>
 
                 {/* Subtitle */}
                 <PlanGateSection plan={plan} feature="customHero" upgradeMessage="El subtítulo personalizado del hero está disponible desde el plan Professional.">
@@ -449,12 +445,13 @@ try {
                     type="text"
                     value={heroSubtitle}
                     onChange={e => setHeroSubtitle(e.target.value)}
-                    placeholder={tPortal('form.heroSubtitlePlaceholder')}
+                    placeholder={tWidget('hero_subtitle')}
                     className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
                   />
                   <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">{tPortal('form.heroSubtitleHint')}</p>
                 </div>
                 </PlanGateSection>
+
 
                 {/* Widget Footer */}
                 <div>
@@ -574,6 +571,18 @@ try {
               </div>
             </div>
             </PlanGateSection>
+
+            {!canUseFeature(plan, 'customTheme') && (
+              <div className="flex items-start gap-3 px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl">
+                <Eye className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-0.5">Tu portal usa actualmente:</p>
+                  <p className="text-sm text-slate-700 dark:text-zinc-200">
+                    {theme === 'dark' ? '🌙 Tema Oscuro' : '☀️ Tema Claro'}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Color Primario */}
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-4 shadow-sm space-y-3">
@@ -865,7 +874,7 @@ className="w-full min-h-[150px] p-4 bg-slate-50 dark:bg-white/5 border border-sl
 
                   <div className="relative z-10 flex flex-col items-center gap-1 mt-2 px-4 text-center">
                     {logoUrl ? (
-                      <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-lg border border-white/20 p-1 mb-1">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 mb-1">
                         <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
                       </div>
                     ) : (

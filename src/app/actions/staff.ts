@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { staff, staffAssignments, branches, staffToCategories, users } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { staff, staffAssignments, branches, staffToCategories, users, bookings } from "@/db/schema";
+import { eq, and, ne, gt, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { checkPlanLimit } from "@/lib/plan-guard";
 
@@ -231,11 +231,38 @@ export async function updateStaffAction(data: {
   }
 }
 
+export async function getStaffFutureBookingCount(staffId: string, tenantId: string): Promise<number> {
+  try {
+    const result = await db.select({ count: sql<number>`cast(count(*) as int)` })
+      .from(bookings)
+      .where(and(
+        eq(bookings.staffId, staffId),
+        eq(bookings.tenantId, tenantId),
+        gt(bookings.startTime, new Date()),
+        ne(bookings.status, 'CANCELLED')
+      ));
+    return result[0]?.count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function deleteStaffAction(id: string, tenantId: string) {
   try {
+    // Reassign future bookings to PENDING_ASSIGNMENT before deleting the staff member
+    await db.update(bookings)
+      .set({ staffId: null, status: 'PENDING_ASSIGNMENT' })
+      .where(and(
+        eq(bookings.staffId, id),
+        eq(bookings.tenantId, tenantId),
+        gt(bookings.startTime, new Date()),
+        ne(bookings.status, 'CANCELLED')
+      ));
+
     await db.delete(staff).where(and(eq(staff.id, id), eq(staff.tenantId, tenantId)));
     revalidatePath("/[locale]/admin/staff", "page");
     revalidatePath("/[locale]/[slug]", "page");
+    revalidatePath("/[locale]/admin", "page");
     return { success: true };
   } catch (error) {
     console.error("Error deleting staff:", error);

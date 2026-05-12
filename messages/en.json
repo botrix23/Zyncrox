@@ -51,6 +51,7 @@
     "home_service_desc": "Finish scheduling via WhatsApp (Requires {days} days notice)",
     "title_service": "Step 2: Choose your Service",
     "select_multiple_services": "You can select one or more services",
+    "select_one_service": "Select a service",
     "includes": "Included:",
     "excludes": "Not included:",
     "title_specialist": "Step 3: Specialist & Date",

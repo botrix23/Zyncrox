@@ -19,7 +19,7 @@ interface BookingDetail {
   customerEmail: string | null;
   customerPhone: string | null;
   service: { name: string; price: string };
-  staff: { name: string };
+  staff: { name: string } | null;
   branch: { name: string };
 }
 

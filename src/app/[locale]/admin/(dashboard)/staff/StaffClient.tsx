@@ -25,7 +25,7 @@ import {
   Copy,
   Check
 } from 'lucide-react';
-import { createStaffAction, updateStaffAction, deleteStaffAction } from "@/app/actions/staff";
+import { createStaffAction, updateStaffAction, deleteStaffAction, getStaffFutureBookingCount } from "@/app/actions/staff";
 import { updateShowStaffSelectionAction } from "@/app/actions/tenant";
 import { createStaffAccessAction, revokeStaffAccessAction, reactivateStaffAccessAction } from "@/app/actions/staffAccess";
 import { Tag } from 'lucide-react';
@@ -245,11 +245,12 @@ export default function StaffClient({
     setIsLoading(false);
   };
 
-  const [deleteStaffTarget, setDeleteStaffTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleteStaffTarget, setDeleteStaffTarget] = useState<{ id: string; name: string; bookingCount: number } | null>(null);
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     setOpenMenu(null);
-    setDeleteStaffTarget({ id, name });
+    const bookingCount = await getStaffFutureBookingCount(id, tenantId);
+    setDeleteStaffTarget({ id, name, bookingCount });
   };
 
   const confirmDeleteStaff = async () => {
@@ -340,7 +341,11 @@ export default function StaffClient({
       <ConfirmDialog
         open={!!deleteStaffTarget}
         title={`¿Eliminar a ${deleteStaffTarget?.name}?`}
-        message="Se eliminará permanentemente del equipo. Esta acción no se puede deshacer."
+        message={
+          deleteStaffTarget && deleteStaffTarget.bookingCount > 0
+            ? `Hay ${deleteStaffTarget.bookingCount} cita${deleteStaffTarget.bookingCount !== 1 ? 's' : ''} futuras asignadas a este profesional. Se marcarán como "Sin asignar" hasta que asignes un nuevo miembro o las canceles manualmente.`
+            : "Se eliminará permanentemente del equipo. Esta acción no se puede deshacer."
+        }
         confirmLabel="Sí, eliminar"
         variant="danger"
         onConfirm={confirmDeleteStaff}

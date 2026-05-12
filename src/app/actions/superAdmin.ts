@@ -57,8 +57,15 @@ export async function updateTenantPlanAction(
 
   const prevTenant = await db.query.tenants.findFirst({ where: eq(tenants.id, tenantId) });
 
+  // Al bajar a BASIC, resetear campos que ya no pueden editar
+  const downgradedFields = plan === 'BASIC' ? {
+    heroSubtitle: null,                // customHero: false → vuelve al texto por defecto del widget
+    theme: 'light' as const,           // customTheme: false → tema claro por defecto
+    emailBodyTemplate: null,           // customEmailTemplate: false → sin template personalizado
+  } : {};
+
   await db.update(tenants)
-    .set({ plan, updatedAt: new Date() })
+    .set({ plan, updatedAt: new Date(), ...downgradedFields })
     .where(eq(tenants.id, tenantId));
 
   await logAuditEvent({
@@ -69,6 +76,7 @@ export async function updateTenantPlanAction(
   });
 
   revalidatePath('/[locale]/admin/super', 'page');
+  revalidatePath('/[locale]/[slug]', 'page');
   return { success: true };
 }
 

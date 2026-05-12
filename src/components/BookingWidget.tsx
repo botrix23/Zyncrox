@@ -7,7 +7,7 @@ import { es, enUS } from "date-fns/locale";
 import { ThemeToggle } from "./ThemeToggle";
 import { LangToggle } from "./LangToggle";
 import { getAvailableSlots, createBookingAction, createBookingSessionAction, lockSlotAction, releaseSlotLocksAction, releaseServiceSlotLockAction } from "@/app/actions/booking";
-import { Calendar, Clock, ChevronRight, ChevronDown, Check, X, ArrowLeft, User, MapPin, Truck, Mail, Phone, UserCircle, Loader2, CheckCircle2, XCircle, Instagram, Facebook, Music, Layers, CalendarRange, Crown, Download, Globe } from "lucide-react";
+import { Calendar, Clock, ChevronRight, ChevronDown, Check, X, ArrowLeft, User, MapPin, Truck, Mail, Phone, UserCircle, Loader2, CheckCircle2, XCircle, Instagram, Facebook, Music, Layers, CalendarRange, Download, Globe } from "lucide-react";
 import { canUseFeature, getPlanFeatures } from "@/core/plans";
 import { getGoogleCalendarUrl, getOutlookCalendarUrl, generateICSFile } from "@/lib/calendar";
 
@@ -173,8 +173,8 @@ export default function BookingWidget({
   const [sessionToken] = useState(() => crypto.randomUUID());
   const [isFinishing, setIsFinishing] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [planLimitWarning, setPlanLimitWarning] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [openCalendarIdx, setOpenCalendarIdx] = useState<number | null>(null);
 
   const businessTimezone = (branches[0] as any)?.tenant?.timezone || 'America/El_Salvador';
   const [hasTzDifference, setHasTzDifference] = useState(false);
@@ -185,6 +185,13 @@ export default function BookingWidget({
     if (hour < 18) return new Set(['afternoon']);
     return new Set(['evening']);
   });
+
+  useEffect(() => {
+    if (openCalendarIdx === null) return;
+    const handleClickOutside = () => setOpenCalendarIdx(null);
+    document.addEventListener('click', handleClickOutside, { once: true });
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openCalendarIdx]);
 
   useEffect(() => {
     try {
@@ -509,6 +516,7 @@ export default function BookingWidget({
                   allowedStaffIds
                 );
                 if (nextRes.slots?.some((s: any) => s.available)) {
+                  await new Promise(resolve => setTimeout(resolve, 2000));
                   setSelectedDate(day.fullDate);
                   return;
                 }
@@ -617,14 +625,12 @@ export default function BookingWidget({
   };
 
   const handleToggleService = (service: Service) => {
-    setPlanLimitWarning(null);
     setSelectedServices(prev => {
       const exists = prev.find(s => s.id === service.id);
       if (exists) return prev.filter(s => s.id !== service.id);
 
       const features = getPlanFeatures(tenantPlan);
       if (prev.length >= 1 && !features.multiServiceBooking) {
-        setTimeout(() => setPlanLimitWarning('Tu plan actual solo permite seleccionar 1 servicio por cita. Actualiza a Plan PRO para agendar más servicios en una sola sesión.'), 0);
         return prev;
       }
       return [...prev, service];
@@ -1169,7 +1175,7 @@ export default function BookingWidget({
                     {bookingSettings?.step2Title || t("title_service")}
                   </h2>
                   <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 mt-1">
-                    {t("select_multiple_services")}
+                    {canUseFeature(tenantPlan, 'multiServiceBooking') ? t("select_multiple_services") : t("select_one_service")}
                   </p>
                 </div>
               </div>
@@ -1249,16 +1255,6 @@ export default function BookingWidget({
                 })}
               </div>
 
-              {planLimitWarning && (
-                <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl animate-in slide-in-from-top-2 duration-300 flex items-start gap-3">
-                  <span className="text-amber-400 text-lg shrink-0">⚠</span>
-                  <div>
-                    <p className="text-sm font-bold text-amber-400">Límite de plan alcanzado</p>
-                    <p className="text-xs text-amber-300/80 mt-0.5">{planLimitWarning}</p>
-                  </div>
-                  <button onClick={() => setPlanLimitWarning(null)} className="ml-auto text-amber-400/60 hover:text-amber-400 transition-colors shrink-0">✕</button>
-                </div>
-              )}
 
               {selectedServices.length > 0 && !bookingSettings?.showSummaryOnLeft && (
                 <div className="mt-6 pt-6 border-t border-slate-200 dark:border-white/5 animate-in slide-in-from-bottom-4 duration-300">
@@ -1384,14 +1380,6 @@ export default function BookingWidget({
                   </div>
                 </button>
 
-                {!canUseFeature(tenantPlan, 'separateServiceScheduling') && (
-                  <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-3">
-                    <Crown className="w-5 h-5 text-amber-500 shrink-0" />
-                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                      El agendamiento dividido es una función PRO. Actualiza tu suscripción para activarla.
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -2027,15 +2015,18 @@ export default function BookingWidget({
                                 )}
                                 {showCalendarBtn && (
                                   <div className="relative group/sync">
-                                    <button className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 dark:bg-white/10 hover:bg-purple-600 dark:hover:bg-purple-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all active:scale-95">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setOpenCalendarIdx(openCalendarIdx === idx ? null : idx); }}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 dark:bg-white/10 hover:bg-purple-600 dark:hover:bg-purple-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all active:scale-95">
                                       <Download className="w-3 h-3" />
                                       <span className="hidden sm:inline">{t("sync_calendar")}</span>
                                     </button>
-                                    <div className="absolute right-0 bottom-full mb-3 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover/sync:opacity-100 group-hover/sync:visible transition-all z-[99] p-2 ring-1 ring-black/5">
+                                    <div className={`absolute right-0 bottom-full mb-3 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl transition-all z-[99] p-2 ring-1 ring-black/5 ${openCalendarIdx === idx ? 'opacity-100 visible' : 'opacity-0 invisible group-hover/sync:opacity-100 group-hover/sync:visible'}`}>
                                       <p className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-white/5 mb-1">{t("choose_platform")}</p>
                                       <a
                                         href={getGoogleCalendarUrl({ title: calTitle, description: `Especialista: ${b.staff?.name || 'Cualquiera'}\nCliente: ${guestName}`, location: guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio', startTime: calStart, endTime: calEnd })}
                                         target="_blank"
+                                        onClick={() => setOpenCalendarIdx(null)}
                                         className="flex items-center gap-3 px-3 py-2.5 hover:bg-purple-500/10 hover:text-purple-500 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors"
                                       >
                                         <Globe className="w-4 h-4" /> Google Calendar
@@ -2043,6 +2034,7 @@ export default function BookingWidget({
                                       <a
                                         href={getOutlookCalendarUrl({ title: calTitle, description: `Especialista: ${b.staff?.name || 'Cualquiera'}\nCliente: ${guestName}`, location: guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio', startTime: calStart, endTime: calEnd })}
                                         target="_blank"
+                                        onClick={() => setOpenCalendarIdx(null)}
                                         className="flex items-center gap-3 px-3 py-2.5 hover:bg-blue-500/10 hover:text-blue-500 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 transition-colors"
                                       >
                                         <Mail className="w-4 h-4" /> Outlook (Web)
@@ -2059,10 +2051,18 @@ export default function BookingWidget({
                                             'END:VEVENT', 'END:VCALENDAR'
                                           ].join('\n');
                                           const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                                          const link = document.createElement('a');
-                                          link.href = window.URL.createObjectURL(blob);
-                                          link.setAttribute('download', `cita-${tenantName.toLowerCase()}.ics`);
-                                          document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                                          const url = window.URL.createObjectURL(blob);
+                                          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                                          if (isMobile) {
+                                            window.location.href = url;
+                                          } else {
+                                            const link = document.createElement('a');
+                                            link.href = url;
+                                            link.setAttribute('download', `cita-${tenantName.toLowerCase()}.ics`);
+                                            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                                          }
+                                          setTimeout(() => window.URL.revokeObjectURL(url), 2000);
+                                          setOpenCalendarIdx(null);
                                         }}
                                         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 text-left transition-colors"
                                       >

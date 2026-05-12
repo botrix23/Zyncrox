@@ -64,8 +64,8 @@ export async function GET() {
   // Staff performance map
   const staffMap = new Map<string, { name: string; attended: number; cancelled: number; pending: number; absenceCount: number; absenceMinutes: number }>();
   for (const b of bookingsThisMonth) {
-    const key = b.staffId;
-    const name = b.staff?.name || 'N/A';
+    const key = b.staffId ?? '__unassigned__';
+    const name = b.staff?.name || 'Sin asignar';
     if (!staffMap.has(key)) staffMap.set(key, { name, attended: 0, cancelled: 0, pending: 0, absenceCount: 0, absenceMinutes: 0 });
     const e = staffMap.get(key)!;
     if (b.status === 'FINALIZADA') e.attended++;

@@ -114,7 +114,7 @@ export const bookings = pgTable('bookings', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   branchId: uuid('branch_id').notNull().references(() => branches.id, { onDelete: 'cascade' }),
-  staffId: uuid('staff_id').notNull().references(() => staff.id, { onDelete: 'cascade' }),
+  staffId: uuid('staff_id').references(() => staff.id, { onDelete: 'set null' }),
   serviceId: uuid('service_id').notNull().references(() => services.id, { onDelete: 'cascade' }),
   customerName: varchar('customer_name', { length: 255 }).notNull(),
   customerEmail: varchar('customer_email', { length: 255 }),

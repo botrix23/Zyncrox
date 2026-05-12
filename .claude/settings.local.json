@@ -74,7 +74,10 @@
       "Bash(mkdir -p /Users/BorisGuardado/Documents/Desarrollos/Zyncrox/Zyncrox/src/components/dashboard)",
       "Bash(mkdir -p /Users/BorisGuardado/Documents/Desarrollos/Zyncrox/Zyncrox/src/app/api/admin/dashboard/export)",
       "Bash(node -e \"const r = require\\('/Users/BorisGuardado/Documents/Desarrollos/Zyncrox/Zyncrox/node_modules/resend/dist/index.js'\\); console.log\\('resend ok'\\)\")",
-      "Bash(grep -E \"\\\\.tsx$\")"
+      "Bash(grep -E \"\\\\.tsx$\")",
+      "Bash(psql \"postgresql://zyncslot_user:zyncslot_password@localhost:5432/zyncslot_db\" -c \"SELECT t.id, t.name, t.plan, t.hero_subtitle FROM tenants t JOIN users u ON u.tenant_id = t.id WHERE u.email = 'boris90alejandro@gmail.com' LIMIT 1;\")",
+      "Read(//Applications/Postgres.app/Contents/Versions/latest/bin/**)",
+      "Read(//usr/local/bin/**)"
     ]
   }
 }
