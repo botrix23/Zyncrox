@@ -135,16 +135,6 @@ export default function TenantAdminsModal({
 
   return (
     <>
-    <ConfirmDialog
-      open={!!deleteTarget}
-      title="Eliminar administrador"
-      message={`¿Eliminar a ${deleteTarget?.name ?? ''}? Esta acción no se puede deshacer.`}
-      confirmLabel="Eliminar"
-      cancelLabel="Cancelar"
-      variant="danger"
-      onConfirm={confirmDelete}
-      onCancel={() => setDeleteTarget(null)}
-    />
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-3xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
@@ -302,6 +292,16 @@ export default function TenantAdminsModal({
         </div>
       </div>
     </div>
+    <ConfirmDialog
+      open={!!deleteTarget}
+      title="Eliminar administrador"
+      message={`¿Eliminar a ${deleteTarget?.name ?? ''}? Esta acción no se puede deshacer.`}
+      confirmLabel="Eliminar"
+      cancelLabel="Cancelar"
+      variant="danger"
+      onConfirm={confirmDelete}
+      onCancel={() => setDeleteTarget(null)}
+    />
     </>
   );
 }
