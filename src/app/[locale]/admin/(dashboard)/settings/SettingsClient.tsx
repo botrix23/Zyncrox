@@ -20,7 +20,7 @@ export default function SettingsClient({
   currentUserId: string;
   initialRecoveryEmail: string | null;
 }) {
-  const t = useTranslations('Admin.settings');
+  const t = useTranslations('Dashboard.settings');
 
   const [admins, setAdmins] = useState(initialAdmins);
   const [recoveryEmail, setRecoveryEmail] = useState(initialRecoveryEmail ?? '');
