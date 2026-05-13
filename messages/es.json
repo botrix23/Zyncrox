@@ -582,7 +582,8 @@
       "logout": "Salir",
       "business": "Empresa",
       "surveys": "Encuestas",
-      "payments": "Pagos"
+      "payments": "Pagos",
+      "settings": "Configuración"
     },
     "portal": {
       "title": "Mi portal web",
