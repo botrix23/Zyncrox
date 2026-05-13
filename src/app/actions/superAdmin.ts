@@ -2,7 +2,8 @@
 
 import { db } from "@/db";
 import { tenants, users, bookings, auditLogs, staff, platformConfig } from "@/db/schema";
-import { eq, desc, count, and, gte, lte, sql } from "drizzle-orm";
+import { eq, desc, count, and, gte, lte, sql, ne } from "drizzle-orm";
+import bcrypt from 'bcryptjs';
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth-session";
 import { logAuditEvent } from "@/lib/audit";
@@ -340,4 +341,123 @@ export async function getSuperAdminDashboardDataAction() {
     expiringIn7Days: tenantActivity.filter(t => t.daysLeft !== null && t.daysLeft >= 0 && t.daysLeft <= 7),
     expiredTenants: tenantActivity.filter(t => t.daysLeft !== null && t.daysLeft < 0),
   };
+}
+
+// ─── Límites de admins por plan ───────────────────────────────────────────────
+const ADMIN_LIMITS: Record<string, number> = {
+  BASIC: 1,
+  PROFESSIONAL: 2,
+  ENTERPRISE: Infinity,
+};
+
+// ─── Obtener admins de un tenant ──────────────────────────────────────────────
+export async function getTenantAdminsAction(tenantId: string) {
+  await assertSuperAdmin();
+  return db.query.users.findMany({
+    where: and(eq(users.tenantId, tenantId), eq(users.role, 'ADMIN')),
+    columns: { id: true, name: true, email: true, isActive: true, createdAt: true },
+  });
+}
+
+// ─── Crear nuevo admin para un tenant ────────────────────────────────────────
+export async function createTenantAdminAction(
+  tenantId: string,
+  data: { name: string; email: string }
+) {
+  const session = await assertSuperAdmin();
+
+  const tenant = await db.query.tenants.findFirst({ where: eq(tenants.id, tenantId) });
+  if (!tenant) return { success: false, error: 'Tenant no encontrado' };
+
+  const limit = ADMIN_LIMITS[tenant.plan] ?? 1;
+  const currentAdmins = await db.query.users.findMany({
+    where: and(eq(users.tenantId, tenantId), eq(users.role, 'ADMIN'), eq(users.isActive, true)),
+  });
+
+  if (currentAdmins.length >= limit) {
+    return { success: false, error: 'PLAN_LIMIT', limit };
+  }
+
+  const existing = await db.query.users.findFirst({ where: eq(users.email, data.email) });
+  if (existing) return { success: false, error: 'EMAIL_EXISTS' };
+
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+  const tempPassword = 'Tmp@' + Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const hashed = await bcrypt.hash(tempPassword, 10);
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 7);
+
+  await db.insert(users).values({
+    tenantId,
+    name: data.name,
+    email: data.email,
+    password: hashed,
+    role: 'ADMIN',
+    isActive: true,
+    mustChangePassword: true,
+    tempPasswordExpiresAt: expires,
+  });
+
+  await logAuditEvent({
+    action: 'ADMIN_CREATED',
+    userId: session.userId,
+    tenantId,
+    details: { email: data.email, tenantName: tenant.name },
+  });
+
+  revalidatePath('/[locale]/admin/super/tenants', 'page');
+  return { success: true, tempPassword };
+}
+
+// ─── Activar / desactivar un admin ───────────────────────────────────────────
+export async function toggleTenantAdminAction(
+  userId: string,
+  tenantId: string,
+  isActive: boolean
+) {
+  const session = await assertSuperAdmin();
+
+  if (isActive === false) {
+    const activeAdmins = await db.query.users.findMany({
+      where: and(eq(users.tenantId, tenantId), eq(users.role, 'ADMIN'), eq(users.isActive, true)),
+    });
+    if (activeAdmins.length <= 1) {
+      return { success: false, error: 'LAST_ADMIN' };
+    }
+  }
+
+  await db.update(users).set({ isActive }).where(eq(users.id, userId));
+
+  await logAuditEvent({
+    action: 'ADMIN_STATUS_CHANGED',
+    userId: session.userId,
+    tenantId,
+    details: { targetUserId: userId, isActive },
+  });
+
+  return { success: true };
+}
+
+// ─── Eliminar un admin ────────────────────────────────────────────────────────
+export async function deleteTenantAdminAction(userId: string, tenantId: string) {
+  const session = await assertSuperAdmin();
+
+  const remaining = await db.query.users.findMany({
+    where: and(eq(users.tenantId, tenantId), eq(users.role, 'ADMIN'), ne(users.id, userId)),
+  });
+  if (remaining.length === 0) {
+    return { success: false, error: 'LAST_ADMIN' };
+  }
+
+  await db.delete(users).where(and(eq(users.id, userId), eq(users.tenantId, tenantId)));
+
+  await logAuditEvent({
+    action: 'ADMIN_DELETED',
+    userId: session.userId,
+    tenantId,
+    details: { deletedUserId: userId },
+  });
+
+  revalidatePath('/[locale]/admin/super/tenants', 'page');
+  return { success: true };
 }

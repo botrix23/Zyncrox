@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getAllTenantsAction, updateTenantStatusAction, updateTenantPlanAction, deleteTenantAction, impersonateTenantAction } from '@/app/actions/superAdmin';
-import { CheckCircle, Clock, XCircle, Trash2, ShieldCheck, MoreVertical, CreditCard } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, Trash2, ShieldCheck, MoreVertical, CreditCard, Users } from 'lucide-react';
+import TenantAdminsModal from './TenantAdminsModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useTranslations } from 'next-intl';
 
@@ -99,6 +100,7 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [planTarget, setPlanTarget] = useState<Tenant | null>(null);
+  const [adminsTarget, setAdminsTarget] = useState<Tenant | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -177,9 +179,23 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
     }
   };
 
+  const handleManageAdmins = (tenant: Tenant) => {
+    setOpenMenu(null);
+    setMenuPos(null);
+    setAdminsTarget(tenant);
+  };
+
   return (
     <>
       {/* Modals */}
+      {adminsTarget && (
+        <TenantAdminsModal
+          tenantId={adminsTarget.id}
+          tenantName={adminsTarget.name}
+          plan={adminsTarget.plan}
+          onClose={() => setAdminsTarget(null)}
+        />
+      )}
       <ConfirmDialog
         open={!!deleteTarget}
         title={t('deleteTitle')}
@@ -336,6 +352,12 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
           style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
           className="w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
         >
+          <button
+            onClick={() => { const ten = tenants.find(ten => ten.id === openMenu); if (ten) handleManageAdmins(ten); }}
+            className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
+          >
+            <Users className="w-3.5 h-3.5" /> Gestionar admins
+          </button>
           <button
             onClick={() => { const ten = tenants.find(ten => ten.id === openMenu); if (ten) handlePlanChange(ten); }}
             className="w-full text-left px-4 py-2.5 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 transition-colors flex items-center gap-2"

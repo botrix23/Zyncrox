@@ -31,7 +31,10 @@ export type AuditAction =
   | 'BOOKING_CREATED'
   | 'BOOKING_STATUS_CHANGED'
   | 'WOMPI_CREDENTIALS_UPDATED'
-  | 'CRON_REMINDERS_RUN';
+  | 'CRON_REMINDERS_RUN'
+  | 'ADMIN_CREATED'
+  | 'ADMIN_STATUS_CHANGED'
+  | 'ADMIN_DELETED';
 
 export interface AuditEventParams {
   action: AuditAction;
