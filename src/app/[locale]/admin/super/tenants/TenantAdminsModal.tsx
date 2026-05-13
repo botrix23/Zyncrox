@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Users, X, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, AlertCircle, ShieldCheck, LifeBuoy } from 'lucide-react';
 import { getTenantAdminsAction, createTenantAdminAction, toggleTenantAdminAction, deleteTenantAdminAction, restoreAccessAction } from '@/app/actions/superAdmin';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 type Admin = Awaited<ReturnType<typeof getTenantAdminsAction>>[number];
 
@@ -43,6 +44,7 @@ export default function TenantAdminsModal({
   const [tempEmail, setTempEmail] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [restoringAccess, setRestoringAccess] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Admin | null>(null);
 
   const limit = ADMIN_LIMITS[plan] ?? 1;
   const activeCount = admins?.filter(a => a.isActive).length ?? 0;
@@ -71,12 +73,17 @@ export default function TenantAdminsModal({
     setActionId(null);
   };
 
-  const handleDelete = async (admin: Admin) => {
-    if (!confirm(`¿Eliminar a ${admin.name}? Esta acción no se puede deshacer.`)) return;
-    setActionId(admin.id);
-    const res = await deleteTenantAdminAction(admin.id, tenantId);
+  const handleDelete = (admin: Admin) => {
+    setDeleteTarget(admin);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setActionId(deleteTarget.id);
+    setDeleteTarget(null);
+    const res = await deleteTenantAdminAction(deleteTarget.id, tenantId);
     if (res.success) {
-      setAdmins(prev => prev?.filter(a => a.id !== admin.id) ?? null);
+      setAdmins(prev => prev?.filter(a => a.id !== deleteTarget.id) ?? null);
     } else if (res.error === 'LAST_ADMIN') {
       setError('No puedes eliminar el único admin del tenant.');
     }
@@ -127,6 +134,17 @@ export default function TenantAdminsModal({
   };
 
   return (
+    <>
+    <ConfirmDialog
+      open={!!deleteTarget}
+      title="Eliminar administrador"
+      message={`¿Eliminar a ${deleteTarget?.name ?? ''}? Esta acción no se puede deshacer.`}
+      confirmLabel="Eliminar"
+      cancelLabel="Cancelar"
+      variant="danger"
+      onConfirm={confirmDelete}
+      onCancel={() => setDeleteTarget(null)}
+    />
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-3xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
@@ -284,5 +302,6 @@ export default function TenantAdminsModal({
         </div>
       </div>
     </div>
+    </>
   );
 }
