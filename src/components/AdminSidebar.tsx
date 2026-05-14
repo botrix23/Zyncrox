@@ -18,6 +18,7 @@ import {
   ChevronRight,
   X,
   Settings,
+  CreditCard,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -77,6 +78,7 @@ export function AdminSidebar({ user, locale, tenantName }: { user: SessionUser |
     { name: t('clients'), icon: Contact, href: `/${locale}/admin/clients`, active: pathname.includes('/clients'), staffVisible: false },
     { name: t('appearance'), icon: Palette, href: `/${locale}/admin/appearance`, active: pathname.includes('/appearance'), staffVisible: false },
     { name: t('surveys'), icon: ClipboardList, href: `/${locale}/admin/surveys`, active: pathname.includes('/surveys'), staffVisible: false },
+    { name: t('billing'), icon: CreditCard, href: `/${locale}/admin/billing`, active: pathname.includes('/billing'), staffVisible: false },
     { name: t('settings'), icon: Settings, href: `/${locale}/admin/settings`, active: pathname.includes('/settings'), staffVisible: false },
     // { name: t('products'), icon: Package, href: `/${locale}/admin/products`, active: pathname.includes('/products'), staffVisible: false },
   ];

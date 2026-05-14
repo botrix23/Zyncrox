@@ -2,12 +2,13 @@
 
 import { db } from "@/db";
 import { tenants, users, bookings, auditLogs, staff, platformConfig } from "@/db/schema";
-import { eq, desc, count, and, gte, lte, sql, ne, asc } from "drizzle-orm";
+import { eq, desc, count, and, gte, lte, sql, ne } from "drizzle-orm";
 import bcrypt from 'bcryptjs';
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth-session";
 import { logAuditEvent } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
+import { enforceDowngradeLimits } from "@/lib/billing";
 
 // ─── Guard helper ────────────────────────────────────────────────────────────
 async function assertSuperAdmin() {
@@ -69,20 +70,7 @@ export async function updateTenantPlanAction(
     .set({ plan, updatedAt: new Date(), ...downgradedFields })
     .where(eq(tenants.id, tenantId));
 
-  if (plan === 'BASIC') {
-    const allStaff = await db
-      .select({ id: staff.id })
-      .from(staff)
-      .where(eq(staff.tenantId, tenantId))
-      .orderBy(asc(staff.createdAt));
-
-    if (allStaff.length > 1) {
-      const keepId = allStaff[0].id;
-      await db.update(staff)
-        .set({ isActive: false })
-        .where(and(eq(staff.tenantId, tenantId), ne(staff.id, keepId)));
-    }
-  }
+  await enforceDowngradeLimits(tenantId, plan);
 
   await logAuditEvent({
     action: 'TENANT_STATUS_CHANGED',

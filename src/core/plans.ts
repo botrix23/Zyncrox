@@ -136,6 +136,17 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   },
 };
 
+export const PLAN_PRICES: Record<PlanType, number> = {
+  BASIC: 20,
+  PROFESSIONAL: 45,
+  ENTERPRISE: 99,
+}
+
+export function getPlanPrice(plan: string | null | undefined): number {
+  const normalized = plan === 'FREE' ? 'BASIC' : plan === 'PRO' ? 'PROFESSIONAL' : plan
+  return PLAN_PRICES[(normalized as PlanType)] ?? PLAN_PRICES.BASIC
+}
+
 /** Retorna las características del plan. Backward-compatible con FREE/PRO. */
 export function getPlanFeatures(plan?: string | null): PlanFeatures {
   const normalized = plan === 'FREE' ? 'BASIC' : plan === 'PRO' ? 'PROFESSIONAL' : plan;

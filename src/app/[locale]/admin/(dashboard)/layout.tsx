@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { tenants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 
 export default async function AdminLayout({
   children,
@@ -15,6 +16,9 @@ export default async function AdminLayout({
 }) {
   const session = await getSession();
   const locale = params.locale || 'es';
+  const headersList = headers();
+  const pathname = headersList.get('x-pathname') ?? '';
+  const isBillingPage = pathname.includes('/billing');
 
   // Cierre inmediato de sesión, check de cambio de contraseña, y backfill de nombre
   if (session?.userId) {
@@ -45,13 +49,18 @@ export default async function AdminLayout({
           where: eq(tenants.id, session.tenantId)
         });
         tenantName = tenant?.name || "";
-        if (
-          session.role !== 'SUPER_ADMIN' &&
-          tenant?.status === 'TRIAL' &&
-          tenant.subscriptionExpiresAt &&
-          new Date() > tenant.subscriptionExpiresAt
-        ) {
-          redirect(`/${locale}/admin/plans`);
+        if (session.role !== 'SUPER_ADMIN') {
+          if (tenant?.status === 'SUSPENDED') {
+            if (!isBillingPage) {
+              redirect(`/${locale}/admin/billing`);
+            }
+          } else if (
+            tenant?.status === 'TRIAL' &&
+            tenant.subscriptionExpiresAt &&
+            new Date() > tenant.subscriptionExpiresAt
+          ) {
+            redirect(`/${locale}/admin/billing`);
+          }
         }
       } catch (error) {
         console.error("Error fetching tenant details:", error);

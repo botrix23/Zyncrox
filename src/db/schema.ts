@@ -290,9 +290,34 @@ export const surveyQuestions = pgTable('survey_questions', {
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
-export const tenantsRelations = relations(tenants, ({ many }) => ({
+export const subscriptions = pgTable('subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().unique().references(() => tenants.id, { onDelete: 'cascade' }),
+  plan: varchar('plan', { length: 50 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull().default('ACTIVE'),
+  cardToken: text('card_token'),
+  cardLast4: varchar('card_last4', { length: 4 }),
+  cardBrand: varchar('card_brand', { length: 20 }),
+  cardExpMonth: varchar('card_exp_month', { length: 2 }),
+  cardExpYear: varchar('card_exp_year', { length: 4 }),
+  currentPeriodStart: timestamp('current_period_start', { withTimezone: true, mode: 'date' }),
+  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true, mode: 'date' }),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true, mode: 'date' }),
+  gracePeriodEndsAt: timestamp('grace_period_ends_at', { withTimezone: true, mode: 'date' }),
+  lastPaymentAt: timestamp('last_payment_at', { withTimezone: true, mode: 'date' }),
+  lastPaymentAmount: decimal('last_payment_amount', { precision: 10, scale: 2 }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+})
+
+export const tenantsRelations = relations(tenants, ({ many, one }) => ({
   users: many(users),
   branches: many(branches),
+  subscription: one(subscriptions, { fields: [tenants.id], references: [subscriptions.tenantId] }),
+}));
+
+export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
+  tenant: one(tenants, { fields: [subscriptions.tenantId], references: [tenants.id] }),
 }));
 
 export const usersRelations = relations(users, ({ one }) => ({
