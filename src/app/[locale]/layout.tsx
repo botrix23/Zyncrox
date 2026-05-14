@@ -17,7 +17,7 @@ const dmSerif = DM_Serif_Display({
 
 export const metadata: Metadata = {
   title: "Zyncrox | Reservas que se adaptan a tu negocio",
-  description: "Gestión de citas online. Personaliza, automatiza y crece sin complicaciones técnicas.",
+  description: "Zyncrox transforma la gestión de citas en una experiencia fluida. Personaliza, automatiza y crece — sin complicaciones técnicas.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -25,7 +25,34 @@ export const metadata: Metadata = {
     title: "Zyncrox",
   },
   icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
     apple: "/icons/icon-192x192.png",
+    shortcut: "/favicon.ico",
+  },
+  openGraph: {
+    type: "website",
+    url: "https://www.zyncrox.com",
+    title: "Zyncrox | Reservas que se adaptan a tu negocio",
+    description: "Zyncrox transforma la gestión de citas en una experiencia fluida. Personaliza, automatiza y crece — sin complicaciones técnicas.",
+    siteName: "Zyncrox",
+    images: [
+      {
+        url: "https://www.zyncrox.com/icons/icon-512x512.png",
+        width: 512,
+        height: 512,
+        alt: "Zyncrox Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Zyncrox | Reservas que se adaptan a tu negocio",
+    description: "Zyncrox transforma la gestión de citas en una experiencia fluida. Personaliza, automatiza y crece — sin complicaciones técnicas.",
+    images: ["https://www.zyncrox.com/icons/icon-512x512.png"],
   },
   themeColor: "#8b5cf6",
 };
