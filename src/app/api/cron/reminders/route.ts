@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
       if (!booking.customerEmail) continue;
       try {
         const locale = ((booking.tenant as any).emailLocale || 'es') as EmailLocale;
+        const tenantPhone = (booking.tenant as any).whatsappNumber || undefined;
+        const tenantContactEmail = (booking.tenant as any).contactEmail || undefined;
         const vars = {
           customerName: booking.customerName,
           serviceName: booking.service.name,
@@ -49,13 +51,17 @@ export async function GET(req: NextRequest) {
           branchName: booking.branch.name,
           staffName: booking.staff?.name ?? '',
           tenantName: booking.tenant.name,
+          phone: tenantPhone || '',
+          contactEmail: tenantContactEmail || '',
         };
         const emailPayload = buildEmailPayload(
           emailCfg?.emailTplReminder,
           React.createElement(BookingReminderEmail, {
             ...vars,
-            tenantLogo: booking.tenant.logoUrl || undefined,
+            tenantLogo: (booking.tenant as any).logoUrl || undefined,
             locale,
+            phone: tenantPhone,
+            contactEmail: tenantContactEmail,
           }),
           vars
         );

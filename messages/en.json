@@ -1112,7 +1112,9 @@
         "businessName": "Business name",
         "daysLeft": "Days remaining (0 = expired)",
         "adminName": "Administrator name",
-        "surveyUrl": "Survey URL"
+        "surveyUrl": "Survey URL",
+        "phone": "Business phone / WhatsApp",
+        "contactEmail": "Business contact email"
       },
       "previewTab": "Preview",
       "editorTab": "HTML Editor",

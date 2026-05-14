@@ -457,6 +457,8 @@ export async function createBookingAction(data: {
             branchName: branch.name,
             staffName: tenant.plan !== 'BASIC' && staffMember ? staffMember.name : '',
             tenantName: tenant.name,
+            phone: tenant.whatsappNumber || branch.phone || '',
+            contactEmail: (tenant as any).contactEmail || '',
           };
           const emailPayload = buildEmailPayload(
             emailCfg?.emailTplConfirmation,
@@ -465,7 +467,8 @@ export async function createBookingAction(data: {
               locale,
               tenantLogo: tenant.logoUrl || undefined,
               customBody: tenant.emailBodyTemplate,
-              whatsappNumber: tenant.whatsappNumber || branch.phone || undefined,
+              phone: tenant.whatsappNumber || branch.phone || undefined,
+              contactEmail: (tenant as any).contactEmail || undefined,
             }),
             vars
           );
@@ -779,6 +782,8 @@ export async function createBookingSessionAction(data: {
           branchName: branch.name,
           staffName: tenant.plan !== 'BASIC' ? staffMember?.name ?? '' : '',
           tenantName: tenant.name,
+          phone: tenant.whatsappNumber || branch?.phone || '',
+          contactEmail: (tenant as any).contactEmail || '',
         };
         const emailPayload2 = buildEmailPayload(
           emailCfg2?.emailTplConfirmation,
@@ -787,7 +792,8 @@ export async function createBookingSessionAction(data: {
             locale: locale2,
             tenantLogo: tenant.logoUrl || undefined,
             customBody: tenant.emailBodyTemplate,
-            whatsappNumber: tenant.whatsappNumber || branch?.phone || undefined,
+            phone: tenant.whatsappNumber || branch?.phone || undefined,
+            contactEmail: (tenant as any).contactEmail || undefined,
           }),
           vars2
         );
@@ -899,6 +905,8 @@ export async function updateBookingAction(data: {
           branchName: existing.branch.name,
           staffName: newStaff?.name ?? '',
           tenantName: existing.tenant.name,
+          phone: existing.tenant.whatsappNumber || '',
+          contactEmail: (existing.tenant as any).contactEmail || '',
         };
         const emailPayloadR = buildEmailPayload(
           emailCfgR?.emailTplReschedule,
@@ -906,6 +914,8 @@ export async function updateBookingAction(data: {
             ...varsR,
             locale: localeR,
             tenantLogo: existing.tenant.logoUrl || undefined,
+            phone: existing.tenant.whatsappNumber || undefined,
+            contactEmail: (existing.tenant as any).contactEmail || undefined,
           }),
           varsR
         );
@@ -950,6 +960,8 @@ export async function deleteBookingAction(id: string, tenantId: string) {
           time: formatEmailTime(existing.startTime),
           branchName: existing.branch.name,
           tenantName: existing.tenant.name,
+          phone: existing.tenant.whatsappNumber || '',
+          contactEmail: (existing.tenant as any).contactEmail || '',
         };
         const emailPayloadC = buildEmailPayload(
           emailCfgC?.emailTplCancellation,
@@ -957,6 +969,8 @@ export async function deleteBookingAction(id: string, tenantId: string) {
             ...varsC,
             locale: localeC,
             tenantLogo: existing.tenant.logoUrl || undefined,
+            phone: existing.tenant.whatsappNumber || undefined,
+            contactEmail: (existing.tenant as any).contactEmail || undefined,
           }),
           varsC
         );

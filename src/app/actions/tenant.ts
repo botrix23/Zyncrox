@@ -105,6 +105,7 @@ export async function updatePortalSettingsAction(data: {
   heroSubtitle?: string | null;
   emailBodyTemplate?: string | null;
   emailLocale?: string;
+  contactEmail?: string | null;
   bookingSettings?: any;
   timezone?: string;
 }) {
@@ -132,6 +133,7 @@ export async function updatePortalSettingsAction(data: {
         heroSubtitle: data.heroSubtitle || null,
         emailBodyTemplate: data.emailBodyTemplate || null,
         emailLocale: data.emailLocale || 'es',
+        contactEmail: data.contactEmail || null,
         bookingSettings: data.bookingSettings,
         timezone: data.timezone || 'America/El_Salvador',
         updatedAt: new Date()

@@ -13,41 +13,52 @@ interface BookingRescheduleEmailProps {
   staffName?: string;
   tenantName: string;
   tenantLogo?: string;
+  phone?: string | null;
+  contactEmail?: string | null;
   locale?: EmailLocale;
 }
 
 export const BookingRescheduleEmail = ({
-  customerName, serviceName, oldDate, oldTime, newDate, newTime, branchName, staffName, tenantName, tenantLogo, locale = 'es',
-}: BookingRescheduleEmailProps) => (
-  <Html>
-    <Head />
-    <Preview>{t.reschedulePreview(tenantName, locale)}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        {tenantLogo && <Img src={tenantLogo} width="150" alt={tenantName} style={logo} />}
-        <Heading style={h1}>{t.rescheduleHeading(locale)}</Heading>
-        <Text style={text}>{t.rescheduleBody(customerName, tenantName, locale)}</Text>
+  customerName, serviceName, oldDate, oldTime, newDate, newTime, branchName, staffName, tenantName, tenantLogo, phone, contactEmail, locale = 'es',
+}: BookingRescheduleEmailProps) => {
+  const hasContact = !!(phone || contactEmail);
+  return (
+    <Html>
+      <Head />
+      <Preview>{t.reschedulePreview(tenantName, locale)}</Preview>
+      <Body style={main}>
+        <Container style={container}>
+          {tenantLogo && <Img src={tenantLogo} width="150" alt={tenantName} style={logo} />}
+          <Heading style={h1}>{t.rescheduleHeading(locale)}</Heading>
+          <Text style={text}>{t.rescheduleBody(customerName, tenantName, locale)}</Text>
 
-        <Section style={newSection}>
-          <Text style={labelText}>{t.rescheduleNewLabel(locale)}</Text>
-          <Text style={detailText}><strong>{t.service(locale)}</strong> {serviceName}</Text>
-          <Text style={detailText}><strong>{t.date(locale)}</strong> {newDate}</Text>
-          <Text style={detailText}><strong>{t.time(locale)}</strong> {newTime}</Text>
-          <Text style={detailText}><strong>{t.branch(locale)}</strong> {branchName}</Text>
-          {staffName && <Text style={detailText}><strong>{t.specialist(locale)}</strong> {staffName}</Text>}
-        </Section>
+          <Section style={newSection}>
+            <Text style={labelText}>{t.rescheduleNewLabel(locale)}</Text>
+            <Text style={detailText}><strong>{t.service(locale)}</strong> {serviceName}</Text>
+            <Text style={detailText}><strong>{t.date(locale)}</strong> {newDate}</Text>
+            <Text style={detailText}><strong>{t.time(locale)}</strong> {newTime}</Text>
+            <Text style={detailText}><strong>{t.branch(locale)}</strong> {branchName}</Text>
+            {staffName && <Text style={detailText}><strong>{t.specialist(locale)}</strong> {staffName}</Text>}
+          </Section>
 
-        <Section style={oldSection}>
-          <Text style={oldLabelText}>{t.rescheduleOldLabel(locale)}</Text>
-          <Text style={oldDetailText}>{oldDate} {t.rescheduleOldAt(locale)} {oldTime}</Text>
-        </Section>
+          <Section style={oldSection}>
+            <Text style={oldLabelText}>{t.rescheduleOldLabel(locale)}</Text>
+            <Text style={oldDetailText}>{oldDate} {t.rescheduleOldAt(locale)} {oldTime}</Text>
+          </Section>
 
-        <Hr style={hr} />
-        <Text style={footer}>{t.rescheduleFooter(tenantName, locale)}</Text>
-      </Container>
-    </Body>
-  </Html>
-);
+          <Hr style={hr} />
+          <Text style={footer}>{t.rescheduleFooter(tenantName, locale)}</Text>
+          {hasContact && (
+            <Section style={contactSection}>
+              {phone && <Text style={contactLine}>📞 {phone}</Text>}
+              {contactEmail && <Text style={contactLine}>✉️ {contactEmail}</Text>}
+            </Section>
+          )}
+        </Container>
+      </Body>
+    </Html>
+  );
+};
 
 export default BookingRescheduleEmail;
 
@@ -64,3 +75,5 @@ const detailText = { color: "#444", fontSize: "15px", margin: "8px 0" };
 const oldDetailText = { color: "#9ca3af", fontSize: "13px", margin: "0", textDecoration: "line-through" };
 const hr = { borderColor: "#e6ebf1", margin: "20px 0" };
 const footer = { color: "#8898aa", fontSize: "12px", textAlign: "center" as const };
+const contactSection = { textAlign: "center" as const, margin: "8px 0 0 0" };
+const contactLine = { color: "#6b7280", fontSize: "13px", margin: "4px 0", textAlign: "center" as const };

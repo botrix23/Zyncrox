@@ -1112,7 +1112,9 @@
         "businessName": "Nombre del negocio",
         "daysLeft": "Días restantes (0 = vencido)",
         "adminName": "Nombre del administrador",
-        "surveyUrl": "URL de la encuesta"
+        "surveyUrl": "URL de la encuesta",
+        "phone": "Teléfono / WhatsApp del negocio",
+        "contactEmail": "Correo de contacto del negocio"
       },
       "previewTab": "Vista previa",
       "editorTab": "Editor HTML",

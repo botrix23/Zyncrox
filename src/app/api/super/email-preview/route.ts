@@ -35,6 +35,8 @@ const SAMPLE: Record<EmailLocale, Record<string, string>> = {
     daysLeft: '3',
     adminName: 'Carlos Rodríguez',
     surveyUrl: 'https://zyncrox.com/survey/demo',
+    phone: '+503 7000-0000',
+    contactEmail: 'contacto@salonbella.com',
   },
   en: {
     customerName: 'Mary Johnson',
@@ -52,6 +54,8 @@ const SAMPLE: Record<EmailLocale, Record<string, string>> = {
     daysLeft: '3',
     adminName: 'Charles Rodriguez',
     surveyUrl: 'https://zyncrox.com/survey/demo',
+    phone: '+1 (555) 000-0000',
+    contactEmail: 'contact@bellasalon.com',
   },
 };
 
@@ -82,6 +86,8 @@ export async function GET(req: NextRequest) {
           branchName: sample.branchName,
           staffName: sample.staffName,
           tenantName: sample.tenantName,
+          phone: sample.phone,
+          contactEmail: sample.contactEmail,
           locale,
         }));
       }
@@ -99,6 +105,8 @@ export async function GET(req: NextRequest) {
           branchName: sample.branchName,
           staffName: sample.staffName,
           tenantName: sample.tenantName,
+          phone: sample.phone,
+          contactEmail: sample.contactEmail,
           locale,
         }));
       }
@@ -115,6 +123,8 @@ export async function GET(req: NextRequest) {
           time: sample.time,
           branchName: sample.branchName,
           tenantName: sample.tenantName,
+          phone: sample.phone,
+          contactEmail: sample.contactEmail,
           locale,
         }));
       }
@@ -134,6 +144,8 @@ export async function GET(req: NextRequest) {
           branchName: sample.branchName,
           staffName: sample.staffName,
           tenantName: sample.tenantName,
+          phone: sample.phone,
+          contactEmail: sample.contactEmail,
           locale,
         }));
       }

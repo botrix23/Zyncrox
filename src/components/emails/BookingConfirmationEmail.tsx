@@ -12,7 +12,8 @@ interface BookingEmailProps {
   tenantName: string;
   tenantLogo?: string;
   customBody?: string | null;
-  whatsappNumber?: string | null;
+  phone?: string | null;
+  contactEmail?: string | null;
   locale?: EmailLocale;
 }
 
@@ -26,7 +27,8 @@ export const BookingConfirmationEmail = ({
   tenantName,
   tenantLogo,
   customBody,
-  whatsappNumber,
+  phone,
+  contactEmail,
   locale = 'es',
 }: BookingEmailProps) => {
   const displayName = customerName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -43,6 +45,7 @@ export const BookingConfirmationEmail = ({
   };
 
   const formattedBody = getFormattedBody();
+  const hasContact = !!(phone || contactEmail);
 
   return (
     <Html>
@@ -68,8 +71,14 @@ export const BookingConfirmationEmail = ({
           </Section>
           <Hr style={hr} />
           <Text style={footer}>
-            {t.confirmationFooter(tenantName, whatsappNumber, locale)}
+            {t.confirmationFooter(tenantName, locale)}
           </Text>
+          {hasContact && (
+            <Section style={contactSection}>
+              {phone && <Text style={contactLine}>📞 {phone}</Text>}
+              {contactEmail && <Text style={contactLine}>✉️ {contactEmail}</Text>}
+            </Section>
+          )}
         </Container>
       </Body>
     </Html>
@@ -87,3 +96,5 @@ const section = { padding: "20px", backgroundColor: "#f9f9f9", borderRadius: "8p
 const detailText = { color: "#444", fontSize: "15px", margin: "10px 0" };
 const hr = { borderColor: "#e6ebf1", margin: "20px 0" };
 const footer = { color: "#8898aa", fontSize: "12px", textAlign: "center" as const };
+const contactSection = { textAlign: "center" as const, margin: "8px 0 0 0" };
+const contactLine = { color: "#6b7280", fontSize: "13px", margin: "4px 0", textAlign: "center" as const };

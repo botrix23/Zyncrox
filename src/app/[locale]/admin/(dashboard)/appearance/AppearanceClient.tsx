@@ -48,6 +48,7 @@ heroTitle?: string | null;
 heroSubtitle?: string | null;
 emailBodyTemplate?: string | null;
 emailLocale?: string | null;
+contactEmail?: string | null;
 bookingSettings?: {
   footerText?: string;
   [key: string]: any;
@@ -82,6 +83,7 @@ const [heroTitle, setHeroTitle] = useState(tenant.heroTitle || "");
 const [heroSubtitle, setHeroSubtitle] = useState(tenant.heroSubtitle || "");
 const [emailBodyTemplate, setEmailBodyTemplate] = useState(tenant.emailBodyTemplate || "");
 const [emailLocale, setEmailLocale] = useState(tenant.emailLocale || "es");
+const [contactEmail, setContactEmail] = useState(tenant.contactEmail || "");
 const [footerText, setFooterText] = useState(tenant.bookingSettings?.footerText || "");
   
   // Operación y Reglas (Lógico)
@@ -193,6 +195,7 @@ heroTitle,
 heroSubtitle,
 emailBodyTemplate,
 emailLocale,
+contactEmail: contactEmail || null,
 bookingSettings: {
   ...tenant.bookingSettings,
   footerText
@@ -825,6 +828,17 @@ try {
     ))}
   </div>
   <p className="text-xs text-slate-500 dark:text-zinc-500">Los correos de confirmación, recordatorio, cancelación y encuesta se enviarán en este idioma.</p>
+</div>
+<div className="space-y-2">
+  <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">Correo de contacto</label>
+  <input
+    type="email"
+    value={contactEmail}
+    onChange={e => setContactEmail(e.target.value)}
+    placeholder="contacto@tunegocio.com"
+    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all text-sm"
+  />
+  <p className="text-xs text-slate-500 dark:text-zinc-500">Se mostrará en los correos al cliente para que pueda contactarte. Déjalo vacío para ocultarlo.</p>
 </div>
 <div className="space-y-2">
 <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">{tPortal('form.emailTitle')}</label>

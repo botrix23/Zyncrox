@@ -40,10 +40,10 @@ export const t = {
       : `Tu cita en ${tenantName} ha sido confirmada satisfactoriamente. Aquí tienes los detalles:`,
   confirmationSpecialistTbd: (l: EmailLocale) =>
     l === 'en' ? 'Will be assigned based on availability' : 'Se asignará según disponibilidad',
-  confirmationFooter: (tenantName: string, wa: string | null | undefined, l: EmailLocale) =>
+  confirmationFooter: (tenantName: string, l: EmailLocale) =>
     l === 'en'
-      ? `Thank you for choosing ${tenantName}. If you need to make any changes, please contact us${wa ? ` at ${wa}` : ''}.`
-      : `Gracias por confiar en ${tenantName}. Si necesitas realizar algún cambio, por favor contáctanos${wa ? ` al ${wa}` : ''}.`,
+      ? `Thank you for choosing ${tenantName}. If you need to make any changes, please contact us.`
+      : `Gracias por confiar en ${tenantName}. Si necesitas realizar algún cambio, por favor contáctanos.`,
 
   // ── Reminder ────────────────────────────────────────────────────────────────
   reminderSubject: (tenantName: string, l: EmailLocale) =>

@@ -52,6 +52,7 @@ export default async function AppearancePage({ params, searchParams }: { params:
         heroSubtitle: tenantData.heroSubtitle,
         emailBodyTemplate: tenantData.emailBodyTemplate,
         emailLocale: tenantData.emailLocale,
+        contactEmail: tenantData.contactEmail,
         bookingSettings: tenantData.bookingSettings as any,
         timezone: tenantData.timezone,
       }}

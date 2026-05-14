@@ -11,35 +11,46 @@ interface BookingReminderEmailProps {
   staffName?: string;
   tenantName: string;
   tenantLogo?: string;
+  phone?: string | null;
+  contactEmail?: string | null;
   locale?: EmailLocale;
 }
 
 export const BookingReminderEmail = ({
-  customerName, serviceName, date, time, branchName, staffName, tenantName, tenantLogo, locale = 'es',
-}: BookingReminderEmailProps) => (
-  <Html>
-    <Head />
-    <Preview>{t.reminderPreview(tenantName, locale)}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        {tenantLogo && <Img src={tenantLogo} width="150" alt={tenantName} style={logo} />}
-        <Heading style={h1}>{t.reminderHeading(locale)}</Heading>
-        <Text style={text}>
-          {t.reminderBody(customerName, tenantName, locale)}<strong>{tenantName}</strong>.
-        </Text>
-        <Section style={section}>
-          <Text style={detailText}><strong>{t.service(locale)}</strong> {serviceName}</Text>
-          <Text style={detailText}><strong>{t.date(locale)}</strong> {date}</Text>
-          <Text style={detailText}><strong>{t.time(locale)}</strong> {time}</Text>
-          <Text style={detailText}><strong>{t.branch(locale)}</strong> {branchName}</Text>
-          {staffName && <Text style={detailText}><strong>{t.specialist(locale)}</strong> {staffName}</Text>}
-        </Section>
-        <Hr style={hr} />
-        <Text style={footer}>{t.reminderFooter(tenantName, locale)}</Text>
-      </Container>
-    </Body>
-  </Html>
-);
+  customerName, serviceName, date, time, branchName, staffName, tenantName, tenantLogo, phone, contactEmail, locale = 'es',
+}: BookingReminderEmailProps) => {
+  const hasContact = !!(phone || contactEmail);
+  return (
+    <Html>
+      <Head />
+      <Preview>{t.reminderPreview(tenantName, locale)}</Preview>
+      <Body style={main}>
+        <Container style={container}>
+          {tenantLogo && <Img src={tenantLogo} width="150" alt={tenantName} style={logo} />}
+          <Heading style={h1}>{t.reminderHeading(locale)}</Heading>
+          <Text style={text}>
+            {t.reminderBody(customerName, tenantName, locale)}<strong>{tenantName}</strong>.
+          </Text>
+          <Section style={section}>
+            <Text style={detailText}><strong>{t.service(locale)}</strong> {serviceName}</Text>
+            <Text style={detailText}><strong>{t.date(locale)}</strong> {date}</Text>
+            <Text style={detailText}><strong>{t.time(locale)}</strong> {time}</Text>
+            <Text style={detailText}><strong>{t.branch(locale)}</strong> {branchName}</Text>
+            {staffName && <Text style={detailText}><strong>{t.specialist(locale)}</strong> {staffName}</Text>}
+          </Section>
+          <Hr style={hr} />
+          <Text style={footer}>{t.reminderFooter(tenantName, locale)}</Text>
+          {hasContact && (
+            <Section style={contactSection}>
+              {phone && <Text style={contactLine}>📞 {phone}</Text>}
+              {contactEmail && <Text style={contactLine}>✉️ {contactEmail}</Text>}
+            </Section>
+          )}
+        </Container>
+      </Body>
+    </Html>
+  );
+};
 
 export default BookingReminderEmail;
 
@@ -52,3 +63,5 @@ const section = { padding: "20px", backgroundColor: "#faf5ff", borderRadius: "8p
 const detailText = { color: "#444", fontSize: "15px", margin: "10px 0" };
 const hr = { borderColor: "#e6ebf1", margin: "20px 0" };
 const footer = { color: "#8898aa", fontSize: "12px", textAlign: "center" as const };
+const contactSection = { textAlign: "center" as const, margin: "8px 0 0 0" };
+const contactLine = { color: "#6b7280", fontSize: "13px", margin: "4px 0", textAlign: "center" as const };
