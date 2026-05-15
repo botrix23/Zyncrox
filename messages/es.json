@@ -1221,49 +1221,116 @@
   },
   "Billing": {
     "title": "Facturación",
-    "subscription": "Tu suscripción",
-    "paymentMethod": "Método de pago",
-    "changePlan": "Cambiar plan",
-    "statusActive": "Activo",
-    "statusPastDue": "Vencido",
-    "statusCancelled": "Cancelado",
-    "statusSuspended": "Suspendida",
-    "nextBilling": "Próxima factura",
-    "accessUntil": "Acceso hasta",
-    "gracePeriodWarning": "Tu pago falló. Actualiza tu tarjeta antes de que tu cuenta sea suspendida.",
-    "cardUpdateBtn": "Actualizar",
-    "cardExpires": "Vence",
-    "cancelBtn": "Cancelar suscripción",
-    "reactivateBtn": "Reactivar suscripción",
-    "suspendedTitle": "Tu cuenta está suspendida",
-    "suspendedDesc": "Reactiva tu suscripción para recuperar el acceso a todas las funciones.",
-    "upgradeTo": "Subir a {plan}",
-    "downgradeTo": "Bajar a {plan}",
-    "currentPlanBadge": "Plan actual",
-    "gainsTitle": "Lo que ganarás",
-    "losesTitle": "Lo que perderás",
-    "basicDowngradeWarning": "Solo tu empleado más antiguo quedará activo. El resto será desactivado.",
-    "chargeToday": "Se te cobrará {amount} hoy. Tu nueva fecha de facturación será hoy.",
-    "confirmUpgrade": "Confirmar — ${amount}",
-    "confirmDowngrade": "Confirmar bajada — ${amount}",
-    "cancelConfirmTitle": "Cancelar suscripción",
-    "cancelConfirmDesc": "Tu acceso continuará hasta {date}. Después, tu cuenta quedará suspendida.",
-    "cancelConfirmBtn": "Confirmar cancelación",
-    "keepBtn": "Mantener suscripción",
-    "updateCardTitle": "Actualizar tarjeta",
-    "activatePlan": "Activar {plan}",
-    "reactivateWith": "Reactivar con plan {plan}",
-    "cardNumber": "Número de tarjeta",
-    "cardHolder": "Nombre en tarjeta",
-    "cardExpiry": "MM/AA",
-    "cardCvv": "CVV",
     "processing": "Procesando...",
-    "errorGeneric": "Error al procesar el pago. Intenta de nuevo.",
-    "errorNoCard": "No hay método de pago registrado.",
-    "successActivated": "Suscripción activada correctamente",
-    "successPlanChanged": "Plan actualizado correctamente",
-    "successCancelled": "Suscripción cancelada",
-    "successCardUpdated": "Tarjeta actualizada correctamente",
-    "successReactivated": "Cuenta reactivada correctamente"
+    "perMonth": "/mes",
+    "card": {
+      "number": "Número de tarjeta",
+      "holder": "Nombre en tarjeta",
+      "expiry": "MM/AA",
+      "cvv": "CVV"
+    },
+    "suspended": {
+      "title": "Tu cuenta está suspendida",
+      "desc": "Reactiva tu suscripción para recuperar el acceso a todas las funciones.",
+      "reactivateWith": "Reactivar con {plan}"
+    },
+    "noSub": {
+      "title": "Elige tu plan",
+      "desc": "Selecciona el plan que mejor se adapte a tu negocio para activar tu cuenta.",
+      "activate": "Activar {plan}"
+    },
+    "currentSub": {
+      "title": "Tu suscripción",
+      "statusActive": "Activo",
+      "statusPastDue": "Vencido",
+      "statusCancelled": "Cancelado",
+      "nextInvoice": "Próxima factura: <strong>${amount}</strong> el <strong>{date}</strong>",
+      "accessUntil": "Acceso hasta: <strong>{date}</strong>. Después tu cuenta quedará suspendida.",
+      "paymentFailed": "Tu pago falló. Tienes hasta el <strong>{date}</strong> para actualizar tu tarjeta antes de que tu cuenta sea suspendida."
+    },
+    "payment": {
+      "title": "Método de pago",
+      "expires": "Vence {month}/{year}",
+      "update": "Actualizar",
+      "card": "Tarjeta"
+    },
+    "cancelLink": "Cancelar suscripción",
+    "reactivateBtn": "Reactivar suscripción",
+    "changePlan": {
+      "title": "Cambiar plan",
+      "current": "Plan actual",
+      "upgrade": "Subir a {plan}",
+      "downgrade": "Bajar a {plan}"
+    },
+    "modal": {
+      "cancel": "Cancelar",
+      "confirm": "Confirmar — ${amount}",
+      "confirmDowngrade": "Confirmar bajada — ${amount}",
+      "confirmReactivate": "Reactivar — ${amount}",
+      "confirmActivate": "Activar — ${amount}",
+      "cancelling": "Cancelando...",
+      "upgrade": {
+        "title": "Subir a {plan}",
+        "willGain": "Lo que ganarás",
+        "charge": "Se te cobrará <strong>${amount}</strong> hoy. Tu nueva fecha de facturación será <strong>hoy</strong>."
+      },
+      "downgrade": {
+        "title": "Bajar a {plan}",
+        "willLose": "Lo que perderás",
+        "basicWarning": "Solo tu empleado más antiguo quedará activo. El resto será desactivado.",
+        "charge": "Se te cobrará <strong>${amount}</strong> hoy. Tu nueva fecha de facturación será <strong>hoy</strong>."
+      },
+      "cancelSub": {
+        "title": "Cancelar suscripción",
+        "desc": "Tu acceso continuará hasta <strong>{date}</strong>. Después, tu cuenta quedará suspendida.",
+        "noMoreCharges": "No se realizarán más cobros.",
+        "keep": "Mantener suscripción",
+        "confirm": "Confirmar cancelación"
+      },
+      "updateCard": {
+        "title": "Actualizar tarjeta",
+        "save": "Guardar tarjeta"
+      },
+      "activate": {
+        "title": "Activar plan {plan}",
+        "charge": "Se te cobrará <strong>${amount}</strong> hoy. Tu ciclo de facturación será cada 30 días."
+      },
+      "reactivate": {
+        "title": "Reactivar con plan {plan}",
+        "charge": "Se te cobrará <strong>${amount}</strong> hoy. Tu nueva fecha de facturación será <strong>hoy</strong>."
+      }
+    },
+    "success": {
+      "activated": "Suscripción activada correctamente",
+      "reactivated": "Cuenta reactivada correctamente",
+      "planChanged": "Plan actualizado correctamente",
+      "cancelled": "Suscripción cancelada",
+      "cardUpdated": "Tarjeta actualizada correctamente"
+    },
+    "error": {
+      "activate": "Error al activar la suscripción",
+      "reactivate": "Error al reactivar",
+      "changePlan": "Error al cambiar el plan",
+      "cancel": "Error al cancelar",
+      "updateCard": "Error al actualizar la tarjeta"
+    },
+    "features": {
+      "maxBranches": "Sucursales",
+      "maxStaff": "Staff",
+      "maxServices": "Servicios",
+      "multiServiceBooking": "Reserva multi-servicio",
+      "customTheme": "Tema personalizado",
+      "customHero": "Hero personalizable",
+      "customEmailTemplate": "Template de email",
+      "simultaneousServices": "Servicios simultáneos",
+      "serviceCategories": "Categorías de servicios",
+      "staffAccess": "Acceso del staff",
+      "staffRotations": "Rotaciones de staff",
+      "surveys": "Encuestas",
+      "nps": "NPS",
+      "weeklyMonthlyStats": "Estadísticas",
+      "advancedAnalytics": "Analítica avanzada",
+      "prioritySupport": "Soporte prioritario"
+    }
   }
 }

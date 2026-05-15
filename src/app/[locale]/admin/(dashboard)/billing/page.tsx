@@ -31,6 +31,7 @@ export default async function BillingPage({ params }: { params: { locale: string
       tenantId={tenantId}
       plan={tenant?.plan ?? 'BASIC'}
       tenantStatus={tenant?.status ?? 'ACTIVE'}
+      locale={locale}
       subscription={subscription ? {
         id: subscription.id,
         plan: subscription.plan,

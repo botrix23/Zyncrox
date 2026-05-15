@@ -1221,49 +1221,116 @@
   },
   "Billing": {
     "title": "Billing",
-    "subscription": "Your subscription",
-    "paymentMethod": "Payment method",
-    "changePlan": "Change plan",
-    "statusActive": "Active",
-    "statusPastDue": "Past due",
-    "statusCancelled": "Cancelled",
-    "statusSuspended": "Suspended",
-    "nextBilling": "Next invoice",
-    "accessUntil": "Access until",
-    "gracePeriodWarning": "Your payment failed. Update your card before your account is suspended.",
-    "cardUpdateBtn": "Update",
-    "cardExpires": "Expires",
-    "cancelBtn": "Cancel subscription",
-    "reactivateBtn": "Reactivate subscription",
-    "suspendedTitle": "Your account is suspended",
-    "suspendedDesc": "Reactivate your subscription to regain access to all features.",
-    "upgradeTo": "Upgrade to {plan}",
-    "downgradeTo": "Downgrade to {plan}",
-    "currentPlanBadge": "Current plan",
-    "gainsTitle": "What you will gain",
-    "losesTitle": "What you will lose",
-    "basicDowngradeWarning": "Only your oldest employee will remain active. The rest will be deactivated.",
-    "chargeToday": "You will be charged {amount} today. Your new billing date will be today.",
-    "confirmUpgrade": "Confirm — ${amount}",
-    "confirmDowngrade": "Confirm downgrade — ${amount}",
-    "cancelConfirmTitle": "Cancel subscription",
-    "cancelConfirmDesc": "Your access will continue until {date}. After that, your account will be suspended.",
-    "cancelConfirmBtn": "Confirm cancellation",
-    "keepBtn": "Keep subscription",
-    "updateCardTitle": "Update card",
-    "activatePlan": "Activate {plan}",
-    "reactivateWith": "Reactivate with {plan} plan",
-    "cardNumber": "Card number",
-    "cardHolder": "Cardholder name",
-    "cardExpiry": "MM/YY",
-    "cardCvv": "CVV",
     "processing": "Processing...",
-    "errorGeneric": "Error processing payment. Please try again.",
-    "errorNoCard": "No payment method on file.",
-    "successActivated": "Subscription activated successfully",
-    "successPlanChanged": "Plan updated successfully",
-    "successCancelled": "Subscription cancelled",
-    "successCardUpdated": "Card updated successfully",
-    "successReactivated": "Account reactivated successfully"
+    "perMonth": "/mo",
+    "card": {
+      "number": "Card number",
+      "holder": "Cardholder name",
+      "expiry": "MM/YY",
+      "cvv": "CVV"
+    },
+    "suspended": {
+      "title": "Your account is suspended",
+      "desc": "Reactivate your subscription to regain access to all features.",
+      "reactivateWith": "Reactivate with {plan}"
+    },
+    "noSub": {
+      "title": "Choose your plan",
+      "desc": "Select the plan that best fits your business to activate your account.",
+      "activate": "Activate {plan}"
+    },
+    "currentSub": {
+      "title": "Your subscription",
+      "statusActive": "Active",
+      "statusPastDue": "Past due",
+      "statusCancelled": "Cancelled",
+      "nextInvoice": "Next invoice: <strong>${amount}</strong> on <strong>{date}</strong>",
+      "accessUntil": "Access until: <strong>{date}</strong>. After that, your account will be suspended.",
+      "paymentFailed": "Your payment failed. You have until <strong>{date}</strong> to update your card before your account is suspended."
+    },
+    "payment": {
+      "title": "Payment method",
+      "expires": "Expires {month}/{year}",
+      "update": "Update",
+      "card": "Card"
+    },
+    "cancelLink": "Cancel subscription",
+    "reactivateBtn": "Reactivate subscription",
+    "changePlan": {
+      "title": "Change plan",
+      "current": "Current plan",
+      "upgrade": "Upgrade to {plan}",
+      "downgrade": "Downgrade to {plan}"
+    },
+    "modal": {
+      "cancel": "Cancel",
+      "confirm": "Confirm — ${amount}",
+      "confirmDowngrade": "Confirm downgrade — ${amount}",
+      "confirmReactivate": "Reactivate — ${amount}",
+      "confirmActivate": "Activate — ${amount}",
+      "cancelling": "Cancelling...",
+      "upgrade": {
+        "title": "Upgrade to {plan}",
+        "willGain": "What you'll gain",
+        "charge": "You'll be charged <strong>${amount}</strong> today. Your new billing date will be <strong>today</strong>."
+      },
+      "downgrade": {
+        "title": "Downgrade to {plan}",
+        "willLose": "What you'll lose",
+        "basicWarning": "Only your oldest employee will remain active. The rest will be deactivated.",
+        "charge": "You'll be charged <strong>${amount}</strong> today. Your new billing date will be <strong>today</strong>."
+      },
+      "cancelSub": {
+        "title": "Cancel subscription",
+        "desc": "Your access will continue until <strong>{date}</strong>. After that, your account will be suspended.",
+        "noMoreCharges": "No further charges will be made.",
+        "keep": "Keep subscription",
+        "confirm": "Confirm cancellation"
+      },
+      "updateCard": {
+        "title": "Update card",
+        "save": "Save card"
+      },
+      "activate": {
+        "title": "Activate {plan} plan",
+        "charge": "You'll be charged <strong>${amount}</strong> today. Your billing cycle will be every 30 days."
+      },
+      "reactivate": {
+        "title": "Reactivate with {plan} plan",
+        "charge": "You'll be charged <strong>${amount}</strong> today. Your new billing date will be <strong>today</strong>."
+      }
+    },
+    "success": {
+      "activated": "Subscription activated successfully",
+      "reactivated": "Account reactivated successfully",
+      "planChanged": "Plan updated successfully",
+      "cancelled": "Subscription cancelled",
+      "cardUpdated": "Card updated successfully"
+    },
+    "error": {
+      "activate": "Error activating subscription",
+      "reactivate": "Error reactivating",
+      "changePlan": "Error changing plan",
+      "cancel": "Error cancelling",
+      "updateCard": "Error updating card"
+    },
+    "features": {
+      "maxBranches": "Branches",
+      "maxStaff": "Staff",
+      "maxServices": "Services",
+      "multiServiceBooking": "Multi-service booking",
+      "customTheme": "Custom theme",
+      "customHero": "Custom hero",
+      "customEmailTemplate": "Email template",
+      "simultaneousServices": "Simultaneous services",
+      "serviceCategories": "Service categories",
+      "staffAccess": "Staff access",
+      "staffRotations": "Staff rotations",
+      "surveys": "Surveys",
+      "nps": "NPS",
+      "weeklyMonthlyStats": "Statistics",
+      "advancedAnalytics": "Advanced analytics",
+      "prioritySupport": "Priority support"
+    }
   }
 }
