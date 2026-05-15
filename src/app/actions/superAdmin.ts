@@ -26,7 +26,7 @@ export async function getAllTenantsAction() {
   const allTenants = await db.query.tenants.findMany({
     orderBy: [desc(tenants.createdAt)],
     with: {
-      users: { columns: { role: true } },
+      users: { columns: { id: true, email: true, role: true } },
       branches: { columns: { id: true } },
     },
   });
