@@ -761,26 +761,45 @@ export async function createBookingSessionAction(data: {
     // 4. Enviar Correo de Confirmación
     try {
       const firstBooking = data.bookings[0];
-      const assignedFirstBooking = result.bookings[0];
-      const [service, branch, staffMember] = await Promise.all([
-        db.query.services.findFirst({ where: eq(services.id, firstBooking.serviceId) }),
-        db.query.branches.findFirst({ where: eq(branches.id, firstBooking.branchId) }),
-        assignedFirstBooking?.staffId
-          ? db.query.staff.findFirst({ where: eq(staff.id, assignedFirstBooking.staffId) })
-          : Promise.resolve(null),
-      ]);
+      const branch = await db.query.branches.findFirst({ where: eq(branches.id, firstBooking.branchId) });
 
-      if (service && branch) {
-        const startDate = parseISO(firstBooking.startTime);
+      if (branch) {
         const emailCfg2 = await getPlatformEmailTemplates();
         const locale2 = (tenant.emailLocale as EmailLocale) || 'es';
+
+        // Construir un item por servicio con su propia fecha/hora/especialista
+        const emailServices = await Promise.all(
+          data.bookings.map(async (bData, i) => {
+            const assignedBooking = result.bookings[i];
+
+            // Solo mostrar el nombre del especialista si el usuario lo eligió explícitamente
+            const userChoseStaff = bData.staffId && bData.staffId !== '' && bData.staffId !== 'null';
+
+            const [svc, svcStaff] = await Promise.all([
+              db.query.services.findFirst({ where: eq(services.id, bData.serviceId) }),
+              (tenant.plan !== 'BASIC' && userChoseStaff && assignedBooking?.staffId)
+                ? db.query.staff.findFirst({ where: eq(staff.id, assignedBooking.staffId!) })
+                : Promise.resolve(null),
+            ]);
+
+            const startDate = parseISO(bData.startTime);
+            return {
+              name: svc?.name ?? '',
+              date: formatEmailDate(startDate, locale2),
+              time: formatEmailTime(startDate),
+              staffName: svcStaff?.name ?? '',
+            };
+          })
+        );
+
+        const firstSvc = emailServices[0];
         const vars2 = {
           customerName: data.customerName,
-          serviceName: service.name + (data.bookings.length > 1 ? ` (+${data.bookings.length - 1} más)` : ''),
-          date: formatEmailDate(startDate, locale2),
-          time: formatEmailTime(startDate),
+          serviceName: emailServices.map(s => s.name).join(', '),
+          date: firstSvc?.date ?? '',
+          time: firstSvc?.time ?? '',
           branchName: branch.name,
-          staffName: tenant.plan !== 'BASIC' ? staffMember?.name ?? '' : '',
+          staffName: firstSvc?.staffName ?? '',
           tenantName: tenant.name,
           phone: tenant.whatsappNumber || branch?.phone || '',
           contactEmail: (tenant as any).contactEmail || '',
@@ -789,6 +808,7 @@ export async function createBookingSessionAction(data: {
           emailCfg2?.emailTplConfirmation,
           React.createElement(BookingConfirmationEmail, {
             ...vars2,
+            services: emailServices,
             locale: locale2,
             tenantLogo: tenant.logoUrl || undefined,
             customBody: tenant.emailBodyTemplate,

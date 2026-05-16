@@ -2,6 +2,13 @@ import { Body, Container, Head, Heading, Hr, Html, Img, Preview, Section, Text }
 import * as React from "react";
 import { t, type EmailLocale } from "@/lib/emailI18n";
 
+export interface BookingEmailService {
+  name: string;
+  date: string;
+  time: string;
+  staffName?: string;
+}
+
 interface BookingEmailProps {
   customerName: string;
   serviceName: string;
@@ -15,6 +22,8 @@ interface BookingEmailProps {
   phone?: string | null;
   contactEmail?: string | null;
   locale?: EmailLocale;
+  /** When provided, renders one row per service with its own date/time/staff */
+  services?: BookingEmailService[];
 }
 
 export const BookingConfirmationEmail = ({
@@ -30,6 +39,7 @@ export const BookingConfirmationEmail = ({
   phone,
   contactEmail,
   locale = 'es',
+  services,
 }: BookingEmailProps) => {
   const displayName = customerName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
@@ -46,6 +56,7 @@ export const BookingConfirmationEmail = ({
 
   const formattedBody = getFormattedBody();
   const hasContact = !!(phone || contactEmail);
+  const useMulti = services && services.length > 0;
 
   return (
     <Html>
@@ -60,15 +71,44 @@ export const BookingConfirmationEmail = ({
           <Text style={text}>
             {formattedBody || t.confirmationBody(tenantName, locale)}
           </Text>
-          <Section style={section}>
-            <Text style={detailText}><strong>{t.service(locale)}</strong> {serviceName}</Text>
-            <Text style={detailText}><strong>{t.date(locale)}</strong> {date}</Text>
-            <Text style={detailText}><strong>{t.time(locale)}</strong> {time}</Text>
-            <Text style={detailText}><strong>{t.branch(locale)}</strong> {branchName}</Text>
-            <Text style={detailText}>
-              <strong>{t.specialist(locale)}</strong> {staffName || t.confirmationSpecialistTbd(locale)}
-            </Text>
-          </Section>
+
+          {useMulti ? (
+            <Section style={section}>
+              {/* Branch — shown once at top */}
+              <Text style={detailText}>
+                <strong>{t.branch(locale)}</strong> {branchName}
+              </Text>
+              <Hr style={innerHr} />
+
+              {/* One block per service */}
+              {services!.map((svc, i) => (
+                <Section key={i} style={i < services!.length - 1 ? serviceBlock : serviceBlockLast}>
+                  {services!.length > 1 && (
+                    <Text style={serviceIndex}>{locale === 'en' ? `Service ${i + 1}` : `Servicio ${i + 1}`}</Text>
+                  )}
+                  <Text style={detailText}><strong>{t.service(locale)}</strong> {svc.name}</Text>
+                  <Text style={detailText}><strong>{t.date(locale)}</strong> {svc.date}</Text>
+                  <Text style={detailText}><strong>{t.time(locale)}</strong> {svc.time}</Text>
+                  <Text style={detailText}>
+                    <strong>{t.specialist(locale)}</strong>{' '}
+                    {svc.staffName || t.confirmationSpecialistTbd(locale)}
+                  </Text>
+                </Section>
+              ))}
+            </Section>
+          ) : (
+            <Section style={section}>
+              <Text style={detailText}><strong>{t.service(locale)}</strong> {serviceName}</Text>
+              <Text style={detailText}><strong>{t.date(locale)}</strong> {date}</Text>
+              <Text style={detailText}><strong>{t.time(locale)}</strong> {time}</Text>
+              <Text style={detailText}><strong>{t.branch(locale)}</strong> {branchName}</Text>
+              <Text style={detailText}>
+                <strong>{t.specialist(locale)}</strong>{' '}
+                {staffName || t.confirmationSpecialistTbd(locale)}
+              </Text>
+            </Section>
+          )}
+
           <Hr style={hr} />
           <Text style={footer}>
             {t.confirmationFooter(tenantName, locale)}
@@ -94,6 +134,10 @@ const h1 = { color: "#333", fontSize: "24px", fontWeight: "bold", textAlign: "ce
 const text = { color: "#555", fontSize: "16px", lineHeight: "26px", textAlign: "center" as const };
 const section = { padding: "20px", backgroundColor: "#f9f9f9", borderRadius: "8px", margin: "20px 0" };
 const detailText = { color: "#444", fontSize: "15px", margin: "10px 0" };
+const innerHr = { borderColor: "#e0e0e0", margin: "12px 0" };
+const serviceBlock = { paddingBottom: "14px", marginBottom: "14px", borderBottom: "1px solid #e6ebf1" };
+const serviceBlockLast = { paddingBottom: "0", marginBottom: "0" };
+const serviceIndex = { color: "#7c3aed", fontSize: "11px", fontWeight: "bold", textTransform: "uppercase" as const, letterSpacing: "0.1em", margin: "0 0 6px 0" };
 const hr = { borderColor: "#e6ebf1", margin: "20px 0" };
 const footer = { color: "#8898aa", fontSize: "12px", textAlign: "center" as const };
 const contactSection = { textAlign: "center" as const, margin: "8px 0 0 0" };

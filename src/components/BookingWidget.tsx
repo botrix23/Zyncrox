@@ -1015,12 +1015,26 @@ export default function BookingWidget({
                       {selectedServices.map((s, idx) => {
                         const booking = cartBookings[idx];
                         return (
-                          <div key={`${s.id}-${idx}`} className="flex items-center justify-between group">
-                            <div className="flex items-center gap-3">
-                              <Check className="w-4 h-4 text-emerald-500" />
-                              <span className="text-sm font-bold text-slate-700 dark:text-zinc-300">{s.name}</span>
+                          <div key={`${s.id}-${idx}`} className="flex items-start justify-between group gap-2">
+                            <div className="flex items-start gap-3 min-w-0">
+                              <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                              <div className="min-w-0">
+                                <span className="text-sm font-bold text-slate-700 dark:text-zinc-300 block truncate">{s.name}</span>
+                                {booking?.date && booking?.time && (
+                                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                                    <span className="flex items-center gap-1 text-[11px] font-bold text-purple-500">
+                                      <Calendar className="w-3 h-3" />
+                                      {formatShortDate(booking.date)}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                                      <Clock className="w-3 h-3" />
+                                      {booking.time}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <span className="text-xs font-black text-slate-400">{s.durationMinutes} min</span>
+                            <span className="text-xs font-black text-slate-400 shrink-0 mt-0.5">{s.durationMinutes} min</span>
                           </div>
                         );
                       })}
@@ -1756,6 +1770,45 @@ export default function BookingWidget({
                   {bookingSettings?.step4Title || t("title_data")}
                 </h2>
               </div>
+
+              {/* Resumen de servicios con día y hora */}
+              {cartBookings.length > 0 && (
+                <div className="w-full mb-6">
+                  <p className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3">{t("selected_services")}</p>
+                  <div className="space-y-2">
+                    {cartBookings.map((b, idx) => (
+                      b.date && b.time && (
+                        <div key={idx} className="flex items-center gap-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3">
+                          {cartBookings.length > 1 && (
+                            <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+                              <span className="text-[11px] font-black text-purple-500">{idx + 1}</span>
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-black text-slate-900 dark:text-white truncate">{b.service.name}</p>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
+                              <span className="flex items-center gap-1 text-xs font-bold text-purple-500">
+                                <Calendar className="w-3 h-3" />
+                                {formatShortDate(b.date)}
+                              </span>
+                              <span className="flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-zinc-400">
+                                <Clock className="w-3 h-3" />
+                                {b.time}
+                              </span>
+                              {b.staff && (
+                                <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-zinc-500">
+                                  <User className="w-3 h-3" />
+                                  {b.staff.name}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-5 mb-8 w-full">
                 <div>
