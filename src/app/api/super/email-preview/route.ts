@@ -78,9 +78,19 @@ export async function GET(req: NextRequest) {
       if (cfg?.emailTplConfirmation) {
         html = replaceVars(cfg.emailTplConfirmation, sample);
       } else {
+        // Sample data with multiple services to preview multi-service layout
+        const sampleServices = locale === 'en'
+          ? [
+              { name: 'Premium Cut & Style', date: 'Monday, January 15', time: '10:00 AM', staffName: 'Anne Lopez' },
+              { name: 'Deep Conditioning', date: 'Monday, January 15', time: '11:30 AM', staffName: '' },
+            ]
+          : [
+              { name: 'Corte y Peinado Premium', date: 'lunes, 15 de enero', time: '10:00 AM', staffName: 'Ana López' },
+              { name: 'Tratamiento Capilar', date: 'lunes, 15 de enero', time: '11:30 AM', staffName: '' },
+            ];
         html = await render(React.createElement(BookingConfirmationEmail, {
           customerName: sample.customerName,
-          serviceName: sample.serviceName,
+          serviceName: sampleServices.map(s => s.name).join(', '),
           date: sample.date,
           time: sample.time,
           branchName: sample.branchName,
@@ -88,6 +98,7 @@ export async function GET(req: NextRequest) {
           tenantName: sample.tenantName,
           phone: sample.phone,
           contactEmail: sample.contactEmail,
+          services: sampleServices,
           locale,
         }));
       }

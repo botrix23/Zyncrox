@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
               vars
             );
             await resend.emails.send({
-              from: "Zyncrox <noreply@zyncrox.com>",
+              from: "Zyncrox <notificaciones@zyncrox.com>",
               to: admin.email,
               subject: emailT.trialSubject(daysLeft, locale),
               ...emailPayload,

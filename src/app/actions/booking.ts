@@ -473,7 +473,8 @@ export async function createBookingAction(data: {
             vars
           );
           const result = await resend.emails.send({
-            from: 'Zyncrox <noreply@zyncrox.com>',
+            from: `${tenant.name} <notificaciones@zyncrox.com>`,
+            replyTo: (tenant as any).contactEmail || undefined,
             to: data.customerEmail,
             subject: emailT.confirmationSubject(tenant.name, 1, locale),
             ...emailPayload,
@@ -818,7 +819,8 @@ export async function createBookingSessionAction(data: {
           vars2
         );
         await resend.emails.send({
-          from: 'Zyncrox <noreply@zyncrox.com>',
+          from: `${tenant.name} <notificaciones@zyncrox.com>`,
+          replyTo: (tenant as any).contactEmail || undefined,
           to: data.customerEmail,
           subject: emailT.confirmationSubject(tenant.name, data.bookings.length, locale2),
           ...emailPayload2,
@@ -940,7 +942,8 @@ export async function updateBookingAction(data: {
           varsR
         );
         await resend.emails.send({
-          from: 'Zyncrox <noreply@zyncrox.com>',
+          from: `${existing.tenant.name} <notificaciones@zyncrox.com>`,
+          replyTo: (existing.tenant as any).contactEmail || undefined,
           to: emailData,
           subject: emailT.rescheduleSubject(existing.tenant.name, localeR),
           ...emailPayloadR,
@@ -995,7 +998,8 @@ export async function deleteBookingAction(id: string, tenantId: string) {
           varsC
         );
         await resend.emails.send({
-          from: 'Zyncrox <noreply@zyncrox.com>',
+          from: `${existing.tenant.name} <notificaciones@zyncrox.com>`,
+          replyTo: (existing.tenant as any).contactEmail || undefined,
           to: existing.customerEmail,
           subject: emailT.cancellationSubject(existing.tenant.name, localeC),
           ...emailPayloadC,
@@ -1198,7 +1202,8 @@ export async function sendPendingSurveyEmailsAction(tenantId: string) {
           varsS
         );
         await resend.emails.send({
-          from: 'Zyncrox <noreply@zyncrox.com>',
+          from: `${tenant.name} <notificaciones@zyncrox.com>`,
+          replyTo: (tenant as any).contactEmail || undefined,
           to: booking.customerEmail,
           subject: emailT.surveySubject(tenant.name, localeS),
           ...emailPayloadS,

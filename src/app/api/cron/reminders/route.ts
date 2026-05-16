@@ -66,7 +66,8 @@ export async function GET(req: NextRequest) {
           vars
         );
         await resend.emails.send({
-          from: 'Zyncrox <noreply@zyncrox.com>',
+          from: `${booking.tenant.name} <notificaciones@zyncrox.com>`,
+          replyTo: tenantContactEmail || undefined,
           to: booking.customerEmail,
           subject: emailT.reminderSubject(booking.tenant.name, locale),
           ...emailPayload,
