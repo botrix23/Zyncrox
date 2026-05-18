@@ -7,8 +7,29 @@ const intlMiddleware = createMiddleware({
 });
 
 export default function middleware(req: NextRequest) {
-  const response = intlMiddleware(req) ?? NextResponse.next();
-  response.headers.set('x-pathname', req.nextUrl.pathname);
+  const intlResponse = intlMiddleware(req);
+
+  // Si intl quiere redirigir (detección de locale), déjalo pasar tal cual
+  if (intlResponse && intlResponse.status >= 300 && intlResponse.status < 400) {
+    return intlResponse;
+  }
+
+  // Para renders de página: inyectar x-pathname en los REQUEST headers
+  // para que los Server Components puedan leerlo con headers()
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set('x-pathname', req.nextUrl.pathname);
+
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+
+  // Copiar los headers que next-intl añade (locale info, etc.)
+  if (intlResponse) {
+    intlResponse.headers.forEach((value, key) => {
+      response.headers.set(key, value);
+    });
+  }
+
   return response;
 }
 
