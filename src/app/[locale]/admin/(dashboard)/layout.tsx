@@ -67,7 +67,7 @@ export default async function AdminLayout({
             tenant.subscriptionExpiresAt &&
             new Date() > tenant.subscriptionExpiresAt
           ) {
-            redirect(`/${locale}/admin/billing`);
+            if (!isBillingPage) redirect(`/${locale}/admin/billing`);
           }
         }
       } catch (error) {
