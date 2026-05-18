@@ -40,6 +40,8 @@ export default async function AdminLayout({
   // Tenant + subscription data
   let tenantName = "";
   let nextBillingDate: Date | null = null;
+  let tenantStatus: string = 'ACTIVE';
+  let trialEndsAt: Date | null = null;
   let userEmail: string | null = session?.email ?? null;
 
   if (session) {
@@ -53,6 +55,8 @@ export default async function AdminLayout({
         ]);
 
         tenantName = tenant?.name || "";
+        tenantStatus = tenant?.status ?? 'ACTIVE';
+        trialEndsAt = tenant?.subscriptionExpiresAt ?? null;
         nextBillingDate = sub?.currentPeriodEnd ?? null;
 
         if (session.role !== 'SUPER_ADMIN') {
@@ -82,6 +86,8 @@ export default async function AdminLayout({
           locale={locale}
           userEmail={userEmail}
           nextBillingDate={nextBillingDate}
+          tenantStatus={tenantStatus}
+          trialEndsAt={trialEndsAt}
         />
         <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar bg-slate-50 dark:bg-black/40">
           {children}

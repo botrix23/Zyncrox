@@ -344,6 +344,19 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                 <p className="text-sm text-yellow-700 dark:text-yellow-400" dangerouslySetInnerHTML={{ __html: t('currentSub.paymentFailed', { date: formatDate(subscription.gracePeriodEndsAt, locale) }) }} />
               </div>
             )}
+
+            {/* Cancel button — visible inside the card */}
+            {(isActive || isPastDue) && (
+              <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-white/10">
+                <button
+                  onClick={() => setModal('cancel')}
+                  className="flex items-center gap-2 text-sm text-red-500 hover:text-red-600 font-medium transition-colors group"
+                >
+                  <XCircle className="w-4 h-4" />
+                  {t('cancelLink')}
+                </button>
+              </div>
+            )}
           </div>
 
           {(isActive || isPastDue) && subscription?.cardLast4 && (
@@ -366,9 +379,6 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
             </div>
           )}
 
-          {(isActive || isPastDue) && (
-            <button onClick={() => setModal('cancel')} className="text-sm text-red-500 hover:text-red-600 font-medium transition-colors">{t('cancelLink')}</button>
-          )}
           {isCancelled && (
             <button onClick={() => { setTargetPlan(currentPlan); setModal('reactivate') }}
               className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">

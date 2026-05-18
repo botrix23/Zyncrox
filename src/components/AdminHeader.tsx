@@ -38,9 +38,11 @@ interface AdminHeaderProps {
   locale: string;
   userEmail?: string | null;
   nextBillingDate?: Date | null;
+  tenantStatus?: string;
+  trialEndsAt?: Date | null;
 }
 
-export function AdminHeader({ user, locale, userEmail, nextBillingDate }: AdminHeaderProps) {
+export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantStatus, trialEndsAt }: AdminHeaderProps) {
   const t = useTranslations('Dashboard.header');
   const router = useRouter();
 
@@ -153,6 +155,11 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate }: AdminH
   const isStaff = user?.role === 'STAFF';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const billingDateStr = nextBillingDate ? format(new Date(nextBillingDate), 'dd MMM yyyy') : null;
+
+  const isTrial = tenantStatus === 'TRIAL';
+  const trialDaysLeft = (isTrial && trialEndsAt)
+    ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null;
 
   return (
     <header className="h-16 lg:h-20 border-b border-slate-200 dark:border-white/5 px-4 lg:px-8 flex items-center justify-between bg-white/50 dark:bg-black/50 backdrop-blur-xl shrink-0 z-50 sticky top-0">
@@ -326,17 +333,46 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate }: AdminH
                   </div>
                 </div>
 
-                {/* Next billing date (not shown to super admin) */}
+                {/* Trial or billing info (not shown to super admin) */}
                 {!isSuperAdmin && (
-                  <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl">
-                    <Calendar className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wide">{t('nextBilling')}</p>
-                      <p className="text-xs font-bold text-slate-700 dark:text-zinc-200">
-                        {billingDateStr ?? t('noBillingDate')}
-                      </p>
+                  isTrial ? (
+                    <div className={`mt-3 flex items-center gap-2 px-3 py-2 border rounded-xl ${
+                      trialDaysLeft !== null && trialDaysLeft <= 3
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                        : trialDaysLeft !== null && trialDaysLeft <= 7
+                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                        : 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
+                    }`}>
+                      <Calendar className={`w-3.5 h-3.5 shrink-0 ${
+                        trialDaysLeft !== null && trialDaysLeft <= 3 ? 'text-red-500' :
+                        trialDaysLeft !== null && trialDaysLeft <= 7 ? 'text-amber-500' : 'text-purple-500'
+                      }`} />
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wide">{t('trialPlan')}</p>
+                        <p className={`text-xs font-bold ${
+                          trialDaysLeft !== null && trialDaysLeft <= 3 ? 'text-red-600 dark:text-red-400' :
+                          trialDaysLeft !== null && trialDaysLeft <= 7 ? 'text-amber-600 dark:text-amber-400' :
+                          'text-purple-700 dark:text-purple-300'
+                        }`}>
+                          {trialDaysLeft !== null
+                            ? trialDaysLeft === 0
+                              ? t('trialExpiresToday')
+                              : t('trialDaysLeft', { days: trialDaysLeft })
+                            : t('trialActive')}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl">
+                      <Calendar className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wide">{t('nextBilling')}</p>
+                        <p className="text-xs font-bold text-slate-700 dark:text-zinc-200">
+                          {billingDateStr ?? t('noBillingDate')}
+                        </p>
+                      </div>
+                    </div>
+                  )
                 )}
               </div>
 

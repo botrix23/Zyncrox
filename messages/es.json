@@ -774,7 +774,11 @@
       "logout": "Cerrar sesión",
       "myAccount": "Mi cuenta",
       "noBillingDate": "Sin fecha de cobro",
-      "team": "Mi equipo"
+      "team": "Mi equipo",
+      "trialPlan": "Plan trial",
+      "trialDaysLeft": "{days} días restantes",
+      "trialExpiresToday": "Expira hoy",
+      "trialActive": "Trial activo"
     },
     "home": {
       "title": "Dashboard admin",

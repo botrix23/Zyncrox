@@ -774,7 +774,11 @@
       "logout": "Sign out",
       "myAccount": "My account",
       "noBillingDate": "No billing date",
-      "team": "My team"
+      "team": "My team",
+      "trialPlan": "Trial plan",
+      "trialDaysLeft": "{days} days left",
+      "trialExpiresToday": "Expires today",
+      "trialActive": "Trial active"
     },
     "home": {
       "title": "Admin dashboard",
