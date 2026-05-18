@@ -55,6 +55,16 @@ export function AdminSidebar({ user, locale, tenantName }: { user: SessionUser |
     setMobileOpen(false);
   }, [pathname]);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   const toggle = () => {
     setCollapsed(prev => {
       const next = !prev;
