@@ -3,11 +3,13 @@
 import { Calendar, CheckCircle, LogOut } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { logoutAction } from "@/app/actions/auth";
+import { useRouter } from "next/navigation";
 
 const PLAN_ORDER = ["BASIC", "PROFESSIONAL", "ENTERPRISE"] as const;
 
 export default function PlansPage() {
   const t = useTranslations("TrialPlans");
+  const router = useRouter();
   const locale = typeof window !== "undefined"
     ? window.location.pathname.split("/")[1] || "es"
     : "es";
@@ -89,10 +91,8 @@ export default function PlansPage() {
                   ))}
                 </ul>
 
-                <a
-                  href={`mailto:soporte@zyncrox.com?subject=${encodeURIComponent(
-                    `${t("contactSubject")} ${planData.name}`
-                  )}`}
+                <button
+                  onClick={() => router.push(`/${locale}/admin/billing`)}
                   className={`w-full py-3 rounded-xl font-bold text-sm text-center transition-all hover:scale-[1.02] active:scale-[0.98] ${
                     isPopular
                       ? "bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/20"
@@ -100,7 +100,7 @@ export default function PlansPage() {
                   }`}
                 >
                   {t("choosePlan")}
-                </a>
+                </button>
               </div>
             );
           })}
