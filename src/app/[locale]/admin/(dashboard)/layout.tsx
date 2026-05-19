@@ -45,6 +45,8 @@ export default async function AdminLayout({
   let trialEndsAt: Date | null = null;
   let userEmail: string | null = session?.email ?? null;
 
+  let shouldRedirectToBilling = false;
+
   if (session) {
     if (session.role === 'SUPER_ADMIN' && session.impersonatedTenantName) {
       tenantName = session.impersonatedTenantName;
@@ -63,19 +65,24 @@ export default async function AdminLayout({
 
         if (session.role !== 'SUPER_ADMIN') {
           if (tenant?.status === 'SUSPENDED') {
-            if (!isBillingPage) redirect(`/${locale}/admin/billing`);
+            shouldRedirectToBilling = true;
           } else if (
             tenant?.status === 'TRIAL' &&
             tenant.subscriptionExpiresAt &&
             new Date() > tenant.subscriptionExpiresAt
           ) {
-            if (!isBillingPage) redirect(`/${locale}/admin/billing`);
+            shouldRedirectToBilling = true;
           }
         }
       } catch (error) {
         console.error("Error fetching tenant details:", error);
       }
     }
+  }
+
+  // redirect() lanza una excepción internamente — debe llamarse FUERA del try/catch
+  if (shouldRedirectToBilling && !isBillingPage) {
+    redirect(`/${locale}/admin/billing`);
   }
 
   return (
