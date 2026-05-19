@@ -3,55 +3,28 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Zap } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 
-const FAQ_ITEMS = [
-  {
-    q: "¿Necesito saber programar?",
-    a: "No. Todo se configura desde el panel de administración con formularios simples. Sin una línea de código.",
-  },
-  {
-    q: "¿Mis clientes necesitan crear una cuenta?",
-    a: "No. Solo completan el widget de reservas en 4 pasos sin ningún tipo de registro ni contraseña.",
-  },
-  {
-    q: "¿Qué pasa cuando termina la prueba gratuita?",
-    a: "Pasás automáticamente al plan gratuito. No se cobra nada sin tu confirmación explícita.",
-  },
-  {
-    q: "¿Puedo cambiar de plan cuando quiera?",
-    a: "Sí, en cualquier momento desde tu panel. Si subís de plan, el cobro se prorratea. Si bajás, el cambio aplica al siguiente ciclo.",
-  },
-  {
-    q: "¿En qué idiomas está disponible Zyncrox?",
-    a: "Actualmente en español. Las versiones en inglés y portugués están en desarrollo.",
-  },
-  {
-    q: "¿Funciona para cualquier tipo de negocio?",
-    a: "Sí. Salones de belleza, consultorios médicos, spas, estudios de fitness, talleres y más. Si tenés citas, Zyncrox funciona para vos.",
-  },
-];
-
-const FOOTER_COLS = [
-  {
-    title: "Producto",
-    links: ["Funciones", "Precios", "Integraciones", "Changelog"],
-  },
-  {
-    title: "Empresa",
-    links: ["Nosotros", "Blog", "Contacto", "Soporte"],
-  },
-  {
-    title: "Legal",
-    links: ["Términos de uso", "Política de privacidad"],
-  },
-];
+const FAQ_KEYS = ["q1", "q2", "q3", "q4", "q5", "q6"] as const;
+const FOOTER_COL_KEYS = [
+  { titleKey: "col1Title", links: ["col1L1", "col1L2", "col1L3", "col1L4"] },
+  { titleKey: "col2Title", links: ["col2L1", "col2L2", "col2L3", "col2L4"] },
+  { titleKey: "col3Title", links: ["col3L1", "col3L2"] },
+] as const;
 
 export function LandingFaqCtaSection() {
-  const [open, setOpen] = useState<boolean[]>(FAQ_ITEMS.map(() => false));
+  const [open, setOpen] = useState<boolean[]>(FAQ_KEYS.map(() => false));
+  const t = useTranslations("Landing");
+  const locale = useLocale();
 
   function toggle(i: number) {
     setOpen((prev) => prev.map((v, j) => (j === i ? !v : v)));
   }
+
+  const faqItems = FAQ_KEYS.map((k) => ({
+    q: t(`faq.${k}` as any),
+    a: t(`faq.a${k.slice(1)}` as any),
+  }));
 
   return (
     <>
@@ -59,12 +32,12 @@ export function LandingFaqCtaSection() {
       <section className="relative z-10 bg-transparent py-[clamp(72px,9vw,120px)] px-5 lg:px-16">
         <div className="max-w-[1120px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-[clamp(40px,5vw,80px)] items-start">
           <h2 className="font-serif text-[clamp(34px,4vw,54px)] leading-[1.12] tracking-[-0.4px] text-slate-900 dark:text-white lg:sticky lg:top-20 transition-colors duration-300">
-            Preguntas<br />
-            <em className="italic text-purple-600">frecuentes.</em>
+            {t("faq.title1")}<br />
+            <em className="italic text-purple-600">{t("faq.titleItalic")}</em>
           </h2>
 
           <div className="flex flex-col gap-2">
-            {FAQ_ITEMS.map((item, i) => (
+            {faqItems.map((item, i) => (
               <div
                 key={i}
                 className={`border rounded-xl overflow-hidden transition-all duration-200 ${
@@ -115,22 +88,22 @@ export function LandingFaqCtaSection() {
         <div className="relative">
           <div className="text-[38px] mb-5 text-purple-600">⚡</div>
           <h2 className="font-serif text-[clamp(28px,4.2vw,58px)] leading-[1.12] tracking-[-0.4px] text-slate-900 dark:text-white max-w-[720px] mx-auto mb-[18px] transition-colors duration-300">
-            Tu negocio merece un sistema que trabaje como vos.
+            {t("cta.title")}
           </h2>
           <p className="text-[clamp(15px,1.5vw,17px)] text-slate-500 dark:text-zinc-400 max-w-[480px] mx-auto mb-9 leading-[1.65] transition-colors duration-300">
-            Empezá gratis hoy. Sin tarjeta, sin compromisos. 14 días con acceso completo a todas las funciones.
+            {t("cta.subtitle")}
           </p>
           <Link
-            href="/admin/register"
+            href={`/${locale}/admin/register`}
             className="inline-block text-[16px] font-bold text-white bg-purple-600 hover:bg-purple-700 px-10 py-4 rounded-xl shadow-[0_0_0_1px_rgba(139,92,246,0.5),0_8px_32px_rgba(139,92,246,0.4)] hover:shadow-[0_0_0_1px_rgba(139,92,246,0.6),0_12px_44px_rgba(139,92,246,0.5)] hover:-translate-y-0.5 transition-all duration-150 no-underline"
           >
-            Crear mi cuenta gratis →
+            {t("cta.btn")}
           </Link>
           <p className="text-[12.5px] text-slate-400 dark:text-zinc-500 mt-4 transition-colors duration-300">
-            Cancela cuando quieras · Soporte incluido · Sin tarjeta de crédito
+            {t("cta.note")}
           </p>
           <div className="flex justify-center gap-3 mt-7 flex-wrap">
-            {["🔒 Datos seguros", "⭐ Soporte 24/7"].map((b) => (
+            {[t("cta.badge1"), t("cta.badge2")].map((b) => (
               <div
                 key={b}
                 className="flex items-center gap-[6px] border border-black/[0.13] dark:border-white/[0.13] bg-white dark:bg-zinc-900 rounded-full px-4 py-[7px] text-[12.5px] text-slate-500 dark:text-zinc-400 font-medium transition-colors duration-300"
@@ -148,12 +121,12 @@ export function LandingFaqCtaSection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr] gap-[clamp(24px,4vw,56px)] mb-12">
             {/* Brand */}
             <div>
-              <Link href="/" className="flex items-center gap-2 no-underline mb-3">
+              <Link href={`/${locale}`} className="flex items-center gap-2 no-underline mb-3">
                 <Zap className="w-[18px] h-[18px] text-purple-500 fill-purple-500" />
                 <span className="text-[16px] font-bold text-[#fafafa] tracking-[-0.4px]">Zyncrox</span>
               </Link>
               <p className="text-[13.5px] text-[#71717a] leading-[1.6] mb-5">
-                Reservas que se adaptan a tu negocio. No al revés.
+                {t("footer.tagline")}
               </p>
               <div className="flex gap-2">
                 {["𝕏", "in", "📷", "▶"].map((ic, i) => (
@@ -168,19 +141,19 @@ export function LandingFaqCtaSection() {
               </div>
             </div>
 
-            {FOOTER_COLS.map((col) => (
-              <div key={col.title}>
+            {FOOTER_COL_KEYS.map((col) => (
+              <div key={col.titleKey}>
                 <div className="text-[11.5px] font-bold text-[#fafafa] tracking-[0.6px] uppercase mb-[14px]">
-                  {col.title}
+                  {t(`footer.${col.titleKey}` as any)}
                 </div>
                 <ul className="list-none p-0 m-0 flex flex-col gap-[10px]">
-                  {col.links.map((l) => (
-                    <li key={l}>
+                  {col.links.map((lk) => (
+                    <li key={lk}>
                       <a
                         href="#"
                         className="text-[13.5px] text-[#71717a] no-underline hover:text-[#a1a1aa] transition-colors duration-150"
                       >
-                        {l}
+                        {t(`footer.${lk}` as any)}
                       </a>
                     </li>
                   ))}
@@ -190,7 +163,7 @@ export function LandingFaqCtaSection() {
           </div>
 
           <div className="border-t border-white/[0.06] pt-6 text-center text-[12.5px] text-[#52525b]">
-            © 2026 Zyncrox · Todos los derechos reservados
+            {t("footer.copyright")}
           </div>
         </div>
       </footer>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 const BRAND_MOCKS = [
   {
@@ -10,7 +11,7 @@ const BRAND_MOCKS = [
     icon: "✂️",
     services: [
       { n: "Corte + secado", d: "45 min", p: "25" },
-      { n: "Manicura gel", d: "60 min", p: "35" },
+      { n: "Manicura gel",   d: "60 min", p: "35" },
       { n: "Alisado keratina", d: "90 min", p: "80" },
     ],
   },
@@ -20,9 +21,9 @@ const BRAND_MOCKS = [
     color: "#2563eb",
     icon: "🏥",
     services: [
-      { n: "Consulta general", d: "30 min", p: "40" },
-      { n: "Revisión cardiológica", d: "45 min", p: "75" },
-      { n: "Análisis clínicos", d: "20 min", p: "30" },
+      { n: "Consulta general",       d: "30 min", p: "40" },
+      { n: "Revisión cardiológica",  d: "45 min", p: "75" },
+      { n: "Análisis clínicos",      d: "20 min", p: "30" },
     ],
   },
   {
@@ -31,21 +32,15 @@ const BRAND_MOCKS = [
     color: "#8b5cf6",
     icon: "🌿",
     services: [
-      { n: "Masaje relajante", d: "60 min", p: "55" },
-      { n: "Facial hidratante", d: "45 min", p: "65" },
-      { n: "Aromaterapia", d: "30 min", p: "40" },
+      { n: "Masaje relajante",   d: "60 min", p: "55" },
+      { n: "Facial hidratante",  d: "45 min", p: "65" },
+      { n: "Aromaterapia",       d: "30 min", p: "40" },
     ],
   },
 ];
 
-const BRAND_STATS = [
-  { num: "100%", lbl: "Tu marca, tu imagen" },
-  { num: "URL", lbl: "Propia y personalizada" },
-  { num: "∞", lbl: "Colores a medida" },
-  { num: "★", lbl: "Logo en cada reserva" },
-];
-
 function BrandMockup({ data }: { data: typeof BRAND_MOCKS[0] }) {
+  const t = useTranslations("Landing.brand");
   const [sel, setSel] = useState(0);
   const c = data.color;
   return (
@@ -61,14 +56,14 @@ function BrandMockup({ data }: { data: typeof BRAND_MOCKS[0] }) {
         <div>
           <div className="text-[13.5px] font-black text-[#0d0d0b] tracking-[-0.3px]">{data.name}</div>
           <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-green-600 bg-green-50 border border-green-200 px-[7px] py-[2px] rounded-full mt-0.5">
-            <span>●</span> En línea
+            <span>●</span> {t("mockOnline")}
           </div>
         </div>
       </div>
 
       {/* Step label */}
       <div className="text-[10px] font-bold text-[#71717a] tracking-[0.8px] uppercase px-4 pt-3 pb-[6px]">
-        Paso 2 — Elige tu servicio
+        {t("mockStep")}
       </div>
 
       {/* Services */}
@@ -101,23 +96,32 @@ function BrandMockup({ data }: { data: typeof BRAND_MOCKS[0] }) {
         className="block w-[calc(100%-24px)] mx-3 mb-3 py-[10px] rounded-lg text-[13px] font-bold text-white border-none cursor-pointer transition-opacity hover:opacity-90"
         style={{ background: c }}
       >
-        Continuar →
+        {t("mockContinue")}
       </button>
     </div>
   );
 }
 
 export function LandingBrandSection() {
+  const t = useTranslations("Landing.brand");
+
+  const BRAND_STATS = [
+    { num: t("stat1Num"), lbl: t("stat1Label") },
+    { num: t("stat2Num"), lbl: t("stat2Label") },
+    { num: t("stat3Num"), lbl: t("stat3Label") },
+    { num: t("stat4Num"), lbl: t("stat4Label") },
+  ];
+
   return (
     <section className="relative z-10 bg-transparent py-[clamp(72px,9vw,120px)] px-5 lg:px-16 text-center">
       <div className="max-w-[1120px] mx-auto">
         {/* Headline */}
         <h2 className="font-serif text-[clamp(34px,4.5vw,62px)] leading-[1.1] tracking-[-0.4px] text-slate-900 dark:text-white mb-4 transition-colors duration-300">
-          Un sistema.<br />
-          <em className="italic text-purple-600">Infinitas identidades.</em>
+          {t("title1")}<br />
+          <em className="italic text-purple-600">{t("titleItalic")}</em>
         </h2>
         <p className="text-[clamp(14px,1.4vw,16.5px)] text-slate-500 dark:text-zinc-400 max-w-[560px] mx-auto mb-[clamp(40px,5vw,64px)] leading-[1.65] transition-colors duration-300">
-          Cada negocio que usa Zyncrox tiene un portal completamente distinto. Tu cliente nunca sabe que es el mismo sistema.
+          {t("subtitle")}
         </p>
 
         {/* Mockups */}

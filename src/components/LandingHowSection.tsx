@@ -1,31 +1,10 @@
 "use client";
 
 import { useState } from "react";
-
-const STEPS = [
-  {
-    num: 1,
-    title: "Creá tu cuenta",
-    desc: "Registrate con tu email. En 2 minutos tenés tu negocio en línea.",
-  },
-  {
-    num: 2,
-    title: "Personalizá tu portal",
-    desc: "Tu logo, tus colores, tus servicios, tu equipo. El sistema se moldea a vos.",
-  },
-  {
-    num: 3,
-    title: "Compartí tu enlace",
-    desc: "Obtenés una URL única: app.zyncrox.com/tu-negocio para compartir en redes o WhatsApp.",
-  },
-  {
-    num: 4,
-    title: "Recibí reservas 24/7",
-    desc: "Tus clientes reservan solos a cualquier hora. Tu agenda se actualiza automáticamente.",
-  },
-];
+import { useTranslations } from "next-intl";
 
 function MockStep1() {
+  const t = useTranslations("Landing.how");
   return (
     <div>
       <div className="text-center mb-6">
@@ -33,15 +12,15 @@ function MockStep1() {
           <span className="text-purple-600 text-[18px]">⚡</span>Zyncrox
         </span>
       </div>
-      <div className="text-[18px] font-black text-center text-slate-900 tracking-tight mb-1">Creá tu negocio</div>
-      <div className="text-[12.5px] text-zinc-500 text-center mb-6">Empezá gratis, sin tarjeta de crédito</div>
+      <div className="text-[18px] font-black text-center text-slate-900 tracking-tight mb-1">{t("mock1Title")}</div>
+      <div className="text-[12.5px] text-zinc-500 text-center mb-6">{t("mock1Subtitle")}</div>
       {[
-        { label: "Nombre del negocio", val: "Studio Noa", type: "text" },
-        { label: "Email", val: "hola@studionoa.com", type: "email" },
-        { label: "Contraseña", val: "••••••••", type: "password" },
+        { labelKey: "mock1FieldBusiness", val: "Studio Noa", type: "text" },
+        { labelKey: "mock1FieldEmail",    val: "hola@studionoa.com", type: "email" },
+        { labelKey: "mock1FieldPassword", val: "••••••••", type: "password" },
       ].map((f) => (
-        <div className="mb-3" key={f.label}>
-          <div className="text-[11.5px] font-semibold text-zinc-600 mb-[5px]">{f.label}</div>
+        <div className="mb-3" key={f.labelKey}>
+          <div className="text-[11.5px] font-semibold text-zinc-600 mb-[5px]">{t(f.labelKey as any)}</div>
           <input
             type={f.type}
             readOnly
@@ -51,14 +30,15 @@ function MockStep1() {
         </div>
       ))}
       <button className="w-full mt-1.5 py-3 rounded-[9px] bg-purple-600 text-white text-[14px] font-bold shadow-[0_2px_8px_rgba(139,92,246,0.3)]">
-        Crear mi cuenta →
+        {t("mock1Submit")}
       </button>
-      <p className="text-center text-[11.5px] text-zinc-400 mt-3">Al registrarte aceptás los Términos de servicio</p>
+      <p className="text-center text-[11.5px] text-zinc-400 mt-3">{t("mock1Terms")}</p>
     </div>
   );
 }
 
 function MockStep2() {
+  const t = useTranslations("Landing.how");
   return (
     <div>
       <div className="flex items-center gap-[10px] mb-5 pb-4 border-b border-zinc-100">
@@ -71,9 +51,9 @@ function MockStep2() {
       {[
         { lbl: "Logo", val: "🖼️" },
         { lbl: "Color principal", val: <><span className="inline-block w-3.5 h-3.5 rounded-full bg-purple-500 mr-1.5" />#8B5CF6</> },
-        { lbl: "Servicios activos", val: "3 servicios" },
-        { lbl: "Staff configurado", val: "2 empleadas" },
-        { lbl: "Horarios", val: "Lun–Sáb 9–19h" },
+        { lbl: t("mock2FieldServices"), val: "3" },
+        { lbl: t("mock2FieldStaff"), val: "2" },
+        { lbl: t("mock2FieldHours"), val: "Lun–Sáb 9–19h" },
       ].map((r, i) => (
         <div key={i} className="flex items-center justify-between py-[11px] border-b border-zinc-50 last:border-none">
           <span className="text-[13px] font-medium text-zinc-600">{r.lbl}</span>
@@ -85,23 +65,24 @@ function MockStep2() {
 }
 
 function MockStep3() {
+  const t = useTranslations("Landing.how");
   const [copied, setCopied] = useState(false);
   return (
     <div>
-      <div className="text-[18px] font-black text-slate-900 tracking-tight mb-1">Tu link único</div>
-      <div className="text-[12.5px] text-zinc-500 mb-4">Compartilo donde quieras</div>
+      <div className="text-[18px] font-black text-slate-900 tracking-tight mb-1">{t("mock3Title")}</div>
+      <div className="text-[12.5px] text-zinc-500 mb-4">{t("mock3Subtitle")}</div>
       <div className="bg-zinc-100 rounded-[10px] px-4 py-[14px] mb-4 flex items-center gap-2.5">
         <span className="text-[12.5px] text-zinc-600 font-medium flex-1 truncate">app.zyncrox.com/studionoa</span>
         <button
           onClick={() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }}
           className="text-[11px] font-bold text-purple-600 flex-shrink-0 cursor-pointer"
         >
-          {copied ? "✓ Copiado" : "Copiar"}
+          {copied ? t("mock3Copied") : t("mock3Copy")}
         </button>
       </div>
-      <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.5px] mb-2.5">Compartir en</div>
+      <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.5px] mb-2.5">{t("mock3ShareLabel")}</div>
       <div className="flex gap-2 flex-wrap">
-        {["WhatsApp", "Instagram", "Email"].map((s) => (
+        {[t("mock3Share1"), t("mock3Share2"), t("mock3Share3")].map((s) => (
           <button key={s} className="flex items-center gap-1.5 px-[14px] py-2 rounded-lg border-[1.5px] border-zinc-200 text-[12px] font-semibold text-zinc-600 bg-white hover:border-purple-500 hover:text-purple-600 transition-colors cursor-pointer">
             {s}
           </button>
@@ -120,24 +101,26 @@ function MockStep3() {
             <rect x="26" y="24" width="4" height="4" rx="0.5" fill="white"/>
           </svg>
         </div>
-        <div className="text-[12px] text-zinc-500 leading-[1.5]">También podés descargar<br />tu código QR personalizado</div>
+        <div className="text-[12px] text-zinc-500 leading-[1.5]">{t("mock3QrDesc")}</div>
       </div>
     </div>
   );
 }
 
 function MockStep4() {
+  const t = useTranslations("Landing.how");
+  const noBooking = t("mock4NoBooking");
   const slots = [
-    { time: "9:00 AM",  client: "María González",  svc: "Manicura",          booked: true },
-    { time: "10:30 AM", client: "Valentina R.",     svc: "Coloración",        booked: true },
-    { time: "12:00 PM", client: "",                 svc: "Disponible",        booked: false },
-    { time: "2:00 PM",  client: "Sofía M.",         svc: "Corte + Brushing",  booked: true },
+    { time: "9:00 AM",  client: "María González",  svc: "Manicura",         booked: true },
+    { time: "10:30 AM", client: "Valentina R.",     svc: "Coloración",       booked: true },
+    { time: "12:00 PM", client: "",                 svc: noBooking,          booked: false },
+    { time: "2:00 PM",  client: "Sofía M.",         svc: "Corte + Brushing", booked: true },
   ];
   return (
     <div>
       <div className="flex items-center justify-between mb-[14px]">
-        <div className="text-[14px] font-black text-slate-900 tracking-tight">Hoy · Lunes 20 Abr</div>
-        <div className="bg-green-100 text-green-700 text-[10.5px] font-bold px-[10px] py-[3px] rounded-full border border-green-200">● 3 reservas</div>
+        <div className="text-[14px] font-black text-slate-900 tracking-tight">{t("mock4Date")}</div>
+        <div className="bg-green-100 text-green-700 text-[10.5px] font-bold px-[10px] py-[3px] rounded-full border border-green-200">● {t("mock4BookingsCount")}</div>
       </div>
       <div className="flex flex-col gap-2">
         {slots.map((s, i) => (
@@ -145,15 +128,15 @@ function MockStep4() {
             <div className={`w-[7px] h-[7px] rounded-full flex-shrink-0 ${s.booked ? 'bg-purple-600' : 'bg-zinc-300'}`} />
             <div className="text-[12px] font-bold text-slate-900 w-[52px] flex-shrink-0">{s.time}</div>
             <div className="flex-1">
-              <div className="text-[12px] text-zinc-600">{s.booked ? s.client : <span className="text-zinc-300">Sin reserva</span>}</div>
-              <div className="text-[11px] text-zinc-400">{s.svc}</div>
+              <div className="text-[12px] text-zinc-600">{s.booked ? s.client : <span className="text-zinc-300">{s.svc}</span>}</div>
+              <div className="text-[11px] text-zinc-400">{s.booked ? s.svc : ""}</div>
             </div>
           </div>
         ))}
       </div>
       <div className="mt-3 bg-green-50 border border-green-200 rounded-[9px] px-[13px] py-[10px] flex items-center gap-2">
         <span className="text-[14px]">🔔</span>
-        <span className="text-[12px] font-semibold text-green-700">Nueva reserva recibida · 4:30 PM</span>
+        <span className="text-[12px] font-semibold text-green-700">{t("mock4NewBooking")}</span>
       </div>
     </div>
   );
@@ -164,6 +147,14 @@ const MOCK_SCREENS = [MockStep1, MockStep2, MockStep3, MockStep4];
 export function LandingHowSection() {
   const [active, setActive] = useState(0);
   const [switching, setSwitching] = useState(false);
+  const t = useTranslations("Landing.how");
+
+  const STEPS = [
+    { num: 1, title: t("step1Title"), desc: t("step1Desc") },
+    { num: 2, title: t("step2Title"), desc: t("step2Desc") },
+    { num: 3, title: t("step3Title"), desc: t("step3Desc") },
+    { num: 4, title: t("step4Title"), desc: t("step4Desc") },
+  ];
 
   function goTo(i: number) {
     if (i === active) return;
@@ -179,10 +170,10 @@ export function LandingHowSection() {
         {/* Header */}
         <div className="text-center mb-[clamp(44px,6vw,64px)]">
           <h2 className="font-serif text-[clamp(30px,3.8vw,52px)] leading-[1.1] tracking-[-0.4px] text-slate-900 dark:text-white mb-[14px] transition-colors duration-300">
-            Simple de arrancar.
+            {t("title")}
           </h2>
           <p className="text-[clamp(14px,1.4vw,16px)] text-slate-500 dark:text-zinc-400 leading-[1.65] max-w-[440px] mx-auto transition-colors duration-300">
-            En menos de 15 minutos tu negocio ya puede recibir reservas en línea.
+            {t("subtitle")}
           </p>
         </div>
 

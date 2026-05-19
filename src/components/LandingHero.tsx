@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 import { LandingWidgetMockup } from "./LandingWidgetMockup";
 import { WidgetTiltWrapper } from "./WidgetTiltWrapper";
 
@@ -12,6 +13,9 @@ const SOCIAL_AVATARS = [
 ];
 
 export function LandingHero() {
+  const t = useTranslations("Landing.hero");
+  const locale = useLocale();
+
   return (
     <section className="relative z-10 min-h-screen pt-16 flex items-center px-5 lg:px-16">
       <div className="max-w-[1280px] mx-auto w-full grid grid-cols-1 lg:grid-cols-[1fr_1.15fr] gap-9 lg:gap-[72px] items-center py-16">
@@ -21,27 +25,27 @@ export function LandingHero() {
           {/* Badge */}
           <div className="inline-flex items-center gap-[7px] border border-purple-500/35 bg-purple-500/[0.08] text-purple-400 text-[12px] font-medium px-3 py-[5px] rounded-full mb-[26px] animate-in fade-in slide-in-from-bottom-4 duration-500">
             <span className="w-[5px] h-[5px] bg-purple-500 rounded-full animate-badge-blink flex-shrink-0" />
-            Nuevo · Integración con Google Calendar
+            {t("badge")}
           </div>
 
           {/* Headline */}
           <h1 className="text-[clamp(30px,3.2vw,50px)] font-extrabold leading-[1.1] tracking-[-1.2px] text-slate-900 dark:text-white mb-[22px] animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-            Reservas que se adaptan<br />
-            a tu negocio. <em className="italic font-bold text-purple-600">No al revés.</em>
+            {t("h1Line1")}<br />
+            {t("h1Line2")} <em className="italic font-bold text-purple-600">{t("h1Italic")}</em>
           </h1>
 
           {/* Subtitle */}
           <p className="text-[clamp(14px,1.3vw,15.5px)] leading-[1.72] text-slate-500 dark:text-zinc-400 max-w-[400px] mb-[34px] animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
-            Zyncrox transforma la gestión de citas en una experiencia fluida. Personaliza, automatiza y crece — sin complicaciones técnicas.
+            {t("subtitle")}
           </p>
 
           {/* CTAs */}
           <div className="flex items-center gap-3 flex-wrap mb-11 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
             <Link
-              href="/admin/register"
+              href={`/${locale}/admin/register`}
               className="inline-flex items-center gap-2 text-[15px] font-semibold text-white bg-purple-600 hover:bg-purple-700 px-[26px] py-[13px] rounded-[10px] whitespace-nowrap shadow-[0_0_0_1px_rgba(139,92,246,0.5),0_4px_20px_rgba(139,92,246,0.35)] hover:shadow-[0_0_0_1px_rgba(139,92,246,0.6),0_8px_32px_rgba(139,92,246,0.45)] hover:-translate-y-0.5 transition-all duration-150 no-underline"
             >
-              Empieza gratis
+              {t("cta1")}
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
                 <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -51,7 +55,7 @@ export function LandingHero() {
                 <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
                 <path d="M10 8l6 4-6 4V8z" fill="currentColor" />
               </svg>
-              Ver demo
+              {t("cta2")}
             </button>
           </div>
 
@@ -68,7 +72,8 @@ export function LandingHero() {
               ))}
             </div>
             <p className="text-[12.5px] text-slate-400 dark:text-zinc-500">
-              <strong className="text-slate-500 dark:text-zinc-400 font-semibold">+2.400 negocios</strong> ya gestionan sus citas con Zyncrox
+              <strong className="text-slate-500 dark:text-zinc-400 font-semibold">{t("proofCount")}</strong>{" "}
+              {t("proofText")}
             </p>
           </div>
         </div>
