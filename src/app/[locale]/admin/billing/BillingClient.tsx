@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { CreditCard, AlertTriangle, CheckCircle, XCircle, X } from 'lucide-react'
 import { PLAN_FEATURES, PLAN_PRICES, PlanType } from '@/core/plans'
 import {
@@ -243,6 +243,8 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
     </>
   )
 
+  const richStrong = (chunks: React.ReactNode) => <strong>{chunks}</strong>
+
   if (isSuspended) {
     return (
       <div className="max-w-5xl mx-auto space-y-6">
@@ -269,7 +271,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
         </div>
         {modal === 'reactivate' && (
           <Modal title={t('modal.reactivate.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4" dangerouslySetInnerHTML={{ __html: t('modal.reactivate.charge', { amount: PLAN_PRICES[targetPlan] }) }} />
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">{t.rich('modal.reactivate.charge', { amount: PLAN_PRICES[targetPlan], strong: richStrong })}</p>
             <CardForm onSubmit={data => handleReactivate(data)} loading={loading} submitLabel={t('modal.confirmReactivate', { amount: PLAN_PRICES[targetPlan] })} />
           </Modal>
         )}
@@ -308,7 +310,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
         </div>
         {modal === 'activate' && (
           <Modal title={t('modal.activate.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4" dangerouslySetInnerHTML={{ __html: t('modal.activate.charge', { amount: PLAN_PRICES[targetPlan] }) }} />
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">{t.rich('modal.activate.charge', { amount: PLAN_PRICES[targetPlan], strong: richStrong })}</p>
             <CardForm onSubmit={handleActivate} loading={loading} submitLabel={t('modal.confirmActivate', { amount: PLAN_PRICES[targetPlan] })} />
           </Modal>
         )}
@@ -333,15 +335,15 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
             </div>
 
             {isActive && subscription?.currentPeriodEnd && (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400" dangerouslySetInnerHTML={{ __html: t('currentSub.nextInvoice', { amount: PLAN_PRICES[currentPlan], date: formatDate(subscription.currentPeriodEnd, locale) }) }} />
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.rich('currentSub.nextInvoice', { amount: PLAN_PRICES[currentPlan], date: formatDate(subscription.currentPeriodEnd, locale), strong: richStrong })}</p>
             )}
             {isCancelled && subscription?.currentPeriodEnd && (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400" dangerouslySetInnerHTML={{ __html: t('currentSub.accessUntil', { date: formatDate(subscription.currentPeriodEnd, locale) }) }} />
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.rich('currentSub.accessUntil', { date: formatDate(subscription.currentPeriodEnd, locale), strong: richStrong })}</p>
             )}
             {isPastDue && subscription?.gracePeriodEndsAt && (
               <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
                 <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
-                <p className="text-sm text-yellow-700 dark:text-yellow-400" dangerouslySetInnerHTML={{ __html: t('currentSub.paymentFailed', { date: formatDate(subscription.gracePeriodEndsAt, locale) }) }} />
+                <p className="text-sm text-yellow-700 dark:text-yellow-400">{t.rich('currentSub.paymentFailed', { date: formatDate(subscription.gracePeriodEndsAt, locale), strong: richStrong })}</p>
               </div>
             )}
 
@@ -441,7 +443,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
               </ul>
             </div>
           )}
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-5 py-3 border-t border-zinc-100 dark:border-white/10" dangerouslySetInnerHTML={{ __html: t('modal.upgrade.charge', { amount: PLAN_PRICES[targetPlan] }) }} />
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-5 py-3 border-t border-zinc-100 dark:border-white/10">{t.rich('modal.upgrade.charge', { amount: PLAN_PRICES[targetPlan], strong: richStrong })}</p>
           <div className="flex gap-3">
             <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm font-semibold rounded-xl border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors">{t('modal.cancel')}</button>
             <button onClick={handleChangePlan} disabled={loading} className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
@@ -477,7 +479,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
               <p className="text-sm text-yellow-700 dark:text-yellow-400">{t('modal.downgrade.limitWarning')}</p>
             </div>
           )}
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-5 py-3 border-t border-zinc-100 dark:border-white/10" dangerouslySetInnerHTML={{ __html: t('modal.downgrade.charge', { amount: PLAN_PRICES[targetPlan] }) }} />
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-5 py-3 border-t border-zinc-100 dark:border-white/10">{t.rich('modal.downgrade.charge', { amount: PLAN_PRICES[targetPlan], strong: richStrong })}</p>
           <div className="flex gap-3">
             <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm font-semibold rounded-xl border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors">{t('modal.cancel')}</button>
             <button onClick={handleChangePlan} disabled={loading} className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
@@ -489,7 +491,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
 
       {modal === 'cancel' && (
         <Modal title={t('modal.cancelSub.title')} onClose={() => setModal(null)}>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2" dangerouslySetInnerHTML={{ __html: t('modal.cancelSub.desc', { date: formatDate(subscription?.currentPeriodEnd ?? null, locale) }) }} />
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">{t.rich('modal.cancelSub.desc', { date: formatDate(subscription?.currentPeriodEnd ?? null, locale), strong: richStrong })}</p>
           <p className="text-sm text-zinc-500 mb-6">{t('modal.cancelSub.noMoreCharges')}</p>
           <div className="flex gap-3">
             <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm font-semibold rounded-xl border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors">{t('modal.cancelSub.keep')}</button>
@@ -515,7 +517,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
 
       {modal === 'reactivate' && (
         <Modal title={t('modal.reactivate.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4" dangerouslySetInnerHTML={{ __html: t('modal.reactivate.charge', { amount: PLAN_PRICES[targetPlan] }) }} />
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">{t.rich('modal.reactivate.charge', { amount: PLAN_PRICES[targetPlan], strong: richStrong })}</p>
           {subscription?.cardLast4 ? (
             <>
               <div className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-white/5 rounded-xl mb-4">
