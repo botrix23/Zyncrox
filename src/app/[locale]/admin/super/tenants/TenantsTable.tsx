@@ -176,7 +176,7 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
   const [planTarget, setPlanTarget] = useState<Tenant | null>(null);
   const [adminsTarget, setAdminsTarget] = useState<Tenant | null>(null);
   const [trialTarget, setTrialTarget] = useState<Tenant | null>(null);
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; openUp: boolean } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const filteredTenants = useMemo(() => {
@@ -209,9 +209,16 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
       return;
     }
     const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+    // Estimated menu height (6 items × ~38px + dividers)
+    const MENU_H = 260;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceBelow < MENU_H + 8;
     setMenuPos({
-      top: rect.bottom + window.scrollY + 4,
+      top: openUp
+        ? rect.top + window.scrollY - MENU_H - 4
+        : rect.bottom + window.scrollY + 4,
       left: rect.right - 192,
+      openUp,
     });
     setOpenMenu(tenantId);
   }, [openMenu]);
@@ -496,7 +503,7 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
         <div
           ref={menuRef}
           style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
-          className="w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          className={`w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in duration-150 ${menuPos.openUp ? 'slide-in-from-bottom-2' : 'slide-in-from-top-2'}`}
         >
           <button
             onClick={() => { const ten = tenants.find(ten => ten.id === openMenu); if (ten) handleManageAdmins(ten); }}
