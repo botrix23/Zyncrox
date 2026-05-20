@@ -15,9 +15,12 @@ const dmSerif = DM_Serif_Display({
   variable: '--font-serif',
 });
 
+const META_DESCRIPTION =
+  "Zyncrox es la plataforma de reservas online que se adapta a tu negocio. Personaliza tu portal, ofrece servicios a domicilio y gestiona tu equipo. Prueba 7 días gratis.";
+
 export const metadata: Metadata = {
   title: "Zyncrox | Reservas que se adaptan a tu negocio",
-  description: "Zyncrox transforma la gestión de citas en una experiencia fluida. Personaliza, automatiza y crece — sin complicaciones técnicas.",
+  description: META_DESCRIPTION,
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -37,7 +40,7 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://www.zyncrox.com",
     title: "Zyncrox | Reservas que se adaptan a tu negocio",
-    description: "Zyncrox transforma la gestión de citas en una experiencia fluida. Personaliza, automatiza y crece — sin complicaciones técnicas.",
+    description: META_DESCRIPTION,
     siteName: "Zyncrox",
     images: [
       {
@@ -51,7 +54,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "Zyncrox | Reservas que se adaptan a tu negocio",
-    description: "Zyncrox transforma la gestión de citas en una experiencia fluida. Personaliza, automatiza y crece — sin complicaciones técnicas.",
+    description: META_DESCRIPTION,
     images: ["https://www.zyncrox.com/icons/icon-512x512.png"],
   },
   themeColor: "#8b5cf6",
