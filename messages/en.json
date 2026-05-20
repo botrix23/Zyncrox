@@ -599,7 +599,8 @@
       "surveys": "Surveys",
       "payments": "Payments",
       "billing": "Billing",
-      "settings": "Settings"
+      "settings": "Settings",
+      "analytics": "Analytics"
     },
     "settings": {
       "title": "Settings",

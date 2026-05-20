@@ -599,7 +599,8 @@
       "surveys": "Encuestas",
       "payments": "Pagos",
       "billing": "Facturación",
-      "settings": "Configuración"
+      "settings": "Configuración",
+      "analytics": "Analítica"
     },
     "settings": {
       "title": "Configuración",
