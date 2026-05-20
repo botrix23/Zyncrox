@@ -12,7 +12,8 @@ export function LocaleSwitcher() {
 
   function switchLocale() {
     const nextLocale = locale === "es" ? "en" : "es";
-    // pathname ya incluye el prefijo de locale (e.g. /es/... o /en/...)
+    // Guardar preferencia en cookie (1 año) para que el middleware la respete
+    document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000; SameSite=Lax`;
     const newPath = pathname.replace(`/${locale}`, `/${nextLocale}`);
     startTransition(() => {
       router.replace(newPath);
