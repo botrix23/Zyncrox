@@ -1368,7 +1368,6 @@
       "trial": "Prueba gratis"
     },
     "hero": {
-      "badge": "Nuevo · Integración con Google Calendar",
       "h1Line1": "Reservas que se adaptan",
       "h1Line2": "a tu negocio.",
       "h1Italic": "No al revés.",
@@ -1570,8 +1569,8 @@
       "a8": "Sí, desde el plan Basic. Configura zonas de cobertura con tarifas, términos y condiciones, y tiempo de viaje. Tu cliente reserva y tú recibes toda la información automáticamente."
     },
     "cta": {
-      "title": "Tu negocio merece un sistema que trabaje como vos.",
-      "subtitle": "Comenzá gratis hoy. Sin tarjeta, sin compromisos. 7 días con acceso completo a todas las funciones.",
+      "title": "Tu negocio merece un sistema que trabaje tan duro como tú.",
+      "subtitle": "Empieza gratis hoy. Sin tarjeta, sin compromisos. 7 días con acceso completo a todas las funcionalidades.",
       "btn": "Crear mi cuenta gratis →",
       "note": "Cancela cuando quieras · Soporte incluido · Sin tarjeta de crédito",
       "badge1": "🔒 Datos seguros",

@@ -15,12 +15,6 @@ export function LandingHero() {
 
         {/* ── Left: Copy ── */}
         <div>
-          {/* Badge */}
-          <div className="inline-flex items-center gap-[7px] border border-purple-500/35 bg-purple-500/[0.08] text-purple-400 text-[12px] font-medium px-3 py-[5px] rounded-full mb-[26px] animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <span className="w-[5px] h-[5px] bg-purple-500 rounded-full animate-badge-blink flex-shrink-0" />
-            {t("badge")}
-          </div>
-
           {/* Headline */}
           <h1 className="text-[clamp(30px,3.2vw,50px)] font-extrabold leading-[1.1] tracking-[-1.2px] text-slate-900 dark:text-white mb-[22px] animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
             {t("h1Line1")}<br />
