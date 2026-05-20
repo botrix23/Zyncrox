@@ -579,6 +579,10 @@
         "amount": "Monto"
       }
     },
+    "tabs": {
+      "overview": "Vista general",
+      "analytics": "Analítica avanzada"
+    },
     "sidebar": {
       "dashboard": "Dashboard",
       "bookings": "Citas",
@@ -865,7 +869,8 @@
       "retry": "Reintentar",
       "tabs": {
         "staffPerformance": "Rendimiento de staff",
-        "clientRetention": "Retención de clientes"
+        "clientRetention": "Retención de clientes",
+        "branchPerformance": "Rendimiento por sucursal"
       },
       "filters": {
         "last7d": "Últ. 7 días",
@@ -957,6 +962,46 @@
         "colAvgRating": "Rating promedio",
         "noServices": "Sin datos de servicios para el periodo.",
         "unknown": "—"
+      },
+      "branchPerformance": {
+        "totalAttended": "Citas totales",
+        "totalRevenue": "Ingresos totales",
+        "avgCancelRate": "Cancelación promedio",
+        "avgOccupancy": "Ocupación promedio",
+        "topRevenue": "Mayor ingreso",
+        "topOccupancy": "Mayor ocupación",
+        "branchCount": "{count} sucursal(es)",
+        "avgPerBooking": "{amount} promedio/cita",
+        "avgAllBranches": "promedio de sucursales",
+        "occupancyHint": "% de slots disponibles usados",
+        "noData": "Sin datos para el periodo seleccionado.",
+        "chartTitle": "Comparativo por sucursal",
+        "chartBookings": "Citas atendidas por sucursal",
+        "chartRevenue": "Ingresos por sucursal",
+        "trendTitle": "Tendencia semanal por sucursal",
+        "tableTitle": "Comparativa de sucursales",
+        "colBranch": "Sucursal",
+        "colAttended": "Atendidas",
+        "colCancelled": "Canceladas",
+        "colCancelRate": "% Cancelación",
+        "colRevenue": "Ingresos",
+        "colNewClients": "Nuevos",
+        "colRecurring": "Recurrentes",
+        "colOccupancy": "Ocupación",
+        "colRating": "Rating",
+        "footnote": "Ocupación: (citas atendidas / slots teóricos disponibles) × 100. Slots teóricos = horas de apertura × staff activo / duración promedio del servicio. Los clientes nuevos son aquellos con primera visita dentro del rango seleccionado."
+      },
+      "exportReports": {
+        "title": "Exportar reporte",
+        "exportPdf": "Exportar PDF",
+        "exportExcel": "Exportar Excel",
+        "generating": "Generando…",
+        "pdfStaffTitle": "Reporte de rendimiento de staff",
+        "pdfRetentionTitle": "Reporte de retención de clientes",
+        "pdfBranchTitle": "Reporte de rendimiento por sucursal",
+        "pdfPeriod": "Periodo:",
+        "pdfGeneratedOn": "Generado el:",
+        "pdfPage": "Pág."
       },
       "upgradeWall": {
         "title": "Disponible en el plan Business",

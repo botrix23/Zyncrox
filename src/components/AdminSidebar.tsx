@@ -17,10 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  TrendingUp,
-  Lock,
 } from 'lucide-react';
-import { getPlanDisplayName, canUseFeature } from '@/core/plans';
+import { getPlanDisplayName } from '@/core/plans';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { logoutAction } from '@/app/actions/auth';
@@ -78,7 +76,6 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
 
   const isImpersonating = user?.role === 'SUPER_ADMIN' && !!user?.impersonatedTenantId;
   const isStaff = user?.role === 'STAFF';
-  const hasAdvancedAnalytics = canUseFeature(tenantPlan, 'advancedAnalytics');
 
   const allItems = [
     { name: t('dashboard'), icon: LayoutDashboard, href: `/${locale}/admin`, active: pathname === `/${locale}/admin`, staffVisible: false },
@@ -91,7 +88,6 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
     { name: t('appearance'), icon: Palette, href: `/${locale}/admin/appearance`, active: pathname.includes('/appearance'), staffVisible: false },
     { name: t('surveys'), icon: ClipboardList, href: `/${locale}/admin/surveys`, active: pathname.includes('/surveys'), staffVisible: false },
     // { name: t('products'), icon: Package, href: `/${locale}/admin/products`, active: pathname.includes('/products'), staffVisible: false },
-    { name: t('analytics'), icon: TrendingUp, href: `/${locale}/admin/analytics`, active: pathname.includes('/analytics'), staffVisible: false, locked: !hasAdvancedAnalytics },
   ];
 
   const baseItems = isStaff ? allItems.filter(i => i.staffVisible) : allItems;
@@ -179,34 +175,21 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
 
       {/* Nav items */}
       <nav className={`flex-1 ${collapsed && !forMobile ? 'px-2' : 'px-4'} space-y-1 mt-2 overflow-y-auto custom-scrollbar`}>
-        {baseItems.map((item) => {
-          const isLocked = (item as any).locked === true;
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              title={collapsed && !forMobile ? (isLocked ? `${item.name} (Business)` : item.name) : undefined}
-              className={`flex items-center ${collapsed && !forMobile ? 'justify-center px-0 py-3' : 'justify-between px-4 py-3.5'} rounded-2xl transition-all duration-200 group ${
-                item.active
-                  ? 'bg-purple-600 text-white shadow-xl shadow-purple-500/20'
-                  : isLocked
-                  ? 'text-slate-400 dark:text-zinc-600 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-600 dark:hover:text-zinc-400'
-                  : 'text-slate-500 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <div className={`flex items-center ${collapsed && !forMobile ? 'justify-center' : 'gap-3'}`}>
-                <item.icon className={`w-5 h-5 shrink-0 ${item.active ? 'text-white' : isLocked ? 'text-slate-400 dark:text-zinc-600' : 'group-hover:text-purple-500 transition-colors'}`} />
-                {(!collapsed || forMobile) && <span className="font-semibold text-sm whitespace-nowrap">{item.name}</span>}
-              </div>
-              {(!collapsed || forMobile) && isLocked && (
-                <span className="flex items-center gap-1 bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 text-[10px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-md">
-                  <Lock className="w-2.5 h-2.5" />
-                  Business
-                </span>
-              )}
-            </Link>
-          );
-        })}
+        {baseItems.map((item) => (
+          <Link
+            key={item.name}
+            href={item.href}
+            title={collapsed && !forMobile ? item.name : undefined}
+            className={`flex items-center ${collapsed && !forMobile ? 'justify-center px-0 py-3' : 'gap-3 px-4 py-3.5'} rounded-2xl transition-all duration-200 group ${
+              item.active
+                ? 'bg-purple-600 text-white shadow-xl shadow-purple-500/20'
+                : 'text-slate-500 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <item.icon className={`w-5 h-5 shrink-0 ${item.active ? 'text-white' : 'group-hover:text-purple-500 transition-colors'}`} />
+            {(!collapsed || forMobile) && <span className="font-semibold text-sm whitespace-nowrap">{item.name}</span>}
+          </Link>
+        ))}
       </nav>
 
       {/* Footer */}

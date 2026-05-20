@@ -579,6 +579,10 @@
         "amount": "Amount"
       }
     },
+    "tabs": {
+      "overview": "Overview",
+      "analytics": "Advanced analytics"
+    },
     "sidebar": {
       "dashboard": "Dashboard",
       "bookings": "Bookings",
@@ -865,7 +869,8 @@
       "retry": "Retry",
       "tabs": {
         "staffPerformance": "Staff performance",
-        "clientRetention": "Client retention"
+        "clientRetention": "Client retention",
+        "branchPerformance": "Branch performance"
       },
       "filters": {
         "last7d": "Last 7 days",
@@ -957,6 +962,46 @@
         "colAvgRating": "Avg rating",
         "noServices": "No service data for the period.",
         "unknown": "—"
+      },
+      "branchPerformance": {
+        "totalAttended": "Total appointments",
+        "totalRevenue": "Total revenue",
+        "avgCancelRate": "Avg cancellation rate",
+        "avgOccupancy": "Avg occupancy",
+        "topRevenue": "Top revenue branch",
+        "topOccupancy": "Top occupancy branch",
+        "branchCount": "{count} branch(es)",
+        "avgPerBooking": "{amount} avg/booking",
+        "avgAllBranches": "across all branches",
+        "occupancyHint": "% of available slots used",
+        "noData": "No data for the selected period.",
+        "chartTitle": "Branch comparison",
+        "chartBookings": "Appointments attended by branch",
+        "chartRevenue": "Revenue by branch",
+        "trendTitle": "Weekly trend by branch",
+        "tableTitle": "Branch comparison table",
+        "colBranch": "Branch",
+        "colAttended": "Attended",
+        "colCancelled": "Cancelled",
+        "colCancelRate": "Cancel %",
+        "colRevenue": "Revenue",
+        "colNewClients": "New",
+        "colRecurring": "Returning",
+        "colOccupancy": "Occupancy",
+        "colRating": "Rating",
+        "footnote": "Occupancy: (attended / theoretical slots) × 100. Theoretical slots = open hours × active staff / avg service duration. New clients had their first visit within the selected range."
+      },
+      "exportReports": {
+        "title": "Export report",
+        "exportPdf": "Export PDF",
+        "exportExcel": "Export Excel",
+        "generating": "Generating…",
+        "pdfStaffTitle": "Staff performance report",
+        "pdfRetentionTitle": "Client retention report",
+        "pdfBranchTitle": "Branch performance report",
+        "pdfPeriod": "Period:",
+        "pdfGeneratedOn": "Generated on:",
+        "pdfPage": "Page"
       },
       "upgradeWall": {
         "title": "Available on the Business plan",

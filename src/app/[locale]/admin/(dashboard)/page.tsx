@@ -19,11 +19,15 @@ import Link from 'next/link';
 import { WeeklyBarChart } from '@/components/dashboard/WeeklyBarChart';
 import { CopyLinkButton } from '@/components/dashboard/CopyLinkButton';
 import { DashboardExport } from '@/components/dashboard/DashboardExport';
+import { canUseFeature } from '@/core/plans';
+import { DashboardTabsClient } from './DashboardTabsClient';
 
 export default async function AdminDashboard({ params: { locale } }: { params: { locale: string } }) {
   const session = await getSession();
 
   let tenantId: string | null = null;
+  const isAdmin = session?.role !== 'STAFF';
+
   if (session?.role === 'STAFF') {
     redirect(`/${locale}/admin/bookings`);
   } else if (session?.role === 'SUPER_ADMIN') {
@@ -268,6 +272,14 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
   const monthLabel = format(now, "MMMM yyyy", { locale: dateLocale });
   const todayLabel = format(now, "EEEE d 'de' MMMM", { locale: dateLocale });
 
+  // Analytics feature gate
+  const tenantPlan = tenantData?.plan ?? null;
+  const canUseAnalytics = canUseFeature(tenantPlan, 'advancedAnalytics');
+
+  // Default date range for analytics (last 30 days)
+  const analyticsDefaultFrom = format(startOfDay(subDays(now, 29)), 'yyyy-MM-dd');
+  const analyticsDefaultTo = format(endOfDay(now), 'yyyy-MM-dd');
+
   const unassignedBookings = unassignedBookingsRaw.map(b => ({
     id: b.id,
     customer: b.customerName,
@@ -277,6 +289,13 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
   }));
 
   return (
+    <DashboardTabsClient
+      canUseAnalytics={canUseAnalytics}
+      isAdmin={isAdmin}
+      defaultFrom={analyticsDefaultFrom}
+      defaultTo={analyticsDefaultTo}
+      locale={locale}
+    >
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
 
       {/* ═══ HEADER ═══ */}
@@ -753,5 +772,6 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
         </div>
       </section>
     </div>
+    </DashboardTabsClient>
   );
 }

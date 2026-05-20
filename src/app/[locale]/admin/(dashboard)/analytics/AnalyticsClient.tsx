@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import { useState, useTransition, useCallback, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import {
   TrendingUp, Users, DollarSign, Star, Award, ChevronUp, ChevronDown,
@@ -21,7 +21,13 @@ import {
   getClientRetentionData,
   RetentionResult,
 } from "@/app/actions/analyticsRetention";
+import {
+  getBranchPerformanceData,
+  BranchPerformanceResult,
+} from "@/app/actions/analyticsBranch";
 import { ClientRetentionTab } from "./ClientRetentionTab";
+import { BranchPerformanceTab } from "./BranchPerformanceTab";
+import { ExportButton } from "./ExportButton";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -41,7 +47,7 @@ type SortKey = keyof Pick<
   "name" | "attended" | "cancelled" | "cancellationRate" | "noShows" | "revenue" | "avgRating" | "productiveMinutes"
 >;
 
-type TabKey = "staffPerformance" | "clientRetention";
+type TabKey = "staffPerformance" | "clientRetention" | "branchPerformance";
 
 // ─── Date presets ─────────────────────────────────────────────────────────────
 
@@ -304,10 +310,23 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
   const [retentionDirty, setRetentionDirty] = useState(false); // needs re-fetch
   const [churnDays, setChurnDays] = useState(60);
 
+  const [branchData, setBranchData] = useState<BranchPerformanceResult | null>(null);
+  const [branchError, setBranchError] = useState<string | null>(null);
+  const [branchDirty, setBranchDirty] = useState(false);
+
   const [isStaffPending, startStaffTransition] = useTransition();
   const [isRetentionPending, startRetentionTransition] = useTransition();
+  const [isBranchPending, startBranchTransition] = useTransition();
 
   const branches: BranchOption[] = staffData?.branches ?? retentionData?.branches ?? [];
+
+  // Auto-fetch staff data on first mount if no initialData was provided
+  useEffect(() => {
+    if (staffData === null && !staffError) {
+      fetchStaff(defaultFrom, defaultTo, null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Data fetching ─────────────────────────────────────────────────────────────
 
@@ -328,14 +347,25 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
     });
   }, []);
 
+  const fetchBranch = useCallback((from: string, to: string) => {
+    startBranchTransition(async () => {
+      setBranchError(null);
+      const r = await getBranchPerformanceData(from, to);
+      if (r.ok) { setBranchData(r.data); setBranchDirty(false); }
+      else setBranchError(r.error);
+    });
+  }, []);
+
   // ── Filter handlers ───────────────────────────────────────────────────────────
 
   const applyFilters = useCallback((from: string, to: string, branch: string | null) => {
     fetchStaff(from, to, branch);
-    // Mark retention as dirty; it will re-fetch when tab is visited
+    // Mark other tabs as dirty; they will re-fetch when visited
     setRetentionDirty(true);
+    setBranchDirty(true);
     if (activeTab === "clientRetention") fetchRetention(from, to, branch, churnDays);
-  }, [activeTab, churnDays, fetchStaff, fetchRetention]);
+    if (activeTab === "branchPerformance") fetchBranch(from, to);
+  }, [activeTab, churnDays, fetchStaff, fetchRetention, fetchBranch]);
 
   const handlePreset = (key: PresetKey) => {
     const { from, to } = getPresetDates(key);
@@ -362,6 +392,9 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
     if (tab === "clientRetention" && (retentionData === null || retentionDirty)) {
       fetchRetention(dateFrom, dateTo, branchId, churnDays);
     }
+    if (tab === "branchPerformance" && (branchData === null || branchDirty)) {
+      fetchBranch(dateFrom, dateTo);
+    }
   };
 
   const handleChurnDaysChange = (days: number) => {
@@ -369,8 +402,12 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
     fetchRetention(dateFrom, dateTo, branchId, days);
   };
 
-  const isPending = activeTab === "staffPerformance" ? isStaffPending : isRetentionPending;
-  const hasError = activeTab === "staffPerformance" ? staffError : retentionError;
+  const isPending = activeTab === "staffPerformance" ? isStaffPending
+    : activeTab === "clientRetention" ? isRetentionPending
+    : isBranchPending;
+  const hasError = activeTab === "staffPerformance" ? staffError
+    : activeTab === "clientRetention" ? retentionError
+    : branchError;
 
   const PRESETS: { key: PresetKey; label: string }[] = [
     { key: "7d", label: tFilters("last7d") },
@@ -392,17 +429,27 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
           </h1>
           <p className="text-slate-500 dark:text-zinc-400 text-sm mt-1">{t("subtitle")}</p>
         </div>
-        {isPending && (
-          <div className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 animate-pulse">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>{t("loading")}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <ExportButton
+            tab={activeTab}
+            staffData={staffData}
+            retentionData={retentionData}
+            branchData={branchData}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+          />
+          {isPending && (
+            <div className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 animate-pulse">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>{t("loading")}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Tab bar ── */}
       <div className="flex gap-1 bg-slate-100 dark:bg-white/5 rounded-2xl p-1 w-full sm:w-auto sm:inline-flex">
-        {(["staffPerformance", "clientRetention"] as TabKey[]).map(tab => (
+        {(["staffPerformance", "clientRetention", "branchPerformance"] as TabKey[]).map(tab => (
           <button
             key={tab}
             onClick={() => handleTabChange(tab)}
@@ -442,8 +489,8 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
                 className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-300 focus:outline-none focus:border-purple-500 transition-colors" />
             </div>
           </div>
-          {/* Branch filter */}
-          {branches.length > 1 && (
+          {/* Branch filter — hidden on branchPerformance tab (it compares all branches) */}
+          {branches.length > 1 && activeTab !== "branchPerformance" && (
             <div className="flex items-center gap-2">
               <select value={branchId ?? ""} onChange={e => handleBranchChange(e.target.value || null)} disabled={isPending}
                 className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-300 focus:outline-none focus:border-purple-500 transition-colors">
@@ -460,7 +507,11 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
         <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/20 rounded-2xl px-5 py-3">
           <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
           <p className="text-sm text-red-600 dark:text-red-400">{hasError}</p>
-          <button onClick={() => activeTab === "staffPerformance" ? fetchStaff(dateFrom, dateTo, branchId) : fetchRetention(dateFrom, dateTo, branchId, churnDays)}
+          <button onClick={() =>
+            activeTab === "staffPerformance" ? fetchStaff(dateFrom, dateTo, branchId)
+            : activeTab === "clientRetention" ? fetchRetention(dateFrom, dateTo, branchId, churnDays)
+            : fetchBranch(dateFrom, dateTo)
+          }
             className="ml-auto flex items-center gap-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:underline">
             <RefreshCw className="w-3 h-3" />{t("retry")}
           </button>
@@ -507,9 +558,15 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
         />
       )}
 
+      {/* Branch Performance */}
+      {activeTab === "branchPerformance" && branchData && !branchError && (
+        <BranchPerformanceTab data={branchData} isLoading={isBranchPending} />
+      )}
+
       {/* Loading placeholder (first load) */}
       {((activeTab === "staffPerformance" && !staffData && !staffError) ||
-        (activeTab === "clientRetention" && !retentionData && !retentionError)) && (
+        (activeTab === "clientRetention" && !retentionData && !retentionError) ||
+        (activeTab === "branchPerformance" && !branchData && !branchError)) && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Loader2 className="w-8 h-8 text-purple-500 animate-spin mb-4" />
           <p className="text-sm text-slate-400 dark:text-zinc-500">{t("loading")}</p>
