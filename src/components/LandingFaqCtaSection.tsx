@@ -5,11 +5,10 @@ import { useState } from "react";
 import { Zap } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 
-const FAQ_KEYS = ["q1", "q2", "q3", "q4", "q5", "q6"] as const;
+const FAQ_KEYS = ["q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8"] as const;
 const FOOTER_COL_KEYS = [
-  { titleKey: "col1Title", links: ["col1L1", "col1L2", "col1L3", "col1L4"] },
-  { titleKey: "col2Title", links: ["col2L1", "col2L2", "col2L3", "col2L4"] },
-  { titleKey: "col3Title", links: ["col3L1", "col3L2"] },
+  { titleKey: "col1Title", links: ["col1L1", "col1L2"] },
+  { titleKey: "col2Title", links: ["col2L1", "col2L2"] },
 ] as const;
 
 export function LandingFaqCtaSection() {

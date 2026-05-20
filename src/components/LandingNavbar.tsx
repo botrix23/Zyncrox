@@ -10,8 +10,6 @@ import { useTranslations, useLocale } from "next-intl";
 const NAV_ITEMS = [
   { key: "features" as const, anchor: "funciones" },
   { key: "pricing"  as const, anchor: "precios"   },
-  { key: "integrations" as const, anchor: "integraciones" },
-  { key: "blog"     as const, anchor: "blog"       },
 ];
 
 export function LandingNavbar() {

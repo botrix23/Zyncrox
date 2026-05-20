@@ -5,13 +5,6 @@ import { useTranslations, useLocale } from "next-intl";
 import { LandingWidgetMockup } from "./LandingWidgetMockup";
 import { WidgetTiltWrapper } from "./WidgetTiltWrapper";
 
-const SOCIAL_AVATARS = [
-  { initials: "AF", bg: "bg-indigo-500" },
-  { initials: "CM", bg: "bg-sky-500" },
-  { initials: "JL", bg: "bg-amber-500" },
-  { initials: "RV", bg: "bg-emerald-500" },
-];
-
 export function LandingHero() {
   const t = useTranslations("Landing.hero");
   const locale = useLocale();
@@ -39,8 +32,8 @@ export function LandingHero() {
             {t("subtitle")}
           </p>
 
-          {/* CTAs */}
-          <div className="flex items-center gap-3 flex-wrap mb-11 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+          {/* CTA */}
+          <div className="flex items-center gap-3 flex-wrap mb-9 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
             <Link
               href={`/${locale}/admin/register`}
               className="inline-flex items-center gap-2 text-[15px] font-semibold text-white bg-purple-600 hover:bg-purple-700 px-[26px] py-[13px] rounded-[10px] whitespace-nowrap shadow-[0_0_0_1px_rgba(139,92,246,0.5),0_4px_20px_rgba(139,92,246,0.35)] hover:shadow-[0_0_0_1px_rgba(139,92,246,0.6),0_8px_32px_rgba(139,92,246,0.45)] hover:-translate-y-0.5 transition-all duration-150 no-underline"
@@ -50,32 +43,12 @@ export function LandingHero() {
                 <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Link>
-            <button className="inline-flex items-center gap-[7px] text-[15px] font-medium text-slate-500 dark:text-zinc-400 bg-transparent border border-black/[0.15] dark:border-white/[0.13] hover:text-slate-900 dark:hover:text-white hover:border-purple-500/40 hover:bg-purple-500/[0.06] px-[22px] py-3 rounded-[10px] whitespace-nowrap hover:-translate-y-px transition-all duration-150 cursor-pointer">
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-                <path d="M10 8l6 4-6 4V8z" fill="currentColor" />
-              </svg>
-              {t("cta2")}
-            </button>
           </div>
 
-          {/* Social proof */}
-          <div className="flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-            <div className="flex">
-              {SOCIAL_AVATARS.map((a, i) => (
-                <div
-                  key={i}
-                  className={`w-7 h-7 rounded-full border-2 border-[#f5f4f2] dark:border-[#09090b] ${a.bg} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 transition-colors duration-300 ${i > 0 ? "-ml-2" : ""}`}
-                >
-                  {a.initials}
-                </div>
-              ))}
-            </div>
-            <p className="text-[12.5px] text-slate-400 dark:text-zinc-500">
-              <strong className="text-slate-500 dark:text-zinc-400 font-semibold">{t("proofCount")}</strong>{" "}
-              {t("proofText")}
-            </p>
-          </div>
+          {/* Tagline */}
+          <p className="text-[12.5px] text-slate-400 dark:text-zinc-500 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+            {t("tagline")}
+          </p>
         </div>
 
         {/* ── Right: Widget mockup with 3D tilt ── */}

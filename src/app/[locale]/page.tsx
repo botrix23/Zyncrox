@@ -1,8 +1,10 @@
 import { LandingNavbar } from "@/components/LandingNavbar";
 import { LandingHero } from "@/components/LandingHero";
+import { LandingIndustrySection } from "@/components/LandingIndustrySection";
 import { LandingHowSection } from "@/components/LandingHowSection";
 import { LandingFeaturesSection } from "@/components/LandingFeaturesSection";
 import { LandingPainSection } from "@/components/LandingPainSection";
+import { LandingDiffSection } from "@/components/LandingDiffSection";
 import { LandingBrandSection } from "@/components/LandingBrandSection";
 import { LandingPricingSection } from "@/components/LandingPricingSection";
 import { LandingFaqCtaSection } from "@/components/LandingFaqCtaSection";
@@ -34,9 +36,11 @@ export default async function LandingPage({ params: { locale } }: { params: { lo
         <LandingNavbar />
         <main>
           <LandingHero />
+          <LandingIndustrySection />
           <LandingHowSection />
           <LandingFeaturesSection />
           <LandingPainSection />
+          <LandingDiffSection />
           <LandingBrandSection />
           <LandingPricingSection />
         </main>
