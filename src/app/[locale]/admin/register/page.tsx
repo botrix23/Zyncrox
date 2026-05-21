@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Building, User, Mail, Lock, ChevronRight, Calendar, AlertCircle, Eye, EyeOff, Check, X } from 'lucide-react';
+import { Building, User, Mail, Lock, ChevronRight, AlertCircle, Eye, EyeOff, Check, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LangToggle } from '@/components/LangToggle';
 import { useTranslations } from 'next-intl';
@@ -100,8 +100,8 @@ export default function RegisterPage() {
         </div>
 
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-600 rounded-2xl shadow-xl shadow-purple-500/20 mb-4">
-            <Calendar className="text-white w-8 h-8" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl shadow-xl shadow-purple-500/20 mb-4 overflow-hidden">
+            <img src="/icons/icon-192x192.png" alt="Zyncrox" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">Zyncrox</h1>
           <p className="text-slate-500 dark:text-zinc-500 font-medium mt-2">{t('subtitle')}</p>

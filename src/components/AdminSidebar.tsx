@@ -137,8 +137,8 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
       {/* Logo row */}
       <div className={`flex items-center ${collapsed && !forMobile ? 'justify-center px-4 py-6' : 'justify-between px-6 py-6'}`}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20 shrink-0">
-            <Calendar className="text-white w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl shadow-lg shadow-purple-500/20 shrink-0 overflow-hidden">
+            <img src="/icons/icon-192x192.png" alt="Zyncrox" className="w-full h-full object-cover" />
           </div>
           {(!collapsed || forMobile) && <span className="text-xl font-bold tracking-tight">Zyncrox</span>}
         </div>
