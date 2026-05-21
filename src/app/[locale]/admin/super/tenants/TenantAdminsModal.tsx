@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, X, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, AlertCircle, ShieldCheck, LifeBuoy } from 'lucide-react';
 import { getTenantAdminsAction, createTenantAdminAction, toggleTenantAdminAction, deleteTenantAdminAction, restoreAccessAction } from '@/app/actions/superAdmin';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -50,12 +50,12 @@ export default function TenantAdminsModal({
   const activeCount = admins?.filter(a => a.isActive).length ?? 0;
   const canAdd = activeCount < limit;
 
-  useState(() => {
+  useEffect(() => {
     getTenantAdminsAction(tenantId).then(data => {
       setAdmins(data);
       setLoading(false);
     });
-  });
+  }, [tenantId]);
 
   const reload = async () => {
     const data = await getTenantAdminsAction(tenantId);
@@ -79,11 +79,12 @@ export default function TenantAdminsModal({
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    setActionId(deleteTarget.id);
+    const target = deleteTarget; // capture before clearing state
+    setActionId(target.id);
     setDeleteTarget(null);
-    const res = await deleteTenantAdminAction(deleteTarget.id, tenantId);
+    const res = await deleteTenantAdminAction(target.id, tenantId);
     if (res.success) {
-      setAdmins(prev => prev?.filter(a => a.id !== deleteTarget.id) ?? null);
+      setAdmins(prev => prev?.filter(a => a.id !== target.id) ?? null);
     } else if (res.error === 'LAST_ADMIN') {
       setError('No puedes eliminar el único admin del tenant.');
     }
