@@ -69,7 +69,7 @@ function MockStep3() {
   const [copied, setCopied] = useState(false);
   return (
     <div
-      className="rounded-3xl p-8 relative overflow-hidden border border-white/10 flex-1 flex flex-col justify-center"
+      className="rounded-3xl p-6 relative overflow-hidden border border-white/10"
       style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" }}
     >
       {/* Decorative share icon */}
@@ -218,7 +218,7 @@ export function LandingHowSection() {
           {/* Mockup */}
           <div className="lg:sticky lg:top-20">
             <div
-              className={`bg-white rounded-[20px] shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.10),0_24px_56px_rgba(0,0,0,0.08)] p-7 min-h-[340px] flex flex-col transition-all duration-200 ${switching ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+              className={`bg-white rounded-[20px] shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.10),0_24px_56px_rgba(0,0,0,0.08)] p-7 transition-all duration-200 ${active === 2 ? '' : 'min-h-[340px]'} ${switching ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
             >
               <MockScreen />
             </div>
