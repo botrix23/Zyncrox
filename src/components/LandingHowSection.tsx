@@ -69,7 +69,7 @@ function MockStep3() {
   const [copied, setCopied] = useState(false);
   return (
     <div
-      className="rounded-3xl p-8 relative overflow-hidden border border-white/10 h-full flex flex-col justify-center"
+      className="rounded-3xl p-8 relative overflow-hidden border border-white/10 flex-1 flex flex-col justify-center"
       style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" }}
     >
       {/* Decorative share icon */}
