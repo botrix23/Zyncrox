@@ -59,7 +59,7 @@ export function LandingWidgetMockup() {
           </div>
           <div>
             <div className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Sucursal</div>
-            <div className="text-[11px] font-bold text-slate-900 leading-[1.3]">La Skina</div>
+            <div className="text-[11px] font-bold text-slate-900 leading-[1.3]">Lumia Beauty</div>
           </div>
         </div>
 
@@ -213,7 +213,7 @@ export function LandingWidgetMockup() {
                 <div className="flex items-center gap-1.5 py-[4px] mb-2">
                   <span className="text-[12px]">🌅</span>
                   <span className="text-[10.5px] font-black text-slate-900 flex-1 uppercase tracking-[0.1em]">Mañana</span>
-                  <span className="bg-purple-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm shadow-purple-500/20">14 libres</span>
+                  <span className="bg-purple-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm shadow-purple-500/20 whitespace-nowrap">14 libres</span>
                   <svg width="9" height="9" fill="none" viewBox="0 0 24 24" className="text-slate-400 rotate-180">
                     <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
                   </svg>
@@ -249,7 +249,7 @@ export function LandingWidgetMockup() {
                 >
                   <span className="text-[12px]">☀️</span>
                   <span className="text-[10.5px] font-black text-slate-900 flex-1 uppercase tracking-[0.1em]">Tarde</span>
-                  <span className="bg-purple-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm shadow-purple-500/20">14 libres</span>
+                  <span className="bg-purple-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm shadow-purple-500/20 whitespace-nowrap">14 libres</span>
                   <svg
                     width="9" height="9" fill="none" viewBox="0 0 24 24"
                     className={`text-slate-400 transition-transform duration-200 ${tardeOpen ? "rotate-180" : ""}`}
