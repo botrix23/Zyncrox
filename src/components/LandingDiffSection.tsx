@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { ScrollReveal } from "./ScrollReveal";
 
 const DIFF_KEYS = ["d1", "d2", "d3", "d4"] as const;
 
@@ -26,9 +27,9 @@ export function LandingDiffSection() {
         {/* Grid 2×2 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {items.map((item, i) => (
+            <ScrollReveal key={i} variant={i % 2 === 0 ? "fade-right" : "fade-left"} delay={i * 80} threshold={0.06}>
             <div
-              key={i}
-              className="bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.08] rounded-[16px] p-[clamp(22px,2.5vw,32px)] hover:border-purple-500/[0.18] hover:-translate-y-[3px] hover:shadow-[0_8px_28px_rgba(139,92,246,0.10)] transition-all duration-200 cursor-default"
+              className="h-full bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.08] rounded-[16px] p-[clamp(22px,2.5vw,32px)] hover:border-purple-500/[0.18] hover:-translate-y-[3px] hover:shadow-[0_8px_28px_rgba(139,92,246,0.10)] transition-all duration-200 cursor-default"
             >
               {/* Icon badge */}
               <div className="inline-flex items-center justify-center w-10 h-10 rounded-[10px] bg-purple-100 dark:bg-purple-950/40 text-[20px] mb-4 flex-shrink-0">
@@ -41,6 +42,7 @@ export function LandingDiffSection() {
                 {item.desc}
               </div>
             </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>

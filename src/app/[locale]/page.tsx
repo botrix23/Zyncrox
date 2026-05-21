@@ -8,6 +8,8 @@ import { LandingDiffSection } from "@/components/LandingDiffSection";
 import { LandingBrandSection } from "@/components/LandingBrandSection";
 import { LandingPricingSection } from "@/components/LandingPricingSection";
 import { LandingFaqCtaSection } from "@/components/LandingFaqCtaSection";
+import { LandingCursorGlow } from "@/components/LandingCursorGlow";
+import { ScrollReveal } from "@/components/ScrollReveal";
 import { getSession } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
 
@@ -23,7 +25,8 @@ export default async function LandingPage({ params: { locale } }: { params: { lo
 
   return (
     <div className="relative min-h-screen bg-[#f5f4f2] dark:bg-[#09090b] overflow-x-hidden transition-colors duration-300 selection:bg-purple-500/30">
-      {/* Radial background gradients */}
+
+      {/* ── Fixed background: radial gradients ── */}
       <div
         className="pointer-events-none fixed inset-0 z-0 dark:opacity-100 opacity-40 transition-opacity duration-300"
         style={{
@@ -32,19 +35,70 @@ export default async function LandingPage({ params: { locale } }: { params: { lo
         }}
       />
 
+      {/* ── Animated drifting orbs ── */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div
+          className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full opacity-[0.07] dark:opacity-[0.10] animate-orb-drift-1"
+          style={{ background: "radial-gradient(circle, #7c3aed 0%, transparent 70%)" }}
+        />
+        <div
+          className="absolute -bottom-40 -right-40 w-[700px] h-[700px] rounded-full opacity-[0.06] dark:opacity-[0.09] animate-orb-drift-2"
+          style={{ background: "radial-gradient(circle, #6d28d9 0%, transparent 70%)" }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full opacity-[0.04] dark:opacity-[0.06] animate-orb-drift-1"
+          style={{ background: "radial-gradient(circle, #a78bfa 0%, transparent 70%)", animationDelay: "-8s" }}
+        />
+      </div>
+
+      {/* ── Cursor glow (desktop only, client) ── */}
+      <LandingCursorGlow />
+
       <div className="relative z-10">
         <LandingNavbar />
         <main>
+          {/* Hero — no reveal, it's the first thing visible */}
           <LandingHero />
-          <LandingIndustrySection />
-          <LandingHowSection />
-          <LandingFeaturesSection />
-          <LandingPainSection />
-          <LandingDiffSection />
-          <LandingBrandSection />
-          <LandingPricingSection />
+
+          {/* Industry */}
+          <ScrollReveal variant="fade-up" delay={0} threshold={0.08}>
+            <LandingIndustrySection />
+          </ScrollReveal>
+
+          {/* How it works */}
+          <ScrollReveal variant="fade-up" delay={0} threshold={0.06}>
+            <LandingHowSection />
+          </ScrollReveal>
+
+          {/* Features */}
+          <ScrollReveal variant="fade-up" delay={0} threshold={0.06}>
+            <LandingFeaturesSection />
+          </ScrollReveal>
+
+          {/* Pain points */}
+          <ScrollReveal variant="fade-up" delay={0} threshold={0.06}>
+            <LandingPainSection />
+          </ScrollReveal>
+
+          {/* Differentiators */}
+          <ScrollReveal variant="fade-up" delay={0} threshold={0.06}>
+            <LandingDiffSection />
+          </ScrollReveal>
+
+          {/* Brand / stats */}
+          <ScrollReveal variant="fade-up" delay={0} threshold={0.06}>
+            <LandingBrandSection />
+          </ScrollReveal>
+
+          {/* Pricing */}
+          <ScrollReveal variant="fade-up" delay={0} threshold={0.06}>
+            <LandingPricingSection />
+          </ScrollReveal>
         </main>
-        <LandingFaqCtaSection />
+
+        <ScrollReveal variant="fade-up" delay={0} threshold={0.05}>
+          <LandingFaqCtaSection />
+        </ScrollReveal>
       </div>
     </div>
   );

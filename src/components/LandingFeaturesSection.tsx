@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { ScrollReveal } from "./ScrollReveal";
 
 const FEATURE_ICONS = [
   // 01 – slot locking
@@ -66,24 +67,23 @@ export function LandingFeaturesSection() {
           </p>
         </div>
 
-        {/* Grid */}
+        {/* Staggered grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {features.map((f, i) => (
-            <div
-              key={i}
-              className="bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.08] rounded-[14px] p-[clamp(20px,2.2vw,28px)] hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-500/[0.18] hover:-translate-y-[3px] hover:shadow-[0_8px_28px_rgba(139,92,246,0.10),0_2px_8px_rgba(0,0,0,0.06)] transition-all duration-200 cursor-default relative overflow-hidden group"
-            >
-              <div className="text-[11px] font-bold text-zinc-400 tracking-[0.5px] mb-[14px] tabular-nums">{f.num}</div>
-              <div className="w-10 h-10 rounded-[10px] bg-purple-100 dark:bg-purple-950/40 group-hover:bg-purple-200/70 dark:group-hover:bg-purple-900/60 flex items-center justify-center mb-[14px] flex-shrink-0 transition-colors duration-200">
-                {f.icon}
+            <ScrollReveal key={i} variant="zoom-in" delay={i * 75} threshold={0.06}>
+              <div className="h-full bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.08] rounded-[14px] p-[clamp(20px,2.2vw,28px)] hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-500/[0.18] hover:-translate-y-[3px] hover:shadow-[0_8px_28px_rgba(139,92,246,0.10),0_2px_8px_rgba(0,0,0,0.06)] transition-all duration-200 cursor-default relative overflow-hidden group">
+                <div className="text-[11px] font-bold text-zinc-400 tracking-[0.5px] mb-[14px] tabular-nums">{f.num}</div>
+                <div className="w-10 h-10 rounded-[10px] bg-purple-100 dark:bg-purple-950/40 group-hover:bg-purple-200/70 dark:group-hover:bg-purple-900/60 flex items-center justify-center mb-[14px] flex-shrink-0 transition-colors duration-200">
+                  {f.icon}
+                </div>
+                <div className="text-[clamp(13.5px,1.2vw,15px)] font-bold text-slate-900 dark:text-white tracking-[-0.2px] mb-[7px] leading-[1.3] transition-colors duration-300">
+                  {f.title}
+                </div>
+                <div className="text-[clamp(12px,1.1vw,13.5px)] text-zinc-500 dark:text-zinc-400 leading-[1.64] transition-colors duration-300">
+                  {f.desc}
+                </div>
               </div>
-              <div className="text-[clamp(13.5px,1.2vw,15px)] font-bold text-slate-900 dark:text-white tracking-[-0.2px] mb-[7px] leading-[1.3] transition-colors duration-300">
-                {f.title}
-              </div>
-              <div className="text-[clamp(12px,1.1vw,13.5px)] text-zinc-500 dark:text-zinc-400 leading-[1.64] transition-colors duration-300">
-                {f.desc}
-              </div>
-            </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>

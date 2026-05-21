@@ -30,8 +30,17 @@ export function LandingHero() {
           <div className="flex items-center gap-3 flex-wrap mb-9 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
             <Link
               href={`/${locale}/admin/register`}
-              className="inline-flex items-center gap-2 text-[15px] font-semibold text-white bg-purple-600 hover:bg-purple-700 px-[26px] py-[13px] rounded-[10px] whitespace-nowrap shadow-[0_0_0_1px_rgba(139,92,246,0.5),0_4px_20px_rgba(139,92,246,0.35)] hover:shadow-[0_0_0_1px_rgba(139,92,246,0.6),0_8px_32px_rgba(139,92,246,0.45)] hover:-translate-y-0.5 transition-all duration-150 no-underline"
+              className="relative inline-flex items-center gap-2 text-[15px] font-semibold text-white bg-purple-600 hover:bg-purple-700 px-[26px] py-[13px] rounded-[10px] whitespace-nowrap shadow-[0_0_0_1px_rgba(139,92,246,0.5),0_4px_20px_rgba(139,92,246,0.35)] hover:shadow-[0_0_0_1px_rgba(139,92,246,0.6),0_8px_32px_rgba(139,92,246,0.45)] hover:-translate-y-0.5 transition-all duration-150 no-underline overflow-hidden"
             >
+              {/* shimmer sheen */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-[10px] animate-shimmer"
+                style={{
+                  background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.22) 50%, transparent 65%)",
+                  backgroundSize: "200% auto",
+                }}
+              />
               {t("cta1")}
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
                 <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />

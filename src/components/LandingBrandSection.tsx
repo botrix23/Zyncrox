@@ -1,7 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { ScrollReveal } from "./ScrollReveal";
+
+function useCountUp(target: string, duration = 1400) {
+  const [display, setDisplay] = useState("0");
+  const hasRun = useRef(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const num = parseFloat(target.replace(/[^0-9.]/g, ""));
+    if (isNaN(num)) { setDisplay(target); return; }
+    const suffix = target.replace(/[0-9.]/g, "");
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !hasRun.current) {
+        hasRun.current = true;
+        obs.disconnect();
+        const start = performance.now();
+        const tick = (now: number) => {
+          const p = Math.min((now - start) / duration, 1);
+          const ease = 1 - Math.pow(1 - p, 3);
+          const cur = num * ease;
+          setDisplay((Number.isInteger(num) ? Math.round(cur) : cur.toFixed(1)) + suffix);
+          if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
+    }, { threshold: 0.5 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [target, duration]);
+
+  return { display, ref };
+}
 
 const BRAND_MOCKS = [
   {
@@ -102,6 +136,21 @@ function BrandMockup({ data }: { data: typeof BRAND_MOCKS[0] }) {
   );
 }
 
+function StatCard({ num, lbl, delay }: { num: string; lbl: string; delay: number }) {
+  const { display, ref } = useCountUp(num);
+  return (
+    <ScrollReveal variant="fade-up" delay={delay} threshold={0.1}>
+      <div
+        ref={ref}
+        className="bg-white dark:bg-zinc-900 border border-black/[0.13] dark:border-white/[0.13] rounded-[14px] px-5 py-6 text-center transition-colors duration-300"
+      >
+        <div className="text-[28px] font-black text-purple-600 tracking-[-0.5px] mb-[6px]">{display}</div>
+        <div className="text-[13px] text-slate-500 dark:text-zinc-400 leading-[1.4] transition-colors duration-300">{lbl}</div>
+      </div>
+    </ScrollReveal>
+  );
+}
+
 export function LandingBrandSection() {
   const t = useTranslations("Landing.brand");
 
@@ -127,28 +176,24 @@ export function LandingBrandSection() {
         {/* Mockups */}
         <div className="flex gap-6 justify-center items-start mb-[clamp(40px,5vw,64px)] overflow-x-auto pb-3 lg:overflow-x-visible">
           {BRAND_MOCKS.map((m, i) => (
-            <div key={i} className="flex flex-col items-center gap-4 flex-shrink-0">
-              <BrandMockup data={m} />
-              <div>
-                <span className="block text-[14px] font-bold text-slate-500 dark:text-zinc-400 mb-[3px] transition-colors duration-300">
-                  {m.name}
-                </span>
-                <span className="text-[12px] text-purple-600">app.zyncrox.com/{m.slug}</span>
+            <ScrollReveal key={i} variant="fade-up" delay={i * 100} threshold={0.06}>
+              <div className="flex flex-col items-center gap-4 flex-shrink-0">
+                <BrandMockup data={m} />
+                <div>
+                  <span className="block text-[14px] font-bold text-slate-500 dark:text-zinc-400 mb-[3px] transition-colors duration-300">
+                    {m.name}
+                  </span>
+                  <span className="text-[12px] text-purple-600">app.zyncrox.com/{m.slug}</span>
+                </div>
               </div>
-            </div>
+            </ScrollReveal>
           ))}
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-[14px]">
           {BRAND_STATS.map((s, i) => (
-            <div
-              key={i}
-              className="bg-white dark:bg-zinc-900 border border-black/[0.13] dark:border-white/[0.13] rounded-[14px] px-5 py-6 text-center transition-colors duration-300"
-            >
-              <div className="text-[28px] font-black text-purple-600 tracking-[-0.5px] mb-[6px]">{s.num}</div>
-              <div className="text-[13px] text-slate-500 dark:text-zinc-400 leading-[1.4] transition-colors duration-300">{s.lbl}</div>
-            </div>
+            <StatCard key={i} num={s.num} lbl={s.lbl} delay={i * 80} />
           ))}
         </div>
       </div>

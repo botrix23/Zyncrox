@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { ScrollReveal } from "./ScrollReveal";
 
 const PAIN_KEYS = ["p1", "p2", "p3", "p4"] as const;
 
@@ -27,9 +28,9 @@ export function LandingPainSection() {
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {pains.map((p, i) => (
+            <ScrollReveal key={i} variant="fade-up" delay={i * 90} threshold={0.06}>
             <div
-              key={i}
-              className="bg-white dark:bg-zinc-900/80 border border-black/[0.13] dark:border-white/[0.13] rounded-[14px] p-[clamp(22px,2.5vw,32px)] hover:border-red-400/30 hover:-translate-y-0.5 transition-all duration-200 relative overflow-hidden"
+              className="h-full bg-white dark:bg-zinc-900/80 border border-black/[0.13] dark:border-white/[0.13] rounded-[14px] p-[clamp(22px,2.5vw,32px)] hover:border-red-400/30 hover:-translate-y-0.5 transition-all duration-200 relative overflow-hidden"
             >
               <div className="inline-flex items-center justify-center w-7 h-7 bg-red-500/[0.12] border border-red-500/25 rounded-[7px] text-red-400 text-[14px] font-black mb-[14px] flex-shrink-0">
                 ✕
@@ -41,6 +42,7 @@ export function LandingPainSection() {
                 {p.desc}
               </div>
             </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>

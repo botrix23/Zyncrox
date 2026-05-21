@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { ScrollReveal } from "./ScrollReveal";
 
 function CmpCell({ v }: { v: boolean | string }) {
   if (v === true)  return <span className="text-green-600 font-bold">✓</span>;
@@ -115,7 +116,8 @@ export function LandingPricingSection() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-4 max-w-[440px] sm:max-w-none mx-auto items-stretch">
 
           {/* Basic */}
-          <div className="group bg-white dark:bg-zinc-900 border border-black/[0.13] dark:border-white/[0.13] rounded-[20px] p-[32px_26px] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_12px_40px_-12px_rgba(139,92,246,0.15)] hover:border-purple-500/30 flex flex-col">
+          <ScrollReveal variant="fade-up" delay={0} threshold={0.06}>
+          <div className="group h-full bg-white dark:bg-zinc-900 border border-black/[0.13] dark:border-white/[0.13] rounded-[20px] p-[32px_26px] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_12px_40px_-12px_rgba(139,92,246,0.15)] hover:border-purple-500/30 flex flex-col">
             <div className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 tracking-[1px] uppercase mb-[10px]">Basic</div>
             <div className="flex items-baseline gap-0.5 mb-1">
               <span className="text-[20px] font-semibold text-slate-900 dark:text-white">$</span>
@@ -145,9 +147,11 @@ export function LandingPricingSection() {
               {t("basicCta")}
             </Link>
           </div>
+          </ScrollReveal>
 
           {/* Professional (most popular) */}
-          <div className="group relative bg-white dark:bg-zinc-900 border-2 border-purple-600 rounded-[20px] overflow-visible transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_12px_40px_-12px_rgba(139,92,246,0.4)] flex flex-col">
+          <ScrollReveal variant="fade-up" delay={120} threshold={0.06}>
+          <div className="group h-full relative bg-white dark:bg-zinc-900 border-2 border-purple-600 rounded-[20px] overflow-visible transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_12px_40px_-12px_rgba(139,92,246,0.4)] flex flex-col">
             <div className="absolute inset-0 rounded-[18px] pointer-events-none overflow-hidden">
               <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 90% 55% at 50% 0%, rgba(109,40,217,0.18) 0%, transparent 65%)" }} />
             </div>
@@ -185,9 +189,11 @@ export function LandingPricingSection() {
               </Link>
             </div>
           </div>
+          </ScrollReveal>
 
           {/* Business */}
-          <div className="group bg-white dark:bg-zinc-900 border border-black/[0.13] dark:border-white/[0.13] rounded-[20px] p-[32px_26px] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_12px_40px_-12px_rgba(139,92,246,0.15)] hover:border-purple-500/30 flex flex-col">
+          <ScrollReveal variant="fade-up" delay={240} threshold={0.06}>
+          <div className="group h-full bg-white dark:bg-zinc-900 border border-black/[0.13] dark:border-white/[0.13] rounded-[20px] p-[32px_26px] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_12px_40px_-12px_rgba(139,92,246,0.15)] hover:border-purple-500/30 flex flex-col">
             <div className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 tracking-[1px] uppercase mb-[10px]">Business</div>
             <div className="flex items-baseline gap-0.5 mb-1">
               <span className="text-[20px] font-semibold text-slate-900 dark:text-white">$</span>
@@ -217,6 +223,7 @@ export function LandingPricingSection() {
               {t("entCta")}
             </a>
           </div>
+          </ScrollReveal>
         </div>
 
         {/* Trial note */}
