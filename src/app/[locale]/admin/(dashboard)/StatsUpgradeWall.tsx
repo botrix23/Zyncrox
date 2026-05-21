@@ -9,9 +9,9 @@ export function StatsUpgradeWall() {
   const t = useTranslations("Dashboard.statsUpgradeWall");
 
   return (
-    <div className="relative rounded-2xl overflow-hidden min-h-[320px]">
+    <div className="relative rounded-2xl overflow-hidden min-h-[480px]">
       {/* Blurred mockup */}
-      <div className="blur-sm pointer-events-none select-none opacity-50 space-y-6">
+      <div className="blur-sm pointer-events-none select-none opacity-50 space-y-6 pb-16">
         {/* Mock weekly chart */}
         <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 rounded-2xl p-6">
           <div className="flex items-end gap-3 h-24 mb-3">
