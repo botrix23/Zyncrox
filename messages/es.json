@@ -1031,6 +1031,14 @@
         "cta": "Mejorar al plan Business →",
         "note": "Cancela cuando quieras · Soporte incluido"
       }
+    },
+    "statsUpgradeWall": {
+      "title": "Estadísticas avanzadas",
+      "subtitle": "Accede al resumen semanal con gráficos comparativos y a las métricas mensuales con el plan Professional.",
+      "bullet1": "Gráfico semanal vs semana anterior",
+      "bullet2": "Métricas mensuales de citas y clientes",
+      "bullet3": "Tasa de cancelación y nuevos clientes",
+      "cta": "Subir a Professional"
     }
   },
   "Review": {

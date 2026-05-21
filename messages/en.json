@@ -1031,6 +1031,14 @@
         "cta": "Upgrade to Business →",
         "note": "Cancel anytime · Support included"
       }
+    },
+    "statsUpgradeWall": {
+      "title": "Advanced statistics",
+      "subtitle": "Access the weekly summary with comparison charts and monthly metrics with the Professional plan.",
+      "bullet1": "Weekly chart vs previous week",
+      "bullet2": "Monthly appointment and client metrics",
+      "bullet3": "Cancellation rate and new clients",
+      "cta": "Upgrade to Professional"
     }
   },
   "Review": {
