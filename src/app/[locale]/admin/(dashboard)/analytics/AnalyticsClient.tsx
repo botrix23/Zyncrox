@@ -448,20 +448,22 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
       </div>
 
       {/* ── Tab bar ── */}
-      <div className="flex gap-1 bg-slate-100 dark:bg-white/5 rounded-2xl p-1 w-full sm:w-auto sm:inline-flex">
-        {(["staffPerformance", "clientRetention", "branchPerformance"] as TabKey[]).map(tab => (
-          <button
-            key={tab}
-            onClick={() => handleTabChange(tab)}
-            className={`flex-1 sm:flex-none text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-150 whitespace-nowrap ${
-              activeTab === tab
-                ? "bg-white dark:bg-zinc-900 text-purple-600 shadow-sm"
-                : "text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200"
-            }`}
-          >
-            {t(`tabs.${tab}` as any)}
-          </button>
-        ))}
+      <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
+        <div className="flex gap-1 bg-slate-100 dark:bg-white/5 rounded-2xl p-1 inline-flex min-w-full sm:min-w-0">
+          {(["staffPerformance", "clientRetention", "branchPerformance"] as TabKey[]).map(tab => (
+            <button
+              key={tab}
+              onClick={() => handleTabChange(tab)}
+              className={`flex-1 text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-150 whitespace-nowrap ${
+                activeTab === tab
+                  ? "bg-white dark:bg-zinc-900 text-purple-600 shadow-sm"
+                  : "text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200"
+              }`}
+            >
+              {t(`tabs.${tab}` as any)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Filters bar ── */}
@@ -479,15 +481,16 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
                 {p.label}
               </button>
             ))}
-            <div className="flex items-center gap-2 ml-auto">
-              <input type="date" value={dateFrom} max={dateTo}
-                onChange={e => handleDateChange(e.target.value, dateTo)}
-                className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-300 focus:outline-none focus:border-purple-500 transition-colors" />
-              <span className="text-slate-400 dark:text-zinc-500 text-xs">—</span>
-              <input type="date" value={dateTo} min={dateFrom}
-                onChange={e => handleDateChange(dateFrom, e.target.value)}
-                className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-300 focus:outline-none focus:border-purple-500 transition-colors" />
-            </div>
+          </div>
+          {/* Date range row — always on its own line so it never wraps off-screen */}
+          <div className="flex items-center gap-2">
+            <input type="date" value={dateFrom} max={dateTo}
+              onChange={e => handleDateChange(e.target.value, dateTo)}
+              className="flex-1 min-w-0 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-300 focus:outline-none focus:border-purple-500 transition-colors" />
+            <span className="text-slate-400 dark:text-zinc-500 text-xs shrink-0">—</span>
+            <input type="date" value={dateTo} min={dateFrom}
+              onChange={e => handleDateChange(dateFrom, e.target.value)}
+              className="flex-1 min-w-0 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-300 focus:outline-none focus:border-purple-500 transition-colors" />
           </div>
           {/* Branch filter — hidden on branchPerformance tab (it compares all branches) */}
           {branches.length > 1 && activeTab !== "branchPerformance" && (

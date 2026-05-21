@@ -360,18 +360,18 @@ try {
         </div>
 
         {/* COMPONENTE DE TABS */}
-        <div className="flex items-center p-1 bg-slate-100 dark:bg-white/5 rounded-xl">
-           <button 
-             onClick={() => setActiveTab('design')} 
-             className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'design' ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-zinc-300'}`}
+        <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl">
+           <button
+             onClick={() => setActiveTab('design')}
+             className={`flex-1 py-2 px-4 rounded-xl text-sm font-semibold transition-all duration-150 flex items-center justify-center gap-2 ${activeTab === 'design' ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
            >
-              <Palette className="w-4 h-4" /> {tPortal('tabs.design')}
+              <Palette className="w-4 h-4 shrink-0" /> {tPortal('tabs.design')}
            </button>
-           <button 
-             onClick={() => setActiveTab('rules')} 
-             className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'rules' ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-zinc-300'}`}
+           <button
+             onClick={() => setActiveTab('rules')}
+             className={`flex-1 py-2 px-4 rounded-xl text-sm font-semibold transition-all duration-150 flex items-center justify-center gap-2 ${activeTab === 'rules' ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
            >
-              <Settings className="w-4 h-4" /> {tPortal('tabs.rules')}
+              <Settings className="w-4 h-4 shrink-0" /> {tPortal('tabs.rules')}
            </button>
         </div>
 

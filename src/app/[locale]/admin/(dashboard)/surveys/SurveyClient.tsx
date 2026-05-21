@@ -187,18 +187,18 @@ export default function SurveyClient({
     />
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-zinc-800/50 rounded-2xl w-fit">
+      <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
         <button
           onClick={() => setActiveTab('questions')}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'questions' ? 'bg-white dark:bg-zinc-900 text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-zinc-300'}`}
+          className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === 'questions' ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
         >
-          <Settings className="w-4 h-4" /> {t('tabs.questions')}
+          <Settings className="w-4 h-4 shrink-0" /> {t('tabs.questions')}
         </button>
         <button
           onClick={() => setActiveTab('results')}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'results' ? 'bg-white dark:bg-zinc-900 text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-zinc-300'}`}
+          className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === 'results' ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
         >
-          <BarChart3 className="w-4 h-4" /> {t('tabs.results')}
+          <BarChart3 className="w-4 h-4 shrink-0" /> {t('tabs.results')}
         </button>
       </div>
 

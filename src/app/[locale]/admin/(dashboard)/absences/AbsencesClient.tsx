@@ -188,13 +188,13 @@ export default function AbsencesClient({
           <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
             <button
               onClick={() => setActiveTab('blocks')}
-              className={`px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'blocks' ? 'bg-white dark:bg-zinc-800 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-zinc-300'}`}
+              className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === 'blocks' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
             >
               {t('tabBlocks')}
             </button>
             <button
               onClick={() => setActiveTab('pending')}
-              className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'pending' ? 'bg-white dark:bg-zinc-800 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-zinc-300'}`}
+              className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-150 flex items-center gap-2 ${activeTab === 'pending' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
             >
               {t('tabPending')}
               {localPending.length > 0 && (

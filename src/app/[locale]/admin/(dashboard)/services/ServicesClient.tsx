@@ -295,17 +295,17 @@ export default function ServicesClient({
     <ConfirmDialog
       open={!!deleteServiceId}
       title={t('confirmDelete')}
-      message="El servicio se eliminará permanentemente. Esta acción no se puede deshacer."
-      confirmLabel="Sí, eliminar"
+      message={t('deleteServiceMsg')}
+      confirmLabel={t('deleteConfirmLabel')}
       variant="danger"
       onConfirm={confirmDeleteService}
       onCancel={() => setDeleteServiceId(null)}
     />
     <ConfirmDialog
       open={!!deleteCatIdSvc}
-      title="¿Eliminar categoría?"
-      message="Se desvinculará de todos los servicios y personal asociados. Esta acción no se puede deshacer."
-      confirmLabel="Sí, eliminar"
+      title={t('confirmDeleteCategory')}
+      message={t('deleteCategoryMsg')}
+      confirmLabel={t('deleteConfirmLabel')}
       variant="danger"
       onConfirm={confirmDeleteCategory}
       onCancel={() => setDeleteCatIdSvc(null)}
@@ -346,18 +346,18 @@ export default function ServicesClient({
       </div>
 
       {/* Tab switcher */}
-      <div className="inline-flex p-1 bg-slate-100 dark:bg-white/5 rounded-2xl gap-1">
+      <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
         <button
           onClick={() => setActiveTab('services')}
-          className={`flex items-center gap-2 py-2 px-5 rounded-xl text-sm font-bold transition-all ${activeTab === 'services' ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+          className={`flex items-center gap-2 py-2 px-5 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === 'services' ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
         >
-          <Sparkles className="w-4 h-4" /> Servicios
+          <Sparkles className="w-4 h-4 shrink-0" /> {t('tabServices')}
         </button>
         <button
           onClick={() => setActiveTab('categories')}
-          className={`flex items-center gap-2 py-2 px-5 rounded-xl text-sm font-bold transition-all ${activeTab === 'categories' ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+          className={`flex items-center gap-2 py-2 px-5 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === 'categories' ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
         >
-          <Tag className="w-4 h-4" /> Categorías
+          <Tag className="w-4 h-4 shrink-0" /> {t('tabCategories')}
         </button>
       </div>
 
@@ -372,8 +372,8 @@ export default function ServicesClient({
               <Truck className="w-5 h-5 text-amber-500" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">Tiempo de traslado a domicilio</p>
-              <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">Minutos de buffer antes y después de cada cita a domicilio para cubrir el desplazamiento del especialista.</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{t('travelTimeTitle')}</p>
+              <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">{t('travelTimeDesc')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -402,7 +402,7 @@ export default function ServicesClient({
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              {travelTimeSaved ? 'Guardado' : 'Guardar'}
+              {travelTimeSaved ? t('travelTimeSaved') : t('travelTimeSave')}
             </button>
           </div>
         </div>
@@ -871,9 +871,9 @@ export default function ServicesClient({
                   <div className="space-y-4 p-5 bg-slate-50 dark:bg-white/5 rounded-[24px] border border-slate-200 dark:border-white/10 col-span-full">
                     <div className="flex items-center gap-2">
                       <Tag className="w-4 h-4 text-purple-500" />
-                      <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">Categorías de especialidad</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{t('categoryTitle')}</p>
                     </div>
-                    <p className="text-[11px] text-slate-400 font-medium -mt-2">Solo el personal con las mismas categorías aparecerá al reservar este servicio.</p>
+                    <p className="text-[11px] text-slate-400 font-medium -mt-2">{t('categoryHint')}</p>
                     <div className="flex flex-wrap gap-2">
                       {categories.map((cat: any) => {
                         const isSelected = formData.categoryIds.includes(cat.id);
@@ -1001,8 +1001,8 @@ export default function ServicesClient({
         {filteredCats.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-slate-400 dark:text-zinc-600">
             <Tag className="w-16 h-16 mb-4 opacity-30" />
-            <p className="text-sm font-black uppercase tracking-widest">Sin categorías</p>
-            <p className="text-xs mt-2 text-slate-400">Crea categorías para organizar tu equipo y servicios.</p>
+            <p className="text-sm font-black uppercase tracking-widest">{t('noCategoriesTitle')}</p>
+            <p className="text-xs mt-2 text-slate-400">{t('noCategoriesDesc')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1052,7 +1052,7 @@ export default function ServicesClient({
               <div className="relative z-10 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/5">
                   <h3 className="text-xl font-black tracking-tight">
-                    {editingCategory ? "Editar categoría" : "Nueva categoría"}
+                    {editingCategory ? t('editCategory') : t('newCategory')}
                   </h3>
                   <button onClick={() => setIsCatModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 transition-all">
                     <X className="w-6 h-6" />
@@ -1102,7 +1102,7 @@ export default function ServicesClient({
                     >
                       {isCatLoading
                         ? <div className="w-5 h-5 border-2 border-white border-t-transparent animate-spin rounded-full" />
-                        : (editingCategory ? "Guardar cambios" : "Crear categoría")}
+                        : (editingCategory ? t('saveChanges') : t('saveCategory'))}
                     </button>
                   </div>
                 </form>

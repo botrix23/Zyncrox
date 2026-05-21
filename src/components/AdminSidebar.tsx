@@ -193,31 +193,32 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
       </nav>
 
       {/* Footer */}
-      <div className={`${collapsed && !forMobile ? 'px-2' : 'px-6'} py-4 border-t border-slate-200 dark:border-white/5 space-y-3`}>
+      <div className={`${collapsed && !forMobile ? 'px-2' : 'px-4'} py-3 border-t border-slate-200 dark:border-white/5 space-y-2`}>
         {tenantName && (!collapsed || forMobile) && (
-          <div className="px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl">
-            <p className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 mb-1 uppercase tracking-wider">{t('business') || 'Empresa'}</p>
-            <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{tenantName}</p>
-            {tenantPlan && (
-              <span className={`inline-block mt-1.5 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
-                tenantPlan === 'ENTERPRISE'
-                  ? 'bg-amber-500/15 text-amber-500'
-                  : tenantPlan === 'PROFESSIONAL'
-                  ? 'bg-purple-500/15 text-purple-500'
-                  : 'bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-zinc-400'
-              }`}>
-                {getPlanDisplayName(tenantPlan)}
-              </span>
-            )}
+          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl">
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-900 dark:text-white truncate leading-tight">{tenantName}</p>
+              {tenantPlan && (
+                <span className={`inline-block mt-0.5 text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
+                  tenantPlan === 'ENTERPRISE'
+                    ? 'bg-amber-500/15 text-amber-500'
+                    : tenantPlan === 'PROFESSIONAL'
+                    ? 'bg-purple-500/15 text-purple-500'
+                    : 'bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-zinc-400'
+                }`}>
+                  {getPlanDisplayName(tenantPlan)}
+                </span>
+              )}
+            </div>
           </div>
         )}
         {!isImpersonating && (
           <button
             onClick={() => logoutAction(locale)}
             title={collapsed && !forMobile ? t('logout') : undefined}
-            className={`flex items-center ${collapsed && !forMobile ? 'justify-center w-full py-3 px-0' : 'gap-3 px-4 py-3 w-full'} text-rose-500 font-semibold hover:bg-rose-500/5 rounded-2xl transition-all group`}
+            className={`flex items-center ${collapsed && !forMobile ? 'justify-center w-full py-2.5 px-0' : 'gap-3 px-3 py-2.5 w-full'} text-rose-500 font-semibold hover:bg-rose-500/5 rounded-xl transition-all group text-sm`}
           >
-            <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform shrink-0" />
+            <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform shrink-0" />
             {(!collapsed || forMobile) && t('logout')}
           </button>
         )}
