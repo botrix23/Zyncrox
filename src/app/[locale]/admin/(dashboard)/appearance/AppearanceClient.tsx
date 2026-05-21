@@ -397,7 +397,7 @@ try {
                 <div className="space-y-1">
                   <h3 className="text-md font-bold tracking-tight flex items-center gap-2">
                     {tPortal('link.title')}
-                    <span className="px-2 py-0.5 bg-emerald-500 rounded-full text-[10px] font-black tracking-widest">{tPortal('link.status')}</span>
+                    <span className="px-2 py-0.5 bg-emerald-500 rounded-full text-xs font-black tracking-widest">{tPortal('link.status')}</span>
                   </h3>
                 </div>
                 
@@ -500,7 +500,7 @@ try {
                     ) : (
                       <button onClick={() => logoInputRef.current?.click()} className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex flex-col items-center justify-center text-slate-400 hover:text-purple-500 transition-all shrink-0">
                         <ImageIcon className="w-6 h-6 mb-1 opacity-50" />
-                        <span className="text-[11px] font-bold">{tPortal('form.upload')}</span>
+                        <span className="text-xs font-bold">{tPortal('form.upload')}</span>
                       </button>
                     )}
                     <div className="flex-1">
@@ -531,7 +531,7 @@ try {
                       <button onClick={() => coverInputRef.current?.click()} disabled={isUploadingCover} className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex flex-col items-center justify-center text-slate-400 hover:text-purple-500 transition-all shrink-0 disabled:opacity-50">
                         {isUploadingCover
                           ? <div className="w-5 h-5 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
-                          : <><ImageIcon className="w-6 h-6 mb-1 opacity-50" /><span className="text-[11px] font-bold">{tPortal('form.upload')}</span></>
+                          : <><ImageIcon className="w-6 h-6 mb-1 opacity-50" /><span className="text-xs font-bold">{tPortal('form.upload')}</span></>
                         }
                       </button>
                     )}
@@ -780,7 +780,7 @@ try {
                                     </div>
                                     <div>
                                        <p className="text-sm font-black text-slate-900 dark:text-white">{zone.name}</p>
-                                       <p className="text-[11px] text-emerald-600 font-bold tracking-tight">+${zone.fee} {tPortal('form.feeLabel')}</p>
+                                       <p className="text-xs text-emerald-600 font-bold tracking-tight">+${zone.fee} {tPortal('form.feeLabel')}</p>
                                     </div>
                                  </div>
                                  <button 
@@ -853,7 +853,7 @@ className="w-full min-h-[150px] p-4 bg-slate-50 dark:bg-white/5 border border-sl
 <p className="text-xs font-bold text-blue-600 mb-2 uppercase tracking-widest">{tPortal('form.emailVariables')}</p>
 <div className="flex flex-wrap gap-2">
 {['{cliente}', '{servicio}', '{fecha}', '{hora}', '{negocio}', '{sucursal}'].map(v => (
-<code key={v} className="text-[11px] bg-white dark:bg-white/5 text-blue-500 px-2 py-1 rounded border border-blue-500/20">{v}</code>
+<code key={v} className="text-xs bg-white dark:bg-white/5 text-blue-500 px-2 py-1 rounded border border-blue-500/20">{v}</code>
 ))}
 </div>
 </div>
@@ -933,7 +933,7 @@ className="w-full min-h-[150px] p-4 bg-slate-50 dark:bg-white/5 border border-sl
                       </div>
                     )}
                     <h2 className="text-lg font-black tracking-tight text-white drop-shadow-md px-1 leading-tight line-clamp-2">{name || tPortal('mockup.defaultBusiness')}</h2>
-                    {heroSubtitle && <p className="text-[10px] text-zinc-300 leading-tight line-clamp-1 mt-0.5">{heroSubtitle}</p>}
+                    {heroSubtitle && <p className="text-xs text-zinc-300 leading-tight line-clamp-1 mt-0.5">{heroSubtitle}</p>}
                   </div>
                </div>
 

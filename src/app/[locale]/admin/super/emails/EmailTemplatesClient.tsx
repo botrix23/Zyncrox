@@ -146,7 +146,7 @@ export default function EmailTemplatesClient({ initialTemplates, locale }: { ini
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-semibold leading-tight">{t(`templates.${key}.label`)}</span>
                 {isCustom && (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
                     selected === key ? 'bg-white/20 text-white' : 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
                   }`}>
                     Custom
@@ -225,7 +225,7 @@ export default function EmailTemplatesClient({ initialTemplates, locale }: { ini
                 <Code2 className="w-4 h-4" />
                 {t('editorTab')}
                 {hasCustom && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 bg-purple-500/15 text-purple-600 dark:text-purple-400 rounded-full">
+                  <span className="text-xs font-bold px-1.5 py-0.5 bg-purple-500/15 text-purple-600 dark:text-purple-400 rounded-full">
                     Custom
                   </span>
                 )}

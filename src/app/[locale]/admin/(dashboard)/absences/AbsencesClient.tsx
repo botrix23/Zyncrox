@@ -198,7 +198,7 @@ export default function AbsencesClient({
             >
               {t('tabPending')}
               {localPending.length > 0 && (
-                <span className="bg-rose-500 text-white text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center">{localPending.length}</span>
+                <span className="bg-rose-500 text-white text-xs font-black rounded-full w-5 h-5 flex items-center justify-center">{localPending.length}</span>
               )}
             </button>
           </div>
@@ -233,11 +233,11 @@ export default function AbsencesClient({
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-2.5">
-                        <p className="text-slate-400 font-black tracking-widest uppercase text-[10px] mb-0.5">{t('colFrom')}</p>
+                        <p className="text-slate-400 font-black tracking-widest uppercase text-xs mb-0.5">{t('colFrom')}</p>
                         <p className="font-bold text-slate-900 dark:text-white">{format(new Date(req.startTime), "dd MMM, HH:mm")}</p>
                       </div>
                       <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-2.5">
-                        <p className="text-slate-400 font-black tracking-widest uppercase text-[10px] mb-0.5">{t('colTo')}</p>
+                        <p className="text-slate-400 font-black tracking-widest uppercase text-xs mb-0.5">{t('colTo')}</p>
                         <p className="font-bold text-slate-900 dark:text-white">{format(new Date(req.endTime), "dd MMM, HH:mm")}</p>
                       </div>
                     </div>
@@ -356,7 +356,7 @@ export default function AbsencesClient({
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-slate-900 dark:text-white leading-tight">{block.reason || t('types.defaultReason')}</p>
                       {isStaffRole ? (
-                        <span className={`inline-flex mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-black ${statusStyles[block.status] || statusStyles['PENDING']}`}>
+                        <span className={`inline-flex mt-1 px-2.5 py-0.5 rounded-full text-xs font-black ${statusStyles[block.status] || statusStyles['PENDING']}`}>
                           {statusLabels[block.status] || 'Pendiente'}
                         </span>
                       ) : (
@@ -385,11 +385,11 @@ export default function AbsencesClient({
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-2.5">
-                      <p className="text-slate-400 font-black tracking-widest uppercase text-[10px] mb-0.5">{t('table.start')}</p>
+                      <p className="text-slate-400 font-black tracking-widest uppercase text-xs mb-0.5">{t('table.start')}</p>
                       <p className="font-bold text-slate-900 dark:text-white">{format(new Date(block.startTime), "dd MMM, HH:mm")}</p>
                     </div>
                     <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-2.5">
-                      <p className="text-slate-400 font-black tracking-widest uppercase text-[10px] mb-0.5">{t('table.end')}</p>
+                      <p className="text-slate-400 font-black tracking-widest uppercase text-xs mb-0.5">{t('table.end')}</p>
                       <p className="font-bold text-slate-900 dark:text-white">{format(new Date(block.endTime), "dd MMM, HH:mm")}</p>
                     </div>
                   </div>

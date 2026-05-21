@@ -460,7 +460,7 @@ export default function StaffClient({
                 <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center relative overflow-hidden">
                     <User className="w-12 h-12 text-slate-300" />
                     <div className="absolute bottom-0 left-0 w-full bg-slate-900/80 backdrop-blur-sm py-1.5 rounded-b-xl">
-                        <span className="text-[11px] font-bold text-white tracking-tight uppercase leading-none">{t('verified')}</span>
+                        <span className="text-xs font-bold text-white tracking-tight uppercase leading-none">{t('verified')}</span>
                     </div>
                 </div>
               </div>
@@ -468,7 +468,7 @@ export default function StaffClient({
               <div className="flex flex-col items-center">
                 <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">{member.name}</h3>
                 {member.isActive === false && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-zinc-700 text-slate-500 dark:text-zinc-400 mb-1">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-zinc-700 text-slate-500 dark:text-zinc-400 mb-1">
                     Inactivo
                   </span>
                 )}
@@ -492,18 +492,18 @@ export default function StaffClient({
               </div>
 
               <div className="mt-1 flex flex-col items-center gap-1 w-full">
-                <p className="text-[11px] font-bold text-purple-600 uppercase tracking-widest leading-none mb-1">
+                <p className="text-xs font-bold text-purple-600 uppercase tracking-widest leading-none mb-1">
                   {branchName || t('noBranch')}
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-1.5 mt-1">
                   {activeOverride && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20 animate-pulse">
+                    <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full border border-amber-500/20 animate-pulse">
                       <CalendarDays className="w-3 h-3" />
                       {t('form.temporaryAssignment').toUpperCase()}
                     </span>
                   )}
                   {member.allowsHomeService && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
+                    <span className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/20">
                       <Plus className="w-3 h-3" />
                       {t('form.homeServiceOk')}
                     </span>
@@ -511,7 +511,7 @@ export default function StaffClient({
                   {(member.categories || []).map((sc: any) => (
                     <span
                       key={sc.categoryId}
-                      className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-full"
+                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full"
                       style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
                     >
                       <Tag className="w-3 h-3" />
@@ -531,7 +531,7 @@ export default function StaffClient({
                     <span className="text-xs font-bold truncate tracking-tight">{member.phone || t('noPhone')}</span>
                 </div>
                 {hasFutureRotation && (
-                   <div className="flex items-center justify-center gap-2 pt-1 text-[11px] font-bold text-slate-400 animate-in fade-in slide-in-from-top-1 duration-500">
+                   <div className="flex items-center justify-center gap-2 pt-1 text-xs font-bold text-slate-400 animate-in fade-in slide-in-from-top-1 duration-500">
                      <Clock className="w-3.5 h-3.5" />
                      {t('nextRotationScheduled')}
                    </div>
@@ -544,13 +544,13 @@ export default function StaffClient({
                   member.user ? (
                     member.user.isActive ? (
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 dark:text-emerald-400">
+                        <span className="flex items-center gap-1.5 text-xs font-black text-emerald-600 dark:text-emerald-400">
                           <ShieldCheck className="w-3.5 h-3.5" />
                           Acceso activo
                         </span>
                         <button
                           onClick={() => handleRevokeAccess(member)}
-                          className="flex items-center gap-1 text-[10px] font-black text-slate-400 hover:text-rose-500 px-2.5 py-1.5 rounded-xl hover:bg-rose-500/5 transition-all"
+                          className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-rose-500 px-2.5 py-1.5 rounded-xl hover:bg-rose-500/5 transition-all"
                         >
                           <ShieldOff className="w-3 h-3" />
                           Revocar
@@ -558,13 +558,13 @@ export default function StaffClient({
                       </div>
                     ) : (
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-400">
+                        <span className="flex items-center gap-1.5 text-xs font-black text-slate-400">
                           <ShieldOff className="w-3.5 h-3.5" />
                           Acceso inactivo
                         </span>
                         <button
                           onClick={() => handleReactivateAccess(member)}
-                          className="flex items-center gap-1 text-[10px] font-black text-slate-400 hover:text-emerald-500 px-2.5 py-1.5 rounded-xl hover:bg-emerald-500/5 transition-all"
+                          className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-emerald-500 px-2.5 py-1.5 rounded-xl hover:bg-emerald-500/5 transition-all"
                         >
                           <ShieldCheck className="w-3 h-3" />
                           Reactivar
@@ -574,14 +574,14 @@ export default function StaffClient({
                   ) : (
                     <button
                       onClick={() => handleCreateAccess(member)}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 text-[10px] font-black text-purple-600 dark:text-purple-400 bg-purple-500/5 hover:bg-purple-500/10 rounded-xl transition-all border border-purple-500/10"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-500/5 hover:bg-purple-500/10 rounded-xl transition-all border border-purple-500/10"
                     >
                       <KeyRound className="w-3 h-3" />
                       Crear acceso al portal
                     </button>
                   )
                 ) : (
-                  <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400">
+                  <div className="flex items-center gap-1.5 text-xs font-black text-slate-400">
                     <ShieldOff className="w-3.5 h-3.5" />
                     Acceso no disponible en tu plan
                   </div>
@@ -603,7 +603,7 @@ export default function StaffClient({
               <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/5">
                 <div>
                   <h3 className="text-xl font-black tracking-tight">{editingMember ? t('form.titleEdit') : t('form.titleNew')}</h3>
-                  <p className="text-[11px] font-bold text-slate-400 mt-1">{t('form.rotationTitle')}</p>
+                  <p className="text-xs font-bold text-slate-400 mt-1">{t('form.rotationTitle')}</p>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">
                   <X className="w-6 h-6" />
@@ -672,7 +672,7 @@ export default function StaffClient({
                       <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight leading-tight">{t('form.allowsHomeServiceLabel')}</p>
                       <div className="group relative shrink-0">
                         <Info className="w-3.5 h-3.5 text-slate-400 cursor-help transition-colors hover:text-purple-500" />
-                        <div className="hidden group-hover:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-900/95 backdrop-blur-md text-[11px] text-zinc-100 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10">
+                        <div className="hidden group-hover:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-900/95 backdrop-blur-md text-xs text-zinc-100 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10">
                           {t('form.allowsHomeServiceHint')}
                           <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
                         </div>
@@ -692,7 +692,7 @@ export default function StaffClient({
                        <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight leading-tight">{t('form.inheritBranchHoursLabel')}</p>
                        <div className="group relative shrink-0">
                         <Info className="w-3.5 h-3.5 text-slate-400 cursor-help transition-colors hover:text-blue-500" />
-                        <div className="hidden group-hover:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-900/95 backdrop-blur-md text-[11px] text-zinc-100 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10">
+                        <div className="hidden group-hover:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-900/95 backdrop-blur-md text-xs text-zinc-100 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10">
                           {t('form.inheritBranchHoursHint')}
                           <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
                         </div>
@@ -715,7 +715,7 @@ export default function StaffClient({
                       <Tag className="w-4 h-4 text-purple-500" />
                       <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">Categorías de especialidad</p>
                     </div>
-                    <p className="text-[11px] text-slate-400 font-medium -mt-2">Este miembro del equipo aparecerá solo en servicios que compartan al menos una de estas categorías.</p>
+                    <p className="text-xs text-slate-400 font-medium -mt-2">Este miembro del equipo aparecerá solo en servicios que compartan al menos una de estas categorías.</p>
                     <div className="flex flex-wrap gap-2">
                       {categories.map((cat: any) => {
                         const isSelected = formData.categoryIds.includes(cat.id);
@@ -750,7 +750,7 @@ export default function StaffClient({
                       <div className="flex items-center justify-between px-5 py-3 border-b border-emerald-500/10">
                         <div className="flex items-center gap-2">
                           <Infinity className="w-3.5 h-3.5 text-emerald-500" />
-                          <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">{t('form.permanentBase')}</span>
+                          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{t('form.permanentBase')}</span>
                         </div>
                       </div>
                       <div className="p-5 space-y-4">
@@ -787,7 +787,7 @@ export default function StaffClient({
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-black text-slate-500 ml-1">{t('form.rotationTitle')}</label>
+                      <label className="text-xs font-black text-slate-500 ml-1">{t('form.rotationTitle')}</label>
                       {formData.assignments.length < 4 && (
                         <button type="button" onClick={handleAddAssignment} className="text-[9px] font-black text-purple-600 bg-purple-500/10 px-3 py-1.5 rounded-xl hover:bg-purple-500/20 transition-all">
                           + {t('form.addAssignment')}
@@ -797,7 +797,7 @@ export default function StaffClient({
                     
                     {formData.assignments.filter(a => !a.isPermanent).length === 0 && (
                       <div className="p-8 border-2 border-dashed border-slate-100 dark:border-white/5 rounded-3xl text-center">
-                        <p className="text-[10px] font-bold text-slate-400 italic">{t('form.noTemporaryAssignments')}.</p>
+                        <p className="text-xs font-bold text-slate-400 italic">{t('form.noTemporaryAssignments')}.</p>
                       </div>
                     )}
 
@@ -826,11 +826,11 @@ export default function StaffClient({
                              <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1">
                                   <label className="text-[8px] font-black text-slate-400 uppercase">{t('form.from')}</label>
-                                  <input type="date" required value={assignment.startDate} onChange={e => handleAssignmentChange(realIdx, 'startDate', e.target.value)} className="w-full p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold" />
+                                  <input type="date" required value={assignment.startDate} onChange={e => handleAssignmentChange(realIdx, 'startDate', e.target.value)} className="w-full p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
                                 </div>
                                 <div className="space-y-1">
                                   <label className="text-[8px] font-black text-slate-400 uppercase">{t('form.to')}</label>
-                                  <input type="date" value={assignment.endDate} onChange={e => handleAssignmentChange(realIdx, 'endDate', e.target.value)} className="w-full p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold" />
+                                  <input type="date" value={assignment.endDate} onChange={e => handleAssignmentChange(realIdx, 'endDate', e.target.value)} className="w-full p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
                                 </div>
                              </div>
                           </div>
@@ -839,8 +839,8 @@ export default function StaffClient({
                             <div className="space-y-1.5">
                               <label className="text-[8px] font-black text-slate-400 uppercase">{t('form.specialSchedule')}</label>
                               <div className="grid grid-cols-2 gap-2">
-                                 <input type="time" value={assignment.startTime} onChange={e => handleAssignmentChange(realIdx, 'startTime', e.target.value)} className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold" />
-                                 <input type="time" value={assignment.endTime} onChange={e => handleAssignmentChange(realIdx, 'endTime', e.target.value)} className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold" />
+                                 <input type="time" value={assignment.startTime} onChange={e => handleAssignmentChange(realIdx, 'startTime', e.target.value)} className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
+                                 <input type="time" value={assignment.endTime} onChange={e => handleAssignmentChange(realIdx, 'endTime', e.target.value)} className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
                               </div>
                             </div>
                             <div className="space-y-1.5">
@@ -890,7 +890,7 @@ export default function StaffClient({
                     </div>
                     <div>
                       <h3 className="text-lg font-black tracking-tight">{selectedStaffReviews.name}</h3>
-                      <p className="text-[11px] font-bold text-slate-400">{t('form.reviewsHistory')}</p>
+                      <p className="text-xs font-bold text-slate-400">{t('form.reviewsHistory')}</p>
                     </div>
                   </div>
                   <button onClick={() => setIsReviewsModalOpen(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-white/10 rounded-full transition-all">
@@ -925,7 +925,7 @@ export default function StaffClient({
                             <div className="pt-2 border-t border-slate-100 dark:border-white/5 mt-2 space-y-2">
                               {r.responses.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).map((resp: any, idx: number) => (
                                  <div key={idx} className="space-y-1">
-                                    <p className="text-[10px] font-black text-slate-400">{resp.questionText}</p>
+                                    <p className="text-xs font-black text-slate-400">{resp.questionText}</p>
                                     <p className="text-xs text-slate-600 dark:text-zinc-400 font-medium">"{resp.answer}"</p>
                                  </div>
                               ))}
@@ -1004,11 +1004,11 @@ export default function StaffClient({
 
               <div className="space-y-3">
                 <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 space-y-1">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Email</p>
                   <p className="text-sm font-bold text-slate-900 dark:text-white">{tempPasswordModal.email}</p>
                 </div>
                 <div className="p-4 bg-emerald-50 dark:bg-emerald-500/5 rounded-2xl border border-emerald-200 dark:border-emerald-500/20 space-y-1">
-                  <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Contraseña temporal</p>
+                  <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Contraseña temporal</p>
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-lg font-black text-slate-900 dark:text-white tracking-widest font-mono">{tempPasswordModal.password}</p>
                     <button
@@ -1026,7 +1026,7 @@ export default function StaffClient({
                 </div>
               </div>
 
-              <p className="text-[11px] text-slate-400 font-medium text-center">El profesional puede cambiar su contraseña después de iniciar sesión.</p>
+              <p className="text-xs text-slate-400 font-medium text-center">El profesional puede cambiar su contraseña después de iniciar sesión.</p>
 
               <button
                 onClick={() => setTempPasswordModal(null)}

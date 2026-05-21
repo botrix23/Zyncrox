@@ -216,12 +216,12 @@ export function TeamClient({ initialAdmins, plan, maxAdmins, isOwner, locale }: 
                       {admin.name}
                     </p>
                     {admin.isOwner && (
-                      <span className="text-[10px] font-black uppercase tracking-wide text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-lg shrink-0">
+                      <span className="text-xs font-black uppercase tracking-wide text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-lg shrink-0">
                         {t("owner")}
                       </span>
                     )}
                     {!admin.isActive && !admin.isOwner && (
-                      <span className="text-[10px] font-black uppercase tracking-wide text-slate-400 bg-slate-200 dark:bg-white/10 px-1.5 py-0.5 rounded-lg shrink-0">
+                      <span className="text-xs font-black uppercase tracking-wide text-slate-400 bg-slate-200 dark:bg-white/10 px-1.5 py-0.5 rounded-lg shrink-0">
                         {t("inactive")}
                       </span>
                     )}

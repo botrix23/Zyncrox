@@ -336,7 +336,7 @@ export default function PaymentsClient({
                   className="w-full pl-7 pr-3 py-3 rounded-xl border border-zinc-300 dark:border-white/10 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
                 />
               </div>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-600 text-right">USD / mes</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-600 text-right">USD / mes</p>
             </div>
           ))}
         </div>

@@ -134,7 +134,7 @@ export default function ChangePasswordPage({ params: { locale } }: { params: { l
             </div>
 
             <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/5 space-y-1.5">
-              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">{t('requirements')}</p>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{t('requirements')}</p>
               {[
                 { key: "length",  ok: newPassword.length >= 8 },
                 { key: "upper",   ok: /[A-Z]/.test(newPassword) },

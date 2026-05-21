@@ -437,7 +437,7 @@ export default function ServicesClient({
             className={`border rounded-2xl p-4 shadow-sm transition-all ${isInactive ? 'bg-slate-50 dark:bg-zinc-900/50 border-slate-200 dark:border-white/5 opacity-60 cursor-default' : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 hover:border-purple-500/50 cursor-pointer'}`}
           >
             {isInactive && (
-              <span className="inline-block mb-2 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+              <span className="inline-block mb-2 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                 {t('deactivated')}
               </span>
             )}
@@ -477,28 +477,28 @@ export default function ServicesClient({
                 </span>
                 <div className="flex flex-wrap items-center gap-1.5 mt-2">
                   {service.allowsHomeService && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-bold rounded-md uppercase tracking-wider border border-purple-500/20">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-bold rounded-md uppercase tracking-wider border border-purple-500/20">
                       <Sparkles className="w-2.5 h-2.5" /> {t('form.badgeHomeService')}
                     </span>
                   )}
                   {service.allowSimultaneous && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded-md uppercase tracking-widest border border-emerald-500/10">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-md uppercase tracking-widest border border-emerald-500/10">
                       <Users className="w-2.5 h-2.5" /> {t('form.badgeSimultaneous')}
                     </span>
                   )}
                   {service.isExclusive ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded-md uppercase tracking-widest border border-amber-500/10">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-md uppercase tracking-widest border border-amber-500/10">
                       {t('form.badgeExclusive')}
                     </span>
                   ) : (service.branches || []).length === 0 ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-md uppercase tracking-widest border border-blue-500/10">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-md uppercase tracking-widest border border-blue-500/10">
                       {t('form.badgeGlobal')}
                     </span>
                   ) : null}
                   {(service.categories || []).map((sc: any) => (
                     <span
                       key={sc.categoryId}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wider"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded-md uppercase tracking-wider"
                       style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
                     >
                       <Tag className="w-2 h-2" /> {sc.category?.name}
@@ -509,12 +509,12 @@ export default function ServicesClient({
                 {((service.includes?.length > 0) || (service.excludes?.length > 0)) && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {(service.includes || []).map((inc: string, i: number) => (
-                      <span key={i} className="text-[10px] font-bold bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span key={i} className="text-xs font-bold bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full flex items-center gap-1">
                         <CheckCircle2 className="w-2.5 h-2.5" /> {inc}
                       </span>
                     ))}
                     {(service.excludes || []).map((exc: string, i: number) => (
-                      <span key={i} className="text-[10px] font-bold bg-rose-500/10 text-rose-500 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span key={i} className="text-xs font-bold bg-rose-500/10 text-rose-500 px-2 py-0.5 rounded-full flex items-center gap-1">
                         <XCircle className="w-2.5 h-2.5" /> {exc}
                       </span>
                     ))}
@@ -594,7 +594,7 @@ export default function ServicesClient({
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-900 dark:text-white block tracking-tight">{service.name}</span>
                         {isInactiveSvc && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                             {t('deactivated')}
                           </span>
                         )}
@@ -604,28 +604,28 @@ export default function ServicesClient({
                       </span>
                       <div className="flex flex-wrap items-center gap-1.5 mt-2">
                         {service.allowsHomeService && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[11px] font-bold rounded-md uppercase tracking-wider border border-purple-500/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-bold rounded-md uppercase tracking-wider border border-purple-500/20">
                             <Sparkles className="w-3 h-3" /> {t('form.badgeHomeService')}
                           </span>
                         )}
                         {service.allowSimultaneous && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold rounded-md uppercase tracking-widest border border-emerald-500/10">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-md uppercase tracking-widest border border-emerald-500/10">
                             <Users className="w-3 h-3" /> {t('form.badgeSimultaneous')}
                           </span>
                         )}
                         {service.isExclusive ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] font-bold rounded-md uppercase tracking-widest border border-amber-500/10">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-md uppercase tracking-widest border border-amber-500/10">
                             {t('form.badgeExclusive')}
                           </span>
                         ) : (service.branches || []).length === 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] font-bold rounded-md uppercase tracking-widest border border-blue-500/10">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-md uppercase tracking-widest border border-blue-500/10">
                             {t('form.badgeGlobal')}
                           </span>
                         ) : null}
                         {(service.categories || []).map((sc: any) => (
                           <span
                             key={sc.categoryId}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wider"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md uppercase tracking-wider"
                             style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
                           >
                             <Tag className="w-2.5 h-2.5" /> {sc.category?.name}
@@ -748,7 +748,7 @@ export default function ServicesClient({
                          <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight leading-tight">{t('form.allowsHomeServiceLabel')}</p>
                          <div className="group relative shrink-0">
                           <Info className="w-3.5 h-3.5 text-slate-400 cursor-help transition-colors hover:text-purple-500" />
-                          <div className="hidden group-hover:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-900/95 backdrop-blur-md text-[11px] text-zinc-100 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10">
+                          <div className="hidden group-hover:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-900/95 backdrop-blur-md text-xs text-zinc-100 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10">
                             {t('form.allowsHomeServiceHint')}
                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
                           </div>
@@ -770,7 +770,7 @@ export default function ServicesClient({
                          <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight leading-tight">{t('form.allowSimultaneousLabel')}</p>
                          <div className="group relative shrink-0">
                           <Info className="w-3.5 h-3.5 text-slate-400 cursor-help transition-colors hover:text-purple-500" />
-                          <div className="hidden group-hover:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-900/95 backdrop-blur-md text-[11px] text-zinc-100 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10">
+                          <div className="hidden group-hover:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-900/95 backdrop-blur-md text-xs text-zinc-100 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10">
                             {t('form.allowSimultaneousHint')}
                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
                           </div>
@@ -792,7 +792,7 @@ export default function ServicesClient({
                          <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight leading-tight">{t('form.isExclusiveLabel')}</p>
                          <div className="group relative shrink-0">
                           <Info className="w-3.5 h-3.5 text-slate-400 cursor-help transition-colors hover:text-amber-500" />
-                          <div className="hidden group-hover:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-900/95 backdrop-blur-md text-[11px] text-zinc-100 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10">
+                          <div className="hidden group-hover:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-900/95 backdrop-blur-md text-xs text-zinc-100 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200 border border-white/10">
                             {t('form.isExclusiveHint')}
                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
                           </div>
@@ -836,7 +836,7 @@ export default function ServicesClient({
 
                     {availabilityType === "specific" && (
                       <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <p className="text-[11px] font-bold text-slate-400 mb-3 ml-1 uppercase tracking-wider">{t('form.exclusiveBranchesLabel')}</p>
+                        <p className="text-xs font-bold text-slate-400 mb-3 ml-1 uppercase tracking-wider">{t('form.exclusiveBranchesLabel')}</p>
                         <div className="flex flex-col gap-2">
                           {branches.map(branch => {
                             const isSelected = formData.branchIds.includes(branch.id);
@@ -873,7 +873,7 @@ export default function ServicesClient({
                       <Tag className="w-4 h-4 text-purple-500" />
                       <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{t('categoryTitle')}</p>
                     </div>
-                    <p className="text-[11px] text-slate-400 font-medium -mt-2">{t('categoryHint')}</p>
+                    <p className="text-xs text-slate-400 font-medium -mt-2">{t('categoryHint')}</p>
                     <div className="flex flex-wrap gap-2">
                       {categories.map((cat: any) => {
                         const isSelected = formData.categoryIds.includes(cat.id);

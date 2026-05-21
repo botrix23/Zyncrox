@@ -251,7 +251,7 @@ export default function BranchesClient({
               {/* Inactive badge */}
               {isInactive && (
                 <div className="absolute top-3 left-3 z-10">
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  <span className="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                     {t('deactivated')}
                   </span>
                 </div>
@@ -298,7 +298,7 @@ export default function BranchesClient({
                     <div className="w-8 h-8 rounded-lg bg-purple-500/5 dark:bg-purple-500/10 flex items-center justify-center shrink-0 border border-purple-500/10 dark:border-purple-500/20">
                       <Clock className="w-4 h-4 text-purple-500" />
                     </div>
-                    <div className="text-[11px] font-medium pt-0.5">
+                    <div className="text-xs font-medium pt-0.5">
                       {(() => {
                         try {
                           const bh = JSON.parse(branch.businessHours);
@@ -323,10 +323,10 @@ export default function BranchesClient({
 
                           return (
                             <div className="flex flex-col">
-                              <span className="font-bold text-slate-900 dark:text-white tracking-widest uppercase text-[11px] mb-1 opacity-60">{t('today')}</span>
+                              <span className="font-bold text-slate-900 dark:text-white tracking-widest uppercase text-xs mb-1 opacity-60">{t('today')}</span>
                               <span className="font-bold text-slate-700 dark:text-zinc-100">{displayTime}</span>
                               {isNewFormat && (
-                                <span className="text-slate-400 dark:text-zinc-500 text-[11px] font-bold mt-0.5">
+                                <span className="text-slate-400 dark:text-zinc-500 text-xs font-bold mt-0.5">
                                   {t('regularOperatingDays', { count: days.filter(d => bh.regular[d]?.isOpen).length })}
                                 </span>
                               )}

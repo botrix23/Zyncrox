@@ -83,8 +83,8 @@ function BranchSummaryCards({ data }: { data: BranchPerformanceResult }) {
             <c.icon className={`w-4 h-4 ${c.color}`} />
           </div>
           <p className="text-base font-bold text-slate-900 dark:text-white truncate">{c.value}</p>
-          <p className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mt-0.5 leading-tight">{c.label}</p>
-          <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5 leading-tight truncate">{c.sub}</p>
+          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mt-0.5 leading-tight">{c.label}</p>
+          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5 leading-tight truncate">{c.sub}</p>
         </div>
       ))}
     </div>
@@ -262,7 +262,7 @@ function BranchWeeklyTrendChart({
         {activeBranchIds.map((bid, bi) => (
           <div key={bid} className="flex items-center gap-1.5">
             <span className="w-3 h-1 rounded-full inline-block" style={{ backgroundColor: BRANCH_COLORS[bi % BRANCH_COLORS.length].line }} />
-            <span className="text-[11px] text-slate-500 dark:text-zinc-400 truncate max-w-[120px]">
+            <span className="text-xs text-slate-500 dark:text-zinc-400 truncate max-w-[120px]">
               {branchNames[bid] ?? bid}
             </span>
           </div>
@@ -328,104 +328,113 @@ function BranchTable({ rows }: { rows: BranchPerformanceRow[] }) {
       : <ChevronDown className="w-3 h-3 opacity-20" />;
 
   return (
-    <div className="bg-white dark:bg-zinc-900/60 border border-slate-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px]">
-          <thead>
-            <tr className="bg-slate-50 dark:bg-white/5">
-              {cols.map(col => (
-                <th
-                  key={col.key}
-                  onClick={() => handleSort(col.key)}
-                  className={`px-5 py-3 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors select-none whitespace-nowrap ${col.right ? "text-right" : "text-left"}`}
-                >
-                  <span className={`inline-flex items-center gap-1 ${col.right ? "justify-end" : ""}`}>
-                    {col.label}<SortIcon k={col.key} />
-                  </span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-            {sorted.map((row, ri) => (
-              <tr key={row.branchId} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors">
-                {/* Branch name */}
-                <td className="px-5 py-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: `${BRANCH_COLORS[ri % BRANCH_COLORS.length].line}22` }}
-                    >
-                      <MapPin
-                        className="w-3.5 h-3.5"
-                        style={{ color: BRANCH_COLORS[ri % BRANCH_COLORS.length].line }}
-                      />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">{row.branchName}</p>
-                      <p className="text-[11px] text-slate-400 dark:text-zinc-500 leading-tight">
-                        {row.staffCount} {row.staffCount === 1 ? "especialista" : "especialistas"}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-5 py-3.5 text-right font-bold text-purple-600 dark:text-purple-400">{row.attended}</td>
-                <td className="px-5 py-3.5 text-right font-semibold">
-                  <span className={row.cancelled > 0 ? "text-red-500" : "text-slate-300 dark:text-zinc-700"}>{row.cancelled}</span>
-                </td>
-                <td className="px-5 py-3.5 text-right">
-                  <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full ${
-                    row.cancellationRate > 20
-                      ? "bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400"
-                      : row.cancellationRate > 10
-                      ? "bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
-                      : "bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-zinc-400"
-                  }`}>
-                    {row.cancellationRate}%
-                  </span>
-                </td>
-                <td className="px-5 py-3.5 text-right font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                  {fmtCurrency(row.revenue)}
-                </td>
-                <td className="px-5 py-3.5 text-right">
-                  <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{row.newClients}</span>
-                </td>
-                <td className="px-5 py-3.5 text-right">
-                  <span className="text-sm font-semibold text-slate-600 dark:text-zinc-300">{row.recurringClients}</span>
-                </td>
-                <td className="px-5 py-3.5 text-right">
+    <div className="space-y-3">
+      {/* ── Mobile cards ── */}
+      <div className="sm:hidden space-y-3">
+        {sorted.map((row, ri) => {
+          const color = BRANCH_COLORS[ri % BRANCH_COLORS.length];
+          return (
+            <div key={row.branchId} className="bg-white dark:bg-zinc-900/60 border border-slate-100 dark:border-white/5 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${color.line}22` }}>
+                  <MapPin className="w-4 h-4" style={{ color: color.line }} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">{row.branchName}</p>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500">{row.staffCount} {row.staffCount === 1 ? "especialista" : "especialistas"}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colAttended")}</p>
+                  <p className="text-base font-bold text-purple-600 dark:text-purple-400">{row.attended}</p>
+                </div>
+                <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colRevenue")}</p>
+                  <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmtCurrency(row.revenue)}</p>
+                </div>
+                <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colOccupancy")}</p>
                   {row.occupancyRate !== null ? (
-                    <div className="flex items-center justify-end gap-2">
-                      <div className="w-16 bg-slate-100 dark:bg-white/5 rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${row.occupancyRate}%`,
-                            backgroundColor: row.occupancyRate >= 80 ? "#10b981" : row.occupancyRate >= 50 ? "#9333ea" : "#f59e0b",
-                          }}
-                        />
+                    <div>
+                      <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-1.5 mt-1 overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${row.occupancyRate}%`, backgroundColor: row.occupancyRate >= 80 ? "#10b981" : row.occupancyRate >= 50 ? "#9333ea" : "#f59e0b" }} />
                       </div>
-                      <span className={`text-sm font-bold tabular-nums ${
-                        row.occupancyRate >= 80 ? "text-emerald-600 dark:text-emerald-400"
-                        : row.occupancyRate >= 50 ? "text-purple-600 dark:text-purple-400"
-                        : "text-amber-600 dark:text-amber-400"
-                      }`}>
-                        {row.occupancyRate}%
-                      </span>
+                      <p className={`text-sm font-bold mt-1 ${row.occupancyRate >= 80 ? "text-emerald-600" : row.occupancyRate >= 50 ? "text-purple-600" : "text-amber-600"}`}>{row.occupancyRate}%</p>
                     </div>
-                  ) : (
-                    <span className="text-slate-300 dark:text-zinc-700">—</span>
-                  )}
-                </td>
-                <td className="px-5 py-3.5 text-right">
-                  {row.avgRating !== null
-                    ? <span className="inline-flex items-center gap-1 font-semibold text-amber-500"><Star className="w-3 h-3 fill-amber-400" />{row.avgRating.toFixed(1)}</span>
-                    : <span className="text-slate-300 dark:text-zinc-700">—</span>}
-                </td>
+                  ) : <p className="text-sm text-slate-300">—</p>}
+                </div>
+                <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colCancelRate")}</p>
+                  <p className={`text-sm font-bold ${row.cancellationRate > 20 ? "text-red-500" : row.cancellationRate > 10 ? "text-amber-500" : "text-slate-600 dark:text-zinc-300"}`}>{row.cancellationRate}%</p>
+                </div>
+                <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colNewClients")}</p>
+                  <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{row.newClients}</p>
+                </div>
+                <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colRating")}</p>
+                  <p className="text-sm font-bold text-amber-500">{row.avgRating !== null ? `${row.avgRating.toFixed(1)} ★` : "—"}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {/* ── Desktop table ── */}
+      <div className="hidden sm:block bg-white dark:bg-zinc-900/60 border border-slate-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[900px]">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-white/5">
+                {cols.map(col => (
+                  <th key={col.key} onClick={() => handleSort(col.key)}
+                    className={`px-5 py-3 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors select-none whitespace-nowrap ${col.right ? "text-right" : "text-left"}`}>
+                    <span className={`inline-flex items-center gap-1 ${col.right ? "justify-end" : ""}`}>
+                      {col.label}<SortIcon k={col.key} />
+                    </span>
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+              {sorted.map((row, ri) => (
+                <tr key={row.branchId} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors">
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${BRANCH_COLORS[ri % BRANCH_COLORS.length].line}22` }}>
+                        <MapPin className="w-3.5 h-3.5" style={{ color: BRANCH_COLORS[ri % BRANCH_COLORS.length].line }} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">{row.branchName}</p>
+                        <p className="text-xs text-slate-400 dark:text-zinc-500 leading-tight">{row.staffCount} {row.staffCount === 1 ? "especialista" : "especialistas"}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5 text-right font-bold text-purple-600 dark:text-purple-400">{row.attended}</td>
+                  <td className="px-5 py-3.5 text-right font-semibold"><span className={row.cancelled > 0 ? "text-red-500" : "text-slate-300 dark:text-zinc-700"}>{row.cancelled}</span></td>
+                  <td className="px-5 py-3.5 text-right"><span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full ${row.cancellationRate > 20 ? "bg-red-100 dark:bg-red-950/40 text-red-600" : row.cancellationRate > 10 ? "bg-amber-100 dark:bg-amber-950/40 text-amber-600" : "bg-slate-100 dark:bg-white/5 text-slate-500"}`}>{row.cancellationRate}%</span></td>
+                  <td className="px-5 py-3.5 text-right font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmtCurrency(row.revenue)}</td>
+                  <td className="px-5 py-3.5 text-right"><span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{row.newClients}</span></td>
+                  <td className="px-5 py-3.5 text-right"><span className="text-sm font-semibold text-slate-600 dark:text-zinc-300">{row.recurringClients}</span></td>
+                  <td className="px-5 py-3.5 text-right">
+                    {row.occupancyRate !== null ? (
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="w-16 bg-slate-100 dark:bg-white/5 rounded-full h-1.5 overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${row.occupancyRate}%`, backgroundColor: row.occupancyRate >= 80 ? "#10b981" : row.occupancyRate >= 50 ? "#9333ea" : "#f59e0b" }} />
+                        </div>
+                        <span className={`text-sm font-bold tabular-nums ${row.occupancyRate >= 80 ? "text-emerald-600 dark:text-emerald-400" : row.occupancyRate >= 50 ? "text-purple-600 dark:text-purple-400" : "text-amber-600 dark:text-amber-400"}`}>{row.occupancyRate}%</span>
+                      </div>
+                    ) : <span className="text-slate-300 dark:text-zinc-700">—</span>}
+                  </td>
+                  <td className="px-5 py-3.5 text-right">
+                    {row.avgRating !== null ? <span className="inline-flex items-center gap-1 font-semibold text-amber-500"><Star className="w-3 h-3 fill-amber-400" />{row.avgRating.toFixed(1)}</span> : <span className="text-slate-300 dark:text-zinc-700">—</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -483,7 +492,7 @@ export function BranchPerformanceTab({ data, isLoading }: BranchPerformanceTabPr
         <BranchTable rows={data.rows} />
       </div>
 
-      <p className="text-[11px] text-slate-400 dark:text-zinc-600 text-center">{t("footnote")}</p>
+      <p className="text-xs text-slate-400 dark:text-zinc-600 text-center">{t("footnote")}</p>
     </div>
   );
 }

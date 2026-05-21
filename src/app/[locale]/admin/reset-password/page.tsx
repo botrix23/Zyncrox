@@ -138,8 +138,8 @@ export default function ResetPasswordPage({ params: { locale } }: { params: { lo
 
             {/* Complexity Indicator Grid */}
             <div className="bg-slate-50 dark:bg-white/5 p-5 rounded-3xl border border-slate-200 dark:border-white/10 space-y-3">
-                <p className="text-[10px] font-black tracking-widest text-slate-400">{t('requirements')}</p>
-                <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
+                <p className="text-xs font-black tracking-widest text-slate-400">{t('requirements')}</p>
+                <div className="grid grid-cols-2 gap-2 text-xs font-bold">
                     <div className={`flex items-center gap-1.5 ${checks.length ? 'text-emerald-500' : 'text-slate-400'}`}>
                         {checks.length ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />} {t('rules.length')}
                     </div>

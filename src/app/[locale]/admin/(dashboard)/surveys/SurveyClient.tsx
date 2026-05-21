@@ -317,7 +317,7 @@ export default function SurveyClient({
 
                       <div className="flex-1 min-w-0 space-y-1.5">
                         <p className="text-sm font-black text-slate-800 dark:text-white leading-tight break-words">{q.questionText}</p>
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-black tracking-widest text-slate-400">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-black tracking-widest text-slate-400">
                           <span className="flex items-center gap-1 shrink-0">
                             {q.questionType === 'STARS' && <Star className="w-3 h-3 text-yellow-500" />}
                             {q.questionType === 'YES_NO' && <CheckCircle2 className="w-3 h-3 text-sky-500" />}
@@ -420,18 +420,18 @@ export default function SurveyClient({
                             </div>
                             <div>
                               <p className="text-sm font-black text-slate-900 dark:text-white">{r.booking?.staff?.name || t('audit.table.staffFallback')}</p>
-                              <p className="text-[11px] font-bold text-slate-400">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
+                              <p className="text-xs font-bold text-slate-400">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
                             </div>
                           </div>
-                          <span className="text-[11px] font-bold text-slate-400 shrink-0">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
+                          <span className="text-xs font-bold text-slate-400 shrink-0">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
                         </div>
                         {r.comment && (
                           <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium italic border-l-2 border-purple-500/30 pl-3">"{r.comment}"</p>
                         )}
                         {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).slice(0, 2).map((resp: any, i: number) => (
                           <div key={i} className="px-2.5 py-1.5 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                            <p className="text-[10px] font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
-                            <p className="text-[11px] text-purple-600 font-bold break-words">{resp.answer}</p>
+                            <p className="text-xs font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
+                            <p className="text-xs text-purple-600 font-bold break-words">{resp.answer}</p>
                           </div>
                         ))}
                       </div>
@@ -461,7 +461,7 @@ export default function SurveyClient({
                             <td className="py-5 px-4 max-w-[200px]">
                                <div className="space-y-0.5">
                                  <p className="text-sm font-black text-slate-900 dark:text-white truncate">{r.booking?.staff?.name || t('audit.table.staffFallback')}</p>
-                                 <p className="text-[11px] font-bold text-slate-400 truncate">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
+                                 <p className="text-xs font-bold text-slate-400 truncate">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
                                </div>
                             </td>
                             <td className="py-5 px-4 min-w-[200px] max-w-[300px]">
@@ -472,15 +472,15 @@ export default function SurveyClient({
                                  <div className="flex flex-wrap gap-2">
                                    {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).slice(0, 2).map((resp: any, i: number) => (
                                      <div key={i} className="px-2 py-1 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                                        <p className="text-[10px] font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
-                                        <p className="text-[11px] text-purple-600 font-bold truncate max-w-[150px]">{resp.answer}</p>
+                                        <p className="text-xs font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
+                                        <p className="text-xs text-purple-600 font-bold truncate max-w-[150px]">{resp.answer}</p>
                                      </div>
                                    ))}
                                  </div>
                                </div>
                             </td>
                             <td className="py-5 px-4">
-                               <span className="text-[11px] font-bold text-slate-400">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
+                               <span className="text-xs font-bold text-slate-400">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
                             </td>
                           </tr>
                         ))}

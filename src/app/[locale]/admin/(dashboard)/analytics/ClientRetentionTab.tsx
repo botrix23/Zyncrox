@@ -215,11 +215,11 @@ function Heatmap({ data, t }: { data: number[][]; t: ReturnType<typeof useTransl
       </table>
       {/* Color scale legend */}
       <div className="flex items-center justify-end gap-1.5 mt-3">
-        <span className="text-[10px] text-slate-400 dark:text-zinc-500">Bajo</span>
+        <span className="text-xs text-slate-400 dark:text-zinc-500">Bajo</span>
         {["bg-purple-50", "bg-purple-100", "bg-purple-300", "bg-purple-500", "bg-purple-700"].map((c, i) => (
           <span key={i} className={`w-4 h-4 rounded ${c}`} />
         ))}
-        <span className="text-[10px] text-slate-400 dark:text-zinc-500">Alto</span>
+        <span className="text-xs text-slate-400 dark:text-zinc-500">Alto</span>
       </div>
     </div>
   );
@@ -264,58 +264,77 @@ function ChurnTable({ clients, t }: {
   const thCls = "px-4 py-3 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors select-none whitespace-nowrap";
 
   return (
-    <div className="bg-white dark:bg-zinc-900/60 border border-slate-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[600px]">
-          <thead>
-            <tr className="bg-slate-50 dark:bg-white/5">
-              <th className={`${thCls} text-left`} onClick={() => handleSort("name")}>
-                <span className="inline-flex items-center gap-1">{t("colName")}<SortIcon k="name" /></span>
-              </th>
-              <th className={`${thCls} text-left`}>{t("colEmail")}</th>
-              <th className={`${thCls} text-right`} onClick={() => handleSort("lastVisit")}>
-                <span className="inline-flex items-center gap-1 justify-end">{t("colLastVisit")}<SortIcon k="lastVisit" /></span>
-              </th>
-              <th className={`${thCls} text-right`} onClick={() => handleSort("daysSince")}>
-                <span className="inline-flex items-center gap-1 justify-end">{t("colDaysSince")}<SortIcon k="daysSince" /></span>
-              </th>
-              <th className={`${thCls} text-right`} onClick={() => handleSort("totalBookings")}>
-                <span className="inline-flex items-center gap-1 justify-end">{t("colTotalBookings")}<SortIcon k="totalBookings" /></span>
-              </th>
-              <th className={`${thCls} text-left`}>{t("colLastService")}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-            {sorted.map((c, i) => (
-              <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                <td className="px-4 py-3 font-semibold text-sm text-slate-900 dark:text-white whitespace-nowrap">
-                  {c.name}
-                </td>
-                <td className="px-4 py-3 text-xs text-slate-500 dark:text-zinc-400 max-w-[180px] truncate">
-                  {c.email || "—"}
-                </td>
-                <td className="px-4 py-3 text-sm text-right text-slate-600 dark:text-zinc-300 tabular-nums whitespace-nowrap">
-                  {format(c.lastVisit, "dd/MM/yyyy")}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full ${
-                    c.daysSince > 120 ? "bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400"
-                    : c.daysSince > 90 ? "bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
-                    : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400"
-                  }`}>
-                    {c.daysSince}d
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right font-semibold text-sm text-purple-600 dark:text-purple-400 tabular-nums">
-                  {c.totalBookings}
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-500 dark:text-zinc-400 max-w-[160px] truncate">
-                  {c.lastService}
-                </td>
+    <div className="space-y-3">
+      {/* ── Mobile cards ── */}
+      <div className="sm:hidden space-y-3">
+        {sorted.map((c, i) => (
+          <div key={i} className="bg-white dark:bg-zinc-900/60 border border-slate-100 dark:border-white/5 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">{c.name}</p>
+                {c.email && <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5 truncate max-w-[200px]">{c.email}</p>}
+              </div>
+              <span className={`shrink-0 inline-block text-xs font-bold px-2.5 py-1 rounded-full ${
+                c.daysSince > 120 ? "bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400"
+                : c.daysSince > 90 ? "bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
+                : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400"
+              }`}>{c.daysSince}d</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colLastVisit")}</p>
+                <p className="text-sm font-semibold text-slate-700 dark:text-zinc-200 tabular-nums">{format(c.lastVisit, "dd/MM/yyyy")}</p>
+              </div>
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colTotalBookings")}</p>
+                <p className="text-base font-bold text-purple-600 dark:text-purple-400">{c.totalBookings}</p>
+              </div>
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3 col-span-2">
+                <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colLastService")}</p>
+                <p className="text-sm text-slate-600 dark:text-zinc-300 truncate">{c.lastService}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* ── Desktop table ── */}
+      <div className="hidden sm:block bg-white dark:bg-zinc-900/60 border border-slate-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px]">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-white/5">
+                <th className={`${thCls} text-left`} onClick={() => handleSort("name")}>
+                  <span className="inline-flex items-center gap-1">{t("colName")}<SortIcon k="name" /></span>
+                </th>
+                <th className={`${thCls} text-left`}>{t("colEmail")}</th>
+                <th className={`${thCls} text-right`} onClick={() => handleSort("lastVisit")}>
+                  <span className="inline-flex items-center gap-1 justify-end">{t("colLastVisit")}<SortIcon k="lastVisit" /></span>
+                </th>
+                <th className={`${thCls} text-right`} onClick={() => handleSort("daysSince")}>
+                  <span className="inline-flex items-center gap-1 justify-end">{t("colDaysSince")}<SortIcon k="daysSince" /></span>
+                </th>
+                <th className={`${thCls} text-right`} onClick={() => handleSort("totalBookings")}>
+                  <span className="inline-flex items-center gap-1 justify-end">{t("colTotalBookings")}<SortIcon k="totalBookings" /></span>
+                </th>
+                <th className={`${thCls} text-left`}>{t("colLastService")}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+              {sorted.map((c, i) => (
+                <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                  <td className="px-4 py-3 font-semibold text-sm text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
+                  <td className="px-4 py-3 text-xs text-slate-500 dark:text-zinc-400 max-w-[180px] truncate">{c.email || "—"}</td>
+                  <td className="px-4 py-3 text-sm text-right text-slate-600 dark:text-zinc-300 tabular-nums whitespace-nowrap">{format(c.lastVisit, "dd/MM/yyyy")}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full ${c.daysSince > 120 ? "bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400" : c.daysSince > 90 ? "bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400" : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400"}`}>{c.daysSince}d</span>
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold text-sm text-purple-600 dark:text-purple-400 tabular-nums">{c.totalBookings}</td>
+                  <td className="px-4 py-3 text-sm text-slate-500 dark:text-zinc-400 max-w-[160px] truncate">{c.lastService}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -336,49 +355,64 @@ function ServicesTable({ services, t }: {
   }
 
   return (
-    <div className="bg-white dark:bg-zinc-900/60 border border-slate-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[480px]">
-          <thead>
-            <tr className="bg-slate-50 dark:bg-white/5">
-              {[t("colService"), t("colBookedCount"), t("colRevenue"), t("colAvgRating")].map((h, i) => (
-                <th key={i} className={`px-4 py-3 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider ${i === 0 ? "text-left" : "text-right"}`}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-            {services.map((s, i) => (
-              <tr key={s.serviceId} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className={`text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 dark:bg-zinc-600 text-slate-800 dark:text-white" : i === 2 ? "bg-orange-500 text-white" : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400"
-                    }`}>{i + 1}</span>
-                    <span className="text-sm font-semibold text-slate-900 dark:text-white truncate max-w-[200px]">{s.name}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-right font-bold text-purple-600 dark:text-purple-400 tabular-nums">
-                  {s.bookingCount}
-                </td>
-                <td className="px-4 py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                  {fmtCurrency(s.revenue)}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {s.avgRating !== null ? (
-                    <span className="inline-flex items-center gap-1 font-semibold text-amber-500">
-                      <Star className="w-3 h-3 fill-amber-400" />
-                      {s.avgRating.toFixed(1)}
-                    </span>
-                  ) : (
-                    <span className="text-slate-300 dark:text-zinc-700 text-sm">—</span>
-                  )}
-                </td>
+    <div className="space-y-3">
+      {/* ── Mobile cards ── */}
+      <div className="sm:hidden space-y-3">
+        {services.map((s, i) => (
+          <div key={s.serviceId} className="bg-white dark:bg-zinc-900/60 border border-slate-100 dark:border-white/5 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <span className={`text-xs font-black w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 dark:bg-zinc-600 text-slate-800 dark:text-white" : i === 2 ? "bg-orange-500 text-white" : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400"
+              }`}>{i + 1}</span>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">{s.name}</p>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colBookedCount")}</p>
+                <p className="text-base font-bold text-purple-600 dark:text-purple-400">{s.bookingCount}</p>
+              </div>
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colRevenue")}</p>
+                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmtCurrency(s.revenue)}</p>
+              </div>
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                <p className="text-xs text-slate-400 dark:text-zinc-500 mb-0.5">{t("colAvgRating")}</p>
+                <p className="text-sm font-bold text-amber-500">{s.avgRating !== null ? `${s.avgRating.toFixed(1)} ★` : "—"}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* ── Desktop table ── */}
+      <div className="hidden sm:block bg-white dark:bg-zinc-900/60 border border-slate-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px]">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-white/5">
+                {[t("colService"), t("colBookedCount"), t("colRevenue"), t("colAvgRating")].map((h, i) => (
+                  <th key={i} className={`px-4 py-3 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider ${i === 0 ? "text-left" : "text-right"}`}>{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+              {services.map((s, i) => (
+                <tr key={s.serviceId} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className={`text-xs font-black w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 dark:bg-zinc-600 text-slate-800 dark:text-white" : i === 2 ? "bg-orange-500 text-white" : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400"}`}>{i + 1}</span>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white truncate max-w-[200px]">{s.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right font-bold text-purple-600 dark:text-purple-400 tabular-nums">{s.bookingCount}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmtCurrency(s.revenue)}</td>
+                  <td className="px-4 py-3 text-right">
+                    {s.avgRating !== null ? <span className="inline-flex items-center gap-1 font-semibold text-amber-500"><Star className="w-3 h-3 fill-amber-400" />{s.avgRating.toFixed(1)}</span> : <span className="text-slate-300 dark:text-zinc-700 text-sm">—</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -467,8 +501,8 @@ export function ClientRetentionTab({ data, isLoading, churnDays, onChurnDaysChan
               <c.icon className={`w-4 h-4 ${c.color}`} />
             </div>
             <p className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">{c.value}</p>
-            <p className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mt-0.5 leading-tight">{c.label}</p>
-            <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5 leading-snug line-clamp-2">{c.sub}</p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mt-0.5 leading-tight">{c.label}</p>
+            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5 leading-snug line-clamp-2">{c.sub}</p>
           </div>
         ))}
       </div>
