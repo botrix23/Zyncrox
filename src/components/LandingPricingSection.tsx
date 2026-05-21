@@ -67,7 +67,6 @@ export function LandingPricingSection() {
     { f: t("cmpDashboard"),      b: true,   p: true,   e: true  },
     { f: t("cmpWeeklyStats"),    b: false,  p: true,   e: true  },
     { f: t("cmpAdvAnalytics"),   b: false,  p: false,  e: true  },
-    { f: t("cmpAuditLogs"),      b: false,  p: false,  e: true  },
     { cat: t("catSupport") },
     { f: t("cmpEmailSupport"),   b: true,   p: true,   e: true  },
     { f: t("cmpPrioritySupport"),b: false,  p: true,   e: true  },
