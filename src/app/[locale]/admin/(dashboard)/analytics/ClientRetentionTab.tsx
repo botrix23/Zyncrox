@@ -99,9 +99,9 @@ function LineChart({ data }: { data: { label: string; count: number }[] }) {
     );
   }
 
-  const W = 280;
-  const H = 80;
-  const PAD = { top: 8, right: 8, bottom: 20, left: 28 };
+  const W = 560;
+  const H = 180;
+  const PAD = { top: 14, right: 16, bottom: 32, left: 36 };
   const cW = W - PAD.left - PAD.right;
   const cH = H - PAD.top - PAD.bottom;
   const maxVal = Math.max(...data.map(d => d.count), 1);
@@ -120,37 +120,37 @@ function LineChart({ data }: { data: { label: string; count: number }[] }) {
     `${pts[pts.length - 1].x},${PAD.top + cH}`,
   ].join(" ");
 
-  // Grid lines (3)
-  const gridYs = [0.25, 0.5, 0.75].map(f => PAD.top + (1 - f) * cH);
+  // Grid lines (4)
+  const gridYs = [0.25, 0.5, 0.75, 1].map(f => PAD.top + (1 - f) * cH);
 
   // Label every Nth point to avoid crowding
-  const step = Math.ceil(data.length / 6);
+  const step = Math.ceil(data.length / 8);
   const labelPts = pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 80 }}>
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minHeight: 160 }}>
       {/* Grid lines */}
       {gridYs.map((y, i) => (
         <line key={i} x1={PAD.left} y1={y} x2={PAD.left + cW} y2={y}
-          stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-white/10" strokeDasharray="3 3" />
+          stroke="currentColor" strokeWidth="0.7" className="text-slate-200 dark:text-white/10" strokeDasharray="4 4" />
       ))}
       {/* Y-axis labels */}
-      <text x={PAD.left - 3} y={PAD.top + 4} textAnchor="end" fontSize="5"
+      <text x={PAD.left - 5} y={PAD.top + 4} textAnchor="end" fontSize="9"
         className="fill-slate-400 dark:fill-zinc-500">{maxVal}</text>
-      <text x={PAD.left - 3} y={PAD.top + cH + 2} textAnchor="end" fontSize="5"
+      <text x={PAD.left - 5} y={PAD.top + cH + 3} textAnchor="end" fontSize="9"
         className="fill-slate-400 dark:fill-zinc-500">0</text>
       {/* Area fill */}
       <polygon points={area} className="fill-purple-500/10" />
       {/* Line */}
       <polyline points={polyline} fill="none" stroke="#7c3aed"
-        strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       {/* Data points */}
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="2.5" fill="#7c3aed" />
+        <circle key={i} cx={p.x} cy={p.y} r="4" fill="#7c3aed" />
       ))}
       {/* X-axis labels */}
       {labelPts.map((p, i) => (
-        <text key={i} x={p.x} y={H - 2} textAnchor="middle" fontSize="5"
+        <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize="9"
           className="fill-slate-400 dark:fill-zinc-500">{p.label}</text>
       ))}
     </svg>
@@ -468,7 +468,7 @@ export function ClientRetentionTab({ data, isLoading, churnDays, onChurnDaysChan
             </div>
             <p className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">{c.value}</p>
             <p className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mt-0.5 leading-tight">{c.label}</p>
-            <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5 leading-tight truncate">{c.sub}</p>
+            <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5 leading-snug line-clamp-2">{c.sub}</p>
           </div>
         ))}
       </div>
