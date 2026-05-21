@@ -68,96 +68,42 @@ function MockStep3() {
   const t = useTranslations("Landing.how");
   const [copied, setCopied] = useState(false);
   return (
-    <div className="space-y-4">
-      {/* Tab bar — igual que AppearanceClient */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-2xl">
-        <div className="flex-1 py-1.5 px-3 bg-white rounded-xl text-[11px] font-bold text-purple-600 shadow-sm text-center">
-          {t("mock3TabDesign")}
-        </div>
-        <div className="flex-1 py-1.5 px-3 text-[11px] font-semibold text-slate-400 text-center">
-          {t("mock3TabRules")}
-        </div>
-      </div>
-
-      {/* Gradient link card — réplica exacta de AppearanceClient */}
+    <div className="flex items-center justify-center h-full py-4">
+      {/* Gradient link card — réplica de AppearanceClient */}
       <div
-        className="rounded-3xl p-5 relative overflow-hidden border border-white/10"
+        className="w-full rounded-3xl p-6 relative overflow-hidden border border-white/10"
         style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" }}
       >
-        {/* Decorative icon */}
+        {/* Decorative share icon */}
         <svg
-          className="absolute top-3 right-4 opacity-10"
-          width="48" height="48" fill="none" viewBox="0 0 24 24"
+          className="absolute top-4 right-5 opacity-[0.12]"
+          width="56" height="56" fill="none" viewBox="0 0 24 24"
         >
-          <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-[13px] font-bold text-white">{t("mock3CardTitle")}</span>
-          <span className="bg-emerald-400 text-white text-[8.5px] font-black px-2 py-[2px] rounded-full tracking-widest">
-            {t("mock3CardStatus")}
-          </span>
+
+        {/* Title + badge */}
+        <div className="space-y-1 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[15px] font-bold text-white">{t("mock3CardTitle")}</span>
+            <span className="bg-emerald-400 text-white text-[9px] font-black px-2.5 py-[3px] rounded-full tracking-widest">
+              {t("mock3CardStatus")}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 bg-black/25 p-1.5 rounded-xl border border-white/10 backdrop-blur-sm">
-          <code className="flex-1 px-2 text-[10.5px] font-mono text-purple-100 truncate">
+
+        {/* URL row */}
+        <div className="flex items-center gap-2 bg-black/25 p-2 rounded-xl border border-white/10">
+          <code className="flex-1 px-2 text-[12px] font-mono text-purple-100 truncate">
             app.zyncrox.com/studionoa
           </code>
           <button
             onClick={() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-            className="px-3 py-1.5 bg-white text-purple-600 rounded-lg text-[10px] font-bold flex-shrink-0 hover:bg-purple-50 transition-colors cursor-pointer active:scale-95"
+            className="px-4 py-1.5 bg-white text-purple-600 rounded-lg text-[11px] font-bold flex-shrink-0 hover:bg-purple-50 transition-all cursor-pointer active:scale-95"
           >
             {copied ? t("mock3Copied") : t("mock3Copy")}
           </button>
         </div>
-      </div>
-
-      {/* Identity section — reproduce la sección "Identidad de Negocio" */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-4 space-y-3">
-        <div className="flex items-center gap-2 pb-2.5 border-b border-slate-100">
-          <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-            <svg width="11" height="11" fill="none" viewBox="0 0 24 24">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <span className="text-[10.5px] font-black text-slate-700 tracking-tight">{t("mock3SectionIdentity")}</span>
-        </div>
-
-        {/* Business name */}
-        <div>
-          <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t("mock3FieldName")}</p>
-          <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[11.5px] font-bold text-slate-700">
-            Studio Noa
-          </div>
-        </div>
-
-        {/* Color */}
-        <div>
-          <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t("mock3FieldColor")}</p>
-          <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
-            <span className="inline-block w-3.5 h-3.5 rounded-full bg-purple-500 flex-shrink-0 shadow-sm" />
-            <span className="text-[11.5px] font-mono font-bold text-slate-700">#8B5CF6</span>
-          </div>
-        </div>
-
-        {/* Logo row */}
-        <div>
-          <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t("mock3FieldLogo")}</p>
-          <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
-            <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-black text-[9px]">N</span>
-            </div>
-            <span className="text-[11px] text-emerald-600 font-bold">studio-noa.webp</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Live link */}
-      <div className="flex items-center justify-end">
-        <span className="text-[10.5px] font-bold text-purple-600 flex items-center gap-1 cursor-pointer hover:underline">
-          {t("mock3LiveBtn")}
-          <svg width="10" height="10" fill="none" viewBox="0 0 24 24">
-            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-          </svg>
-        </span>
       </div>
     </div>
   );
