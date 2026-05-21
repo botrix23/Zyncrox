@@ -21,6 +21,7 @@ import { CopyLinkButton } from '@/components/dashboard/CopyLinkButton';
 import { DashboardExport } from '@/components/dashboard/DashboardExport';
 import { canUseFeature } from '@/core/plans';
 import { DashboardTabsClient } from './DashboardTabsClient';
+import { StatsUpgradeWall } from './StatsUpgradeWall';
 
 export default async function AdminDashboard({ params: { locale } }: { params: { locale: string } }) {
   const session = await getSession();
@@ -272,9 +273,10 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
   const monthLabel = format(now, "MMMM yyyy", { locale: dateLocale });
   const todayLabel = format(now, "EEEE d 'de' MMMM", { locale: dateLocale });
 
-  // Analytics feature gate
+  // Feature gates
   const tenantPlan = tenantData?.plan ?? null;
   const canUseAnalytics = canUseFeature(tenantPlan, 'advancedAnalytics');
+  const canUseWeeklyMonthlyStats = canUseFeature(tenantPlan, 'weeklyMonthlyStats');
 
   // Default date range for analytics (last 30 days)
   const analyticsDefaultFrom = format(startOfDay(subDays(now, 29)), 'yyyy-MM-dd');
@@ -455,102 +457,78 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
         )}
       </section>
 
-      {/* ═══ SECCIÓN 2: RESUMEN DE LA SEMANA ═══ */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-purple-600 shrink-0" />
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">Resumen de la semana</h2>
-        </div>
-        <div className="bg-white dark:bg-zinc-900/50 border border-slate-100 dark:border-white/5 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
-            <div>
-              <p className="text-3xl font-bold text-slate-900 dark:text-white">{thisWeekTotal}</p>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">citas esta semana</p>
+      {/* ═══ SECCIONES 2 y 3: SEMANA + MES (requiere weeklyMonthlyStats) ═══ */}
+      {canUseWeeklyMonthlyStats ? (
+        <>
+          {/* ═══ SECCIÓN 2: RESUMEN DE LA SEMANA ═══ */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="w-5 h-5 text-purple-600 shrink-0" />
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">Resumen de la semana</h2>
             </div>
-            <div className={`inline-flex items-center gap-1 text-sm font-bold px-3 py-1.5 rounded-full ${
-              weekChange > 0
-                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                : weekChange < 0
-                ? 'bg-red-500/10 text-red-500'
-                : 'bg-slate-100 dark:bg-white/5 text-slate-500'
-            }`}>
-              {weekChange > 0 ? '↑' : weekChange < 0 ? '↓' : '—'}&nbsp;{Math.abs(weekChange)}% vs semana anterior
+            <div className="bg-white dark:bg-zinc-900/50 border border-slate-100 dark:border-white/5 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+                <div>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white">{thisWeekTotal}</p>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">citas esta semana</p>
+                </div>
+                <div className={`inline-flex items-center gap-1 text-sm font-bold px-3 py-1.5 rounded-full ${
+                  weekChange > 0
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    : weekChange < 0
+                    ? 'bg-red-500/10 text-red-500'
+                    : 'bg-slate-100 dark:bg-white/5 text-slate-500'
+                }`}>
+                  {weekChange > 0 ? '↑' : weekChange < 0 ? '↓' : '—'}&nbsp;{Math.abs(weekChange)}% vs semana anterior
+                </div>
+              </div>
+              <WeeklyBarChart thisWeek={thisWeekByDay} prevWeek={prevWeekByDay} />
+              <div className="flex items-center gap-5 mt-5 text-xs text-slate-500 dark:text-zinc-400">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-purple-600 inline-block" />
+                  Esta semana
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-purple-200 dark:bg-purple-900/40 inline-block" />
+                  Semana anterior
+                </span>
+              </div>
             </div>
-          </div>
-          <WeeklyBarChart thisWeek={thisWeekByDay} prevWeek={prevWeekByDay} />
-          <div className="flex items-center gap-5 mt-5 text-xs text-slate-500 dark:text-zinc-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-purple-600 inline-block" />
-              Esta semana
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-purple-200 dark:bg-purple-900/40 inline-block" />
-              Semana anterior
-            </span>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {/* ═══ SECCIÓN 3: MÉTRICAS DEL MES ═══ */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="w-5 h-5 text-purple-600 shrink-0" />
-          <h2 className="text-base font-bold text-slate-900 dark:text-white capitalize">
-            Métricas del mes · {monthLabel}
-          </h2>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
-          {[
-            {
-              label: 'Total citas',
-              value: monthTotal,
-              sub: 'en el mes',
-              alert: false,
-            },
-            {
-              label: 'Confirmadas',
-              value: monthConfirmed,
-              sub: monthTotal > 0 ? `${Math.round((monthConfirmed / monthTotal) * 100)}% del total` : '0%',
-              alert: false,
-            },
-            {
-              label: 'Canceladas',
-              value: monthCancelled,
-              sub: `Tasa: ${cancellationRate}%`,
-              alert: cancellationRate > 20,
-            },
-            {
-              label: 'Clientes nuevos',
-              value: newClientsThisMonth,
-              sub: 'primera cita este mes',
-              alert: false,
-            },
-            {
-              label: 'Clientes activos',
-              value: activeClients60Days,
-              sub: 'últ. 60 días',
-              alert: false,
-            },
-          ].map(m => (
-            <div
-              key={m.label}
-              className={`bg-white dark:bg-zinc-900/50 border rounded-2xl p-4 shadow-sm ${
-                m.alert
-                  ? 'border-red-200 dark:border-red-900/40'
-                  : 'border-slate-100 dark:border-white/5'
-              }`}
-            >
-              <p className={`text-2xl font-bold ${m.alert ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>
-                {m.value}
-              </p>
-              <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300 mt-1">{m.label}</p>
-              <p className={`text-xs mt-0.5 ${m.alert ? 'text-red-400' : 'text-slate-400 dark:text-zinc-500'}`}>
-                {m.sub}
-              </p>
+          {/* ═══ SECCIÓN 3: MÉTRICAS DEL MES ═══ */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-purple-600 shrink-0" />
+              <h2 className="text-base font-bold text-slate-900 dark:text-white capitalize">
+                Métricas del mes · {monthLabel}
+              </h2>
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+              {[
+                { label: 'Total citas',      value: monthTotal,          sub: 'en el mes',                                                             alert: false },
+                { label: 'Confirmadas',      value: monthConfirmed,      sub: monthTotal > 0 ? `${Math.round((monthConfirmed / monthTotal) * 100)}% del total` : '0%', alert: false },
+                { label: 'Canceladas',       value: monthCancelled,      sub: `Tasa: ${cancellationRate}%`,                                            alert: cancellationRate > 20 },
+                { label: 'Clientes nuevos',  value: newClientsThisMonth, sub: 'primera cita este mes',                                                 alert: false },
+                { label: 'Clientes activos', value: activeClients60Days, sub: 'últ. 60 días',                                                          alert: false },
+              ].map(m => (
+                <div
+                  key={m.label}
+                  className={`bg-white dark:bg-zinc-900/50 border rounded-2xl p-4 shadow-sm ${
+                    m.alert ? 'border-red-200 dark:border-red-900/40' : 'border-slate-100 dark:border-white/5'
+                  }`}
+                >
+                  <p className={`text-2xl font-bold ${m.alert ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>{m.value}</p>
+                  <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300 mt-1">{m.label}</p>
+                  <p className={`text-xs mt-0.5 ${m.alert ? 'text-red-400' : 'text-slate-400 dark:text-zinc-500'}`}>{m.sub}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      ) : (
+        <StatsUpgradeWall />
+      )}
 
       {/* ═══ SECCIÓN 4: RENDIMIENTO DE SERVICIOS ═══ */}
       {topServices.length > 0 && (
