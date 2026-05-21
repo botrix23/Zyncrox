@@ -68,42 +68,37 @@ function MockStep3() {
   const t = useTranslations("Landing.how");
   const [copied, setCopied] = useState(false);
   return (
-    <div className="flex items-center justify-center h-full py-4">
-      {/* Gradient link card — réplica de AppearanceClient */}
-      <div
-        className="w-full rounded-3xl p-6 relative overflow-hidden border border-white/10"
-        style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" }}
+    <div
+      className="rounded-3xl p-8 relative overflow-hidden border border-white/10 h-full flex flex-col justify-center"
+      style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" }}
+    >
+      {/* Decorative share icon */}
+      <svg
+        className="absolute top-5 right-6 opacity-[0.10]"
+        width="90" height="90" fill="none" viewBox="0 0 24 24"
       >
-        {/* Decorative share icon */}
-        <svg
-          className="absolute top-4 right-5 opacity-[0.12]"
-          width="56" height="56" fill="none" viewBox="0 0 24 24"
+        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+
+      {/* Title + badge */}
+      <div className="flex items-center gap-2 mb-5">
+        <span className="text-[17px] font-bold text-white">{t("mock3CardTitle")}</span>
+        <span className="bg-emerald-400 text-white text-[9px] font-black px-2.5 py-[3px] rounded-full tracking-widest">
+          {t("mock3CardStatus")}
+        </span>
+      </div>
+
+      {/* URL row */}
+      <div className="flex items-center gap-2 bg-black/25 p-2 rounded-2xl border border-white/10 backdrop-blur-sm">
+        <code className="flex-1 px-3 text-[13px] font-mono text-purple-100 truncate">
+          app.zyncrox.com/studionoa
+        </code>
+        <button
+          onClick={() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+          className="px-5 py-2 bg-white text-purple-600 rounded-xl text-[12px] font-bold flex-shrink-0 hover:bg-purple-50 transition-all cursor-pointer active:scale-95"
         >
-          <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-
-        {/* Title + badge */}
-        <div className="space-y-1 mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-[15px] font-bold text-white">{t("mock3CardTitle")}</span>
-            <span className="bg-emerald-400 text-white text-[9px] font-black px-2.5 py-[3px] rounded-full tracking-widest">
-              {t("mock3CardStatus")}
-            </span>
-          </div>
-        </div>
-
-        {/* URL row */}
-        <div className="flex items-center gap-2 bg-black/25 p-2 rounded-xl border border-white/10">
-          <code className="flex-1 px-2 text-[12px] font-mono text-purple-100 truncate">
-            app.zyncrox.com/studionoa
-          </code>
-          <button
-            onClick={() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-            className="px-4 py-1.5 bg-white text-purple-600 rounded-lg text-[11px] font-bold flex-shrink-0 hover:bg-purple-50 transition-all cursor-pointer active:scale-95"
-          >
-            {copied ? t("mock3Copied") : t("mock3Copy")}
-          </button>
-        </div>
+          {copied ? t("mock3Copied") : t("mock3Copy")}
+        </button>
       </div>
     </div>
   );
@@ -223,7 +218,7 @@ export function LandingHowSection() {
           {/* Mockup */}
           <div className="lg:sticky lg:top-20">
             <div
-              className={`bg-white rounded-[20px] shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.10),0_24px_56px_rgba(0,0,0,0.08)] p-7 min-h-[340px] transition-all duration-200 ${switching ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+              className={`bg-white rounded-[20px] shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.10),0_24px_56px_rgba(0,0,0,0.08)] p-7 min-h-[340px] flex flex-col transition-all duration-200 ${switching ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
             >
               <MockScreen />
             </div>
