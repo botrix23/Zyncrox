@@ -1447,7 +1447,8 @@
       "statusCancelled": "Cancelled",
       "nextInvoice": "Next invoice: <strong>${amount}</strong> on <strong>{date}</strong>",
       "accessUntil": "Access until: <strong>{date}</strong>. After that, your account will be suspended.",
-      "paymentFailed": "Your payment failed. You have until <strong>{date}</strong> to update your card before your account is suspended."
+      "paymentFailed": "Your payment failed. You have until <strong>{date}</strong> to update your card before your account is suspended.",
+      "pendingDowngrade": "Scheduled plan change: you'll switch to <strong>{plan}</strong> on <strong>{date}</strong>. Until then, you'll keep your current plan."
     },
     "payment": {
       "title": "Payment method",
@@ -1466,7 +1467,7 @@
     "modal": {
       "cancel": "Cancel",
       "confirm": "Confirm — ${amount}",
-      "confirmDowngrade": "Confirm downgrade — ${amount}",
+      "confirmDowngrade": "Schedule plan downgrade",
       "confirmReactivate": "Reactivate — ${amount}",
       "confirmActivate": "Activate — ${amount}",
       "cancelling": "Cancelling...",
@@ -1480,7 +1481,7 @@
         "willLose": "What you'll lose",
         "basicWarning": "Downgrading to Basic applies limits on branches, services, and staff. The oldest records in each category will be kept; the rest will be automatically deactivated.",
         "limitWarning": "Downgrading will apply the new limits on branches, services, and staff. The oldest records in each category will be kept; the rest will be automatically deactivated.",
-        "charge": "You'll be charged <strong>${amount}</strong> today. Your new billing date will be <strong>today</strong>."
+        "charge": "No charge today. The change will apply automatically on <strong>{date}</strong>, at the end of your current billing cycle."
       },
       "cancelSub": {
         "title": "Cancel subscription",
@@ -1505,7 +1506,8 @@
     "success": {
       "activated": "Subscription activated successfully",
       "reactivated": "Account reactivated successfully",
-      "planChanged": "Plan updated successfully",
+      "planUpgraded": "Upgraded to {plan}. Your new billing cycle starts today.",
+      "planDowngradeScheduled": "Downgrade scheduled: you'll move to {plan} on {date}.",
       "cancelled": "Subscription cancelled",
       "cardUpdated": "Card updated successfully"
     },
@@ -1758,15 +1760,15 @@
       "q2": "Do my clients need to create an account?",
       "a2": "No. They complete the booking in 4 steps with no registration or password.",
       "q3": "What happens when the free trial ends?",
-      "a3": "Your account is paused until you choose a plan. Your data is kept for 30 days so you can pick up where you left off if you decide to continue.",
+      "a3": "Your account is paused until you choose a plan. Your data is kept so you can pick up where you left off whenever you decide to continue.",
       "q4": "Can I change plans at any time?",
-      "a4": "Yes, from your dashboard. If you upgrade, the charge is prorated. If you downgrade, the change applies in the next billing cycle.",
+      "a4": "Yes, from your dashboard. Upgrades take effect immediately and you'll be charged the new plan price. Downgrades apply at the end of your current billing cycle, with no additional charges.",
       "q5": "What languages is Zyncrox available in?",
       "a5": "Currently in Spanish and English.",
       "q6": "Does it work for any type of service business?",
       "a6": "Yes. Beauty salons, barbershops, spas, independent stylists, aesthetic clinics, home services and more. If you schedule appointments, Zyncrox works for you.",
-      "q7": "Do I need a credit card for the free trial?",
-      "a7": "No. The 7-day trial is completely free, no credit card and no commitment.",
+      "q7": "Do I need a card for the free trial?",
+      "a7": "No. The 7-day trial is completely free, no card and no commitment.",
       "q8": "Can I offer home services?",
       "a8": "Yes, from the Basic plan. Set up coverage zones with rates, terms, and travel time. Your client books and you receive all the information automatically."
     },

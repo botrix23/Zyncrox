@@ -313,6 +313,8 @@ export const subscriptions = pgTable('subscriptions', {
   gracePeriodEndsAt: timestamp('grace_period_ends_at', { withTimezone: true, mode: 'date' }),
   lastPaymentAt: timestamp('last_payment_at', { withTimezone: true, mode: 'date' }),
   lastPaymentAmount: decimal('last_payment_amount', { precision: 10, scale: 2 }),
+  // Scheduled downgrade: applied by billing cron at currentPeriodEnd
+  pendingPlan: varchar('pending_plan', { length: 50 }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 })

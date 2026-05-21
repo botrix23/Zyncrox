@@ -137,7 +137,10 @@ export async function activateSubscriptionAction(
 // Change plan
 // ---------------------------------------------------------------------------
 
-export async function changePlanAction(tenantId: string, newPlan: string) {
+export async function changePlanAction(
+  tenantId: string,
+  newPlan: string,
+): Promise<{ success: boolean; error?: string; deferred?: boolean }> {
   const session = await getSession()
   if (!session) return { success: false, error: 'Unauthorized' }
 
@@ -152,10 +155,29 @@ export async function changePlanAction(tenantId: string, newPlan: string) {
     }
     if (!tenant) return { success: false, error: 'Tenant no encontrado' }
 
+    const now = new Date()
+    const currentPlan = sub.plan
+
+    // -------------------------------------------------------------------------
+    // DOWNGRADE — schedule for end of current period; don't touch N1CO now
+    // -------------------------------------------------------------------------
+    if (isDowngrade(currentPlan, newPlan)) {
+      await db.update(subscriptions)
+        .set({ pendingPlan: newPlan, updatedAt: now })
+        .where(eq(subscriptions.tenantId, tenantId))
+
+      revalidatePath('/[locale]/admin/billing', 'page')
+      return { success: true, deferred: true }
+    }
+
+    // -------------------------------------------------------------------------
+    // UPGRADE — apply immediately: cancel old N1CO sub, create new one
+    // -------------------------------------------------------------------------
+
     // Cancel existing N1CO subscription
     if (sub.n1coSubscriptionId) {
       try {
-        await cancelN1coSubscription(sub.n1coSubscriptionId, `Plan change to ${newPlan}`)
+        await cancelN1coSubscription(sub.n1coSubscriptionId, `Upgrade to ${newPlan}`)
       } catch (err) {
         console.warn('Could not cancel old N1CO subscription:', err)
       }
@@ -171,9 +193,7 @@ export async function changePlanAction(tenantId: string, newPlan: string) {
       customerEmail:   tenant.contactEmail ?? '',
     })
 
-    const now = new Date()
     const periodEnd = addDays(now, 30)
-    const currentPlan = sub.plan
 
     await db.update(subscriptions)
       .set({
@@ -184,6 +204,7 @@ export async function changePlanAction(tenantId: string, newPlan: string) {
         currentPeriodEnd:    periodEnd,
         cancelledAt:         null,
         gracePeriodEndsAt:   null,
+        pendingPlan:         null,   // clear any scheduled downgrade
         lastPaymentAt:       now,
         lastPaymentAmount:   String(getPlanPrice(newPlan)),
         updatedAt:           now,
@@ -194,19 +215,9 @@ export async function changePlanAction(tenantId: string, newPlan: string) {
       .set({ plan: newPlan, status: 'ACTIVE', updatedAt: now })
       .where(eq(tenants.id, tenantId))
 
-    // Apply downgrade limits if needed
-    if (isDowngrade(currentPlan, newPlan)) {
-      if (newPlan === 'BASIC') {
-        await db.update(tenants)
-          .set({ heroSubtitle: null, theme: 'light', emailBodyTemplate: null, updatedAt: now })
-          .where(eq(tenants.id, tenantId))
-      }
-      await enforceDowngradeLimits(tenantId, newPlan)
-    }
-
     revalidatePath('/[locale]/admin/billing', 'page')
     revalidatePath('/[locale]/admin/(dashboard)/staff', 'page')
-    return { success: true }
+    return { success: true, deferred: false }
   } catch (err) {
     console.error('changePlan error:', err)
     return { success: false, error: err instanceof Error ? err.message : 'Error al cambiar el plan' }

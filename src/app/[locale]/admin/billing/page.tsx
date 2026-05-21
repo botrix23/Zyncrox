@@ -46,6 +46,7 @@ export default async function BillingPage({ params }: { params: { locale: string
         gracePeriodEndsAt: subscription.gracePeriodEndsAt?.toISOString() ?? null,
         lastPaymentAt: subscription.lastPaymentAt?.toISOString() ?? null,
         lastPaymentAmount: subscription.lastPaymentAmount ?? null,
+        pendingPlan: subscription.pendingPlan ?? null,
       } : null}
     />
   )

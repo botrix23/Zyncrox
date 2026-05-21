@@ -1447,7 +1447,8 @@
       "statusCancelled": "Cancelado",
       "nextInvoice": "Próxima factura: <strong>${amount}</strong> el <strong>{date}</strong>",
       "accessUntil": "Acceso hasta: <strong>{date}</strong>. Después tu cuenta quedará suspendida.",
-      "paymentFailed": "Tu pago falló. Tienes hasta el <strong>{date}</strong> para actualizar tu tarjeta antes de que tu cuenta sea suspendida."
+      "paymentFailed": "Tu pago falló. Tienes hasta el <strong>{date}</strong> para actualizar tu tarjeta antes de que tu cuenta sea suspendida.",
+      "pendingDowngrade": "Bajada de plan programada: cambiarás a <strong>{plan}</strong> el <strong>{date}</strong>. Hasta entonces seguirás con tu plan actual."
     },
     "payment": {
       "title": "Método de pago",
@@ -1466,7 +1467,7 @@
     "modal": {
       "cancel": "Cancelar",
       "confirm": "Confirmar — ${amount}",
-      "confirmDowngrade": "Confirmar bajada — ${amount}",
+      "confirmDowngrade": "Programar bajada de plan",
       "confirmReactivate": "Reactivar — ${amount}",
       "confirmActivate": "Activar — ${amount}",
       "cancelling": "Cancelando...",
@@ -1480,7 +1481,7 @@
         "willLose": "Lo que perderás",
         "basicWarning": "Al bajar al plan Basic se aplicarán los límites de sucursales, servicios y staff. Se conservarán los registros más antiguos de cada categoría; el resto quedará desactivado automáticamente.",
         "limitWarning": "Al bajar de plan se aplicarán los nuevos límites de sucursales, servicios y staff. Se conservarán los registros más antiguos de cada categoría; el resto quedará desactivado automáticamente.",
-        "charge": "Se te cobrará <strong>${amount}</strong> hoy. Tu nueva fecha de facturación será <strong>hoy</strong>."
+        "charge": "No se realizará ningún cobro hoy. El cambio aplicará automáticamente el <strong>{date}</strong>, al finalizar tu ciclo actual."
       },
       "cancelSub": {
         "title": "Cancelar suscripción",
@@ -1505,7 +1506,8 @@
     "success": {
       "activated": "Suscripción activada correctamente",
       "reactivated": "Cuenta reactivada correctamente",
-      "planChanged": "Plan actualizado correctamente",
+      "planUpgraded": "Subiste al plan {plan}. Tu nuevo ciclo comienza hoy.",
+      "planDowngradeScheduled": "Bajada programada: pasarás al plan {plan} el {date}.",
       "cancelled": "Suscripción cancelada",
       "cardUpdated": "Tarjeta actualizada correctamente"
     },
@@ -1758,14 +1760,14 @@
       "q2": "¿Mis clientes necesitan crear una cuenta?",
       "a2": "No. Completan la reserva en 4 pasos sin registro ni contraseña.",
       "q3": "¿Qué pasa cuando termina la prueba gratuita?",
-      "a3": "Tu cuenta se pausa hasta que elijas un plan. Tus datos se conservan por 30 días para que puedas retomar donde lo dejaste si decides continuar.",
+      "a3": "Tu cuenta se pausa hasta que elijas un plan. Tus datos se conservan para que puedas retomar donde lo dejaste cuando decidas continuar.",
       "q4": "¿Puedo cambiar de plan en cualquier momento?",
-      "a4": "Sí, desde tu panel. Si subes de plan, el cobro se prorratea. Si bajas, el cambio aplica en el siguiente ciclo de facturación.",
+      "a4": "Sí, desde tu panel. Si subís de plan, el cambio aplica de inmediato y se te cobra el precio del nuevo plan. Si bajás, el cambio aplica al final de tu ciclo actual de facturación, sin cargos adicionales.",
       "q5": "¿En qué idiomas está disponible Zyncrox?",
       "a5": "Actualmente en español e inglés.",
       "q6": "¿Funciona para cualquier tipo de negocio de servicios?",
       "a6": "Sí. Salones de belleza, barberías, spas, clínicas, consultorios, estudios de fotografía, tutorías, fitness, servicios a domicilio y más. Si agendas citas, Zyncrox funciona para ti.",
-      "q7": "¿Necesito tarjeta de crédito para la prueba gratuita?",
+      "q7": "¿Necesito tarjeta para la prueba gratuita?",
       "a7": "No. La prueba de 7 días es completamente gratuita, sin tarjeta y sin compromiso.",
       "q8": "¿Puedo ofrecer servicios a domicilio?",
       "a8": "Sí, desde el plan Basic. Configura zonas de cobertura con tarifas, términos y condiciones, y tiempo de viaje. Tu cliente reserva y tú recibes toda la información automáticamente."

@@ -27,6 +27,7 @@ type SubscriptionData = {
   gracePeriodEndsAt: string | null
   lastPaymentAt: string | null
   lastPaymentAmount: string | null
+  pendingPlan: string | null
 }
 
 type Props = {
@@ -189,8 +190,16 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
     setLoading(true)
     const res = await changePlanAction(tenantId, targetPlan)
     setLoading(false)
-    if (res.success) { setModal(null); showSuccess(t('success.planChanged')) }
-    else showError(res.error ?? t('error.changePlan'))
+    if (res.success) {
+      setModal(null)
+      if (res.deferred) {
+        showSuccess(t('success.planDowngradeScheduled', { plan: PLAN_NAMES[targetPlan], date: formatDate(subscription?.currentPeriodEnd ?? null, locale) }))
+      } else {
+        showSuccess(t('success.planUpgraded', { plan: PLAN_NAMES[targetPlan] }))
+      }
+    } else {
+      showError(res.error ?? t('error.changePlan'))
+    }
   }
 
   const handleCancel = async () => {
@@ -347,6 +356,19 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
               </div>
             )}
 
+            {isActive && subscription?.pendingPlan && (
+              <div className="flex items-start gap-2 p-3 mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                <AlertTriangle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  {t.rich('currentSub.pendingDowngrade', {
+                    plan: PLAN_NAMES[subscription.pendingPlan as PlanType] ?? subscription.pendingPlan,
+                    date: formatDate(subscription.currentPeriodEnd, locale),
+                    strong: richStrong,
+                  })}
+                </p>
+              </div>
+            )}
+
             {/* Cancel button — visible inside the card */}
             {(isActive || isPastDue) && (
               <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-white/10">
@@ -479,11 +501,13 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
               <p className="text-sm text-yellow-700 dark:text-yellow-400">{t('modal.downgrade.limitWarning')}</p>
             </div>
           )}
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-5 py-3 border-t border-zinc-100 dark:border-white/10">{t.rich('modal.downgrade.charge', { amount: PLAN_PRICES[targetPlan], strong: richStrong })}</p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-5 py-3 border-t border-zinc-100 dark:border-white/10">
+            {t.rich('modal.downgrade.charge', { date: formatDate(subscription?.currentPeriodEnd ?? null, locale), strong: richStrong })}
+          </p>
           <div className="flex gap-3">
             <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm font-semibold rounded-xl border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors">{t('modal.cancel')}</button>
-            <button onClick={handleChangePlan} disabled={loading} className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
-              {loading ? t('processing') : t('modal.confirmDowngrade', { amount: PLAN_PRICES[targetPlan] })}
+            <button onClick={handleChangePlan} disabled={loading} className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-900 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
+              {loading ? t('processing') : t('modal.confirmDowngrade')}
             </button>
           </div>
         </Modal>
