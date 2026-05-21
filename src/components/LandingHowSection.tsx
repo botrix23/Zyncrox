@@ -68,40 +68,96 @@ function MockStep3() {
   const t = useTranslations("Landing.how");
   const [copied, setCopied] = useState(false);
   return (
-    <div>
-      <div className="text-[18px] font-black text-slate-900 tracking-tight mb-1">{t("mock3Title")}</div>
-      <div className="text-[12.5px] text-zinc-500 mb-4">{t("mock3Subtitle")}</div>
-      <div className="bg-zinc-100 rounded-[10px] px-4 py-[14px] mb-4 flex items-center gap-2.5">
-        <span className="text-[12.5px] text-zinc-600 font-medium flex-1 truncate">app.zyncrox.com/studionoa</span>
-        <button
-          onClick={() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-          className="text-[11px] font-bold text-purple-600 flex-shrink-0 cursor-pointer"
-        >
-          {copied ? t("mock3Copied") : t("mock3Copy")}
-        </button>
-      </div>
-      <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.5px] mb-2.5">{t("mock3ShareLabel")}</div>
-      <div className="flex gap-2 flex-wrap">
-        {[t("mock3Share1"), t("mock3Share2"), t("mock3Share3")].map((s) => (
-          <button key={s} className="flex items-center gap-1.5 px-[14px] py-2 rounded-lg border-[1.5px] border-zinc-200 text-[12px] font-semibold text-zinc-600 bg-white hover:border-purple-500 hover:text-purple-600 transition-colors cursor-pointer">
-            {s}
-          </button>
-        ))}
-      </div>
-      <div className="mt-4 bg-zinc-50 rounded-[10px] p-3 flex items-center gap-3">
-        <div className="w-12 h-12 rounded-lg bg-slate-900 flex-shrink-0 flex items-center justify-center">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <rect x="4" y="4" width="10" height="10" rx="1" fill="white"/>
-            <rect x="18" y="4" width="10" height="10" rx="1" fill="white"/>
-            <rect x="4" y="18" width="10" height="10" rx="1" fill="white"/>
-            <rect x="6" y="6" width="6" height="6" rx="0.5" fill="#0d0d0b"/>
-            <rect x="20" y="6" width="6" height="6" rx="0.5" fill="#0d0d0b"/>
-            <rect x="6" y="20" width="6" height="6" rx="0.5" fill="#0d0d0b"/>
-            <rect x="20" y="18" width="4" height="4" rx="0.5" fill="white"/>
-            <rect x="26" y="24" width="4" height="4" rx="0.5" fill="white"/>
-          </svg>
+    <div className="space-y-4">
+      {/* Tab bar — igual que AppearanceClient */}
+      <div className="flex gap-1 p-1 bg-slate-100 rounded-2xl">
+        <div className="flex-1 py-1.5 px-3 bg-white rounded-xl text-[11px] font-bold text-purple-600 shadow-sm text-center">
+          {t("mock3TabDesign")}
         </div>
-        <div className="text-[12px] text-zinc-500 leading-[1.5]">{t("mock3QrDesc")}</div>
+        <div className="flex-1 py-1.5 px-3 text-[11px] font-semibold text-slate-400 text-center">
+          {t("mock3TabRules")}
+        </div>
+      </div>
+
+      {/* Gradient link card — réplica exacta de AppearanceClient */}
+      <div
+        className="rounded-3xl p-5 relative overflow-hidden border border-white/10"
+        style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" }}
+      >
+        {/* Decorative icon */}
+        <svg
+          className="absolute top-3 right-4 opacity-10"
+          width="48" height="48" fill="none" viewBox="0 0 24 24"
+        >
+          <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-[13px] font-bold text-white">{t("mock3CardTitle")}</span>
+          <span className="bg-emerald-400 text-white text-[8.5px] font-black px-2 py-[2px] rounded-full tracking-widest">
+            {t("mock3CardStatus")}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 bg-black/25 p-1.5 rounded-xl border border-white/10 backdrop-blur-sm">
+          <code className="flex-1 px-2 text-[10.5px] font-mono text-purple-100 truncate">
+            app.zyncrox.com/studionoa
+          </code>
+          <button
+            onClick={() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+            className="px-3 py-1.5 bg-white text-purple-600 rounded-lg text-[10px] font-bold flex-shrink-0 hover:bg-purple-50 transition-colors cursor-pointer active:scale-95"
+          >
+            {copied ? t("mock3Copied") : t("mock3Copy")}
+          </button>
+        </div>
+      </div>
+
+      {/* Identity section — reproduce la sección "Identidad de Negocio" */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-4 space-y-3">
+        <div className="flex items-center gap-2 pb-2.5 border-b border-slate-100">
+          <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+            <svg width="11" height="11" fill="none" viewBox="0 0 24 24">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <span className="text-[10.5px] font-black text-slate-700 tracking-tight">{t("mock3SectionIdentity")}</span>
+        </div>
+
+        {/* Business name */}
+        <div>
+          <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t("mock3FieldName")}</p>
+          <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[11.5px] font-bold text-slate-700">
+            Studio Noa
+          </div>
+        </div>
+
+        {/* Color */}
+        <div>
+          <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t("mock3FieldColor")}</p>
+          <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+            <span className="inline-block w-3.5 h-3.5 rounded-full bg-purple-500 flex-shrink-0 shadow-sm" />
+            <span className="text-[11.5px] font-mono font-bold text-slate-700">#8B5CF6</span>
+          </div>
+        </div>
+
+        {/* Logo row */}
+        <div>
+          <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t("mock3FieldLogo")}</p>
+          <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-black text-[9px]">N</span>
+            </div>
+            <span className="text-[11px] text-emerald-600 font-bold">studio-noa.webp</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Live link */}
+      <div className="flex items-center justify-end">
+        <span className="text-[10.5px] font-bold text-purple-600 flex items-center gap-1 cursor-pointer hover:underline">
+          {t("mock3LiveBtn")}
+          <svg width="10" height="10" fill="none" viewBox="0 0 24 24">
+            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+          </svg>
+        </span>
       </div>
     </div>
   );
