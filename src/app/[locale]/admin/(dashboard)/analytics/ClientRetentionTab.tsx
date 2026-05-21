@@ -67,7 +67,7 @@ function DonutChart({ newCount, recurringCount, newLabel, recurringLabel }: {
           fontSize="13" fontWeight="bold" className="fill-slate-900 dark:fill-white">
           {total}
         </text>
-        <text x="50" y="58" textAnchor="middle" fontSize="7" className="fill-slate-400 dark:fill-zinc-500">
+        <text x="50" y="59" textAnchor="middle" fontSize="9" className="fill-slate-400 dark:fill-zinc-500">
           total
         </text>
       </svg>
@@ -99,9 +99,9 @@ function LineChart({ data }: { data: { label: string; count: number }[] }) {
     );
   }
 
-  const W = 560;
-  const H = 180;
-  const PAD = { top: 14, right: 16, bottom: 32, left: 36 };
+  const W = 340;
+  const H = 190;
+  const PAD = { top: 14, right: 12, bottom: 30, left: 30 };
   const cW = W - PAD.left - PAD.right;
   const cH = H - PAD.top - PAD.bottom;
   const maxVal = Math.max(...data.map(d => d.count), 1);
@@ -135,9 +135,9 @@ function LineChart({ data }: { data: { label: string; count: number }[] }) {
           stroke="currentColor" strokeWidth="0.7" className="text-slate-200 dark:text-white/10" strokeDasharray="4 4" />
       ))}
       {/* Y-axis labels */}
-      <text x={PAD.left - 5} y={PAD.top + 4} textAnchor="end" fontSize="9"
+      <text x={PAD.left - 5} y={PAD.top + 4} textAnchor="end" fontSize="11"
         className="fill-slate-400 dark:fill-zinc-500">{maxVal}</text>
-      <text x={PAD.left - 5} y={PAD.top + cH + 3} textAnchor="end" fontSize="9"
+      <text x={PAD.left - 5} y={PAD.top + cH + 3} textAnchor="end" fontSize="11"
         className="fill-slate-400 dark:fill-zinc-500">0</text>
       {/* Area fill */}
       <polygon points={area} className="fill-purple-500/10" />
@@ -150,7 +150,7 @@ function LineChart({ data }: { data: { label: string; count: number }[] }) {
       ))}
       {/* X-axis labels */}
       {labelPts.map((p, i) => (
-        <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize="9"
+        <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize="11"
           className="fill-slate-400 dark:fill-zinc-500">{p.label}</text>
       ))}
     </svg>
