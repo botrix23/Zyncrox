@@ -1133,12 +1133,9 @@
       "results": "Results"
     },
     "link": {
-      "title": "Satisfaction Link",
-      "description": "The system sends this link automatically after each finished appointment.",
-      "placeholder": "Copy base URL",
-      "preview": "Preview",
-      "copyDone": "Base link copied. Remember the system sends unique links per appointment automatically.",
-      "urlPattern": "/{locale}/review/[BOOKING_ID]"
+      "title": "Satisfaction survey",
+      "description": "The system sends the survey automatically after each finished appointment.",
+      "previewBtn": "Preview survey"
     },
     "errors": {
       "update": "Error updating settings",

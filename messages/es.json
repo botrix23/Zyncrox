@@ -1133,12 +1133,9 @@
       "results": "Resultados"
     },
     "link": {
-      "title": "Enlace de satisfacción",
-      "description": "El sistema envía este enlace automáticamente después de cada cita finalizada.",
-      "placeholder": "Copiar URL base",
-      "preview": "Vista Previa",
-      "copyDone": "Enlace base copiado. Recuerda que el sistema envía enlaces únicos por cada cita automáticamente.",
-      "urlPattern": "/{locale}/review/[ID_CITA]"
+      "title": "Encuesta de satisfacción",
+      "description": "El sistema envía la encuesta automáticamente después de cada cita finalizada.",
+      "previewBtn": "Previsualizar encuesta"
     },
     "errors": {
       "update": "Error al actualizar configuración",

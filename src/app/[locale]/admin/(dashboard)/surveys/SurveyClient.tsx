@@ -15,7 +15,6 @@ import {
   Save,
   X,
   Edit2,
-  Copy,
   BarChart3,
   Settings,
   ExternalLink
@@ -67,18 +66,11 @@ export default function SurveyClient({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Partial<SurveyQuestion> | null>(null);
   const [isSavingQuestion, setIsSavingQuestion] = useState(false);
-  const [origin, setOrigin] = useState("");
   const [activeTab, setActiveTab] = useState<'questions' | 'results'>('questions');
 
   useEffect(() => {
     setQuestions(initialQuestions);
   }, [initialQuestions]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setOrigin(window.location.origin);
-    }
-  }, []);
 
   const handleToggleSurvey = async () => {
     setIsUpdatingSettings(true);
@@ -157,14 +149,6 @@ export default function SurveyClient({
     await reorderSurveyQuestionsAction(tenantId, newQuestions.map(q => q.id));
   };
 
-  const handleCopyUrl = () => {
-    if (slug) {
-      const baseUrl = `${origin}/${locale}/review/`;
-      navigator.clipboard.writeText(baseUrl);
-      alert(t('link.copyDone'));
-    }
-  };
-
   // NPS Calculation
   const npsResponses = initialReviews.flatMap(r => (r.responses || []) as any[]).filter(resp => resp.questionType === 'NPS');
   let npsScore = null;
@@ -211,28 +195,14 @@ export default function SurveyClient({
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">{t('link.title')}</h3>
                 <p className="text-sm text-slate-400 font-medium italic">{t('link.description')}</p>
               </div>
-              <div className="flex items-center gap-3 bg-slate-50 dark:bg-white/5 p-2 pr-4 rounded-2xl border border-slate-100 dark:border-white/5 overflow-hidden max-w-md">
-                 <div className="px-3 py-2 bg-white dark:bg-zinc-800 rounded-xl text-xs font-mono text-slate-500 truncate">
-                    {origin}{t('link.urlPattern', { locale })}
-                 </div>
-                 <div className="flex items-center gap-1">
-                    <button 
-                      onClick={handleCopyUrl}
-                      className="p-2 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl transition-all text-purple-600"
-                      title={t('link.placeholder')}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <a
-                      href={`/${locale}/review/test?tenantId=${tenantId}`}
-                      target="_blank"
-                      className="p-2 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl transition-all text-purple-600"
-                      title={t('link.preview')}
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                 </div>
-              </div>
+              <a
+                href={`/${locale}/review/test?tenantId=${tenantId}`}
+                target="_blank"
+                className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-all duration-150 hover:-translate-y-0.5 shadow-sm shadow-purple-500/20 shrink-0"
+              >
+                <ExternalLink className="w-4 h-4" />
+                {t('link.previewBtn')}
+              </a>
             </div>
           </div>
 
