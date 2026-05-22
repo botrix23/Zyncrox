@@ -21,6 +21,23 @@ function fmtDate(dateFrom: string, dateTo: string) {
 
 // ─── PDF export ───────────────────────────────────────────────────────────────
 
+/** Loads an image URL and returns a base64 data URL for jsPDF, or null on failure. */
+async function loadImageAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function exportPdf(
   tab: "staffPerformance" | "clientRetention" | "branchPerformance",
   staffData: StaffPerformanceResult | null,
@@ -31,25 +48,58 @@ async function exportPdf(
   titleKey: string,
   periodLabel: string,
   generatedLabel: string,
+  tenantLogoUrl?: string | null,
+  tenantName?: string,
 ) {
   const { default: jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
 
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
 
-  // Header
+  // ── Logo ──────────────────────────────────────────────────────────────────
+  const LOGO_H = 12;   // height in mm
+  const LOGO_MAX_W = 40; // max width in mm
+  let textOffsetX = 14; // default left margin for text
+  let headerBottomY = 18;
+
+  if (tenantLogoUrl) {
+    const dataUrl = await loadImageAsDataUrl(tenantLogoUrl);
+    if (dataUrl) {
+      // Create a temp image to get natural dimensions
+      const img = new Image();
+      await new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = dataUrl;
+      });
+      const naturalW = img.naturalWidth || 100;
+      const naturalH = img.naturalHeight || 100;
+      const aspectRatio = naturalW / naturalH;
+      const logoW = Math.min(LOGO_MAX_W, LOGO_H * aspectRatio);
+      const logoX = pageW - 14 - logoW;
+      const logoY = 8;
+      try {
+        doc.addImage(dataUrl, logoX, logoY, logoW, LOGO_H);
+      } catch {
+        // If image format not supported, skip logo silently
+      }
+    }
+  }
+
+  // ── Header text ───────────────────────────────────────────────────────────
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text(titleKey, 14, 18);
+  doc.text(titleKey, textOffsetX, headerBottomY);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(100);
-  doc.text(`${periodLabel}  ${fmtDate(dateFrom, dateTo)}`, 14, 25);
-  doc.text(`${generatedLabel}  ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 30);
+  doc.text(`${periodLabel}  ${fmtDate(dateFrom, dateTo)}`, textOffsetX, headerBottomY + 7);
+  doc.text(`${generatedLabel}  ${format(new Date(), "dd/MM/yyyy HH:mm")}`, textOffsetX, headerBottomY + 12);
   doc.setTextColor(0);
 
-  let startY = 38;
+  let startY = headerBottomY + 20;
 
   if (tab === "staffPerformance" && staffData) {
     // Summary row
@@ -329,9 +379,11 @@ interface ExportButtonProps {
   branchData: BranchPerformanceResult | null;
   dateFrom: string;
   dateTo: string;
+  tenantLogoUrl?: string | null;
+  tenantName?: string;
 }
 
-export function ExportButton({ tab, staffData, retentionData, branchData, dateFrom, dateTo }: ExportButtonProps) {
+export function ExportButton({ tab, staffData, retentionData, branchData, dateFrom, dateTo, tenantLogoUrl, tenantName }: ExportButtonProps) {
   const t = useTranslations("Dashboard.analytics.exportReports");
   const [pdfLoading, setPdfLoading] = useState(false);
   const [xlsxLoading, setXlsxLoading] = useState(false);
@@ -358,6 +410,8 @@ export function ExportButton({ tab, staffData, retentionData, branchData, dateFr
         titleMap[tab],
         t("pdfPeriod"),
         t("pdfGeneratedOn"),
+        tenantLogoUrl,
+        tenantName,
       );
     } finally {
       setPdfLoading(false);
