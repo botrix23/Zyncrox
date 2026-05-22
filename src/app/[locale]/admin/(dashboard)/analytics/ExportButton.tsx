@@ -304,7 +304,7 @@ async function exportExcel(
       ["Retención 60d", retentionData.retention60d / 100],
       ["Retención 90d", retentionData.retention90d / 100],
       ["Frecuencia visita (días)", retentionData.avgFrequencyDays ?? ""],
-      ["LTV promedio", retentionData.ltv ?? ""],
+      ["Ticket promedio por cliente", retentionData.ltv ?? ""],
       ["Clientes nuevos", retentionData.newCount],
       ["Clientes recurrentes", retentionData.recurringCount],
     ]);
