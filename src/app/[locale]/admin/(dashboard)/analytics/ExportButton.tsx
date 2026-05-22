@@ -48,8 +48,6 @@ async function exportPdf(
   titleKey: string,
   periodLabel: string,
   generatedLabel: string,
-  tenantLogoUrl?: string | null,
-  tenantName?: string,
 ) {
   const { default: jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
@@ -57,49 +55,30 @@ async function exportPdf(
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
 
-  // ── Logo ──────────────────────────────────────────────────────────────────
-  const LOGO_H = 12;   // height in mm
-  const LOGO_MAX_W = 40; // max width in mm
-  let textOffsetX = 14; // default left margin for text
-  let headerBottomY = 18;
-
-  if (tenantLogoUrl) {
-    const dataUrl = await loadImageAsDataUrl(tenantLogoUrl);
-    if (dataUrl) {
-      // Create a temp image to get natural dimensions
-      const img = new Image();
-      await new Promise<void>((resolve) => {
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
-        img.src = dataUrl;
-      });
-      const naturalW = img.naturalWidth || 100;
-      const naturalH = img.naturalHeight || 100;
-      const aspectRatio = naturalW / naturalH;
-      const logoW = Math.min(LOGO_MAX_W, LOGO_H * aspectRatio);
-      const logoX = pageW - 14 - logoW;
-      const logoY = 8;
-      try {
-        doc.addImage(dataUrl, logoX, logoY, logoW, LOGO_H);
-      } catch {
-        // If image format not supported, skip logo silently
-      }
+  // ── Zyncrox logo (top-right corner) ──────────────────────────────────────
+  const LOGO_SIZE = 12; // square logo, mm
+  const logoDataUrl = await loadImageAsDataUrl("/icons/icon-192x192.png");
+  if (logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, "PNG", pageW - 14 - LOGO_SIZE, 6, LOGO_SIZE, LOGO_SIZE);
+    } catch {
+      // skip silently if image fails
     }
   }
 
   // ── Header text ───────────────────────────────────────────────────────────
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text(titleKey, textOffsetX, headerBottomY);
+  doc.text(titleKey, 14, 18);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(100);
-  doc.text(`${periodLabel}  ${fmtDate(dateFrom, dateTo)}`, textOffsetX, headerBottomY + 7);
-  doc.text(`${generatedLabel}  ${format(new Date(), "dd/MM/yyyy HH:mm")}`, textOffsetX, headerBottomY + 12);
+  doc.text(`${periodLabel}  ${fmtDate(dateFrom, dateTo)}`, 14, 25);
+  doc.text(`${generatedLabel}  ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 30);
   doc.setTextColor(0);
 
-  let startY = headerBottomY + 20;
+  let startY = 38;
 
   if (tab === "staffPerformance" && staffData) {
     // Summary row
@@ -379,11 +358,9 @@ interface ExportButtonProps {
   branchData: BranchPerformanceResult | null;
   dateFrom: string;
   dateTo: string;
-  tenantLogoUrl?: string | null;
-  tenantName?: string;
 }
 
-export function ExportButton({ tab, staffData, retentionData, branchData, dateFrom, dateTo, tenantLogoUrl, tenantName }: ExportButtonProps) {
+export function ExportButton({ tab, staffData, retentionData, branchData, dateFrom, dateTo }: ExportButtonProps) {
   const t = useTranslations("Dashboard.analytics.exportReports");
   const [pdfLoading, setPdfLoading] = useState(false);
   const [xlsxLoading, setXlsxLoading] = useState(false);
@@ -410,8 +387,6 @@ export function ExportButton({ tab, staffData, retentionData, branchData, dateFr
         titleMap[tab],
         t("pdfPeriod"),
         t("pdfGeneratedOn"),
-        tenantLogoUrl,
-        tenantName,
       );
     } finally {
       setPdfLoading(false);

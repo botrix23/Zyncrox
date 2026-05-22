@@ -334,11 +334,9 @@ interface AnalyticsClientProps {
   defaultFrom: string;
   defaultTo: string;
   locale: string;
-  tenantLogoUrl?: string | null;
-  tenantName?: string;
 }
 
-export function AnalyticsClient({ initialData, defaultFrom, defaultTo, tenantLogoUrl, tenantName }: AnalyticsClientProps) {
+export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: AnalyticsClientProps) {
   const t = useTranslations("Dashboard.analytics");
   const tStaff = useTranslations("Dashboard.analytics.staffPerformance");
   const tFilters = useTranslations("Dashboard.analytics.filters");
@@ -484,8 +482,6 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo, tenantLog
             branchData={branchData}
             dateFrom={dateFrom}
             dateTo={dateTo}
-            tenantLogoUrl={tenantLogoUrl}
-            tenantName={tenantName}
           />
           {isPending && (
             <div className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 animate-pulse">
