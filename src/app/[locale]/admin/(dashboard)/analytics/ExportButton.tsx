@@ -38,6 +38,19 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
   }
 }
 
+type PdfTranslations = {
+  colTotalAttended: string; colRevenue: string; colCancellationRate: string; colAvgRating: string;
+  colSpecialist: string; colBranch: string; colAttended: string; colCancelled: string;
+  colCancelPct: string; colNoShows: string; colRating: string; colProductiveHrs: string;
+  colRetention30: string; colRetention60: string; colRetention90: string; colVisitFreq: string;
+  colLtv: string; colNew: string; colRecurring: string;
+  sectionPopularServices: string; colService: string; colBooked: string;
+  sectionChurnRisk: string; colClient: string; colEmail: string; colDaysSince: string;
+  colTotalBookings: string; colLastService: string; colTotalRevenue: string;
+  colAvgCancelRate: string; colAvgOccupancy: string; colTopRevenue: string; colTopOccupancy: string;
+  colStaff: string; colNewClients: string; colRecurringClients: string; colOccupancy: string;
+};
+
 async function exportPdf(
   tab: "staffPerformance" | "clientRetention" | "branchPerformance",
   staffData: StaffPerformanceResult | null,
@@ -48,6 +61,7 @@ async function exportPdf(
   titleKey: string,
   periodLabel: string,
   generatedLabel: string,
+  tr: PdfTranslations,
 ) {
   const { default: jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
@@ -85,7 +99,7 @@ async function exportPdf(
     const s = staffData.summary;
     autoTable(doc, {
       startY,
-      head: [["Total atendidas", "Ingresos", "% Cancelación", "Rating promedio"]],
+      head: [[tr.colTotalAttended, tr.colRevenue, tr.colCancellationRate, tr.colAvgRating]],
       body: [[
         s.totalAttended.toString(),
         fmtCurrency(s.totalRevenue),
@@ -102,7 +116,7 @@ async function exportPdf(
     // Staff table
     autoTable(doc, {
       startY,
-      head: [["Especialista", "Sucursal", "Atendidas", "Canceladas", "% Cancel.", "No-shows", "Ingresos", "Rating", "Hrs productivas"]],
+      head: [[tr.colSpecialist, tr.colBranch, tr.colAttended, tr.colCancelled, tr.colCancelPct, tr.colNoShows, tr.colRevenue, tr.colRating, tr.colProductiveHrs]],
       body: staffData.rows.map(r => [
         r.name, r.branchName,
         r.attended, r.cancelled, `${r.cancellationRate}%`, r.noShows,
@@ -121,7 +135,7 @@ async function exportPdf(
     // Summary
     autoTable(doc, {
       startY,
-      head: [["Retención 30d", "Retención 60d", "Retención 90d", "Freq. visita (días)", "LTV", "Nuevos", "Recurrentes"]],
+      head: [[tr.colRetention30, tr.colRetention60, tr.colRetention90, tr.colVisitFreq, tr.colLtv, tr.colNew, tr.colRecurring]],
       body: [[
         `${retentionData.retention30d}%`,
         `${retentionData.retention60d}%`,
@@ -142,12 +156,12 @@ async function exportPdf(
     if (retentionData.popularServices.length > 0) {
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("Servicios más populares", 14, startY);
+      doc.text(tr.sectionPopularServices, 14, startY);
       startY += 4;
 
       autoTable(doc, {
         startY,
-        head: [["Servicio", "Agendado", "Ingresos", "Rating"]],
+        head: [[tr.colService, tr.colBooked, tr.colRevenue, tr.colRating]],
         body: retentionData.popularServices.map(s => [
           s.name, s.bookingCount, fmtCurrency(s.revenue),
           s.avgRating !== null ? s.avgRating.toFixed(1) : "—",
@@ -165,12 +179,12 @@ async function exportPdf(
     if (retentionData.churnRiskClients.length > 0) {
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("Clientes en riesgo de churn", 14, startY);
+      doc.text(tr.sectionChurnRisk, 14, startY);
       startY += 4;
 
       autoTable(doc, {
         startY,
-        head: [["Cliente", "Email", "Días sin visita", "Citas totales", "Último servicio"]],
+        head: [[tr.colClient, tr.colEmail, tr.colDaysSince, tr.colTotalBookings, tr.colLastService]],
         body: retentionData.churnRiskClients.map(c => [
           c.name, c.email, c.daysSince, c.totalBookings, c.lastService,
         ]),
@@ -187,7 +201,7 @@ async function exportPdf(
     const s = branchData.summary;
     autoTable(doc, {
       startY,
-      head: [["Total atendidas", "Ingresos totales", "% Cancel. promedio", "Ocupación promedio", "Mayor ingreso", "Mayor ocupación"]],
+      head: [[tr.colTotalAttended, tr.colTotalRevenue, tr.colAvgCancelRate, tr.colAvgOccupancy, tr.colTopRevenue, tr.colTopOccupancy]],
       body: [[
         s.totalAttended,
         fmtCurrency(s.totalRevenue),
@@ -205,7 +219,7 @@ async function exportPdf(
 
     autoTable(doc, {
       startY,
-      head: [["Sucursal", "Staff", "Atendidas", "Canceladas", "% Cancel.", "Ingresos", "Nuevos", "Recurrentes", "Ocupación", "Rating"]],
+      head: [[tr.colBranch, tr.colStaff, tr.colAttended, tr.colCancelled, tr.colCancelPct, tr.colRevenue, tr.colNewClients, tr.colRecurringClients, tr.colOccupancy, tr.colRating]],
       body: branchData.rows.map(r => [
         r.branchName, r.staffCount,
         r.attended, r.cancelled, `${r.cancellationRate}%`,
@@ -387,6 +401,27 @@ export function ExportButton({ tab, staffData, retentionData, branchData, dateFr
         titleMap[tab],
         t("pdfPeriod"),
         t("pdfGeneratedOn"),
+        {
+          colTotalAttended: t("colTotalAttended"), colRevenue: t("colRevenue"),
+          colCancellationRate: t("colCancellationRate"), colAvgRating: t("colAvgRating"),
+          colSpecialist: t("colSpecialist"), colBranch: t("colBranch"),
+          colAttended: t("colAttended"), colCancelled: t("colCancelled"),
+          colCancelPct: t("colCancelPct"), colNoShows: t("colNoShows"),
+          colRating: t("colRating"), colProductiveHrs: t("colProductiveHrs"),
+          colRetention30: t("colRetention30"), colRetention60: t("colRetention60"),
+          colRetention90: t("colRetention90"), colVisitFreq: t("colVisitFreq"),
+          colLtv: t("colLtv"), colNew: t("colNew"), colRecurring: t("colRecurring"),
+          sectionPopularServices: t("sectionPopularServices"),
+          colService: t("colService"), colBooked: t("colBooked"),
+          sectionChurnRisk: t("sectionChurnRisk"), colClient: t("colClient"),
+          colEmail: t("colEmail"), colDaysSince: t("colDaysSince"),
+          colTotalBookings: t("colTotalBookings"), colLastService: t("colLastService"),
+          colTotalRevenue: t("colTotalRevenue"), colAvgCancelRate: t("colAvgCancelRate"),
+          colAvgOccupancy: t("colAvgOccupancy"), colTopRevenue: t("colTopRevenue"),
+          colTopOccupancy: t("colTopOccupancy"), colStaff: t("colStaff"),
+          colNewClients: t("colNewClients"), colRecurringClients: t("colRecurringClients"),
+          colOccupancy: t("colOccupancy"),
+        },
       );
     } finally {
       setPdfLoading(false);
