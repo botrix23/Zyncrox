@@ -144,6 +144,7 @@ export async function registerTenantAction(formData: FormData, locale: string) {
         name: businessName,
         slug,
         timezone: 'America/El_Salvador',
+        plan: 'ENTERPRISE', // Trial starts with Business plan (full features for 7 days)
         status: 'TRIAL',
         subscriptionExpiresAt: expiration,
       }).returning();
