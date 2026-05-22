@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { bookings, services, staff, blocks, branches, tenants, staffAssignments, bookingSessions, slotLocks } from "@/db/schema";
+import { bookings, services, staff, blocks, branches, tenants, staffAssignments, bookingSessions, slotLocks, reviews } from "@/db/schema";
 import { eq, and, gte, lte, or, isNull, desc, not, lt, gt, ne } from "drizzle-orm";
 import { addMinutes, format, parseISO, startOfDay, endOfDay, isBefore, isAfter, max, min } from "date-fns";
 import { resend } from "@/lib/resend";
@@ -1184,6 +1184,18 @@ export async function sendPendingSurveyEmailsAction(tenantId: string) {
     for (const booking of pending) {
       if (!booking.customerEmail) continue;
       try {
+        // Skip if the client already submitted a review for this booking
+        const existingReview = await db.query.reviews.findFirst({
+          where: eq(reviews.bookingId, booking.id),
+          columns: { id: true },
+        });
+        if (existingReview) {
+          // Mark as sent so we don't check this booking again
+          await db.update(bookings)
+            .set({ surveyEmailSent: true })
+            .where(eq(bookings.id, booking.id));
+          continue;
+        }
         const surveyUrl = `${baseUrl}/es/review/${booking.id}`;
         const emailCfgS = await getPlatformEmailTemplates();
         const localeS = (tenant.emailLocale as EmailLocale) || 'es';
