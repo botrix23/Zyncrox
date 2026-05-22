@@ -466,7 +466,7 @@ export function ClientRetentionTab({ data, isLoading, churnDays, onChurnDaysChan
     },
     {
       label: t("ltv"),
-      value: data.ltv !== null ? `$${data.ltv.toLocaleString("es-MX", { maximumFractionDigits: 0 })}` : "—",
+      value: data.ltv !== null ? `$${data.ltv.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—",
       sub: t("ltvSub"),
       icon: DollarSign,
       color: "text-emerald-600",
