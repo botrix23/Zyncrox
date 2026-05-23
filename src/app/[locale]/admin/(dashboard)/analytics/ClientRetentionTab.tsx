@@ -135,9 +135,9 @@ function LineChart({ data }: { data: { label: string; count: number }[] }) {
           stroke="currentColor" strokeWidth="0.7" className="text-slate-200 dark:text-white/10" strokeDasharray="4 4" />
       ))}
       {/* Y-axis labels */}
-      <text x={PAD.left - 5} y={PAD.top + 4} textAnchor="end" fontSize="11"
+      <text x={PAD.left - 5} y={PAD.top + 4} textAnchor="end" fontSize="8"
         className="fill-slate-400 dark:fill-zinc-500">{maxVal}</text>
-      <text x={PAD.left - 5} y={PAD.top + cH + 3} textAnchor="end" fontSize="11"
+      <text x={PAD.left - 5} y={PAD.top + cH + 3} textAnchor="end" fontSize="8"
         className="fill-slate-400 dark:fill-zinc-500">0</text>
       {/* Area fill */}
       <polygon points={area} className="fill-purple-500/10" />
@@ -146,11 +146,11 @@ function LineChart({ data }: { data: { label: string; count: number }[] }) {
         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       {/* Data points */}
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="4" fill="#7c3aed" />
+        <circle key={i} cx={p.x} cy={p.y} r="3" fill="#7c3aed" />
       ))}
       {/* X-axis labels */}
       {labelPts.map((p, i) => (
-        <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize="11"
+        <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize="8"
           className="fill-slate-400 dark:fill-zinc-500">{p.label}</text>
       ))}
     </svg>

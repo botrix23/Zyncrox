@@ -274,12 +274,12 @@ function StaffTable({ rows, t }: {
       {/* ── Desktop table (≥ sm) ── */}
       <div className="hidden sm:block bg-white dark:bg-zinc-900/60 border border-slate-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
+          <table className="w-full min-w-[700px]">
             <thead>
               <tr className="bg-slate-50 dark:bg-white/5">
                 {cols.map(col => (
                   <th key={col.key} onClick={() => handleSort(col.key)}
-                    className={`px-5 py-3 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors select-none whitespace-nowrap ${col.right ? "text-right" : "text-left"}`}>
+                    className={`px-3 py-2.5 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors select-none whitespace-nowrap ${col.right ? "text-right" : "text-left"}`}>
                     <span className={`inline-flex items-center gap-1 ${col.right ? "justify-end" : ""}`}>
                       {col.label}<SortIcon k={col.key} />
                     </span>
@@ -290,8 +290,8 @@ function StaffTable({ rows, t }: {
             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
               {sorted.map(row => (
                 <tr key={row.staffId} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors">
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-2.5">
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-950/50 flex items-center justify-center shrink-0">
                         <span className="text-xs font-bold text-purple-600 dark:text-purple-400">{row.name.charAt(0).toUpperCase()}</span>
                       </div>
@@ -301,27 +301,27 @@ function StaffTable({ rows, t }: {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5 text-right font-bold text-purple-600 dark:text-purple-400">{row.attended}</td>
-                  <td className="px-5 py-3.5 text-right font-semibold">
+                  <td className="px-3 py-2.5 text-right font-bold text-purple-600 dark:text-purple-400">{row.attended}</td>
+                  <td className="px-3 py-2.5 text-right font-semibold">
                     <span className={row.cancelled > 0 ? "text-red-500" : "text-slate-300 dark:text-zinc-700"}>{row.cancelled}</span>
                   </td>
-                  <td className="px-5 py-3.5 text-right">
+                  <td className="px-3 py-2.5 text-right">
                     <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full ${
                       row.cancellationRate > 20 ? "bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400"
                       : row.cancellationRate > 10 ? "bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
                       : "bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-zinc-400"
                     }`}>{row.cancellationRate}%</span>
                   </td>
-                  <td className="px-5 py-3.5 text-right font-semibold">
+                  <td className="px-3 py-2.5 text-right font-semibold">
                     <span className={row.noShows > 0 ? "text-amber-600 dark:text-amber-400" : "text-slate-300 dark:text-zinc-700"}>{row.noShows}</span>
                   </td>
-                  <td className="px-5 py-3.5 text-right font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmtCurrency(row.revenue)}</td>
-                  <td className="px-5 py-3.5 text-right">
+                  <td className="px-3 py-2.5 text-right font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmtCurrency(row.revenue)}</td>
+                  <td className="px-3 py-2.5 text-right">
                     {row.avgRating !== null
                       ? <span className="inline-flex items-center gap-1 font-semibold text-amber-500"><Star className="w-3 h-3 fill-amber-400" />{row.avgRating.toFixed(1)}</span>
                       : <span className="text-slate-300 dark:text-zinc-700">—</span>}
                   </td>
-                  <td className="px-5 py-3.5 text-right text-sm text-slate-600 dark:text-zinc-300 tabular-nums">{fmtMinutes(row.productiveMinutes)}</td>
+                  <td className="px-3 py-2.5 text-right text-sm text-slate-600 dark:text-zinc-300 tabular-nums">{fmtMinutes(row.productiveMinutes)}</td>
                 </tr>
               ))}
             </tbody>
