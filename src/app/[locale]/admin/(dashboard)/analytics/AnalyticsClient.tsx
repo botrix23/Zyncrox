@@ -25,8 +25,13 @@ import {
   getBranchPerformanceData,
   BranchPerformanceResult,
 } from "@/app/actions/analyticsBranch";
+import {
+  getSatisfactionData,
+  SatisfactionResult,
+} from "@/app/actions/analyticsSatisfaction";
 import { ClientRetentionTab } from "./ClientRetentionTab";
 import { BranchPerformanceTab } from "./BranchPerformanceTab";
+import { SatisfactionTab } from "./SatisfactionTab";
 import { ExportButton } from "./ExportButton";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -47,7 +52,7 @@ type SortKey = keyof Pick<
   "name" | "attended" | "cancelled" | "cancellationRate" | "noShows" | "revenue" | "avgRating" | "productiveMinutes"
 >;
 
-type TabKey = "staffPerformance" | "clientRetention" | "branchPerformance";
+type TabKey = "staffPerformance" | "clientRetention" | "branchPerformance" | "satisfaction";
 
 // ─── Date presets ─────────────────────────────────────────────────────────────
 
@@ -336,7 +341,7 @@ interface AnalyticsClientProps {
   locale: string;
 }
 
-export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: AnalyticsClientProps) {
+export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale }: AnalyticsClientProps) {
   const t = useTranslations("Dashboard.analytics");
   const tStaff = useTranslations("Dashboard.analytics.staffPerformance");
   const tFilters = useTranslations("Dashboard.analytics.filters");
@@ -359,9 +364,14 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
   const [branchError, setBranchError] = useState<string | null>(null);
   const [branchDirty, setBranchDirty] = useState(false);
 
+  const [satisfactionData, setSatisfactionData] = useState<SatisfactionResult | null>(null);
+  const [satisfactionError, setSatisfactionError] = useState<string | null>(null);
+  const [satisfactionDirty, setSatisfactionDirty] = useState(false);
+
   const [isStaffPending, startStaffTransition] = useTransition();
   const [isRetentionPending, startRetentionTransition] = useTransition();
   const [isBranchPending, startBranchTransition] = useTransition();
+  const [isSatisfactionPending, startSatisfactionTransition] = useTransition();
 
   const branches: BranchOption[] = staffData?.branches ?? retentionData?.branches ?? [];
 
@@ -401,6 +411,15 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
     });
   }, []);
 
+  const fetchSatisfaction = useCallback((from: string, to: string) => {
+    startSatisfactionTransition(async () => {
+      setSatisfactionError(null);
+      const r = await getSatisfactionData(from, to);
+      if (r.ok) { setSatisfactionData(r.data); setSatisfactionDirty(false); }
+      else setSatisfactionError(r.error);
+    });
+  }, []);
+
   // ── Filter handlers ───────────────────────────────────────────────────────────
 
   const applyFilters = useCallback((from: string, to: string, branch: string | null) => {
@@ -408,9 +427,11 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
     // Mark other tabs as dirty; they will re-fetch when visited
     setRetentionDirty(true);
     setBranchDirty(true);
+    setSatisfactionDirty(true);
     if (activeTab === "clientRetention") fetchRetention(from, to, branch, churnDays);
     if (activeTab === "branchPerformance") fetchBranch(from, to);
-  }, [activeTab, churnDays, fetchStaff, fetchRetention, fetchBranch]);
+    if (activeTab === "satisfaction") fetchSatisfaction(from, to);
+  }, [activeTab, churnDays, fetchStaff, fetchRetention, fetchBranch, fetchSatisfaction]);
 
   const handlePreset = (key: PresetKey) => {
     const { from, to } = getPresetDates(key);
@@ -440,6 +461,9 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
     if (tab === "branchPerformance" && (branchData === null || branchDirty)) {
       fetchBranch(dateFrom, dateTo);
     }
+    if (tab === "satisfaction" && (satisfactionData === null || satisfactionDirty)) {
+      fetchSatisfaction(dateFrom, dateTo);
+    }
   };
 
   const handleChurnDaysChange = (days: number) => {
@@ -449,10 +473,12 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
 
   const isPending = activeTab === "staffPerformance" ? isStaffPending
     : activeTab === "clientRetention" ? isRetentionPending
-    : isBranchPending;
+    : activeTab === "branchPerformance" ? isBranchPending
+    : isSatisfactionPending;
   const hasError = activeTab === "staffPerformance" ? staffError
     : activeTab === "clientRetention" ? retentionError
-    : branchError;
+    : activeTab === "branchPerformance" ? branchError
+    : satisfactionError;
 
   const PRESETS: { key: PresetKey; label: string }[] = [
     { key: "7d", label: tFilters("last7d") },
@@ -480,6 +506,7 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
             staffData={staffData}
             retentionData={retentionData}
             branchData={branchData}
+            satisfactionData={satisfactionData}
             dateFrom={dateFrom}
             dateTo={dateTo}
           />
@@ -500,14 +527,14 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
           onChange={e => handleTabChange(e.target.value as TabKey)}
           className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors shadow-sm"
         >
-          {(["staffPerformance", "clientRetention", "branchPerformance"] as TabKey[]).map(tab => (
+          {(["staffPerformance", "clientRetention", "branchPerformance", "satisfaction"] as TabKey[]).map(tab => (
             <option key={tab} value={tab}>{t(`tabs.${tab}` as any)}</option>
           ))}
         </select>
       </div>
       {/* Desktop pill tabs */}
-      <div className="hidden sm:flex gap-1 bg-slate-100 dark:bg-white/5 rounded-2xl p-1 w-auto">
-        {(["staffPerformance", "clientRetention", "branchPerformance"] as TabKey[]).map(tab => (
+      <div className="hidden sm:flex gap-1 bg-slate-100 dark:bg-white/5 rounded-2xl p-1 w-auto overflow-x-auto">
+        {(["staffPerformance", "clientRetention", "branchPerformance", "satisfaction"] as TabKey[]).map(tab => (
           <button
             key={tab}
             onClick={() => handleTabChange(tab)}
@@ -569,7 +596,8 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
           <button onClick={() =>
             activeTab === "staffPerformance" ? fetchStaff(dateFrom, dateTo, branchId)
             : activeTab === "clientRetention" ? fetchRetention(dateFrom, dateTo, branchId, churnDays)
-            : fetchBranch(dateFrom, dateTo)
+            : activeTab === "branchPerformance" ? fetchBranch(dateFrom, dateTo)
+            : fetchSatisfaction(dateFrom, dateTo)
           }
             className="ml-auto flex items-center gap-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:underline">
             <RefreshCw className="w-3 h-3" />{t("retry")}
@@ -622,10 +650,16 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo }: Analyti
         <BranchPerformanceTab data={branchData} isLoading={isBranchPending} />
       )}
 
+      {/* Satisfaction */}
+      {activeTab === "satisfaction" && satisfactionData && !satisfactionError && (
+        <SatisfactionTab data={satisfactionData} isLoading={isSatisfactionPending} locale={locale ?? "es"} />
+      )}
+
       {/* Loading placeholder (first load) */}
       {((activeTab === "staffPerformance" && !staffData && !staffError) ||
         (activeTab === "clientRetention" && !retentionData && !retentionError) ||
-        (activeTab === "branchPerformance" && !branchData && !branchError)) && (
+        (activeTab === "branchPerformance" && !branchData && !branchError) ||
+        (activeTab === "satisfaction" && !satisfactionData && !satisfactionError)) && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Loader2 className="w-8 h-8 text-purple-500 animate-spin mb-4" />
           <p className="text-sm text-slate-400 dark:text-zinc-500">{t("loading")}</p>

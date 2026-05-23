@@ -888,7 +888,8 @@
       "tabs": {
         "staffPerformance": "Staff performance",
         "clientRetention": "Client retention",
-        "branchPerformance": "Branch performance"
+        "branchPerformance": "Branch performance",
+        "satisfaction": "Satisfaction"
       },
       "filters": {
         "last7d": "Last 7 days",
@@ -1017,6 +1018,7 @@
         "pdfStaffTitle": "Staff performance report",
         "pdfRetentionTitle": "Client retention report",
         "pdfBranchTitle": "Branch performance report",
+        "pdfSatisfactionTitle": "Satisfaction & NPS report",
         "pdfPeriod": "Period:",
         "pdfGeneratedOn": "Generated on:",
         "pdfPage": "Page",
@@ -1057,6 +1059,43 @@
         "colNewClients": "New clients",
         "colRecurringClients": "Recurring clients",
         "colOccupancy": "Occupancy"
+      },
+      "satisfaction": {
+        "cardNps": "Global NPS",
+        "cardNpsSub": "based on {n} responses",
+        "npsExcellent": "Excellent",
+        "npsGood": "Good",
+        "npsImprovable": "Needs improvement",
+        "npsCritical": "Critical",
+        "npsNoData": "No data",
+        "cardAvgRating": "Global avg. rating",
+        "cardAvgRatingSub": "{n} reviews",
+        "cardResponseRate": "Response rate",
+        "cardResponseRateSub": "{received} of {sent} sent",
+        "cardNegative": "Negative reviews",
+        "cardNegativeSub": "require attention",
+        "npsTrendTitle": "NPS trend",
+        "npsDistTitle": "NPS distribution",
+        "promoters": "Promoters (9-10)",
+        "passives": "Passives (7-8)",
+        "detractors": "Detractors (0-6)",
+        "ratingTrendTitle": "Avg. rating trend",
+        "alertsTitle": "Quality alerts",
+        "alertsNoData": "No quality alerts in this period. Great job!",
+        "alertsAvg": "Avg. rating",
+        "alertsLastDate": "Last neg. review",
+        "alertsColStaff": "Specialist",
+        "alertsColNegative": "Neg. reviews",
+        "alertsColAvgRating": "Avg. rating",
+        "alertsColWorstService": "Worst service",
+        "alertsColLastDate": "Last neg.",
+        "retentionTitle": "Satisfaction & return",
+        "retentionHint": "% who returned within 30 days",
+        "retentionClients": "{n} clients",
+        "retentionNoClients": "No data",
+        "retentionReturned": "{returned} of {total} returned",
+        "retentionFootnote": "Only clients with at least 1 survey response are counted. Return is measured as a new booking within 30 days of the review.",
+        "noData": "Not enough data for the selected period."
       },
       "upgradeWall": {
         "title": "Available on the Business plan",
@@ -1150,21 +1189,47 @@
     },
     "stats": {
       "totalResponses": "Total Responses",
-      "completed": "completed surveys",
+      "completed": "in the period",
       "globalNPS": "Global NPS",
       "netPoints": "net points",
       "noNPS": "no NPS data",
-      "avgStaffRating": "Avg. Staff Rating"
+      "avgStaffRating": "Avg. Staff Rating",
+      "responseRate": "Response rate",
+      "responseRateSub": "of {sent} sent",
+      "noData": "--"
+    },
+    "dateFilter": {
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "month": "This month",
+      "prevMonth": "Last month",
+      "90d": "Last 3 months"
+    },
+    "ratingByService": {
+      "title": "Rating by service",
+      "evaluations": "reviews",
+      "noData": "No reviews in this period"
+    },
+    "distribution": {
+      "title": "Rating distribution",
+      "noData": "No data in this period"
     },
     "audit": {
       "title": "Response Audit",
       "noReviews": "No surveys received yet.",
+      "noResults": "No results with the applied filters.",
+      "filters": {
+        "allStaff": "All staff",
+        "allServices": "All services",
+        "allRatings": "All ratings",
+        "stars": "{n} stars"
+      },
       "table": {
         "rating": "Rating",
         "staffService": "Staff / Service",
         "comment": "Comment",
         "date": "Date",
-        "staffFallback": "Staff",
+        "staffFallback": "Unassigned",
         "serviceFallback": "Service"
       }
     },

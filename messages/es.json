@@ -888,7 +888,8 @@
       "tabs": {
         "staffPerformance": "Rendimiento de staff",
         "clientRetention": "Retención de clientes",
-        "branchPerformance": "Rendimiento por sucursal"
+        "branchPerformance": "Rendimiento por sucursal",
+        "satisfaction": "Satisfacción"
       },
       "filters": {
         "last7d": "Últ. 7 días",
@@ -1017,6 +1018,7 @@
         "pdfStaffTitle": "Reporte de rendimiento de staff",
         "pdfRetentionTitle": "Reporte de retención de clientes",
         "pdfBranchTitle": "Reporte de rendimiento por sucursal",
+        "pdfSatisfactionTitle": "Reporte de satisfacción y NPS",
         "pdfPeriod": "Periodo:",
         "pdfGeneratedOn": "Generado el:",
         "pdfPage": "Pág.",
@@ -1057,6 +1059,43 @@
         "colNewClients": "Nuevos",
         "colRecurringClients": "Recurrentes",
         "colOccupancy": "Ocupación"
+      },
+      "satisfaction": {
+        "cardNps": "NPS Global",
+        "cardNpsSub": "basado en {n} respuestas",
+        "npsExcellent": "Excelente",
+        "npsGood": "Bueno",
+        "npsImprovable": "Mejorable",
+        "npsCritical": "Crítico",
+        "npsNoData": "Sin datos",
+        "cardAvgRating": "Rating promedio global",
+        "cardAvgRatingSub": "{n} evaluaciones",
+        "cardResponseRate": "Tasa de respuesta",
+        "cardResponseRateSub": "{received} de {sent} enviadas",
+        "cardNegative": "Reseñas negativas",
+        "cardNegativeSub": "requieren atención",
+        "npsTrendTitle": "Tendencia de NPS",
+        "npsDistTitle": "Distribución NPS",
+        "promoters": "Promotores (9-10)",
+        "passives": "Pasivos (7-8)",
+        "detractors": "Detractores (0-6)",
+        "ratingTrendTitle": "Tendencia de rating promedio",
+        "alertsTitle": "Alertas de calidad",
+        "alertsNoData": "No hay alertas de calidad en este periodo. ¡Excelente trabajo!",
+        "alertsAvg": "Rating promedio",
+        "alertsLastDate": "Última reseña neg.",
+        "alertsColStaff": "Especialista",
+        "alertsColNegative": "Reseñas neg.",
+        "alertsColAvgRating": "Rating prom.",
+        "alertsColWorstService": "Peor servicio",
+        "alertsColLastDate": "Última neg.",
+        "retentionTitle": "Satisfacción y retorno",
+        "retentionHint": "% que volvió en 30 días",
+        "retentionClients": "{n} clientes",
+        "retentionNoClients": "Sin datos",
+        "retentionReturned": "{returned} de {total} regresaron",
+        "retentionFootnote": "Solo se consideran clientes con al menos 1 respuesta de encuesta. El retorno se mide como una nueva cita en los 30 días siguientes a la reseña.",
+        "noData": "Sin suficientes datos para el periodo seleccionado."
       },
       "upgradeWall": {
         "title": "Disponible en el plan Business",
@@ -1150,21 +1189,47 @@
     },
     "stats": {
       "totalResponses": "Total Respuestas",
-      "completed": "encuestas completadas",
+      "completed": "en el período",
       "globalNPS": "NPS Global",
       "netPoints": "puntos netos",
       "noNPS": "sin datos NPS",
-      "avgStaffRating": "Rating Promedio Staff"
+      "avgStaffRating": "Rating Promedio Staff",
+      "responseRate": "Tasa de respuesta",
+      "responseRateSub": "de {sent} enviadas",
+      "noData": "--"
+    },
+    "dateFilter": {
+      "7d": "Últ. 7 días",
+      "30d": "Últ. 30 días",
+      "month": "Este mes",
+      "prevMonth": "Mes anterior",
+      "90d": "Últ. 3 meses"
+    },
+    "ratingByService": {
+      "title": "Calificación por servicio",
+      "evaluations": "evaluaciones",
+      "noData": "Sin evaluaciones en este período"
+    },
+    "distribution": {
+      "title": "Distribución de calificaciones",
+      "noData": "Sin datos en este período"
     },
     "audit": {
       "title": "Historial de evaluaciones",
       "noReviews": "No se han recibido encuestas aún.",
+      "noResults": "Sin resultados con los filtros aplicados.",
+      "filters": {
+        "allStaff": "Todo el equipo",
+        "allServices": "Todos los servicios",
+        "allRatings": "Todas las calificaciones",
+        "stars": "{n} estrellas"
+      },
       "table": {
         "rating": "Calif.",
         "staffService": "Staff / Servicio",
         "comment": "Comentario",
         "date": "Fecha",
-        "staffFallback": "Personal",
+        "staffFallback": "Sin asignar",
         "serviceFallback": "Servicio"
       }
     },

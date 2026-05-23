@@ -1,8 +1,8 @@
 import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { tenants, surveyQuestions, reviews as reviewsTable } from "@/db/schema";
-import { eq, asc, desc } from "drizzle-orm";
+import { tenants, surveyQuestions, reviews as reviewsTable, bookings } from "@/db/schema";
+import { eq, asc, desc, and, count } from "drizzle-orm";
 import { getPlanFeatures } from "@/core/plans";
 import SurveyClient from "./SurveyClient";
 import { Lock } from "lucide-react";
@@ -25,7 +25,7 @@ export default async function SurveysPage({ params: { locale } }: { params: { lo
     redirect(`/${locale}/admin/login`);
   }
 
-  const [questions, reviews] = await Promise.all([
+  const [questions, reviews, surveyEmailSentResult] = await Promise.all([
     db.query.surveyQuestions.findMany({
       where: eq(surveyQuestions.tenantId, tenantId),
       orderBy: [asc(surveyQuestions.sortOrder)],
@@ -41,8 +41,13 @@ export default async function SurveysPage({ params: { locale } }: { params: { lo
         }
       },
       orderBy: [desc(reviewsTable.createdAt)],
-    })
+    }),
+    db.select({ value: count() })
+      .from(bookings)
+      .where(and(eq(bookings.tenantId, tenantId), eq(bookings.surveyEmailSent, true))),
   ]);
+
+  const totalSurveySent = surveyEmailSentResult[0]?.value ?? 0;
 
   const planFeatures = getPlanFeatures(tenant.plan);
   const canUseSurveys = planFeatures.surveys;
@@ -86,6 +91,7 @@ export default async function SurveysPage({ params: { locale } }: { params: { lo
           canUseAdvanced={canUseAdvanced}
           locale={locale}
           slug={tenant.slug}
+          totalSurveySent={totalSurveySent}
         />
       )}
     </div>

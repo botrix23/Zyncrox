@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import type { StaffPerformanceResult, StaffPerformanceRow } from "@/app/actions/analytics";
 import type { RetentionResult } from "@/app/actions/analyticsRetention";
 import type { BranchPerformanceResult } from "@/app/actions/analyticsBranch";
+import type { SatisfactionResult } from "@/app/actions/analyticsSatisfaction";
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -52,10 +53,11 @@ type PdfTranslations = {
 };
 
 async function exportPdf(
-  tab: "staffPerformance" | "clientRetention" | "branchPerformance",
+  tab: "staffPerformance" | "clientRetention" | "branchPerformance" | "satisfaction",
   staffData: StaffPerformanceResult | null,
   retentionData: RetentionResult | null,
   branchData: BranchPerformanceResult | null,
+  satisfactionData: SatisfactionResult | null,
   dateFrom: string,
   dateTo: string,
   titleKey: string,
@@ -235,6 +237,87 @@ async function exportPdf(
     });
   }
 
+  if (tab === "satisfaction" && satisfactionData) {
+    const sd = satisfactionData;
+    // Summary
+    autoTable(doc, {
+      startY,
+      head: [["NPS Global", "Rating promedio", "Tasa respuesta", "Reseñas negativas"]],
+      body: [[
+        sd.npsScore !== null ? `${sd.npsScore} (${sd.npsTotal} resp.)` : "—",
+        sd.avgRating !== null ? `${sd.avgRating} ★ (${sd.totalRatingReviews})` : "—",
+        sd.responseRate !== null ? `${sd.responseRate}% (${sd.totalRatingReviews}/${sd.totalSent})` : "—",
+        sd.negativeCount.toString(),
+      ]],
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [147, 51, 234] },
+      margin: { left: 14, right: 14 },
+    });
+    startY = (doc as any).lastAutoTable.finalY + 8;
+
+    // NPS distribution
+    if (sd.npsTotal > 0) {
+      autoTable(doc, {
+        startY,
+        head: [["Segmento NPS", "Cantidad", "%"]],
+        body: [
+          ["Promotores (9-10)", sd.promoters, `${sd.promotersPct}%`],
+          ["Pasivos (7-8)",     sd.passives,  `${sd.passivesPct}%`],
+          ["Detractores (0-6)", sd.detractors, `${sd.detractorsPct}%`],
+        ],
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [147, 51, 234] },
+        margin: { left: 14, right: 14 },
+      });
+      startY = (doc as any).lastAutoTable.finalY + 8;
+    }
+
+    // Quality alerts
+    if (sd.qualityAlerts.length > 0) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("Alertas de calidad", 14, startY);
+      startY += 4;
+      autoTable(doc, {
+        startY,
+        head: [["Especialista", "Reseñas neg.", "Rating prom.", "Peor servicio", "Última neg."]],
+        body: sd.qualityAlerts.map(a => [
+          a.staffName,
+          a.negativeCount,
+          a.avgRating.toFixed(1),
+          a.worstService ?? "—",
+          a.lastNegativeDate ? new Date(a.lastNegativeDate).toLocaleDateString("es-MX") : "—",
+        ]),
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [239, 68, 68] },
+        alternateRowStyles: { fillColor: [255, 248, 248] },
+        margin: { left: 14, right: 14 },
+      });
+      startY = (doc as any).lastAutoTable.finalY + 8;
+    }
+
+    // Retention by rating
+    if (sd.retentionByRating.some(g => g.total > 0)) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("Satisfacción y retorno", 14, startY);
+      startY += 4;
+      autoTable(doc, {
+        startY,
+        head: [["Rating", "Clientes", "Regresaron", "Tasa retorno"]],
+        body: sd.retentionByRating.map(g => [
+          g.ratingGroup === '5' ? "5 ★" : g.ratingGroup === '4' ? "4 ★" : "≤3 ★",
+          g.total,
+          g.returned,
+          g.total > 0 ? `${g.rate}%` : "—",
+        ]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [147, 51, 234] },
+        margin: { left: 14, right: 14 },
+      });
+    }
+  }
+
   // Footer page numbers
   const pageCount = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
@@ -255,10 +338,11 @@ async function exportPdf(
 // ─── Excel export ─────────────────────────────────────────────────────────────
 
 async function exportExcel(
-  tab: "staffPerformance" | "clientRetention" | "branchPerformance",
+  tab: "staffPerformance" | "clientRetention" | "branchPerformance" | "satisfaction",
   staffData: StaffPerformanceResult | null,
   retentionData: RetentionResult | null,
   branchData: BranchPerformanceResult | null,
+  satisfactionData: SatisfactionResult | null,
   dateFrom: string,
   dateTo: string,
 ) {
@@ -360,21 +444,86 @@ async function exportExcel(
     }
   }
 
+  if (tab === "satisfaction" && satisfactionData) {
+    const sd = satisfactionData;
+    // Summary
+    const sumWs = XLSX.utils.aoa_to_sheet([
+      ["Periodo", `${dateFrom} — ${dateTo}`],
+      ["NPS Global", sd.npsScore ?? ""],
+      ["Respuestas NPS", sd.npsTotal],
+      ["Promotores", sd.promoters],
+      ["Pasivos", sd.passives],
+      ["Detractores", sd.detractors],
+      ["Rating promedio", sd.avgRating ?? ""],
+      ["Total evaluaciones", sd.totalRatingReviews],
+      ["Tasa respuesta %", sd.responseRate !== null ? sd.responseRate / 100 : ""],
+      ["Encuestas enviadas", sd.totalSent],
+      ["Reseñas negativas", sd.negativeCount],
+    ]);
+    XLSX.utils.book_append_sheet(wb, sumWs, "Resumen NPS");
+
+    // NPS trend
+    if (sd.npsTrend.length > 0) {
+      const trendWs = XLSX.utils.aoa_to_sheet([
+        ["Periodo", "NPS", "Respuestas"],
+        ...sd.npsTrend.map(p => [p.period, p.score, p.total]),
+      ]);
+      XLSX.utils.book_append_sheet(wb, trendWs, "Tendencia NPS");
+    }
+
+    // Rating trend
+    if (sd.ratingTrend.length > 0) {
+      const rtWs = XLSX.utils.aoa_to_sheet([
+        ["Periodo", "Rating promedio", "Evaluaciones"],
+        ...sd.ratingTrend.map(p => [p.period, p.avg, p.total]),
+      ]);
+      XLSX.utils.book_append_sheet(wb, rtWs, "Tendencia Rating");
+    }
+
+    // Quality alerts
+    if (sd.qualityAlerts.length > 0) {
+      const alertWs = XLSX.utils.aoa_to_sheet([
+        ["Especialista", "Reseñas negativas", "Rating promedio", "Peor servicio", "Última reseña neg."],
+        ...sd.qualityAlerts.map(a => [
+          a.staffName, a.negativeCount, a.avgRating,
+          a.worstService ?? "",
+          a.lastNegativeDate ? new Date(a.lastNegativeDate).toLocaleDateString("es-MX") : "",
+        ]),
+      ]);
+      alertWs["!cols"] = [{ wch: 24 }, { wch: 16 }, { wch: 14 }, { wch: 28 }, { wch: 16 }];
+      XLSX.utils.book_append_sheet(wb, alertWs, "Alertas calidad");
+    }
+
+    // Retention by rating
+    if (sd.retentionByRating.some(g => g.total > 0)) {
+      const retWs = XLSX.utils.aoa_to_sheet([
+        ["Rating", "Clientes", "Regresaron", "% Retorno"],
+        ...sd.retentionByRating.map(g => [
+          g.ratingGroup === '5' ? "5 ★" : g.ratingGroup === '4' ? "4 ★" : "≤3 ★",
+          g.total, g.returned,
+          g.total > 0 ? g.rate / 100 : "",
+        ]),
+      ]);
+      XLSX.utils.book_append_sheet(wb, retWs, "Satisfaccion y retorno");
+    }
+  }
+
   XLSX.writeFile(wb, `reporte_${tab}_${dateFrom}_${dateTo}.xlsx`);
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 interface ExportButtonProps {
-  tab: "staffPerformance" | "clientRetention" | "branchPerformance";
+  tab: "staffPerformance" | "clientRetention" | "branchPerformance" | "satisfaction";
   staffData: StaffPerformanceResult | null;
   retentionData: RetentionResult | null;
   branchData: BranchPerformanceResult | null;
+  satisfactionData?: SatisfactionResult | null;
   dateFrom: string;
   dateTo: string;
 }
 
-export function ExportButton({ tab, staffData, retentionData, branchData, dateFrom, dateTo }: ExportButtonProps) {
+export function ExportButton({ tab, staffData, retentionData, branchData, satisfactionData = null, dateFrom, dateTo }: ExportButtonProps) {
   const t = useTranslations("Dashboard.analytics.exportReports");
   const [pdfLoading, setPdfLoading] = useState(false);
   const [xlsxLoading, setXlsxLoading] = useState(false);
@@ -383,12 +532,14 @@ export function ExportButton({ tab, staffData, retentionData, branchData, dateFr
     staffPerformance: t("pdfStaffTitle"),
     clientRetention: t("pdfRetentionTitle"),
     branchPerformance: t("pdfBranchTitle"),
+    satisfaction: t("pdfSatisfactionTitle"),
   };
 
   const hasData =
     (tab === "staffPerformance" && staffData !== null) ||
     (tab === "clientRetention" && retentionData !== null) ||
-    (tab === "branchPerformance" && branchData !== null);
+    (tab === "branchPerformance" && branchData !== null) ||
+    (tab === "satisfaction" && satisfactionData !== null);
 
   if (!hasData) return null;
 
@@ -396,7 +547,7 @@ export function ExportButton({ tab, staffData, retentionData, branchData, dateFr
     setPdfLoading(true);
     try {
       await exportPdf(
-        tab, staffData, retentionData, branchData,
+        tab, staffData, retentionData, branchData, satisfactionData,
         dateFrom, dateTo,
         titleMap[tab],
         t("pdfPeriod"),
@@ -431,7 +582,7 @@ export function ExportButton({ tab, staffData, retentionData, branchData, dateFr
   const handleExcel = async () => {
     setXlsxLoading(true);
     try {
-      await exportExcel(tab, staffData, retentionData, branchData, dateFrom, dateTo);
+      await exportExcel(tab, staffData, retentionData, branchData, satisfactionData, dateFrom, dateTo);
     } finally {
       setXlsxLoading(false);
     }

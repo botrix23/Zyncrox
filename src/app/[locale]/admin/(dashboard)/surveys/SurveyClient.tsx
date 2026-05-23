@@ -1,23 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { 
-  Plus, 
-  Trash2, 
-  GripVertical, 
-  Star, 
-  CheckCircle2, 
-  MessageSquare, 
-  Info, 
+import { useState, useEffect, useMemo } from "react";
+import {
+  Plus,
+  Trash2,
+  Star,
+  CheckCircle2,
+  MessageSquare,
+  Info,
   Lock,
   ChevronUp,
   ChevronDown,
-  Save,
   X,
   Edit2,
   BarChart3,
   Settings,
-  ExternalLink
+  ExternalLink,
+  TrendingUp,
+  Users,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Portal } from "@/components/Portal";
@@ -40,22 +40,24 @@ interface SurveyQuestion {
   sortOrder: number;
 }
 
-export default function SurveyClient({ 
-  tenantId, 
-  initialEnabled, 
-  initialQuestions, 
+export default function SurveyClient({
+  tenantId,
+  initialEnabled,
+  initialQuestions,
   initialReviews = [],
   canUseAdvanced,
   locale,
-  slug 
-}: { 
-  tenantId: string; 
+  slug,
+  totalSurveySent = 0,
+}: {
+  tenantId: string;
   initialEnabled: boolean;
   initialQuestions: any[];
   initialReviews?: any[];
   canUseAdvanced: boolean;
   locale: string;
   slug: string | null;
+  totalSurveySent?: number;
 }) {
   const t = useTranslations('Surveys');
   const router = useRouter();
@@ -150,14 +152,104 @@ export default function SurveyClient({
     await reorderSurveyQuestionsAction(tenantId, newQuestions.map(q => q.id));
   };
 
-  // NPS Calculation
-  const npsResponses = initialReviews.flatMap(r => (r.responses || []) as any[]).filter(resp => resp.questionType === 'NPS');
-  let npsScore = null;
-  if (npsResponses.length > 0) {
-    const promoters = npsResponses.filter(r => r.answer >= 9).length;
-    const detractors = npsResponses.filter(r => r.answer <= 6).length;
-    npsScore = Math.round(((promoters - detractors) / npsResponses.length) * 100);
-  }
+  // --- Results Tab State ---
+  type Preset = '7d' | '30d' | 'month' | 'prevMonth' | '90d';
+  const [preset, setPreset] = useState<Preset>('30d');
+  const [filterStaff, setFilterStaff] = useState('');
+  const [filterService, setFilterService] = useState('');
+  const [filterRating, setFilterRating] = useState('');
+
+  // Date range from preset
+  const { dateFrom, dateTo } = useMemo(() => {
+    const now = new Date();
+    let from: Date;
+    let to: Date = new Date();
+    if (preset === '7d') {
+      from = new Date(now); from.setDate(from.getDate() - 7);
+    } else if (preset === '30d') {
+      from = new Date(now); from.setDate(from.getDate() - 30);
+    } else if (preset === 'month') {
+      from = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (preset === 'prevMonth') {
+      from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    } else { // 90d
+      from = new Date(now); from.setDate(from.getDate() - 90);
+    }
+    return { dateFrom: from, dateTo: to };
+  }, [preset]);
+
+  // Reviews filtered by date
+  const filteredByDate = useMemo(() => {
+    return initialReviews.filter((r: any) => {
+      const d = new Date(r.createdAt);
+      return d >= dateFrom && d <= dateTo;
+    });
+  }, [initialReviews, dateFrom, dateTo]);
+
+  // Reviews further filtered by staff/service/rating
+  const filteredReviews = useMemo(() => {
+    return filteredByDate.filter((r: any) => {
+      if (filterStaff && r.booking?.staff?.id !== filterStaff) return false;
+      if (filterService && r.booking?.service?.id !== filterService) return false;
+      if (filterRating) {
+        const rounded = Math.round(Number(r.rating));
+        if (rounded !== Number(filterRating)) return false;
+      }
+      return true;
+    });
+  }, [filteredByDate, filterStaff, filterService, filterRating]);
+
+  // Unique staff/services across all reviews (for filter dropdowns)
+  const staffOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    initialReviews.forEach((r: any) => {
+      if (r.booking?.staff?.id) map.set(r.booking.staff.id, r.booking.staff.name);
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [initialReviews]);
+
+  const serviceOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    initialReviews.forEach((r: any) => {
+      if (r.booking?.service?.id) map.set(r.booking.service.id, r.booking.service.name);
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [initialReviews]);
+
+  // Rating by service (based on date-filtered reviews)
+  const ratingByService = useMemo(() => {
+    const map = new Map<string, { total: number; count: number }>();
+    filteredByDate.forEach((r: any) => {
+      const name = r.booking?.service?.name || t('audit.table.serviceFallback');
+      const existing = map.get(name) || { total: 0, count: 0 };
+      map.set(name, { total: existing.total + Number(r.rating), count: existing.count + 1 });
+    });
+    return Array.from(map.entries())
+      .map(([name, { total, count }]) => ({ name, avg: total / count, count }))
+      .sort((a, b) => b.avg - a.avg);
+  }, [filteredByDate]);
+
+  // Rating distribution (based on date-filtered reviews)
+  const distribution = useMemo(() => {
+    const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    filteredByDate.forEach((r: any) => {
+      const rounded = Math.round(Number(r.rating));
+      if (rounded >= 1 && rounded <= 5) counts[rounded]++;
+    });
+    const total = filteredByDate.length;
+    return [5, 4, 3, 2, 1].map(star => ({
+      star,
+      count: counts[star],
+      pct: total > 0 ? Math.round((counts[star] / total) * 100) : 0,
+    }));
+  }, [filteredByDate]);
+
+  // Aggregate stats
+  const responseRate = totalSurveySent > 0 ? Math.round((filteredByDate.length / totalSurveySent) * 100) : 0;
+  const avgRating = filteredByDate.length > 0
+    ? (filteredByDate.reduce((acc: number, r: any) => acc + Number(r.rating), 0) / filteredByDate.length).toFixed(1)
+    : null;
 
   return (
     <>
@@ -332,135 +424,272 @@ export default function SurveyClient({
         </div>
       ) : (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-           {/* Summary Stats */}
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-6 shadow-sm">
-                 <p className="text-xs font-black tracking-widest text-slate-400">{t('stats.totalResponses')}</p>
-                 <div className="flex items-end gap-2 mt-1">
-                    <h4 className="text-4xl font-black text-slate-900 dark:text-white">{initialReviews.length}</h4>
-                    <p className="text-xs font-bold text-slate-400 mb-1.5">{t('stats.completed')}</p>
-                 </div>
-              </div>
 
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-6 shadow-sm">
-                 <p className="text-xs font-black tracking-widest text-slate-400">{t('stats.globalNPS')}</p>
-                 <div className="flex items-end gap-2 mt-1">
-                    <h4 className={`text-4xl font-black ${npsScore === null ? 'text-slate-300' : npsScore > 50 ? 'text-emerald-500' : npsScore > 0 ? 'text-amber-500' : 'text-rose-500'}`}>
-                      {npsScore !== null ? npsScore : '--'}
-                    </h4>
-                    <p className="text-xs font-bold text-slate-400 mb-1.5">{npsScore !== null ? t('stats.netPoints') : t('stats.noNPS')}</p>
-                 </div>
-              </div>
+          {/* Date filter presets */}
+          <div className="flex flex-wrap gap-2">
+            {(['7d', '30d', 'month', 'prevMonth', '90d'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPreset(p)}
+                className={`px-4 py-2 rounded-xl text-xs font-black tracking-widest transition-all ${preset === p ? 'bg-purple-600 text-white shadow-sm shadow-purple-500/20' : 'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 text-slate-500 dark:text-zinc-400 hover:border-purple-400'}`}
+              >
+                {t(`dateFilter.${p}`)}
+              </button>
+            ))}
+          </div>
 
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-6 shadow-sm">
-                 <p className="text-xs font-black tracking-widest text-slate-400">{t('stats.avgStaffRating')}</p>
-                 <div className="flex items-center gap-2 mt-1">
-                    <h4 className="text-4xl font-black text-slate-900 dark:text-white">
-                      {initialReviews.length > 0 
-                        ? (initialReviews.reduce((acc: number, r: any) => acc + Number(r.rating || 0), 0) / initialReviews.length).toFixed(1)
-                        : '--'}
-                    </h4>
-                    <Star className="w-6 h-6 text-yellow-400 fill-current" />
-                 </div>
+          {/* Summary Stats — 3 cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Total Responses */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-purple-500/10 rounded-xl">
+                  <MessageSquare className="w-4 h-4 text-purple-500" />
+                </div>
+                <p className="text-xs font-black tracking-widest text-slate-400">{t('stats.totalResponses')}</p>
               </div>
-           </div>
+              <div className="flex items-end gap-2">
+                <h4 className="text-4xl font-black text-slate-900 dark:text-white">{filteredByDate.length}</h4>
+                <p className="text-xs font-bold text-slate-400 mb-1.5">{t('stats.completed')}</p>
+              </div>
+            </div>
 
-           {/* Results — title + content */}
-           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-6 md:p-8 shadow-sm overflow-hidden">
-              <h3 className="text-xl font-black tracking-tight mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
+            {/* Response Rate */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-emerald-500/10 rounded-xl">
+                  <TrendingUp className="w-4 h-4 text-emerald-500" />
+                </div>
+                <p className="text-xs font-black tracking-widest text-slate-400">{t('stats.responseRate')}</p>
+              </div>
+              <div className="flex items-end gap-2">
+                <h4 className={`text-4xl font-black ${totalSurveySent === 0 ? 'text-slate-300 dark:text-zinc-600' : responseRate >= 50 ? 'text-emerald-500' : responseRate >= 25 ? 'text-amber-500' : 'text-rose-500'}`}>
+                  {totalSurveySent === 0 ? t('stats.noData') : `${responseRate}%`}
+                </h4>
+                {totalSurveySent > 0 && (
+                  <p className="text-xs font-bold text-slate-400 mb-1.5">
+                    {t('stats.responseRateSub', { sent: totalSurveySent })}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Avg Staff Rating */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-yellow-500/10 rounded-xl">
+                  <Star className="w-4 h-4 text-yellow-500" />
+                </div>
+                <p className="text-xs font-black tracking-widest text-slate-400">{t('stats.avgStaffRating')}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-4xl font-black text-slate-900 dark:text-white">
+                  {avgRating ?? t('stats.noData')}
+                </h4>
+                {avgRating && <Star className="w-6 h-6 text-yellow-400 fill-current" />}
+              </div>
+            </div>
+          </div>
+
+          {/* Rating by service + Distribution — side by side on desktop */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* Calificación por servicio */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-6 shadow-sm">
+              <h3 className="text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2 mb-5">
+                <Users className="w-4 h-4 text-purple-500" />
+                {t('ratingByService.title')}
+              </h3>
+              {ratingByService.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-sm font-bold text-slate-400 italic">{t('ratingByService.noData')}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {ratingByService.map((svc) => (
+                    <div key={svc.name} className="flex items-center justify-between gap-3 py-2.5 border-b border-slate-50 dark:border-white/5 last:border-0">
+                      <p className="text-sm font-bold text-slate-800 dark:text-white truncate flex-1">{svc.name}</p>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-sm font-black text-slate-900 dark:text-white">{svc.avg.toFixed(1)}</span>
+                        <Star className="w-3.5 h-3.5 text-yellow-400 fill-current" />
+                        <span className="text-xs font-bold text-slate-400 ml-1">({svc.count} {t('ratingByService.evaluations')})</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Distribución de calificaciones */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-6 shadow-sm">
+              <h3 className="text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2 mb-5">
+                <BarChart3 className="w-4 h-4 text-purple-500" />
+                {t('distribution.title')}
+              </h3>
+              {filteredByDate.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-sm font-bold text-slate-400 italic">{t('distribution.noData')}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {distribution.map(({ star, count, pct }) => (
+                    <div key={star} className="flex items-center gap-3">
+                      <div className="flex items-center gap-1 w-14 shrink-0">
+                        <span className="text-xs font-black text-slate-600 dark:text-zinc-300">{star}</span>
+                        <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                      </div>
+                      <div className="flex-1 h-2.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-yellow-400 to-amber-400 transition-all duration-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <div className="w-16 text-right shrink-0">
+                        <span className="text-xs font-black text-slate-500">{count} <span className="font-bold text-slate-400">({pct}%)</span></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Historial de evaluaciones */}
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] p-6 md:p-8 shadow-sm overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <h3 className="text-xl font-black tracking-tight flex items-center gap-2 text-slate-900 dark:text-white">
                 <MessageSquare className="w-5 h-5 text-purple-600" />
                 {t('audit.title')}
               </h3>
+              {/* Filters */}
+              <div className="flex flex-wrap gap-2">
+                <select
+                  value={filterStaff}
+                  onChange={(e) => setFilterStaff(e.target.value)}
+                  className="text-xs font-bold px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-600 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-purple-500/40"
+                >
+                  <option value="">{t('audit.filters.allStaff')}</option>
+                  {staffOptions.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={filterService}
+                  onChange={(e) => setFilterService(e.target.value)}
+                  className="text-xs font-bold px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-600 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-purple-500/40"
+                >
+                  <option value="">{t('audit.filters.allServices')}</option>
+                  {serviceOptions.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={filterRating}
+                  onChange={(e) => setFilterRating(e.target.value)}
+                  className="text-xs font-bold px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-600 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-purple-500/40"
+                >
+                  <option value="">{t('audit.filters.allRatings')}</option>
+                  {[5, 4, 3, 2, 1].map((n) => (
+                    <option key={n} value={String(n)}>{t('audit.filters.stars', { n })}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-              {initialReviews.length === 0 ? (
-                <div className="py-16 text-center space-y-3">
-                  <Info className="w-12 h-12 text-slate-100 dark:text-zinc-800 mx-auto" />
-                  <p className="text-sm font-bold text-slate-400 italic">{t('audit.noReviews')}</p>
+            {initialReviews.length === 0 ? (
+              <div className="py-16 text-center space-y-3">
+                <Info className="w-12 h-12 text-slate-100 dark:text-zinc-800 mx-auto" />
+                <p className="text-sm font-bold text-slate-400 italic">{t('audit.noReviews')}</p>
+              </div>
+            ) : filteredReviews.length === 0 ? (
+              <div className="py-16 text-center space-y-3">
+                <Info className="w-12 h-12 text-slate-100 dark:text-zinc-800 mx-auto" />
+                <p className="text-sm font-bold text-slate-400 italic">{t('audit.noResults')}</p>
+              </div>
+            ) : (
+              <>
+                {/* Mobile cards */}
+                <div className="md:hidden space-y-3">
+                  {filteredReviews.map((r: any) => (
+                    <div key={r.id} className="bg-slate-50 dark:bg-white/5 rounded-2xl p-4 space-y-2.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col items-center bg-white dark:bg-zinc-800 rounded-xl px-2.5 py-1.5 shadow-sm border border-slate-100 dark:border-white/5">
+                            <span className="text-base font-black text-slate-900 dark:text-white leading-none">{Number(r.rating).toFixed(1)}</span>
+                            <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-slate-900 dark:text-white">{r.booking?.staff?.name || t('audit.table.staffFallback')}</p>
+                            <p className="text-xs font-bold text-slate-400">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold text-slate-400 shrink-0">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
+                      </div>
+                      {r.comment && (
+                        <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium italic border-l-2 border-purple-500/30 pl-3">"{r.comment}"</p>
+                      )}
+                      {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).slice(0, 2).map((resp: any, i: number) => (
+                        <div key={i} className="px-2.5 py-1.5 bg-purple-500/5 rounded-lg border border-purple-500/10">
+                          <p className="text-xs font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
+                          <p className="text-xs text-purple-600 font-bold break-words">{resp.answer}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <>
-                  {/* Mobile cards */}
-                  <div className="md:hidden space-y-3">
-                    {initialReviews.map((r: any) => (
-                      <div key={r.id} className="bg-slate-50 dark:bg-white/5 rounded-2xl p-4 space-y-2.5">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex flex-col items-center bg-white dark:bg-zinc-800 rounded-xl px-2.5 py-1.5 shadow-sm border border-slate-100 dark:border-white/5">
-                              <span className="text-base font-black text-slate-900 dark:text-white leading-none">{Number(r.rating).toFixed(1)}</span>
+
+                {/* Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-slate-50 dark:border-white/5">
+                        <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-2 text-center">{t('audit.table.rating')}</th>
+                        <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.staffService')}</th>
+                        <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.comment')}</th>
+                        <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.date')}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50 dark:divide-white/5">
+                      {filteredReviews.map((r: any) => (
+                        <tr key={r.id} className="group hover:bg-slate-50 dark:hover:bg-white/5 transition-all">
+                          <td className="py-5 px-2">
+                            <div className="flex flex-col items-center">
+                              <span className="text-lg font-black text-slate-900 dark:text-white leading-none">{Number(r.rating).toFixed(1)}</span>
                               <Star className="w-3 h-3 text-yellow-400 fill-current" />
                             </div>
-                            <div>
-                              <p className="text-sm font-black text-slate-900 dark:text-white">{r.booking?.staff?.name || t('audit.table.staffFallback')}</p>
-                              <p className="text-xs font-bold text-slate-400">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
+                          </td>
+                          <td className="py-5 px-4 max-w-[200px]">
+                            <div className="space-y-0.5">
+                              <p className="text-sm font-black text-slate-900 dark:text-white truncate">{r.booking?.staff?.name || t('audit.table.staffFallback')}</p>
+                              <p className="text-xs font-bold text-slate-400 truncate">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
                             </div>
-                          </div>
-                          <span className="text-xs font-bold text-slate-400 shrink-0">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
-                        </div>
-                        {r.comment && (
-                          <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium italic border-l-2 border-purple-500/30 pl-3">"{r.comment}"</p>
-                        )}
-                        {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).slice(0, 2).map((resp: any, i: number) => (
-                          <div key={i} className="px-2.5 py-1.5 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                            <p className="text-xs font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
-                            <p className="text-xs text-purple-600 font-bold break-words">{resp.answer}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Desktop table */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="border-b border-slate-50 dark:border-white/5">
-                          <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-2 text-center">{t('audit.table.rating')}</th>
-                          <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.staffService')}</th>
-                          <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.comment')}</th>
-                          <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.date')}</th>
+                          </td>
+                          <td className="py-5 px-4 min-w-[200px] max-w-[300px]">
+                            <div className="space-y-2">
+                              {r.comment && (
+                                <p className="text-sm text-slate-700 dark:text-zinc-300 font-medium italic">"{r.comment}"</p>
+                              )}
+                              <div className="flex flex-wrap gap-2">
+                                {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).slice(0, 2).map((resp: any, i: number) => (
+                                  <div key={i} className="px-2 py-1 bg-purple-500/5 rounded-lg border border-purple-500/10">
+                                    <p className="text-xs font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
+                                    <p className="text-xs text-purple-600 font-bold truncate max-w-[150px]">{resp.answer}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-5 px-4">
+                            <span className="text-xs font-bold text-slate-400">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50 dark:divide-white/5">
-                        {initialReviews.map((r: any) => (
-                          <tr key={r.id} className="group hover:bg-slate-50 dark:hover:bg-white/5 transition-all">
-                            <td className="py-5 px-2">
-                               <div className="flex flex-col items-center">
-                                 <span className="text-lg font-black text-slate-900 dark:text-white leading-none">{Number(r.rating).toFixed(1)}</span>
-                                 <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                               </div>
-                            </td>
-                            <td className="py-5 px-4 max-w-[200px]">
-                               <div className="space-y-0.5">
-                                 <p className="text-sm font-black text-slate-900 dark:text-white truncate">{r.booking?.staff?.name || t('audit.table.staffFallback')}</p>
-                                 <p className="text-xs font-bold text-slate-400 truncate">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
-                               </div>
-                            </td>
-                            <td className="py-5 px-4 min-w-[200px] max-w-[300px]">
-                               <div className="space-y-2">
-                                 {r.comment && (
-                                   <p className="text-sm text-slate-700 dark:text-zinc-300 font-medium italic">"{r.comment}"</p>
-                                 )}
-                                 <div className="flex flex-wrap gap-2">
-                                   {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).slice(0, 2).map((resp: any, i: number) => (
-                                     <div key={i} className="px-2 py-1 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                                        <p className="text-xs font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
-                                        <p className="text-xs text-purple-600 font-bold truncate max-w-[150px]">{resp.answer}</p>
-                                     </div>
-                                   ))}
-                                 </div>
-                               </div>
-                            </td>
-                            <td className="py-5 px-4">
-                               <span className="text-xs font-bold text-slate-400">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-           </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 
