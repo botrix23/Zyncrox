@@ -1137,6 +1137,12 @@
       "description": "El sistema envía la encuesta automáticamente después de cada cita finalizada.",
       "previewBtn": "Previsualizar encuesta"
     },
+    "npsLock": {
+      "badge": "Business",
+      "title": "Pregunta NPS exclusiva del plan Business",
+      "body": "Las preguntas NPS están disponibles en el plan Business. Mejora tu plan para medir la lealtad de tus clientes.",
+      "cta": "Mejorar plan"
+    },
     "errors": {
       "update": "Error al actualizar configuración",
       "save": "Error al guardar la pregunta",

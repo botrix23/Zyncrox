@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { tenants, users, bookings, auditLogs, staff, platformConfig } from "@/db/schema";
+import { tenants, users, bookings, auditLogs, staff, platformConfig, surveyQuestions } from "@/db/schema";
 import { eq, desc, count, and, gte, lte, sql, ne } from "drizzle-orm";
 import bcrypt from 'bcryptjs';
 import { cookies } from "next/headers";
@@ -69,6 +69,15 @@ export async function updateTenantPlanAction(
   await db.update(tenants)
     .set({ plan, updatedAt: new Date(), ...downgradedFields })
     .where(eq(tenants.id, tenantId));
+
+  // Al bajar de ENTERPRISE (Business) → desactivar preguntas NPS (no se eliminan, solo se pausan)
+  const prevPlan = prevTenant?.plan;
+  const losingNps = prevPlan === 'ENTERPRISE' && plan !== 'ENTERPRISE';
+  if (losingNps) {
+    await db.update(surveyQuestions)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(and(eq(surveyQuestions.tenantId, tenantId), eq(surveyQuestions.questionType, 'NPS')));
+  }
 
   await enforceDowngradeLimits(tenantId, plan);
 

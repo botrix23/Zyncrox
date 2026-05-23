@@ -1137,6 +1137,12 @@
       "description": "The system sends the survey automatically after each finished appointment.",
       "previewBtn": "Preview survey"
     },
+    "npsLock": {
+      "badge": "Business",
+      "title": "NPS question — Business plan only",
+      "body": "NPS questions are available on the Business plan. Upgrade to measure your clients' loyalty.",
+      "cta": "Upgrade plan"
+    },
     "errors": {
       "update": "Error updating settings",
       "save": "Error saving question",

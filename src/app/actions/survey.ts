@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { surveyQuestions, tenants } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getPlanFeatures } from "@/core/plans";
 
 export async function updateSurveySettingsAction(tenantId: string, reviewsEnabled: boolean) {
   try {
@@ -46,6 +47,17 @@ export async function upsertSurveyQuestionAction(data: {
   sortOrder?: number;
 }) {
   try {
+    // Guard: NPS questions are exclusive to the Business (ENTERPRISE) plan
+    if (data.questionType === 'NPS' && !data.id) {
+      const tenant = await db.query.tenants.findFirst({
+        where: eq(tenants.id, data.tenantId),
+        columns: { plan: true },
+      });
+      if (!getPlanFeatures(tenant?.plan).nps) {
+        return { success: false, error: 'NPS_NOT_ALLOWED' };
+      }
+    }
+
     if (data.id) {
       // Update
       await db.update(surveyQuestions)

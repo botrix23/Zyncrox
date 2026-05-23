@@ -67,6 +67,7 @@ export default function SurveyClient({
   const [editingQuestion, setEditingQuestion] = useState<Partial<SurveyQuestion> | null>(null);
   const [isSavingQuestion, setIsSavingQuestion] = useState(false);
   const [activeTab, setActiveTab] = useState<'questions' | 'results'>('questions');
+  const [showNpsLock, setShowNpsLock] = useState(false);
 
   useEffect(() => {
     setQuestions(initialQuestions);
@@ -506,16 +507,46 @@ export default function SurveyClient({
                       <label className="text-xs font-black tracking-widest text-slate-400 ml-1">
                         {t('questionType')}
                       </label>
-                      <select
-                        value={editingQuestion?.questionType}
-                        onChange={(e) => setEditingQuestion({...editingQuestion, questionType: e.target.value as any})}
-                        className="w-full p-5 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-white/10 rounded-[24px] focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-sm font-medium dark:text-white appearance-none"
-                      >
-                        <option value="STARS">{t('types.STARS')}</option>
-                        <option value="YES_NO">{t('types.YES_NO')}</option>
-                        <option value="TEXT">{t('types.TEXT')}</option>
-                        <option value="NPS">{t('types.NPS')}</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={editingQuestion?.questionType}
+                          onChange={(e) => {
+                            if (e.target.value === 'NPS' && !canUseAdvanced) {
+                              setShowNpsLock(true);
+                              return;
+                            }
+                            setEditingQuestion({...editingQuestion, questionType: e.target.value as any});
+                          }}
+                          className="w-full p-5 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-white/10 rounded-[24px] focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all text-sm font-medium dark:text-white appearance-none"
+                        >
+                          <option value="STARS">{t('types.STARS')}</option>
+                          <option value="YES_NO">{t('types.YES_NO')}</option>
+                          <option value="TEXT">{t('types.TEXT')}</option>
+                          <option value="NPS" disabled={!canUseAdvanced}>
+                            {t('types.NPS')}{!canUseAdvanced ? ` — ${t('npsLock.badge')}` : ''}
+                          </option>
+                        </select>
+                      </div>
+                      {/* NPS lock mini-modal */}
+                      {showNpsLock && (
+                        <div className="mt-2 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-2xl space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-bold text-amber-800 dark:text-amber-300">{t('npsLock.title')}</p>
+                              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">{t('npsLock.body')}</p>
+                            </div>
+                            <button onClick={() => setShowNpsLock(false)} className="text-amber-500 hover:text-amber-700 shrink-0">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <a
+                            href={`/${locale}/admin/billing`}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-xl transition-colors"
+                          >
+                            {t('npsLock.cta')} →
+                          </a>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">
