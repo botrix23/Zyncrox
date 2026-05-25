@@ -311,6 +311,7 @@
         "badgeExclusive": "EXCLUSIVE",
         "badgeSimultaneous": "SIMULTANEOUS"
       },
+      "globalServiceNote": "Global service: appears in all branches. To restrict it, edit the service and select specific branches.",
       "confirmDelete": "Are you sure you want to delete this service?",
       "errorSave": "Error saving service",
       "errorDelete": "Error deleting service",
@@ -437,6 +438,7 @@
       "noPhone": "No phone",
       "noBranch": "No branch",
       "nextRotationScheduled": "Next rotation scheduled",
+      "overrideActiveNote": "Active rotation: today this specialist only appears at this branch, not their regular one.",
       "invalidEmail": "Please enter a valid email address (example@domain.com)",
       "days": {
         "monday": "Mo",

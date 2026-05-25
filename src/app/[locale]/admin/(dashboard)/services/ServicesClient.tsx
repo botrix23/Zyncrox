@@ -505,6 +505,12 @@ export default function ServicesClient({
                     </span>
                   ))}
                 </div>
+                {!service.isExclusive && (service.branches || []).length === 0 && (
+                  <div className="flex items-start gap-2 px-3 py-2 mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/40 rounded-xl text-blue-700 dark:text-blue-400">
+                    <span className="shrink-0 mt-0.5 text-base leading-none">ℹ️</span>
+                    <p className="text-xs font-medium leading-snug">{t('form.globalServiceNote')}</p>
+                  </div>
+                )}
                 {/* Inclusiones / exclusiones */}
                 {((service.includes?.length > 0) || (service.excludes?.length > 0)) && (
                   <div className="flex flex-wrap gap-1 mt-2">
@@ -632,6 +638,12 @@ export default function ServicesClient({
                           </span>
                         ))}
                       </div>
+                      {!service.isExclusive && (service.branches || []).length === 0 && (
+                        <div className="flex items-start gap-2 px-3 py-2 mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/40 rounded-xl text-blue-700 dark:text-blue-400 max-w-md">
+                          <span className="shrink-0 mt-0.5 text-base leading-none">ℹ️</span>
+                          <p className="text-xs font-medium leading-snug">{t('form.globalServiceNote')}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </td>

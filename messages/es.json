@@ -311,6 +311,7 @@
         "badgeExclusive": "EXCLUSIVO",
         "badgeSimultaneous": "SIMULTÁNEO"
       },
+      "globalServiceNote": "Servicio global: aparece en todas las sucursales. Si quieres limitarlo, edita el servicio y selecciona sucursales específicas.",
       "confirmDelete": "¿Estás seguro de eliminar este servicio?",
       "errorSave": "Error al guardar el servicio",
       "errorDelete": "Error al eliminar el servicio",
@@ -437,6 +438,7 @@
       "noPhone": "Sin teléfono",
       "noBranch": "Sin sucursal",
       "nextRotationScheduled": "Próxima rotación programada",
+      "overrideActiveNote": "Rotación activa: hoy este especialista solo aparece en esta sucursal, no en su sucursal habitual.",
       "invalidEmail": "Por favor ingresa un correo electrónico válido (ejemplo@dominio.com)",
       "days": {
         "monday": "Lu",

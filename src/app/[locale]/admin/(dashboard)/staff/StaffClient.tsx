@@ -519,6 +519,12 @@ export default function StaffClient({
                     </span>
                   ))}
                 </div>
+                {activeOverride && (
+                  <div className="w-full flex items-start gap-2 px-3 py-2 mt-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-xl text-amber-700 dark:text-amber-400">
+                    <span className="shrink-0 mt-0.5 text-base leading-none">⚠️</span>
+                    <p className="text-xs font-medium leading-snug text-left">{t('overrideActiveNote')}</p>
+                  </div>
+                )}
               </div>
 
               <div className="w-full pt-2 space-y-2">
