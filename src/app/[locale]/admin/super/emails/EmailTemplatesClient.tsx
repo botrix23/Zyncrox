@@ -129,31 +129,22 @@ export default function EmailTemplatesClient({ initialTemplates, locale }: { ini
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-      {/* Template selector — horizontal scroll on mobile, vertical list on desktop */}
+      {/* Template selector — dropdown on mobile, vertical list on desktop */}
       <div className="lg:w-56 lg:shrink-0">
-        {/* Mobile: horizontal pill scroll */}
-        <div className="flex gap-2 overflow-x-auto pb-2 lg:hidden">
-          {TEMPLATE_KEYS.map(key => {
-            const isCustom = !!templates[key];
-            return (
-              <button
-                key={key}
-                onClick={() => handleSelectTemplate(key)}
-                className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
-                  selected === key
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300'
-                }`}
-              >
+        {/* Mobile: native select dropdown */}
+        <div className="lg:hidden">
+          <select
+            value={selected}
+            onChange={e => handleSelectTemplate(e.target.value as TemplateKey)}
+            className="w-full px-4 py-3 rounded-xl text-sm font-semibold bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            {TEMPLATE_KEYS.map(key => (
+              <option key={key} value={key}>
                 {t(`templates.${key}.label`)}
-                {isCustom && (
-                  <span className={`text-[10px] font-bold px-1 py-0.5 rounded-full ${
-                    selected === key ? 'bg-white/20 text-white' : 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
-                  }`}>C</span>
-                )}
-              </button>
-            );
-          })}
+                {!!templates[key] ? '  ✦' : ''}
+              </option>
+            ))}
+          </select>
         </div>
         {/* Desktop: vertical list */}
         <div className="hidden lg:flex flex-col gap-1">
