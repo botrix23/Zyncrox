@@ -5,6 +5,7 @@ import {
   X, Users, CheckCircle2, Clock, XCircle, MoreVertical, KeyRound,
   Mail, UserX, UserCheck, Loader2, AlertTriangle, ShieldCheck,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import {
   getTenantUsersAction,
   superAdminResetPasswordAction,
@@ -22,55 +23,41 @@ const STAFF_LIMITS: Record<string, number> = {
   ENTERPRISE: 9999,
 };
 
-// ─── Relative time ────────────────────────────────────────────────────────────
-function formatRelative(date: Date | null): string {
-  if (!date) return 'Nunca';
-  const diff = Date.now() - new Date(date).getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (minutes < 1) return 'Ahora mismo';
-  if (minutes < 60) return `hace ${minutes}m`;
-  if (hours < 24) return `hace ${hours}h`;
-  if (days < 30) return `hace ${days}d`;
-  return new Date(date).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
 // ─── Status badge ─────────────────────────────────────────────────────────────
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, t }: { status: string; t: ReturnType<typeof useTranslations> }) {
   if (status === 'ACTIVE') {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-        <CheckCircle2 className="w-3 h-3" /> Activo
+        <CheckCircle2 className="w-3 h-3" /> {t('statusActive')}
       </span>
     );
   }
   if (status === 'PENDING') {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">
-        <Clock className="w-3 h-3" /> Pendiente
+        <Clock className="w-3 h-3" /> {t('statusPending')}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-zinc-200 dark:bg-white/10 text-zinc-500 dark:text-zinc-400">
-      <XCircle className="w-3 h-3" /> Inactivo
+      <XCircle className="w-3 h-3" /> {t('statusInactive')}
     </span>
   );
 }
 
 // ─── Role badge ───────────────────────────────────────────────────────────────
-function RoleBadge({ role }: { role: string }) {
+function RoleBadge({ role, t }: { role: string; t: ReturnType<typeof useTranslations> }) {
   if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-violet-500/10 text-violet-600 dark:text-violet-400">
-        <ShieldCheck className="w-3 h-3" /> Admin
+        <ShieldCheck className="w-3 h-3" /> {t('roleAdmin')}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400">
-      <Users className="w-3 h-3" /> Staff
+      <Users className="w-3 h-3" /> {t('roleStaff')}
     </span>
   );
 }
@@ -80,6 +67,7 @@ function ConfirmActionDialog({
   title,
   message,
   confirmLabel,
+  cancelLabel,
   variant,
   onConfirm,
   onCancel,
@@ -88,6 +76,7 @@ function ConfirmActionDialog({
   title: string;
   message: string;
   confirmLabel: string;
+  cancelLabel: string;
   variant: 'danger' | 'warning' | 'primary';
   onConfirm: () => void;
   onCancel: () => void;
@@ -110,7 +99,7 @@ function ConfirmActionDialog({
             disabled={loading}
             className="flex-1 py-2.5 rounded-xl bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-700 dark:text-zinc-300 font-bold text-sm transition-colors"
           >
-            Cancelar
+            {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
@@ -129,9 +118,11 @@ function ConfirmActionDialog({
 // ─── User action dropdown ────────────────────────────────────────────────────
 function UserActionMenu({
   user,
+  t,
   onAction,
 }: {
   user: TenantUser;
+  t: ReturnType<typeof useTranslations>;
   onAction: (action: string, user: TenantUser) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -155,13 +146,13 @@ function UserActionMenu({
         <MoreVertical className="w-4 h-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-8 z-10 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl py-1 min-w-[170px] animate-in fade-in duration-100">
+        <div className="absolute right-0 top-8 z-10 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl py-1 min-w-[180px] animate-in fade-in duration-100">
           {/* Reset password — always shown */}
           <button
             onClick={() => { setOpen(false); onAction('reset_password', user); }}
             className="flex items-center gap-2 w-full px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
           >
-            <KeyRound className="w-3.5 h-3.5 text-purple-500" /> Resetear contraseña
+            <KeyRound className="w-3.5 h-3.5 text-purple-500" /> {t('actionResetPassword')}
           </button>
           {/* Resend invitation — only if Pending */}
           {user.status === 'PENDING' && (
@@ -169,7 +160,7 @@ function UserActionMenu({
               onClick={() => { setOpen(false); onAction('resend_invitation', user); }}
               className="flex items-center gap-2 w-full px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
             >
-              <Mail className="w-3.5 h-3.5 text-blue-500" /> Reenviar invitación
+              <Mail className="w-3.5 h-3.5 text-blue-500" /> {t('actionResendInvitation')}
             </button>
           )}
           <div className="border-t border-zinc-100 dark:border-white/5 my-1" />
@@ -179,7 +170,7 @@ function UserActionMenu({
               onClick={() => { setOpen(false); onAction('deactivate', user); }}
               className="flex items-center gap-2 w-full px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
             >
-              <UserX className="w-3.5 h-3.5" /> Desactivar usuario
+              <UserX className="w-3.5 h-3.5" /> {t('actionDeactivate')}
             </button>
           )}
           {/* Reactivate — only if Inactive */}
@@ -188,7 +179,7 @@ function UserActionMenu({
               onClick={() => { setOpen(false); onAction('reactivate', user); }}
               className="flex items-center gap-2 w-full px-3 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
             >
-              <UserCheck className="w-3.5 h-3.5" /> Reactivar usuario
+              <UserCheck className="w-3.5 h-3.5" /> {t('actionReactivate')}
             </button>
           )}
         </div>
@@ -209,6 +200,7 @@ export default function TenantUsersModal({
   plan: string;
   onClose: () => void;
 }) {
+  const t = useTranslations('SuperAdmin.tenantUsersModal');
   const [tenantUsers, setTenantUsers] = useState<TenantUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionTarget, setActionTarget] = useState<{ action: string; user: TenantUser } | null>(null);
@@ -218,7 +210,6 @@ export default function TenantUsersModal({
   const staffLimit = STAFF_LIMITS[plan] ?? 2;
   const staffCount = tenantUsers.filter(u => u.role === 'STAFF').length;
   const adminCount = tenantUsers.filter(u => u.role === 'ADMIN').length;
-  const activeCount = tenantUsers.filter(u => u.status === 'ACTIVE').length;
   const usagePercent = staffLimit >= 9999 ? 0 : Math.round((staffCount / staffLimit) * 100);
   const atLimit = staffLimit < 9999 && staffCount >= staffLimit;
 
@@ -228,6 +219,19 @@ export default function TenantUsersModal({
       setLoading(false);
     });
   }, [tenantId]);
+
+  function formatRelative(date: Date | null): string {
+    if (!date) return t('lastAccessNever');
+    const diff = Date.now() - new Date(date).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (minutes < 1) return t('lastAccessNow');
+    if (minutes < 60) return t('lastAccessMinutes', { n: minutes });
+    if (hours < 24) return t('lastAccessHours', { n: hours });
+    if (days < 30) return t('lastAccessDays', { n: days });
+    return new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  }
 
   function showToast(msg: string, success: boolean) {
     setToast({ msg, success });
@@ -267,42 +271,48 @@ export default function TenantUsersModal({
 
     if (result.success) {
       const msgs: Record<string, string> = {
-        reset_password: 'Email de restablecimiento enviado correctamente.',
-        resend_invitation: 'Invitación reenviada correctamente.',
-        deactivate: 'Usuario desactivado.',
-        reactivate: 'Usuario reactivado.',
+        reset_password: t('toastResetOk'),
+        resend_invitation: t('toastResendOk'),
+        deactivate: t('toastDeactivateOk'),
+        reactivate: t('toastReactivateOk'),
       };
-      showToast(msgs[action] ?? 'Acción completada.', true);
+      showToast(msgs[action] ?? t('toastError'), true);
     } else {
-      const err = (result as any).error;
-      showToast(err === 'LAST_ADMIN' ? 'No puedes desactivar el único admin activo.' : 'Ocurrió un error. Intenta de nuevo.', false);
+      const err = (result as { success: boolean; error?: string }).error;
+      showToast(err === 'LAST_ADMIN' ? t('toastLastAdmin') : t('toastError'), false);
     }
   }
 
-  // Confirmation dialog content
-  const confirmContent: Record<string, { title: string; message: (u: TenantUser) => string; label: string; variant: 'danger' | 'warning' | 'primary' }> = {
+  // Confirmation dialog content per action
+  type ConfirmEntry = {
+    title: string;
+    message: (u: TenantUser) => string;
+    label: string;
+    variant: 'danger' | 'warning' | 'primary';
+  };
+  const confirmContent: Record<string, ConfirmEntry> = {
     reset_password: {
-      title: 'Resetear contraseña',
-      message: u => `Se enviará un email a ${u.email} con instrucciones para crear una nueva contraseña. ¿Continuar?`,
-      label: 'Enviar email',
+      title: t('confirmResetTitle'),
+      message: u => t('confirmResetMsg', { email: u.email }),
+      label: t('confirmResetBtn'),
       variant: 'primary',
     },
     resend_invitation: {
-      title: 'Reenviar invitación',
-      message: u => `Se reenviará el email de activación a ${u.email}. ¿Continuar?`,
-      label: 'Reenviar',
+      title: t('confirmResendTitle'),
+      message: u => t('confirmResendMsg', { email: u.email }),
+      label: t('confirmResendBtn'),
       variant: 'primary',
     },
     deactivate: {
-      title: 'Desactivar usuario',
-      message: u => `El usuario ${u.name} no podrá acceder al sistema. Sus citas y datos se conservan. ¿Continuar?`,
-      label: 'Desactivar',
+      title: t('confirmDeactivateTitle'),
+      message: u => t('confirmDeactivateMsg', { name: u.name }),
+      label: t('confirmDeactivateBtn'),
       variant: 'danger',
     },
     reactivate: {
-      title: 'Reactivar usuario',
-      message: u => `El usuario ${u.name} recuperará acceso al sistema. ¿Continuar?`,
-      label: 'Reactivar',
+      title: t('confirmReactivateTitle'),
+      message: u => t('confirmReactivateMsg', { name: u.name }),
+      label: t('confirmReactivateBtn'),
       variant: 'primary',
     },
   };
@@ -315,6 +325,7 @@ export default function TenantUsersModal({
           title={confirmContent[actionTarget.action].title}
           message={confirmContent[actionTarget.action].message(actionTarget.user)}
           confirmLabel={confirmContent[actionTarget.action].label}
+          cancelLabel={t('cancel')}
           variant={confirmContent[actionTarget.action].variant}
           onConfirm={executeAction}
           onCancel={() => setActionTarget(null)}
@@ -346,7 +357,7 @@ export default function TenantUsersModal({
                 <Users className="w-4 h-4 text-sky-500" />
               </div>
               <div>
-                <h2 className="text-base font-black text-zinc-900 dark:text-white">Usuarios de la empresa</h2>
+                <h2 className="text-base font-black text-zinc-900 dark:text-white">{t('title')}</h2>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">{tenantName}</p>
               </div>
             </div>
@@ -363,21 +374,23 @@ export default function TenantUsersModal({
             <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/5 shrink-0 space-y-3">
               <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="text-zinc-500 dark:text-zinc-400">Total usuarios:</span>
+                  <span className="text-zinc-500 dark:text-zinc-400">{t('totalUsers')}</span>
                   <span className="font-bold text-zinc-900 dark:text-white">{tenantUsers.length}</span>
-                  <span className="text-zinc-400">({adminCount} admin{adminCount !== 1 ? 's' : ''} + {staffCount} staff)</span>
+                  <span className="text-zinc-400">{t('adminsStaff', { admins: adminCount, staff: staffCount })}</span>
                 </div>
                 {atLimit && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400">
-                    <AlertTriangle className="w-3 h-3" /> Al límite — no puede agregar más usuarios
+                    <AlertTriangle className="w-3 h-3" /> {t('atLimit')}
                   </span>
                 )}
               </div>
               {staffLimit < 9999 && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                    <span>Especialistas: {staffCount} de {staffLimit} permitidos ({plan})</span>
-                    <span className={usagePercent >= 100 ? 'text-rose-500 font-bold' : usagePercent >= 80 ? 'text-amber-500 font-bold' : ''}>{usagePercent}%</span>
+                    <span>{t('staffUsage', { current: staffCount, limit: staffLimit, plan })}</span>
+                    <span className={usagePercent >= 100 ? 'text-rose-500 font-bold' : usagePercent >= 80 ? 'text-amber-500 font-bold' : ''}>
+                      {t('usagePercent', { pct: usagePercent })}
+                    </span>
                   </div>
                   <div className="w-full h-1.5 bg-zinc-100 dark:bg-white/10 rounded-full overflow-hidden">
                     <div
@@ -399,7 +412,7 @@ export default function TenantUsersModal({
             ) : tenantUsers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <Users className="w-10 h-10 text-zinc-300 dark:text-zinc-600 mb-3" />
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">No hay usuarios registrados en esta empresa.</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">{t('noUsers')}</p>
               </div>
             ) : (
               <>
@@ -408,13 +421,13 @@ export default function TenantUsersModal({
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-xs text-zinc-500 dark:text-zinc-400 border-b border-zinc-100 dark:border-white/5 bg-zinc-50/80 dark:bg-white/[0.02]">
-                        <th className="text-left px-6 py-3 font-semibold">Nombre</th>
-                        <th className="text-left px-4 py-3 font-semibold">Email</th>
-                        <th className="text-center px-4 py-3 font-semibold">Rol</th>
-                        <th className="text-center px-4 py-3 font-semibold">Estado</th>
-                        <th className="text-left px-4 py-3 font-semibold">Último acceso</th>
-                        <th className="text-left px-4 py-3 font-semibold">Creado</th>
-                        <th className="text-center px-4 py-3 font-semibold">Acciones</th>
+                        <th className="text-left px-6 py-3 font-semibold">{t('colName')}</th>
+                        <th className="text-left px-4 py-3 font-semibold">{t('colEmail')}</th>
+                        <th className="text-center px-4 py-3 font-semibold">{t('colRole')}</th>
+                        <th className="text-center px-4 py-3 font-semibold">{t('colStatus')}</th>
+                        <th className="text-left px-4 py-3 font-semibold">{t('colLastAccess')}</th>
+                        <th className="text-left px-4 py-3 font-semibold">{t('colCreated')}</th>
+                        <th className="text-center px-4 py-3 font-semibold">{t('colActions')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -427,10 +440,10 @@ export default function TenantUsersModal({
                             <p className="text-zinc-600 dark:text-zinc-400 text-xs truncate max-w-[180px]">{user.email}</p>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <RoleBadge role={user.role} />
+                            <RoleBadge role={user.role} t={t} />
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <StatusBadge status={user.status} />
+                            <StatusBadge status={user.status} t={t} />
                           </td>
                           <td className="px-4 py-3">
                             <span className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -439,11 +452,11 @@ export default function TenantUsersModal({
                           </td>
                           <td className="px-4 py-3">
                             <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                              {new Date(user.createdAt).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {new Date(user.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <UserActionMenu user={user} onAction={handleAction} />
+                            <UserActionMenu user={user} t={t} onAction={handleAction} />
                           </td>
                         </tr>
                       ))}
@@ -460,11 +473,11 @@ export default function TenantUsersModal({
                           <p className="font-semibold text-sm text-zinc-900 dark:text-white truncate">{user.name}</p>
                           <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user.email}</p>
                         </div>
-                        <UserActionMenu user={user} onAction={handleAction} />
+                        <UserActionMenu user={user} t={t} onAction={handleAction} />
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <RoleBadge role={user.role} />
-                        <StatusBadge status={user.status} />
+                        <RoleBadge role={user.role} t={t} />
+                        <StatusBadge status={user.status} t={t} />
                         <span className="text-xs text-zinc-400">· {formatRelative(user.lastLoginAt)}</span>
                       </div>
                     </div>

@@ -525,7 +525,7 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
             onClick={() => { const ten = tenants.find(ten => ten.id === openMenu); if (ten) handleViewUsers(ten); }}
             className="w-full text-left px-4 py-2.5 text-sm text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition-colors flex items-center gap-2"
           >
-            <UsersRound className="w-3.5 h-3.5" /> Ver usuarios
+            <UsersRound className="w-3.5 h-3.5" /> {t('viewUsers')}
           </button>
           <button
             onClick={() => { const ten = tenants.find(ten => ten.id === openMenu); if (ten) handleManageAdmins(ten); }}
