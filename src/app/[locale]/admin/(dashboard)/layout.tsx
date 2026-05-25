@@ -2,9 +2,10 @@ import { getSession } from "@/lib/auth-session";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { AdminHeader } from "@/components/AdminHeader";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+import PriceChangeBanner from "@/components/PriceChangeBanner";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { tenants, users, subscriptions } from "@/db/schema";
+import { tenants, users, subscriptions, platformConfig } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export default async function AdminLayout({
@@ -43,6 +44,18 @@ export default async function AdminLayout({
   let userEmail: string | null = session?.email ?? null;
 
   let shouldRedirectToBilling = false;
+  let priceChangeNotice: { effectiveDate: string; messageEs: string; messageEn: string; plans: { plan: string; currentPrice: number; newPrice: number }[] } | null = null;
+
+  // Fetch platform config for price change notice (lightweight, cached at CDN level)
+  try {
+    const cfg = await db.select({ priceChangeNotice: platformConfig.priceChangeNotice })
+      .from(platformConfig)
+      .limit(1)
+      .then(r => r[0] ?? null);
+    priceChangeNotice = cfg?.priceChangeNotice ?? null;
+  } catch {
+    // Non-critical — ignore if column doesn't exist yet
+  }
 
   if (session) {
     if (session.role === 'SUPER_ADMIN' && session.impersonatedTenantName) {
@@ -94,6 +107,10 @@ export default async function AdminLayout({
             tenantName={session.impersonatedTenantName ?? tenantName}
             locale={locale}
           />
+        )}
+        {/* Price change notice banner — shown to all tenant admins when a notice is active */}
+        {priceChangeNotice && session?.role !== 'SUPER_ADMIN' && (
+          <PriceChangeBanner notice={priceChangeNotice} locale={locale} />
         )}
         <AdminHeader
           user={session}

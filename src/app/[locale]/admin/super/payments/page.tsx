@@ -31,6 +31,7 @@ export default async function SuperPaymentsPage({
 
   const planPrices = parsePlanPrices(config);
   const { ids: planIds, locationCode } = parsePlanIds(config);
+  const activeNotice = config?.priceChangeNotice ?? null;
 
   return (
     <PaymentsTabsClient
@@ -47,6 +48,7 @@ export default async function SuperPaymentsPage({
         professional: { planId: planIds.PROFESSIONAL, price: planPrices.PROFESSIONAL },
         enterprise:   { planId: planIds.ENTERPRISE,   price: planPrices.ENTERPRISE },
       }}
+      activeNotice={activeNotice}
       initialTransactions={initialTransactions}
       mrr={revenueStats.mrr}
       revenueThisMonth={revenueStats.revenueThisMonth}

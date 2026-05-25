@@ -465,6 +465,13 @@ export const platformConfig = pgTable('platform_config', {
   n1coPlanIdBasic: varchar('n1co_plan_id_basic', { length: 255 }),
   n1coPlanIdProfessional: varchar('n1co_plan_id_professional', { length: 255 }),
   n1coPlanIdEnterprise: varchar('n1co_plan_id_enterprise', { length: 255 }),
+  // Aviso de cambio de precios (null = sin aviso activo)
+  priceChangeNotice: json('price_change_notice').$type<{
+    effectiveDate: string        // ISO date 'YYYY-MM-DD'
+    messageEs: string
+    messageEn: string
+    plans: { plan: string; currentPrice: number; newPrice: number }[]
+  } | null>(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 

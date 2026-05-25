@@ -27,9 +27,23 @@ interface N1coPlanConfig {
   enterprise: PlanConfig;
 }
 
+interface PriceChangePlan {
+  plan: string;
+  currentPrice: number;
+  newPrice: number;
+}
+
+interface ActiveNotice {
+  effectiveDate: string;
+  messageEs: string;
+  messageEn: string;
+  plans: PriceChangePlan[];
+}
+
 export default function PaymentsTabsClient({
   config,
   n1coPlanConfig,
+  activeNotice,
   initialTransactions,
   mrr,
   revenueThisMonth,
@@ -40,6 +54,7 @@ export default function PaymentsTabsClient({
 }: {
   config: PlatformConfig;
   n1coPlanConfig: N1coPlanConfig;
+  activeNotice: ActiveNotice | null;
   initialTransactions: Transaction[];
   mrr: number;
   revenueThisMonth: number;
@@ -78,7 +93,7 @@ export default function PaymentsTabsClient({
 
       {/* Tab content */}
       {tab === 'config' ? (
-        <PaymentsClient config={config} n1coPlanConfig={n1coPlanConfig} />
+        <PaymentsClient config={config} n1coPlanConfig={n1coPlanConfig} activeNotice={activeNotice} />
       ) : (
         <TransactionsTab
           initialTransactions={initialTransactions}
