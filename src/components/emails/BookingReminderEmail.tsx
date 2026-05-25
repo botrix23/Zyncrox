@@ -1,4 +1,4 @@
-import { Body, Container, Head, Heading, Hr, Html, Img, Preview, Section, Text } from "@react-email/components";
+import { Body, Button, Container, Head, Heading, Hr, Html, Img, Preview, Section, Text } from "@react-email/components";
 import * as React from "react";
 import { t, type EmailLocale } from "@/lib/emailI18n";
 
@@ -13,11 +13,12 @@ interface BookingReminderEmailProps {
   tenantLogo?: string;
   phone?: string | null;
   contactEmail?: string | null;
+  cancelUrl?: string;
   locale?: EmailLocale;
 }
 
 export const BookingReminderEmail = ({
-  customerName, serviceName, date, time, branchName, staffName, tenantName, tenantLogo, phone, contactEmail, locale = 'es',
+  customerName, serviceName, date, time, branchName, staffName, tenantName, tenantLogo, phone, contactEmail, cancelUrl, locale = 'es',
 }: BookingReminderEmailProps) => {
   const hasContact = !!(phone || contactEmail);
   return (
@@ -38,6 +39,15 @@ export const BookingReminderEmail = ({
             <Text style={detailText}><strong>{t.branch(locale)}</strong> {branchName}</Text>
             {staffName && <Text style={detailText}><strong>{t.specialist(locale)}</strong> {staffName}</Text>}
           </Section>
+          <Hr style={hr} />
+          {cancelUrl && (
+            <Section style={cancelSection}>
+              <Text style={cancelNote}>{t.reminderCancelNote(locale)}</Text>
+              <Button href={cancelUrl} style={cancelButton}>
+                {t.reminderCancelButton(locale)}
+              </Button>
+            </Section>
+          )}
           <Hr style={hr} />
           <Text style={footer}>{t.reminderFooter(tenantName, locale)}</Text>
           {hasContact && (
@@ -65,3 +75,16 @@ const hr = { borderColor: "#e6ebf1", margin: "20px 0" };
 const footer = { color: "#8898aa", fontSize: "12px", textAlign: "center" as const };
 const contactSection = { textAlign: "center" as const, margin: "8px 0 0 0" };
 const contactLine = { color: "#6b7280", fontSize: "13px", margin: "4px 0", textAlign: "center" as const };
+const cancelSection = { textAlign: "center" as const, margin: "0 0 4px 0" };
+const cancelNote = { color: "#6b7280", fontSize: "13px", margin: "0 0 12px 0", textAlign: "center" as const };
+const cancelButton = {
+  backgroundColor: "#ef4444",
+  borderRadius: "6px",
+  color: "#fff",
+  fontSize: "14px",
+  fontWeight: "600",
+  textDecoration: "none",
+  textAlign: "center" as const,
+  display: "inline-block",
+  padding: "10px 24px",
+};

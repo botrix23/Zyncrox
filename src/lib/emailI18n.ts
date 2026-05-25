@@ -58,8 +58,14 @@ export const t = {
       : `Hola ${customerName}, este es un recordatorio de tu próxima cita en `,
   reminderFooter: (tenantName: string, l: EmailLocale) =>
     l === 'en'
-      ? `If you need to cancel or reschedule, please contact us in advance. We look forward to seeing you at ${tenantName}!`
-      : `Si necesitas cancelar o reagendar, por favor contáctanos con anticipación. ¡Te esperamos en ${tenantName}!`,
+      ? `If you need to reschedule, please contact us in advance. We look forward to seeing you at ${tenantName}!`
+      : `Si necesitas reagendar, por favor contáctanos con anticipación. ¡Te esperamos en ${tenantName}!`,
+  reminderCancelButton: (l: EmailLocale) =>
+    l === 'en' ? 'Cancel appointment' : 'Cancelar cita',
+  reminderCancelNote: (l: EmailLocale) =>
+    l === 'en'
+      ? 'If you cannot attend, you can cancel your appointment by clicking the button above.'
+      : 'Si no puedes asistir, puedes cancelar tu cita haciendo clic en el botón de arriba.',
 
   // ── Cancellation ────────────────────────────────────────────────────────────
   cancellationSubject: (tenantName: string, l: EmailLocale) =>
