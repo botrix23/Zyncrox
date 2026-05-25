@@ -10,7 +10,7 @@ import { getPlatformEmailTemplates, buildEmailPayload } from "@/lib/emailTemplat
 import React from "react";
 
 /** Horas mínimas de anticipación para cancelar online */
-const CANCEL_WINDOW_HOURS = 24;
+const CANCEL_WINDOW_HOURS = 2;
 
 interface CancelPageProps {
   params: { locale: string; bookingId: string };
