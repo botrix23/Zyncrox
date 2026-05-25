@@ -602,3 +602,198 @@ export async function deleteTenantAdminAction(userId: string, tenantId: string) 
   revalidatePath('/[locale]/admin/super/tenants', 'page');
   return { success: true };
 }
+
+// ─── GET TENANT USERS (Super Admin) ─────────────────────────────────────────
+export async function getTenantUsersAction(tenantId: string) {
+  await assertSuperAdmin();
+
+  const tenantUsers = await db.query.users.findMany({
+    where: and(eq(users.tenantId, tenantId)),
+    orderBy: [desc(users.createdAt)],
+  });
+
+  // Get last login for each user from audit logs (grab recent logins, map by userId)
+  const loginLogs = await db.query.auditLogs.findMany({
+    where: and(eq(auditLogs.action, 'LOGIN_SUCCESS'), eq(auditLogs.tenantId, tenantId)),
+    orderBy: [desc(auditLogs.createdAt)],
+    limit: 200,
+  });
+
+  const lastLoginByUser: Record<string, Date> = {};
+  for (const log of loginLogs) {
+    if (log.userId && !lastLoginByUser[log.userId]) {
+      lastLoginByUser[log.userId] = log.createdAt;
+    }
+  }
+
+  return tenantUsers.map(u => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    isActive: u.isActive,
+    mustChangePassword: u.mustChangePassword,
+    createdAt: u.createdAt,
+    lastLoginAt: lastLoginByUser[u.id] ?? null,
+    // Derived status: Pending = active but must change password (hasn't completed setup)
+    status: !u.isActive ? 'INACTIVE' : u.mustChangePassword ? 'PENDING' : 'ACTIVE',
+  }));
+}
+
+// ─── SUPER ADMIN: RESET PASSWORD ────────────────────────────────────────────
+export async function superAdminResetPasswordAction(userId: string) {
+  const session = await assertSuperAdmin();
+
+  const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  if (!user) return { success: false, error: 'Usuario no encontrado' };
+
+  const { Resend } = await import('resend');
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
+  const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  const expires = new Date();
+  expires.setHours(expires.getHours() + 24);
+
+  await db.update(users).set({
+    resetPasswordToken: token,
+    resetPasswordExpiresAt: expires,
+  }).where(eq(users.id, userId));
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://zyncrox.com';
+  const resetLink = `${appUrl}/es/admin/reset-password?token=${token}`;
+
+  await resend.emails.send({
+    from: 'Zyncrox <noreply@zyncrox.com>',
+    to: user.email,
+    subject: 'Restablecer tu contraseña — Zyncrox',
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0a0a;color:#fff;border-radius:16px;">
+        <h1 style="font-size:24px;font-weight:900;margin-bottom:8px;">Restablecer contraseña</h1>
+        <p style="color:#a1a1aa;margin-bottom:24px;">Un administrador de la plataforma ha solicitado el restablecimiento de tu contraseña. Haz clic en el botón para crear una nueva. Este enlace expira en 24 horas.</p>
+        <a href="${resetLink}" style="display:inline-block;background:#fff;color:#000;font-weight:700;padding:14px 28px;border-radius:12px;text-decoration:none;font-size:14px;">Restablecer contraseña</a>
+        <p style="color:#52525b;font-size:12px;margin-top:24px;">Si no esperabas este correo, puedes ignorarlo.</p>
+      </div>
+    `,
+  });
+
+  await logAuditEvent({
+    action: 'SUPER_ADMIN_RESET_PASSWORD',
+    userId: session.userId,
+    tenantId: user.tenantId ?? undefined,
+    details: {
+      superAdminEmail: session.email,
+      targetUserId: userId,
+      targetEmail: user.email,
+    },
+  });
+
+  return { success: true };
+}
+
+// ─── SUPER ADMIN: RESEND INVITATION ─────────────────────────────────────────
+export async function superAdminResendInvitationAction(userId: string) {
+  const session = await assertSuperAdmin();
+
+  const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  if (!user) return { success: false, error: 'Usuario no encontrado' };
+
+  const { Resend } = await import('resend');
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
+  const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 7);
+
+  await db.update(users).set({
+    resetPasswordToken: token,
+    resetPasswordExpiresAt: expires,
+  }).where(eq(users.id, userId));
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://zyncrox.com';
+  const resetLink = `${appUrl}/es/admin/reset-password?token=${token}`;
+
+  await resend.emails.send({
+    from: 'Zyncrox <noreply@zyncrox.com>',
+    to: user.email,
+    subject: 'Invitación a Zyncrox — Activa tu cuenta',
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0a0a;color:#fff;border-radius:16px;">
+        <h1 style="font-size:24px;font-weight:900;margin-bottom:8px;">Bienvenido a Zyncrox</h1>
+        <p style="color:#a1a1aa;margin-bottom:24px;">Hola ${user.name}, has sido invitado a unirte a Zyncrox. Haz clic en el botón para activar tu cuenta y crear tu contraseña. Este enlace expira en 7 días.</p>
+        <a href="${resetLink}" style="display:inline-block;background:#fff;color:#000;font-weight:700;padding:14px 28px;border-radius:12px;text-decoration:none;font-size:14px;">Activar mi cuenta</a>
+        <p style="color:#52525b;font-size:12px;margin-top:24px;">Si no esperabas este correo, puedes ignorarlo.</p>
+      </div>
+    `,
+  });
+
+  await logAuditEvent({
+    action: 'SUPER_ADMIN_RESEND_INVITATION',
+    userId: session.userId,
+    tenantId: user.tenantId ?? undefined,
+    details: {
+      superAdminEmail: session.email,
+      targetUserId: userId,
+      targetEmail: user.email,
+    },
+  });
+
+  return { success: true };
+}
+
+// ─── SUPER ADMIN: DEACTIVATE USER ────────────────────────────────────────────
+export async function superAdminDeactivateUserAction(userId: string) {
+  const session = await assertSuperAdmin();
+
+  const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  if (!user) return { success: false, error: 'Usuario no encontrado' };
+
+  // Prevent deactivating the last active admin
+  if (user.role === 'ADMIN' && user.tenantId) {
+    const activeAdmins = await db.query.users.findMany({
+      where: and(eq(users.tenantId, user.tenantId), eq(users.role, 'ADMIN'), eq(users.isActive, true)),
+    });
+    if (activeAdmins.length <= 1) {
+      return { success: false, error: 'LAST_ADMIN' };
+    }
+  }
+
+  await db.update(users).set({ isActive: false }).where(eq(users.id, userId));
+
+  await logAuditEvent({
+    action: 'SUPER_ADMIN_DEACTIVATE_USER',
+    userId: session.userId,
+    tenantId: user.tenantId ?? undefined,
+    details: {
+      superAdminEmail: session.email,
+      targetUserId: userId,
+      targetEmail: user.email,
+      targetName: user.name,
+    },
+  });
+
+  return { success: true };
+}
+
+// ─── SUPER ADMIN: REACTIVATE USER ────────────────────────────────────────────
+export async function superAdminReactivateUserAction(userId: string) {
+  const session = await assertSuperAdmin();
+
+  const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  if (!user) return { success: false, error: 'Usuario no encontrado' };
+
+  await db.update(users).set({ isActive: true }).where(eq(users.id, userId));
+
+  await logAuditEvent({
+    action: 'SUPER_ADMIN_REACTIVATE_USER',
+    userId: session.userId,
+    tenantId: user.tenantId ?? undefined,
+    details: {
+      superAdminEmail: session.email,
+      targetUserId: userId,
+      targetEmail: user.email,
+      targetName: user.name,
+    },
+  });
+
+  return { success: true };
+}

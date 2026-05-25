@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { getAllTenantsAction, updateTenantStatusAction, updateTenantPlanAction, deleteTenantAction, impersonateTenantAction, updateTenantTrialDaysAction } from '@/app/actions/superAdmin';
-import { CheckCircle, Clock, XCircle, Trash2, ShieldCheck, MoreVertical, CreditCard, Users, Timer, Search, X as XIcon } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, Trash2, ShieldCheck, MoreVertical, CreditCard, Users, Timer, Search, X as XIcon, UsersRound } from 'lucide-react';
 import TenantAdminsModal from './TenantAdminsModal';
+import TenantUsersModal from './TenantUsersModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useTranslations } from 'next-intl';
 
@@ -176,6 +177,7 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
   const [planTarget, setPlanTarget] = useState<Tenant | null>(null);
   const [adminsTarget, setAdminsTarget] = useState<Tenant | null>(null);
   const [trialTarget, setTrialTarget] = useState<Tenant | null>(null);
+  const [usersTarget, setUsersTarget] = useState<Tenant | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number; openUp: boolean } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -278,6 +280,12 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
     setAdminsTarget(tenant);
   };
 
+  const handleViewUsers = (tenant: Tenant) => {
+    setOpenMenu(null);
+    setMenuPos(null);
+    setUsersTarget(tenant);
+  };
+
   const handleTrialDays = (tenant: Tenant) => {
     setOpenMenu(null);
     setMenuPos(null);
@@ -315,6 +323,14 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
           plan={adminsTarget.plan}
           recoveryEmail={(adminsTarget as any).recoveryEmail ?? null}
           onClose={() => setAdminsTarget(null)}
+        />
+      )}
+      {usersTarget && (
+        <TenantUsersModal
+          tenantId={usersTarget.id}
+          tenantName={usersTarget.name}
+          plan={usersTarget.plan}
+          onClose={() => setUsersTarget(null)}
         />
       )}
       <ConfirmDialog
@@ -505,6 +521,12 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
           style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
           className={`w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in duration-150 ${menuPos.openUp ? 'slide-in-from-bottom-2' : 'slide-in-from-top-2'}`}
         >
+          <button
+            onClick={() => { const ten = tenants.find(ten => ten.id === openMenu); if (ten) handleViewUsers(ten); }}
+            className="w-full text-left px-4 py-2.5 text-sm text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition-colors flex items-center gap-2"
+          >
+            <UsersRound className="w-3.5 h-3.5" /> Ver usuarios
+          </button>
           <button
             onClick={() => { const ten = tenants.find(ten => ten.id === openMenu); if (ten) handleManageAdmins(ten); }}
             className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors flex items-center gap-2"

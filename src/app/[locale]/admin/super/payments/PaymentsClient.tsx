@@ -115,12 +115,11 @@ export default function PaymentsClient({
           </div>
         </div>
         <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-3 leading-relaxed">
-          {t("description").split("Wompi El Salvador")[0]}
-          <a href="https://wompi.sv" target="_blank" rel="noopener noreferrer"
+          {t("description")}{" "}
+          <a href="https://panel.n1co.com" target="_blank" rel="noopener noreferrer"
             className="text-purple-600 dark:text-purple-400 hover:text-purple-500 inline-flex items-center gap-1">
-            Wompi El Salvador <ExternalLink className="w-3 h-3" />
+            panel.n1co.com <ExternalLink className="w-3 h-3" />
           </a>
-          {t("description").split("Wompi El Salvador")[1]}
         </p>
       </div>
 
@@ -152,12 +151,12 @@ export default function PaymentsClient({
         </div>
 
         <p className="text-xs text-zinc-600 dark:text-zinc-500">
-          {t("sectionHint").split("panel de Wompi")[0]}
-          <a href="https://panel.wompi.sv" target="_blank" rel="noopener noreferrer"
+          {t("sectionHint").split("panel de N1co")[0]}
+          <a href="https://panel.n1co.com" target="_blank" rel="noopener noreferrer"
             className="text-purple-600 dark:text-purple-400 hover:text-purple-500">
-            panel.wompi.sv
+            panel.n1co.com
           </a>
-          {t("sectionHint").split("panel de Wompi")[1] || " → Configuraciones generales → tu negocio."}
+          {t("sectionHint").split("panel de N1co")[1] || " → Configuraciones generales → tu negocio."}
         </p>
 
         {/* Environment toggle */}
@@ -380,12 +379,12 @@ export default function PaymentsClient({
               </span>
               {n === 1 ? (
                 <span>
-                  {t(`step${n}`).split("panel.wompi.sv")[0]}
-                  <a href="https://panel.wompi.sv" target="_blank" rel="noopener noreferrer"
+                  {t(`step${n}`).split("panel.n1co.com")[0]}
+                  <a href="https://panel.n1co.com" target="_blank" rel="noopener noreferrer"
                     className="text-purple-600 dark:text-purple-400 hover:text-purple-500">
-                    panel.wompi.sv
+                    panel.n1co.com
                   </a>
-                  {t(`step${n}`).split("panel.wompi.sv")[1]}
+                  {t(`step${n}`).split("panel.n1co.com")[1]}
                 </span>
               ) : (
                 <span>{t(`step${n}` as any)}</span>
