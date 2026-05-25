@@ -89,7 +89,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
 
     customTheme: true,
     customHero: true,
-    customWidgetSteps: true,
+    customWidgetSteps: false, // Solo Business (ENTERPRISE)
     customEmailTemplate: true,
 
     simultaneousServices: true,

@@ -51,6 +51,10 @@ emailLocale?: string | null;
 contactEmail?: string | null;
 bookingSettings?: {
   footerText?: string;
+  step1Title?: string;
+  step2Title?: string;
+  step3Title?: string;
+  step4Title?: string;
   [key: string]: any;
 };
 timezone?: string | null;
@@ -85,6 +89,10 @@ const [emailBodyTemplate, setEmailBodyTemplate] = useState(tenant.emailBodyTempl
 const [emailLocale, setEmailLocale] = useState(tenant.emailLocale || "es");
 const [contactEmail, setContactEmail] = useState(tenant.contactEmail || "");
 const [footerText, setFooterText] = useState(tenant.bookingSettings?.footerText || "");
+const [step1Title, setStep1Title] = useState(tenant.bookingSettings?.step1Title || "");
+const [step2Title, setStep2Title] = useState(tenant.bookingSettings?.step2Title || "");
+const [step3Title, setStep3Title] = useState(tenant.bookingSettings?.step3Title || "");
+const [step4Title, setStep4Title] = useState(tenant.bookingSettings?.step4Title || "");
   
   // Operación y Reglas (Lógico)
   const [whatsappNumber, setWhatsappNumber] = useState(tenant.whatsappNumber || "");
@@ -198,7 +206,11 @@ emailLocale,
 contactEmail: contactEmail || null,
 bookingSettings: {
   ...tenant.bookingSettings,
-  footerText
+  footerText,
+  step1Title: step1Title || undefined,
+  step2Title: step2Title || undefined,
+  step3Title: step3Title || undefined,
+  step4Title: step4Title || undefined,
 },
 timezone,
 });
@@ -483,6 +495,35 @@ try {
                   />
                   <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">{tPortal('form.footerHint')}</p>
                 </div>
+
+                {/* Widget Step Titles — Business plan */}
+                <PlanGateSection plan={plan} feature="customWidgetSteps" upgradeMessage={tPortal('form.widgetStepsUpgrade')}>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-1">{tPortal('form.widgetStepsLabel')}</label>
+                      <p className="text-xs text-slate-400 dark:text-zinc-500">{tPortal('form.widgetStepsHint')}</p>
+                    </div>
+                    {[
+                      { num: 1, value: step1Title, set: setStep1Title, placeholder: tWidget('title_branch') },
+                      { num: 2, value: step2Title, set: setStep2Title, placeholder: tWidget('title_service') },
+                      { num: 3, value: step3Title, set: setStep3Title, placeholder: tWidget('title_specialist') },
+                      { num: 4, value: step4Title, set: setStep4Title, placeholder: tWidget('title_data') },
+                    ].map(({ num, value, set, placeholder }) => (
+                      <div key={num} className="flex items-center gap-3">
+                        <span className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs font-black flex items-center justify-center shrink-0">
+                          {num}
+                        </span>
+                        <input
+                          type="text"
+                          value={value}
+                          onChange={e => set(e.target.value)}
+                          placeholder={placeholder}
+                          className="flex-1 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </PlanGateSection>
 
                 {/* Logo */}
                 <div>
