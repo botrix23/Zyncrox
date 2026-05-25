@@ -2182,6 +2182,10 @@
     "time": "Hora",
     "branch": "Sucursal",
     "specialist": "Especialista",
-    "contactNote": "Si tienes dudas, contáctanos directamente con {tenantName}."
+    "contactNote": "Si tienes dudas, contáctanos directamente con {tenantName}.",
+    "deadline": "⏰ Puedes cancelar en línea hasta el {deadline}.",
+    "tooLateTitle": "Plazo de cancelación expirado",
+    "tooLateDesc": "Solo se puede cancelar en línea hasta {hours} horas antes de la cita. Para cancelar o reprogramar, comunícate directamente con {tenantName}.",
+    "tooLateInline": "El plazo para cancelar en línea ha vencido. Contacta directamente a {tenantName}."
   }
 }

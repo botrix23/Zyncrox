@@ -2183,6 +2183,10 @@
     "time": "Time",
     "branch": "Branch",
     "specialist": "Specialist",
-    "contactNote": "If you have any questions, contact {tenantName} directly."
+    "contactNote": "If you have any questions, contact {tenantName} directly.",
+    "deadline": "⏰ You can cancel online until {deadline}.",
+    "tooLateTitle": "Cancellation window has passed",
+    "tooLateDesc": "Online cancellations are only allowed up to {hours} hours before the appointment. To cancel or reschedule, please contact {tenantName} directly.",
+    "tooLateInline": "The online cancellation window has passed. Please contact {tenantName} directly."
   }
 }

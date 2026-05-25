@@ -2,8 +2,15 @@ import { db } from "@/db";
 import { bookings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyCancelToken } from "@/lib/cancelToken";
-import { formatEmailDate, formatEmailTime } from "@/lib/emailI18n";
+import { formatEmailDate, formatEmailTime, t as emailT, type EmailLocale } from "@/lib/emailI18n";
 import { getTranslations } from "next-intl/server";
+import { resend } from "@/lib/resend";
+import { BookingCancellationEmail } from "@/components/emails/BookingCancellationEmail";
+import { getPlatformEmailTemplates, buildEmailPayload } from "@/lib/emailTemplates";
+import React from "react";
+
+/** Horas mínimas de anticipación para cancelar online */
+const CANCEL_WINDOW_HOURS = 24;
 
 interface CancelPageProps {
   params: { locale: string; bookingId: string };
@@ -39,7 +46,22 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
     return <InfoPage emoji="✅" title={t('alreadyFinished')} desc={t('alreadyFinishedDesc')} />;
   }
 
-  const tenantName = (booking.tenant as any)?.name || '';
+  const tenant = booking.tenant as any;
+  const tenantName = tenant?.name || '';
+  const localeKey = (locale === 'en' ? 'en' : 'es') as EmailLocale;
+
+  // ── Ventana de cancelación: 24h de anticipación mínima ──────────────────────
+  const deadlineDate = new Date(booking.startTime.getTime() - CANCEL_WINDOW_HOURS * 60 * 60 * 1000);
+  const isPastDeadline = new Date() > deadlineDate;
+
+  // Format the deadline for display (e.g. "lunes 26 de mayo, 10:00 AM")
+  const deadlineStr = deadlineDate.toLocaleString(locale === 'en' ? 'en-US' : 'es-SV', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   // User chose to keep the appointment
   if (action === 'keep') {
@@ -48,9 +70,114 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
 
   // User chose to cancel
   if (action === 'cancel') {
+    // Block cancellation past the 24h window
+    if (isPastDeadline) {
+      return (
+        <InfoPage
+          emoji="⏰"
+          title={t('tooLateTitle')}
+          desc={t('tooLateDesc', { tenantName, hours: CANCEL_WINDOW_HOURS })}
+        />
+      );
+    }
+
+    // Mark as cancelled
     await db.update(bookings)
       .set({ status: 'CANCELLED' })
       .where(eq(bookings.id, bookingId));
+
+    const dateStr = formatEmailDate(booking.startTime, localeKey);
+    const timeStr = formatEmailTime(booking.startTime);
+    const branchName = (booking.branch as any)?.name || '';
+    const serviceName = (booking.service as any)?.name || '';
+    const staffName = (booking.staff as any)?.name || '';
+
+    // ── Email 1: Confirmación de cancelación al CLIENTE ──────────────────────
+    if (booking.customerEmail) {
+      try {
+        const emailCfg = await getPlatformEmailTemplates();
+        const vars = {
+          customerName: booking.customerName,
+          serviceName,
+          date: dateStr,
+          time: timeStr,
+          branchName,
+          tenantName,
+          phone: tenant?.whatsappNumber || '',
+          contactEmail: tenant?.contactEmail || '',
+        };
+        const emailPayload = buildEmailPayload(
+          emailCfg?.emailTplCancellation,
+          React.createElement(BookingCancellationEmail, {
+            ...vars,
+            locale: localeKey,
+            tenantLogo: tenant?.logoUrl || undefined,
+            phone: tenant?.whatsappNumber || undefined,
+            contactEmail: tenant?.contactEmail || undefined,
+          }),
+          vars
+        );
+        await resend.emails.send({
+          from: `${tenantName} <notificaciones@zyncrox.com>`,
+          replyTo: tenant?.contactEmail || undefined,
+          to: booking.customerEmail,
+          subject: emailT.cancellationSubject(tenantName, localeKey),
+          ...emailPayload,
+        });
+      } catch (e) {
+        console.error('[CancelPage] Error sending cancellation email to client:', e);
+      }
+    }
+
+    // ── Email 2: Notificación al ADMIN/TENANT ────────────────────────────────
+    const adminEmail = tenant?.contactEmail;
+    if (adminEmail) {
+      try {
+        const isEn = localeKey === 'en';
+        const subject = isEn
+          ? `Booking cancelled by client – ${booking.customerName}`
+          : `Cita cancelada por el cliente – ${booking.customerName}`;
+
+        const html = isEn ? `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;background:#fff;border-radius:12px;border:1px solid #e5e7eb;">
+            <h2 style="color:#dc2626;margin:0 0 16px">⚠️ Appointment Cancelled</h2>
+            <p style="color:#374151;margin:0 0 20px">A client has cancelled their appointment online:</p>
+            <table style="width:100%;border-collapse:collapse;background:#fef2f2;border-radius:8px;padding:16px;">
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Client</td><td style="padding:8px 12px;color:#111827;">${booking.customerName}</td></tr>
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Email</td><td style="padding:8px 12px;color:#111827;">${booking.customerEmail || '—'}</td></tr>
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Service</td><td style="padding:8px 12px;color:#111827;">${serviceName}</td></tr>
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Date</td><td style="padding:8px 12px;color:#111827;">${dateStr}</td></tr>
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Time</td><td style="padding:8px 12px;color:#111827;">${timeStr}</td></tr>
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Branch</td><td style="padding:8px 12px;color:#111827;">${branchName}</td></tr>
+              ${staffName ? `<tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Specialist</td><td style="padding:8px 12px;color:#111827;">${staffName}</td></tr>` : ''}
+            </table>
+            <p style="color:#6b7280;font-size:13px;margin:20px 0 0">That time slot is now available for new bookings.</p>
+          </div>` : `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;background:#fff;border-radius:12px;border:1px solid #e5e7eb;">
+            <h2 style="color:#dc2626;margin:0 0 16px">⚠️ Cita cancelada</h2>
+            <p style="color:#374151;margin:0 0 20px">Un cliente ha cancelado su cita en línea:</p>
+            <table style="width:100%;border-collapse:collapse;background:#fef2f2;border-radius:8px;padding:16px;">
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Cliente</td><td style="padding:8px 12px;color:#111827;">${booking.customerName}</td></tr>
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Email</td><td style="padding:8px 12px;color:#111827;">${booking.customerEmail || '—'}</td></tr>
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Servicio</td><td style="padding:8px 12px;color:#111827;">${serviceName}</td></tr>
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Fecha</td><td style="padding:8px 12px;color:#111827;">${dateStr}</td></tr>
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Hora</td><td style="padding:8px 12px;color:#111827;">${timeStr}</td></tr>
+              <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Sucursal</td><td style="padding:8px 12px;color:#111827;">${branchName}</td></tr>
+              ${staffName ? `<tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Especialista</td><td style="padding:8px 12px;color:#111827;">${staffName}</td></tr>` : ''}
+            </table>
+            <p style="color:#6b7280;font-size:13px;margin:20px 0 0">El horario ya está disponible para nuevas reservas.</p>
+          </div>`;
+
+        await resend.emails.send({
+          from: `Zyncrox <notificaciones@zyncrox.com>`,
+          to: adminEmail,
+          subject,
+          html,
+        });
+      } catch (e) {
+        console.error('[CancelPage] Error sending cancellation notification to admin:', e);
+      }
+    }
 
     return (
       <InfoPage
@@ -61,11 +188,10 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
     );
   }
 
-  // Default: show confirmation page
-  const localeKey = (locale === 'en' ? 'en' : 'es') as 'es' | 'en';
+  // ── Default: show confirmation page ──────────────────────────────────────
   const dateStr = formatEmailDate(booking.startTime, localeKey);
   const timeStr = formatEmailTime(booking.startTime);
-  const tenantLogo = (booking.tenant as any)?.logoUrl || null;
+  const tenantLogo = tenant?.logoUrl || null;
   const staffName = (booking.staff as any)?.name || null;
   const branchName = (booking.branch as any)?.name || '';
   const serviceName = (booking.service as any)?.name || '';
@@ -101,7 +227,14 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
           {staffName && <DetailRow label={t('specialist')} value={staffName} />}
         </div>
 
-        {/* Actions — "Sí, asistiré" is the safe/primary button */}
+        {/* Cancellation deadline notice */}
+        {!isPastDeadline && (
+          <p className="text-center text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-xl px-3 py-2">
+            {t('deadline', { deadline: deadlineStr })}
+          </p>
+        )}
+
+        {/* Actions */}
         <div className="flex flex-col gap-3">
           <a
             href={keepUrl}
@@ -109,12 +242,18 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
           >
             {t('keepButton')}
           </a>
-          <a
-            href={cancelUrl}
-            className="w-full bg-slate-100 dark:bg-white/10 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 font-medium text-center py-3 px-6 rounded-xl transition-colors text-sm"
-          >
-            {t('cancelButton')}
-          </a>
+          {isPastDeadline ? (
+            <p className="text-center text-sm text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-white/5 rounded-xl px-4 py-3">
+              {t('tooLateInline', { tenantName })}
+            </p>
+          ) : (
+            <a
+              href={cancelUrl}
+              className="w-full bg-slate-100 dark:bg-white/10 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 font-medium text-center py-3 px-6 rounded-xl transition-colors text-sm"
+            >
+              {t('cancelButton')}
+            </a>
+          )}
         </div>
 
         {tenantName && (
