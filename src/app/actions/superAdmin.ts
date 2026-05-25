@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { tenants, users, bookings, auditLogs, staff, platformConfig, surveyQuestions, platformTransactions } from "@/db/schema";
+import { tenants, users, bookings, auditLogs, staff, platformConfig, surveyQuestions, platformTransactions, impersonationTokens } from "@/db/schema";
 import { eq, desc, asc, count, and, gte, lte, sql, ne, sum, ilike } from "drizzle-orm";
 import bcrypt from 'bcryptjs';
 import { cookies } from "next/headers";
@@ -970,4 +970,53 @@ export async function getPlatformRevenueStatsAction() {
     lastPayment: lastTx ? { tenantName: lastTx.tenantName, amount: parseFloat(String(lastTx.amount)), plan: lastTx.plan, createdAt: lastTx.createdAt } : null,
     revenueByMonth,
   };
+}
+
+// ─── Impersonación con token de un solo uso (CAMBIO 5) ───────────────────────
+// Crea un token temporal para que el Super Admin abra el panel de un tenant
+// en una NUEVA PESTAÑA sin modificar su propia sesión.
+// Rate limit: máx. 10 tokens por hora por Super Admin.
+export async function startImpersonationAction(tenantId: string, locale: string = 'es') {
+  const session = await assertSuperAdmin();
+  if (!session.userId) throw new Error('Super Admin userId not found in session');
+
+  // Verificar que el tenant existe
+  const tenant = await db.query.tenants.findFirst({ where: eq(tenants.id, tenantId) });
+  if (!tenant) return { success: false as const, error: 'tenant_not_found' };
+
+  // Rate limit: máx. 10 tokens creados en los últimos 60 minutos
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const [rateRow] = await db
+    .select({ cnt: count() })
+    .from(impersonationTokens)
+    .where(and(
+      eq(impersonationTokens.superAdminUserId, session.userId),
+      gte(impersonationTokens.createdAt, oneHourAgo),
+    ));
+  if ((rateRow?.cnt ?? 0) >= 10) {
+    return { success: false as const, error: 'rate_limit' };
+  }
+
+  // Crear token con expiración de 1 hora
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+  const [token] = await db
+    .insert(impersonationTokens)
+    .values({
+      superAdminUserId: session.userId,
+      targetTenantId: tenantId,
+      superAdminEmail: session.email,
+      targetTenantName: tenant.name,
+      locale,
+      expiresAt,
+    })
+    .returning({ id: impersonationTokens.id });
+
+  await logAuditEvent({
+    action: 'IMPERSONATION_STARTED',
+    userId: session.userId,
+    tenantId,
+    details: { superAdminEmail: session.email, tenantName: tenant.name, tokenId: token.id },
+  });
+
+  return { success: true as const, tokenId: token.id };
 }

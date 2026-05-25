@@ -1240,6 +1240,10 @@
     "upgradeRequired": "Funcionalidad Premium",
     "upgradeDesc": "Para personalizar tu sistema de encuestas con preguntas específicas necesitas una suscripción PRO o ENTERPRISE."
   },
+  "ImpersonationBanner": {
+    "viewing": "Estás viendo el panel como Super Admin · Empresa: ",
+    "exitButton": "Volver al Super Admin"
+  },
   "SuperAdmin": {
     "title": "Panel Super Admin",
     "subtitle": "Vista global de Zyncrox · Actualizado ahora",
@@ -1401,7 +1405,15 @@
       "adminCount": "{count} admin(s) · {branches} sucursal(es)",
       "bookingsAndBranches": "{bookings} reservas · {branches} suc.",
       "trialDays": "Trial: {days}d",
-      "viewUsers": "Ver usuarios"
+      "viewUsers": "Ver usuarios",
+      "impersonateMenuItem": "Entrar como admin",
+      "impersonateTitle": "Entrar como admin",
+      "impersonateMessage": "Vas a abrir el panel de administrador de:",
+      "impersonateWarning": "Se abrirá una nueva pestaña. Todas tus acciones quedarán registradas en el log de auditoría con tu email de Super Admin.",
+      "impersonateConfirm": "Entrar",
+      "impersonateCancel": "Cancelar",
+      "impersonateError": "No se pudo iniciar la sesión. Inténtalo de nuevo.",
+      "impersonateRateLimit": "Límite alcanzado. Puedes iniciar máximo 10 sesiones por hora."
     },
     "tenantUsersModal": {
       "title": "Usuarios de la empresa",

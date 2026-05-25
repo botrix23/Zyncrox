@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth-session";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { AdminHeader } from "@/components/AdminHeader";
+import ImpersonationBanner from "@/components/ImpersonationBanner";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { tenants, users, subscriptions } from "@/db/schema";
@@ -87,6 +88,13 @@ export default async function AdminLayout({
       <AdminSidebar user={session} locale={locale} tenantName={tenantName} tenantPlan={tenantPlan} />
 
       <main className="flex-1 flex flex-col min-h-screen max-h-screen overflow-hidden">
+        {/* Impersonation warning banner — shown when Super Admin is viewing a tenant panel */}
+        {session?.role === 'SUPER_ADMIN' && session.impersonatedTenantId && (
+          <ImpersonationBanner
+            tenantName={session.impersonatedTenantName ?? tenantName}
+            locale={locale}
+          />
+        )}
         <AdminHeader
           user={session}
           locale={locale}

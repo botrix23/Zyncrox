@@ -508,3 +508,24 @@ export const platformTransactions = pgTable('platform_transactions', {
 export const platformTransactionsRelations = relations(platformTransactions, ({ one }) => ({
   tenant: one(tenants, { fields: [platformTransactions.tenantId], references: [tenants.id] }),
 }));
+
+// ── Impersonation Tokens ─────────────────────────────────────────────────────
+// One-time tokens that allow a Super Admin to open a tenant's admin panel
+// in a new browser tab without modifying the Super Admin's own session.
+// Tokens expire after 1 hour and can only be used once.
+export const impersonationTokens = pgTable('impersonation_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  superAdminUserId: uuid('super_admin_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  targetTenantId: uuid('target_tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  superAdminEmail: varchar('super_admin_email', { length: 255 }).notNull(),
+  targetTenantName: varchar('target_tenant_name', { length: 255 }).notNull(),
+  locale: varchar('locale', { length: 10 }).notNull().default('es'),
+  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true, mode: 'date' }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+export const impersonationTokensRelations = relations(impersonationTokens, ({ one }) => ({
+  superAdmin: one(users, { fields: [impersonationTokens.superAdminUserId], references: [users.id] }),
+  targetTenant: one(tenants, { fields: [impersonationTokens.targetTenantId], references: [tenants.id] }),
+}));

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { getAllTenantsAction, updateTenantStatusAction, updateTenantPlanAction, deleteTenantAction, impersonateTenantAction, updateTenantTrialDaysAction } from '@/app/actions/superAdmin';
-import { CheckCircle, Clock, XCircle, Trash2, ShieldCheck, MoreVertical, CreditCard, Users, Timer, Search, X as XIcon, UsersRound } from 'lucide-react';
+import { getAllTenantsAction, updateTenantStatusAction, updateTenantPlanAction, deleteTenantAction, startImpersonationAction, updateTenantTrialDaysAction } from '@/app/actions/superAdmin';
+import { CheckCircle, Clock, XCircle, Trash2, ShieldCheck, LogIn, MoreVertical, CreditCard, Users, Timer, Search, X as XIcon, UsersRound, AlertTriangle } from 'lucide-react';
 import TenantAdminsModal from './TenantAdminsModal';
 import TenantUsersModal from './TenantUsersModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -179,6 +179,9 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
   const [trialTarget, setTrialTarget] = useState<Tenant | null>(null);
   const [usersTarget, setUsersTarget] = useState<Tenant | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number; openUp: boolean } | null>(null);
+  const [impersonateTarget, setImpersonateTarget] = useState<Tenant | null>(null);
+  const [impersonateLoading, setImpersonateLoading] = useState(false);
+  const [impersonateError, setImpersonateError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const filteredTenants = useMemo(() => {
@@ -264,13 +267,26 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
     setLoadingId(null);
   };
 
-  const handleImpersonate = async (id: string) => {
-    setLoadingId(id);
-    const res = await impersonateTenantAction(id);
+  const handleImpersonate = (tenant: Tenant) => {
+    setOpenMenu(null);
+    setMenuPos(null);
+    setImpersonateError(null);
+    setImpersonateTarget(tenant);
+  };
+
+  const confirmImpersonate = async () => {
+    if (!impersonateTarget) return;
+    setImpersonateLoading(true);
+    setImpersonateError(null);
+    const res = await startImpersonationAction(impersonateTarget.id, locale);
     if (res.success) {
-      window.location.href = `/${locale}/admin`;
+      setImpersonateTarget(null);
+      setImpersonateLoading(false);
+      // Open tenant admin panel in a new tab via the one-time token route
+      window.open(`/api/impersonate/${res.tokenId}`, '_blank', 'noopener,noreferrer');
     } else {
-      setLoadingId(null);
+      setImpersonateLoading(false);
+      setImpersonateError(res.error === 'rate_limit' ? t('impersonateRateLimit') : t('impersonateError'));
     }
   };
 
@@ -349,6 +365,51 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
           onCancel={() => setPlanTarget(null)}
           locale={locale}
         />
+      )}
+
+      {/* Impersonate confirmation modal */}
+      {impersonateTarget && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { if (!impersonateLoading) setImpersonateTarget(null); }} />
+          <div className="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-center w-14 h-14 bg-amber-500/10 rounded-2xl mb-4 mx-auto">
+              <ShieldCheck className="w-7 h-7 text-amber-500" />
+            </div>
+            <h3 className="text-lg font-black text-zinc-900 dark:text-white text-center">{t('impersonateTitle')}</h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center mt-2 mb-1">
+              {t('impersonateMessage')}
+            </p>
+            <p className="text-sm font-bold text-zinc-900 dark:text-white text-center mb-5">
+              {impersonateTarget.name}
+            </p>
+            <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl p-3 mb-5 flex gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700 dark:text-amber-300">{t('impersonateWarning')}</p>
+            </div>
+            {impersonateError && (
+              <p className="text-xs text-rose-500 text-center mb-3">{impersonateError}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setImpersonateTarget(null)}
+                disabled={impersonateLoading}
+                className="flex-1 py-2.5 rounded-xl bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-700 dark:text-zinc-300 font-bold text-sm transition-colors disabled:opacity-50"
+              >
+                {t('impersonateCancel')}
+              </button>
+              <button
+                onClick={confirmImpersonate}
+                disabled={impersonateLoading}
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {impersonateLoading
+                  ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <><LogIn className="w-4 h-4" />{t('impersonateConfirm')}</>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Search bar */}
@@ -430,10 +491,10 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => handleImpersonate(tenant.id)}
+                          onClick={() => handleImpersonate(tenant)}
                           disabled={isLoading}
                           title={t('impersonateTitle')}
-                          className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-purple-500 dark:hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-all disabled:opacity-50"
+                          className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all disabled:opacity-50"
                         >
                           {isLoading ? (
                             <div className="w-4 h-4 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin" />
@@ -481,9 +542,10 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
                 </div>
                 <div className="flex gap-1.5 shrink-0">
                   <button
-                    onClick={() => handleImpersonate(tenant.id)}
+                    onClick={() => handleImpersonate(tenant)}
                     disabled={isLoading}
-                    className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-purple-500 dark:hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-all disabled:opacity-50"
+                    title={t('impersonateTitle')}
+                    className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all disabled:opacity-50"
                   >
                     {isLoading ? <div className="w-4 h-4 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                   </button>
@@ -521,6 +583,13 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
           style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
           className={`w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in duration-150 ${menuPos.openUp ? 'slide-in-from-bottom-2' : 'slide-in-from-top-2'}`}
         >
+          <button
+            onClick={() => { const ten = tenants.find(ten => ten.id === openMenu); if (ten) handleImpersonate(ten); }}
+            className="w-full text-left px-4 py-2.5 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition-colors flex items-center gap-2"
+          >
+            <LogIn className="w-3.5 h-3.5" /> {t('impersonateMenuItem')}
+          </button>
+          <div className="border-t border-zinc-100 dark:border-white/5" />
           <button
             onClick={() => { const ten = tenants.find(ten => ten.id === openMenu); if (ten) handleViewUsers(ten); }}
             className="w-full text-left px-4 py-2.5 text-sm text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition-colors flex items-center gap-2"

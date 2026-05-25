@@ -1240,6 +1240,10 @@
     "upgradeRequired": "Premium Feature",
     "upgradeDesc": "To customize your survey system with specific questions you need a PRO or ENTERPRISE subscription."
   },
+  "ImpersonationBanner": {
+    "viewing": "You are viewing this panel as Super Admin · Company: ",
+    "exitButton": "Back to Super Admin"
+  },
   "SuperAdmin": {
     "title": "Super Admin Panel",
     "subtitle": "Global view of Zyncrox · Updated now",
@@ -1401,7 +1405,15 @@
       "adminCount": "{count} admin(s) · {branches} branch(es)",
       "bookingsAndBranches": "{bookings} bookings · {branches} br.",
       "trialDays": "Trial: {days}d",
-      "viewUsers": "View users"
+      "viewUsers": "View users",
+      "impersonateMenuItem": "Enter as admin",
+      "impersonateTitle": "Enter as admin",
+      "impersonateMessage": "You are about to open the admin panel for:",
+      "impersonateWarning": "A new tab will open. All your actions will be logged in the audit log with your Super Admin email.",
+      "impersonateConfirm": "Enter",
+      "impersonateCancel": "Cancel",
+      "impersonateError": "Could not start session. Please try again.",
+      "impersonateRateLimit": "Limit reached. You can start a maximum of 10 sessions per hour."
     },
     "tenantUsersModal": {
       "title": "Company users",
