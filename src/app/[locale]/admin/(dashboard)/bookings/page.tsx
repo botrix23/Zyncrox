@@ -56,7 +56,10 @@ export default async function BookingsPage() {
     }),
     db.query.staff.findMany({
       where: (s, { eq }) => eq(s.tenantId, tenantId),
-      with: { categories: true },
+      with: {
+        categories: true,
+        assignments: { columns: { branchId: true, isPermanent: true } },
+      },
     }),
     db.select().from(branches).where(eq(branches.tenantId, tenantId)),
     db.select().from(coverageZones).where(eq(coverageZones.tenantId, tenantId)),
