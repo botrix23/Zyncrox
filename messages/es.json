@@ -1538,6 +1538,28 @@
       "noTransactionsHint": "Los cobros aparecerán aquí automáticamente cuando el webhook de N1co confirme un pago.",
       "chartTitle": "Ingresos por mes (últimos 6 meses)"
     },
+    "n1coPlansSection": {
+      "sectionTitle": "Planes de suscripción N1co",
+      "sectionHint": "Cada plan en N1co tiene un precio fijo baked-in. Si cambias el precio, debes crear un nuevo plan en N1co y actualizar su ID aquí. El precio que configures es el que verán los tenants en la pantalla de pago.",
+      "locationCodeLabel": "Location Code",
+      "locationCodeHint": "Código de negocio de tu cuenta N1co. Requerido para crear suscripciones.",
+      "locationCodePlaceholder": "ej. LOC-001",
+      "planIdLabel": "N1co Plan ID",
+      "planIdHint": "Obtén este ID desde el panel de N1co al crear o ver el plan.",
+      "planIdPlaceholder": "plan_xxxxxxxxxxxx",
+      "priceLabel": "Precio mensual (USD)",
+      "pricePerMonth": "USD / mes",
+      "statusConfigured": "Configurado",
+      "statusNotConfigured": "Sin configurar",
+      "saveButton": "Guardar configuración de planes",
+      "saving": "Guardando...",
+      "savedOk": "Configuración de planes guardada correctamente.",
+      "errorPrice": "Todos los precios deben ser mayores que 0.",
+      "warningNoPlanId": "El Plan ID está vacío. N1co no podrá procesar pagos para este plan hasta configurarlo.",
+      "planBasic": "Basic",
+      "planProfessional": "Professional",
+      "planEnterprise": "Enterprise"
+    },
     "emailTemplatesPage": {
       "title": "Templates de Email",
       "subtitle": "Visualiza y personaliza los correos que se envían a los usuarios. Los cambios se aplican en todos los envíos.",

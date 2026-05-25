@@ -1538,6 +1538,28 @@
       "noTransactionsHint": "Charges will appear here automatically when the N1co webhook confirms a payment.",
       "chartTitle": "Revenue by month (last 6 months)"
     },
+    "n1coPlansSection": {
+      "sectionTitle": "N1co Subscription Plans",
+      "sectionHint": "Each plan in N1co has a fixed price baked in. If you change the price, you must create a new plan in N1co and update its ID here. The price you configure is what tenants will see on the payment screen.",
+      "locationCodeLabel": "Location Code",
+      "locationCodeHint": "Your N1co account location/business code. Required to create subscriptions.",
+      "locationCodePlaceholder": "e.g. LOC-001",
+      "planIdLabel": "N1co Plan ID",
+      "planIdHint": "Get this ID from the N1co panel when creating or viewing the plan.",
+      "planIdPlaceholder": "plan_xxxxxxxxxxxx",
+      "priceLabel": "Monthly price (USD)",
+      "pricePerMonth": "USD / month",
+      "statusConfigured": "Configured",
+      "statusNotConfigured": "Not configured",
+      "saveButton": "Save plan configuration",
+      "saving": "Saving...",
+      "savedOk": "Plan configuration saved successfully.",
+      "errorPrice": "All prices must be greater than 0.",
+      "warningNoPlanId": "Plan ID is empty. N1co won't be able to process payments for this plan until it's configured.",
+      "planBasic": "Basic",
+      "planProfessional": "Professional",
+      "planEnterprise": "Enterprise"
+    },
     "emailTemplatesPage": {
       "title": "Email Templates",
       "subtitle": "View and customize the emails sent to users. Changes apply to all future sends.",

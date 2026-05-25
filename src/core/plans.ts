@@ -184,6 +184,30 @@ export function parsePlanPrices(cfg: {
   }
 }
 
+/**
+ * Convierte los campos de platform_config en un mapa de plan IDs de N1co
+ * y el location code del negocio.
+ * Cada plan en N1co tiene un precio fijo; cambiar precio = crear nuevo plan en N1co.
+ */
+export function parsePlanIds(cfg: {
+  n1coPlanIdBasic?: string | null
+  n1coPlanIdProfessional?: string | null
+  n1coPlanIdEnterprise?: string | null
+  n1coLocationCode?: string | null
+} | null | undefined): {
+  ids: Record<PlanType, string>
+  locationCode: string
+} {
+  return {
+    ids: {
+      BASIC:        cfg?.n1coPlanIdBasic        ?? '',
+      PROFESSIONAL: cfg?.n1coPlanIdProfessional ?? '',
+      ENTERPRISE:   cfg?.n1coPlanIdEnterprise   ?? '',
+    },
+    locationCode: cfg?.n1coLocationCode ?? '',
+  }
+}
+
 /** Retorna las características del plan. Backward-compatible con FREE/PRO. */
 export function getPlanFeatures(plan?: string | null): PlanFeatures {
   const normalized = plan === 'FREE' ? 'BASIC' : plan === 'PRO' ? 'PROFESSIONAL' : plan;

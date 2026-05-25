@@ -1,9 +1,12 @@
 import { getSession, getEffectiveTenantId } from '@/lib/auth-session'
 import { redirect } from 'next/navigation'
 import { db } from '@/db'
-import { tenants, subscriptions } from '@/db/schema'
+import { tenants, subscriptions, platformConfig } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import BillingClient from './BillingClient'
+import { parsePlanPrices } from '@/core/plans'
+
+export const dynamic = 'force-dynamic'
 
 export default async function BillingPage({ params }: { params: { locale: string } }) {
   const session = await getSession()
@@ -16,7 +19,7 @@ export default async function BillingPage({ params }: { params: { locale: string
   const tenantId = getEffectiveTenantId(session)
   if (!tenantId) redirect(`/${locale}/admin`)
 
-  const [tenant, subscription] = await Promise.all([
+  const [tenant, subscription, cfg] = await Promise.all([
     db.query.tenants.findFirst({
       where: eq(tenants.id, tenantId),
       columns: { plan: true, status: true, name: true },
@@ -24,7 +27,10 @@ export default async function BillingPage({ params }: { params: { locale: string
     db.query.subscriptions.findFirst({
       where: eq(subscriptions.tenantId, tenantId),
     }),
+    db.select().from(platformConfig).limit(1).then(r => r[0] ?? null),
   ])
+
+  const planPrices = parsePlanPrices(cfg)
 
   return (
     <BillingClient
@@ -32,6 +38,7 @@ export default async function BillingPage({ params }: { params: { locale: string
       plan={tenant?.plan ?? 'BASIC'}
       tenantStatus={tenant?.status ?? 'ACTIVE'}
       locale={locale}
+      planPrices={planPrices}
       subscription={subscription ? {
         id: subscription.id,
         plan: subscription.plan,

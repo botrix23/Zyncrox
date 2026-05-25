@@ -15,15 +15,21 @@ interface PlatformConfig {
   wompiIsProduction: boolean;
 }
 
-interface PlanPrices {
-  BASIC: number;
-  PROFESSIONAL: number;
-  ENTERPRISE: number;
+interface PlanConfig {
+  planId: string;
+  price: number;
+}
+
+interface N1coPlanConfig {
+  locationCode: string;
+  basic: PlanConfig;
+  professional: PlanConfig;
+  enterprise: PlanConfig;
 }
 
 export default function PaymentsTabsClient({
   config,
-  planPrices,
+  n1coPlanConfig,
   initialTransactions,
   mrr,
   revenueThisMonth,
@@ -33,7 +39,7 @@ export default function PaymentsTabsClient({
   locale,
 }: {
   config: PlatformConfig;
-  planPrices: PlanPrices;
+  n1coPlanConfig: N1coPlanConfig;
   initialTransactions: Transaction[];
   mrr: number;
   revenueThisMonth: number;
@@ -72,7 +78,7 @@ export default function PaymentsTabsClient({
 
       {/* Tab content */}
       {tab === 'config' ? (
-        <PaymentsClient config={config} planPrices={planPrices} />
+        <PaymentsClient config={config} n1coPlanConfig={n1coPlanConfig} />
       ) : (
         <TransactionsTab
           initialTransactions={initialTransactions}

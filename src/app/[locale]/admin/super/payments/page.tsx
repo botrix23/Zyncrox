@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { platformConfig } from "@/db/schema";
 import { redirect } from "next/navigation";
 import PaymentsTabsClient from "./PaymentsTabsClient";
-import { parsePlanPrices } from "@/core/plans";
+import { parsePlanPrices, parsePlanIds } from "@/core/plans";
 import {
   getPlatformTransactionsAction,
   getPlatformRevenueStatsAction,
@@ -30,6 +30,7 @@ export default async function SuperPaymentsPage({
   ]);
 
   const planPrices = parsePlanPrices(config);
+  const { ids: planIds, locationCode } = parsePlanIds(config);
 
   return (
     <PaymentsTabsClient
@@ -40,7 +41,12 @@ export default async function SuperPaymentsPage({
           wompiIsProduction: false,
         }
       }
-      planPrices={planPrices}
+      n1coPlanConfig={{
+        locationCode,
+        basic:        { planId: planIds.BASIC,        price: planPrices.BASIC },
+        professional: { planId: planIds.PROFESSIONAL, price: planPrices.PROFESSIONAL },
+        enterprise:   { planId: planIds.ENTERPRISE,   price: planPrices.ENTERPRISE },
+      }}
       initialTransactions={initialTransactions}
       mrr={revenueStats.mrr}
       revenueThisMonth={revenueStats.revenueThisMonth}

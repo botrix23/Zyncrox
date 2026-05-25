@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from '@/db'
-import { subscriptions, tenants } from '@/db/schema'
+import { subscriptions, tenants, platformConfig } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth-session'
@@ -10,9 +10,8 @@ import {
   createN1coSubscription,
   cancelN1coSubscription,
   N1coCardData,
-  N1CO_PLAN_IDS,
 } from '@/lib/n1co'
-import { getPlanPrice } from '@/core/plans'
+import { getPlanPrice, parsePlanIds, parsePlanPrices, PlanType } from '@/core/plans'
 import { enforceDowngradeLimits } from '@/lib/billing'
 
 // Re-export so billing UI can import from here
@@ -30,12 +29,15 @@ function isDowngrade(currentPlan: string, newPlan: string): boolean {
   return (PLAN_ORDER[newPlan] ?? 0) < (PLAN_ORDER[currentPlan] ?? 0)
 }
 
-function n1coPlanId(plan: string): string {
-  const key = plan as keyof typeof N1CO_PLAN_IDS
-  return N1CO_PLAN_IDS[key] ?? ''
+/** Fetches N1co plan IDs and location code from platform_config (DB). */
+async function getN1coConfig(): Promise<{ planId: (plan: string) => string; locationCode: string }> {
+  const cfg = await db.select().from(platformConfig).limit(1).then(r => r[0] ?? null)
+  const { ids, locationCode } = parsePlanIds(cfg)
+  return {
+    planId: (plan: string) => ids[plan as PlanType] ?? '',
+    locationCode,
+  }
 }
-
-const LOCATION_CODE = process.env.N1CO_LOCATION_CODE ?? ''
 
 // ---------------------------------------------------------------------------
 // Read subscription
@@ -64,7 +66,10 @@ export async function activateSubscriptionAction(
   if (!session) return { success: false, error: 'Unauthorized' }
 
   try {
-    const tenant = await db.query.tenants.findFirst({ where: eq(tenants.id, tenantId) })
+    const [tenant, n1co] = await Promise.all([
+      db.query.tenants.findFirst({ where: eq(tenants.id, tenantId) }),
+      getN1coConfig(),
+    ])
     if (!tenant) return { success: false, error: 'Tenant no encontrado' }
 
     // 1. Tokenize card → payment method
@@ -72,8 +77,8 @@ export async function activateSubscriptionAction(
 
     // 2. Create N1CO subscription (N1CO handles recurring billing)
     const n1coSub = await createN1coSubscription({
-      planId:          n1coPlanId(plan),
-      locationCode:    LOCATION_CODE,
+      planId:          n1co.planId(plan),
+      locationCode:    n1co.locationCode,
       paymentMethodId: pm.paymentMethodId,
       customerId:      tenantId,
       customerName:    tenant.name,
@@ -173,6 +178,7 @@ export async function changePlanAction(
     // -------------------------------------------------------------------------
     // UPGRADE — apply immediately: cancel old N1CO sub, create new one
     // -------------------------------------------------------------------------
+    const n1co = await getN1coConfig()
 
     // Cancel existing N1CO subscription
     if (sub.n1coSubscriptionId) {
@@ -185,8 +191,8 @@ export async function changePlanAction(
 
     // Create new N1CO subscription with new plan
     const n1coSub = await createN1coSubscription({
-      planId:          n1coPlanId(newPlan),
-      locationCode:    LOCATION_CODE,
+      planId:          n1co.planId(newPlan),
+      locationCode:    n1co.locationCode,
       paymentMethodId: sub.n1coPaymentMethodId,
       customerId:      tenantId,
       customerName:    tenant.name,
@@ -277,7 +283,10 @@ export async function updateCardAction(tenantId: string, cardData: N1coCardData)
     if (!tenant) return { success: false, error: 'Tenant no encontrado' }
 
     // Create new payment method with new card
-    const pm = await createPaymentMethod(cardData)
+    const [pm, n1co] = await Promise.all([
+      createPaymentMethod(cardData),
+      getN1coConfig(),
+    ])
 
     // Cancel old N1CO subscription and recreate with new payment method
     if (sub.n1coSubscriptionId) {
@@ -289,8 +298,8 @@ export async function updateCardAction(tenantId: string, cardData: N1coCardData)
     }
 
     const n1coSub = await createN1coSubscription({
-      planId:          n1coPlanId(sub.plan),
-      locationCode:    LOCATION_CODE,
+      planId:          n1co.planId(sub.plan),
+      locationCode:    n1co.locationCode,
       paymentMethodId: pm.paymentMethodId,
       customerId:      tenantId,
       customerName:    tenant.name,
@@ -357,9 +366,10 @@ export async function reactivateSubscriptionAction(
       return { success: false, error: 'Se requiere método de pago' }
     }
 
+    const n1co = await getN1coConfig()
     const n1coSub = await createN1coSubscription({
-      planId:          n1coPlanId(newPlan),
-      locationCode:    LOCATION_CODE,
+      planId:          n1co.planId(newPlan),
+      locationCode:    n1co.locationCode,
       paymentMethodId,
       customerId:      tenantId,
       customerName:    tenant.name,

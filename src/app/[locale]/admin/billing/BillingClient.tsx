@@ -3,6 +3,8 @@
 import React, { useState } from 'react'
 import { CreditCard, AlertTriangle, CheckCircle, XCircle, X } from 'lucide-react'
 import { PLAN_FEATURES, PLAN_PRICES, PlanType } from '@/core/plans'
+
+type DynamicPrices = Record<PlanType, number>
 import {
   activateSubscriptionAction,
   cancelSubscriptionAction,
@@ -36,6 +38,7 @@ type Props = {
   tenantStatus: string
   subscription: SubscriptionData | null
   locale: string
+  planPrices?: DynamicPrices
 }
 
 const PLANS: PlanType[] = ['BASIC', 'PROFESSIONAL', 'ENTERPRISE']
@@ -142,7 +145,9 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   )
 }
 
-export default function BillingClient({ tenantId, plan, tenantStatus, subscription, locale }: Props) {
+export default function BillingClient({ tenantId, plan, tenantStatus, subscription, locale, planPrices: dynamicPrices }: Props) {
+  // Use dynamic prices from platform_config if provided, fallback to hardcoded
+  const prices: DynamicPrices = dynamicPrices ?? PLAN_PRICES
   const t = useTranslations('Billing')
   const [modal, setModal] = useState<'upgrade' | 'downgrade' | 'cancel' | 'card' | 'activate' | 'reactivate' | null>(null)
   const [targetPlan, setTargetPlan] = useState<PlanType>('PROFESSIONAL')
@@ -269,7 +274,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
             {PLANS.map(p => (
               <div key={p} className={`rounded-2xl border p-4 cursor-pointer transition-all ${p === currentPlan ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-zinc-200 dark:border-white/10 hover:border-purple-400'}`}>
                 <div className="text-sm font-bold mb-1">{PLAN_NAMES[p]}</div>
-                <div className="text-2xl font-black mb-3">${PLAN_PRICES[p]}<span className="text-sm font-normal text-zinc-500">{t('perMonth')}</span></div>
+                <div className="text-2xl font-black mb-3">${prices[p]}<span className="text-sm font-normal text-zinc-500">{t('perMonth')}</span></div>
                 <button onClick={() => { setTargetPlan(p); setModal('reactivate') }}
                   className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">
                   {t('suspended.reactivateWith', { plan: PLAN_NAMES[p] })}
@@ -300,7 +305,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
             {PLANS.map(p => (
               <div key={p} className="rounded-2xl border border-zinc-200 dark:border-white/10 p-4">
                 <div className="text-sm font-bold mb-1">{PLAN_NAMES[p]}</div>
-                <div className="text-2xl font-black mb-3">${PLAN_PRICES[p]}<span className="text-sm font-normal text-zinc-500">{t('perMonth')}</span></div>
+                <div className="text-2xl font-black mb-3">${prices[p]}<span className="text-sm font-normal text-zinc-500">{t('perMonth')}</span></div>
                 <ul className="space-y-1 mb-4">
                   {FEATURE_KEYS.slice(0, 6).map(key => (
                     <li key={key} className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
@@ -344,7 +349,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
             </div>
 
             {isActive && subscription?.currentPeriodEnd && (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.rich('currentSub.nextInvoice', { amount: PLAN_PRICES[currentPlan], date: formatDate(subscription.currentPeriodEnd, locale), strong: richStrong })}</p>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.rich('currentSub.nextInvoice', { amount: prices[currentPlan], date: formatDate(subscription.currentPeriodEnd, locale), strong: richStrong })}</p>
             )}
             {isCancelled && subscription?.currentPeriodEnd && (
               <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.rich('currentSub.accessUntil', { date: formatDate(subscription.currentPeriodEnd, locale), strong: richStrong })}</p>
@@ -424,7 +429,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                       <span className="text-sm font-bold">{PLAN_NAMES[p]}</span>
                       {isCurrent && <span className="px-2 py-0.5 bg-purple-600 text-white text-xs font-bold rounded-full">{t('changePlan.current')}</span>}
                     </div>
-                    <span className="text-lg font-black">${PLAN_PRICES[p]}<span className="text-xs font-normal text-zinc-500">{t('perMonth')}</span></span>
+                    <span className="text-lg font-black">${prices[p]}<span className="text-xs font-normal text-zinc-500">{t('perMonth')}</span></span>
                   </div>
                   <ul className="space-y-1 mb-3">
                     {FEATURE_KEYS.slice(0, 5).map(key => (

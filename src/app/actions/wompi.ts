@@ -148,3 +148,71 @@ export async function savePlanPricesAction(data: {
     return { success: false, error: "Error al guardar los precios" };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Save N1co plan config — plan IDs (from N1co panel) + prices + location code
+// ---------------------------------------------------------------------------
+export async function saveN1coPlanConfigAction(data: {
+  n1coLocationCode: string;
+  basic:        { planId: string; price: number };
+  professional: { planId: string; price: number };
+  enterprise:   { planId: string; price: number };
+}) {
+  try {
+    const session = await getSession();
+    if (!session || session.role !== "SUPER_ADMIN") {
+      return { success: false, error: "No autorizado" };
+    }
+
+    if (data.basic.price <= 0 || data.professional.price <= 0 || data.enterprise.price <= 0) {
+      return { success: false, error: "Todos los precios deben ser mayores que 0" };
+    }
+
+    await db
+      .insert(platformConfig)
+      .values({
+        id: 1,
+        n1coLocationCode:       data.n1coLocationCode.trim() || null,
+        n1coPlanIdBasic:        data.basic.planId.trim()        || null,
+        n1coPlanIdProfessional: data.professional.planId.trim() || null,
+        n1coPlanIdEnterprise:   data.enterprise.planId.trim()   || null,
+        planPriceBasic:        String(data.basic.price),
+        planPriceProfessional: String(data.professional.price),
+        planPriceEnterprise:   String(data.enterprise.price),
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: platformConfig.id,
+        set: {
+          n1coLocationCode:       data.n1coLocationCode.trim() || null,
+          n1coPlanIdBasic:        data.basic.planId.trim()        || null,
+          n1coPlanIdProfessional: data.professional.planId.trim() || null,
+          n1coPlanIdEnterprise:   data.enterprise.planId.trim()   || null,
+          planPriceBasic:        String(data.basic.price),
+          planPriceProfessional: String(data.professional.price),
+          planPriceEnterprise:   String(data.enterprise.price),
+          updatedAt: new Date(),
+        },
+      });
+
+    await logAuditEvent({
+      action: "N1CO_PLAN_CONFIG_UPDATED",
+      userId: session.userId,
+      details: {
+        locationCode: data.n1coLocationCode,
+        basicPlanId: data.basic.planId,
+        priceBasic: data.basic.price,
+        professionalPlanId: data.professional.planId,
+        priceProfessional: data.professional.price,
+        enterprisePlanId: data.enterprise.planId,
+        priceEnterprise: data.enterprise.price,
+      },
+    });
+
+    revalidatePath("/", "layout");
+    return { success: true };
+  } catch (error) {
+    console.error("Error saving N1co plan config:", error);
+    return { success: false, error: "Error al guardar la configuración de planes" };
+  }
+}

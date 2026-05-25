@@ -4,12 +4,12 @@ import { useState } from "react";
 import {
   CreditCard, KeyRound, Eye, EyeOff, CheckCircle2, AlertCircle,
   Loader2, FlaskConical, Zap, ExternalLink, ShieldCheck, Building2,
-  DollarSign,
+  Hash, DollarSign, MapPin, AlertTriangle,
 } from "lucide-react";
 import {
   saveWompiCredentialsAction,
   testWompiCredentialsAction,
-  savePlanPricesAction,
+  saveN1coPlanConfigAction,
 } from "@/app/actions/wompi";
 import { useTranslations } from "next-intl";
 
@@ -19,10 +19,16 @@ interface PlatformConfig {
   wompiIsProduction: boolean;
 }
 
-interface PlanPrices {
-  BASIC: number;
-  PROFESSIONAL: number;
-  ENTERPRISE: number;
+interface PlanConfig {
+  planId: string;
+  price: number;
+}
+
+interface N1coPlanConfig {
+  locationCode: string;
+  basic: PlanConfig;
+  professional: PlanConfig;
+  enterprise: PlanConfig;
 }
 
 interface TestResult {
@@ -35,14 +41,15 @@ interface TestResult {
 
 export default function PaymentsClient({
   config,
-  planPrices,
+  n1coPlanConfig,
 }: {
   config: PlatformConfig;
-  planPrices: PlanPrices;
+  n1coPlanConfig: N1coPlanConfig;
 }) {
   const t = useTranslations("SuperAdmin.paymentsPage");
+  const tp = useTranslations("SuperAdmin.n1coPlansSection");
 
-  // Wompi state
+  // Credentials state
   const [appId, setAppId] = useState(config.wompiAppId ?? "");
   const [apiSecret, setApiSecret] = useState(config.wompiApiSecret ?? "");
   const [isProduction, setIsProduction] = useState(config.wompiIsProduction);
@@ -52,12 +59,16 @@ export default function PaymentsClient({
   const [saveResult, setSaveResult] = useState<{ success: boolean; error?: string } | null>(null);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
 
-  // Plan prices state
-  const [priceBasic, setPriceBasic] = useState(String(planPrices.BASIC));
-  const [pricePro, setPricePro] = useState(String(planPrices.PROFESSIONAL));
-  const [priceEnt, setPriceEnt] = useState(String(planPrices.ENTERPRISE));
-  const [savingPrices, setSavingPrices] = useState(false);
-  const [priceResult, setPriceResult] = useState<{ success: boolean; error?: string } | null>(null);
+  // Plan config state
+  const [locationCode, setLocationCode] = useState(n1coPlanConfig.locationCode);
+  const [basicId,   setBasicId]   = useState(n1coPlanConfig.basic.planId);
+  const [basicPrice, setBasicPrice] = useState(String(n1coPlanConfig.basic.price));
+  const [proId,    setProId]    = useState(n1coPlanConfig.professional.planId);
+  const [proPrice,  setProPrice]  = useState(String(n1coPlanConfig.professional.price));
+  const [entId,    setEntId]    = useState(n1coPlanConfig.enterprise.planId);
+  const [entPrice,  setEntPrice]  = useState(String(n1coPlanConfig.enterprise.price));
+  const [savingPlans, setSavingPlans] = useState(false);
+  const [planResult, setPlanResult] = useState<{ success: boolean; error?: string } | null>(null);
 
   const isConfigured = !!(config.wompiAppId && config.wompiApiSecret);
 
@@ -79,24 +90,25 @@ export default function PaymentsClient({
     if (result.success) setTimeout(() => setSaveResult(null), 4000);
   }
 
-  async function handleSavePrices() {
-    const basic = parseFloat(priceBasic);
-    const pro   = parseFloat(pricePro);
-    const ent   = parseFloat(priceEnt);
+  async function handleSavePlans() {
+    const basic = parseFloat(basicPrice);
+    const pro   = parseFloat(proPrice);
+    const ent   = parseFloat(entPrice);
     if (isNaN(basic) || isNaN(pro) || isNaN(ent) || basic <= 0 || pro <= 0 || ent <= 0) {
-      setPriceResult({ success: false, error: "Todos los precios deben ser mayores que 0" });
+      setPlanResult({ success: false, error: tp("errorPrice") });
       return;
     }
-    setSavingPrices(true);
-    setPriceResult(null);
-    const result = await savePlanPricesAction({
-      planPriceBasic:        basic,
-      planPriceProfessional: pro,
-      planPriceEnterprise:   ent,
+    setSavingPlans(true);
+    setPlanResult(null);
+    const result = await saveN1coPlanConfigAction({
+      n1coLocationCode: locationCode,
+      basic:        { planId: basicId, price: basic },
+      professional: { planId: proId,   price: pro   },
+      enterprise:   { planId: entId,   price: ent   },
     });
-    setPriceResult(result);
-    setSavingPrices(false);
-    if (result.success) setTimeout(() => setPriceResult(null), 4000);
+    setPlanResult(result);
+    setSavingPlans(false);
+    if (result.success) setTimeout(() => setPlanResult(null), 4000);
   }
 
   return (
@@ -298,74 +310,154 @@ export default function PaymentsClient({
         </div>
       </div>
 
-      {/* ── Plan Price Editor ─────────────────────────────────────────── */}
-      <div className="bg-zinc-50 dark:bg-black/30 border border-zinc-200 dark:border-white/10 rounded-2xl p-6 space-y-5">
-        <div className="flex items-center gap-2 mb-1">
-          <DollarSign className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
-          <h2 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
-            Precios de planes
-          </h2>
+      {/* ── N1co Plan Configuration ───────────────────────────────────── */}
+      <div className="bg-zinc-50 dark:bg-black/30 border border-zinc-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 space-y-5">
+        {/* Header */}
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <DollarSign className="w-4 h-4 text-zinc-500 dark:text-zinc-400 shrink-0" />
+            <h2 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
+              {tp("sectionTitle")}
+            </h2>
+          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+            {tp("sectionHint")}
+          </p>
         </div>
-        <p className="text-xs text-zinc-600 dark:text-zinc-500">
-          Estos valores se usan en la pantalla de pago que ven los tenants. Cámbielos y guarda para que el nuevo precio aplique inmediatamente.
-        </p>
 
-        <div className="grid grid-cols-3 gap-4">
-          {(
-            [
-              { label: "Basic", value: priceBasic, set: setPriceBasic, color: "zinc" },
-              { label: "Professional", value: pricePro, set: setPricePro, color: "purple" },
-              { label: "Enterprise", value: priceEnt, set: setPriceEnt, color: "amber" },
-            ] as const
-          ).map(({ label, value, set }) => (
-            <div key={label} className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wide">
-                {label}
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 text-sm font-semibold">
-                  $
-                </span>
-                <input
-                  type="number"
-                  min="1"
-                  step="0.01"
-                  value={value}
-                  onChange={(e) => set(e.target.value)}
-                  className="w-full pl-7 pr-3 py-3 rounded-xl border border-zinc-300 dark:border-white/10 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
-                />
+        {/* Location Code */}
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wide">
+            <MapPin className="w-3 h-3" />
+            {tp("locationCodeLabel")}
+          </label>
+          <input
+            type="text"
+            value={locationCode}
+            onChange={(e) => setLocationCode(e.target.value)}
+            placeholder={tp("locationCodePlaceholder")}
+            className="w-full px-4 py-2.5 rounded-xl border border-zinc-300 dark:border-white/10 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+          />
+          <p className="text-xs text-zinc-500 dark:text-zinc-600">{tp("locationCodeHint")}</p>
+        </div>
+
+        {/* Plan cards — stacked on mobile, 3 cols on desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {([
+            {
+              key: "basic" as const,
+              label: tp("planBasic"),
+              id: basicId,    setId: setBasicId,
+              price: basicPrice, setPrice: setBasicPrice,
+              accent: "zinc",
+              badgeCls: "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300",
+              borderCls: "border-zinc-200 dark:border-white/10",
+            },
+            {
+              key: "professional" as const,
+              label: tp("planProfessional"),
+              id: proId,    setId: setProId,
+              price: proPrice, setPrice: setProPrice,
+              accent: "purple",
+              badgeCls: "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300",
+              borderCls: "border-purple-300 dark:border-purple-700/40",
+            },
+            {
+              key: "enterprise" as const,
+              label: tp("planEnterprise"),
+              id: entId,    setId: setEntId,
+              price: entPrice, setPrice: setEntPrice,
+              accent: "amber",
+              badgeCls: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300",
+              borderCls: "border-amber-300 dark:border-amber-700/40",
+            },
+          ]).map(({ label, id, setId, price, setPrice, badgeCls, borderCls }) => {
+            const configured = !!id.trim();
+            return (
+              <div key={label} className={`rounded-2xl border-2 ${borderCls} bg-white dark:bg-zinc-900/60 p-4 space-y-3`}>
+                {/* Plan header */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${badgeCls}`}>
+                    {label}
+                  </span>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                    configured
+                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-500"
+                  }`}>
+                    {configured ? tp("statusConfigured") : tp("statusNotConfigured")}
+                  </span>
+                </div>
+
+                {/* Plan ID */}
+                <div className="space-y-1">
+                  <label className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                    <Hash className="w-3 h-3" />
+                    {tp("planIdLabel")}
+                  </label>
+                  <input
+                    type="text"
+                    value={id}
+                    onChange={(e) => setId(e.target.value)}
+                    placeholder={tp("planIdPlaceholder")}
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/20 text-zinc-900 dark:text-white text-xs placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition font-mono"
+                  />
+                  {!configured && (
+                    <p className="flex items-start gap-1 text-[10px] text-amber-600 dark:text-amber-500 leading-snug">
+                      <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                      {tp("warningNoPlanId")}
+                    </p>
+                  )}
+                </div>
+
+                {/* Price */}
+                <div className="space-y-1">
+                  <label className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                    <DollarSign className="w-3 h-3" />
+                    {tp("priceLabel")}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-xs font-semibold">$</span>
+                    <input
+                      type="number"
+                      min="1"
+                      step="0.01"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="w-full pl-6 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/20 text-zinc-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                    />
+                  </div>
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-600 text-right">{tp("pricePerMonth")}</p>
+                </div>
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-600 text-right">USD / mes</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Price save result */}
-        {priceResult && (
+        {/* Result banner */}
+        {planResult && (
           <div className={`p-3 rounded-xl text-sm flex items-center gap-2 ${
-            priceResult.success
+            planResult.success
               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
               : "bg-red-500/10 text-red-500 dark:text-red-400"
           }`}>
-            {priceResult.success ? (
-              <><CheckCircle2 className="w-4 h-4" />Precios guardados correctamente.</>
+            {planResult.success ? (
+              <><CheckCircle2 className="w-4 h-4 shrink-0" />{tp("savedOk")}</>
             ) : (
-              <><AlertCircle className="w-4 h-4" />{priceResult.error}</>
+              <><AlertCircle className="w-4 h-4 shrink-0" />{planResult.error}</>
             )}
           </div>
         )}
 
-        <div className="pt-1">
-          <button
-            type="button"
-            onClick={handleSavePrices}
-            disabled={savingPrices}
-            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold shadow-md shadow-purple-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {savingPrices ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            {savingPrices ? "Guardando..." : "Guardar precios"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleSavePlans}
+          disabled={savingPlans}
+          className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold shadow-md shadow-purple-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {savingPlans ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+          {savingPlans ? tp("saving") : tp("saveButton")}
+        </button>
       </div>
 
       {/* Info card */}

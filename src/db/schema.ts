@@ -460,6 +460,11 @@ export const platformConfig = pgTable('platform_config', {
   planPriceBasic: decimal('plan_price_basic', { precision: 10, scale: 2 }).default('25.00'),
   planPriceProfessional: decimal('plan_price_professional', { precision: 10, scale: 2 }).default('59.00'),
   planPriceEnterprise: decimal('plan_price_enterprise', { precision: 10, scale: 2 }).default('99.00'),
+  // N1co plan IDs (cada plan en N1co tiene un ID único; cambiar precio = crear nuevo plan en N1co)
+  n1coLocationCode: varchar('n1co_location_code', { length: 100 }),
+  n1coPlanIdBasic: varchar('n1co_plan_id_basic', { length: 255 }),
+  n1coPlanIdProfessional: varchar('n1co_plan_id_professional', { length: 255 }),
+  n1coPlanIdEnterprise: varchar('n1co_plan_id_enterprise', { length: 255 }),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 

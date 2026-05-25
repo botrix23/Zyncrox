@@ -11,13 +11,11 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { subscriptions, tenants } from '@/db/schema'
+import { subscriptions, tenants, platformConfig } from '@/db/schema'
 import { and, eq, isNotNull, lte } from 'drizzle-orm'
-import { cancelN1coSubscription, createN1coSubscription, N1CO_PLAN_IDS } from '@/lib/n1co'
+import { cancelN1coSubscription, createN1coSubscription } from '@/lib/n1co'
 import { enforceDowngradeLimits } from '@/lib/billing'
-import { getPlanPrice } from '@/core/plans'
-
-const LOCATION_CODE = process.env.N1CO_LOCATION_CODE ?? ''
+import { getPlanPrice, parsePlanIds, PlanType } from '@/core/plans'
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date)
@@ -30,6 +28,10 @@ export async function GET(req: NextRequest) {
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  // Fetch N1co plan config from DB
+  const cfg = await db.select().from(platformConfig).limit(1).then(r => r[0] ?? null)
+  const { ids: n1coPlanIds, locationCode: LOCATION_CODE } = parsePlanIds(cfg)
 
   const now = new Date()
   let suspended = 0
@@ -102,9 +104,8 @@ export async function GET(req: NextRequest) {
         }
 
         // Create new N1CO subscription with the downgraded plan
-        const planKey = newPlan as keyof typeof N1CO_PLAN_IDS
         const n1coSub = await createN1coSubscription({
-          planId:          N1CO_PLAN_IDS[planKey] ?? '',
+          planId:          n1coPlanIds[newPlan as PlanType] ?? '',
           locationCode:    LOCATION_CODE,
           paymentMethodId: sub.n1coPaymentMethodId,
           customerId:      sub.tenantId,

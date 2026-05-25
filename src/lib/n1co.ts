@@ -10,20 +10,13 @@
  *   N1CO_BASE_URL          (default: https://api-sandbox.n1co.shop)
  *   N1CO_API_KEY
  *   N1CO_WEBHOOK_SECRET
- *   N1CO_PLAN_ID_BASIC
- *   N1CO_PLAN_ID_PROFESSIONAL
- *   N1CO_PLAN_ID_ENTERPRISE
+ *
+ * Plan IDs and location code are stored in platform_config (DB),
+ * not as env vars, since each price change requires a new plan in N1co.
  */
 
 const BASE_URL = process.env.N1CO_BASE_URL ?? 'https://api-sandbox.n1co.shop'
 const API_KEY  = process.env.N1CO_API_KEY  ?? ''
-
-/** Maps internal plan names to N1CO plan IDs (configured per environment). */
-export const N1CO_PLAN_IDS = {
-  BASIC:        process.env.N1CO_PLAN_ID_BASIC        ?? '',
-  PROFESSIONAL: process.env.N1CO_PLAN_ID_PROFESSIONAL ?? '',
-  ENTERPRISE:   process.env.N1CO_PLAN_ID_ENTERPRISE   ?? '',
-} as const
 
 // ---------------------------------------------------------------------------
 // Types
