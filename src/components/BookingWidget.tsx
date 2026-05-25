@@ -13,7 +13,8 @@ import { getGoogleCalendarUrl, getOutlookCalendarUrl, generateICSFile } from "@/
 
 type Branch = { id: string; name: string; businessHours?: string | null; address?: string | null };
 type Service = { id: string; name: string; durationMinutes: number; price: string; includes: string[]; excludes: string[]; allowsHomeService?: boolean; allowSimultaneous?: boolean; isExclusive?: boolean; branches?: { id: string; branchId: string }[]; categoryIds?: string[] };
-type Staff = { id: string; name: string; allowsHomeService?: boolean; categoryIds?: string[] };
+type StaffAssignment = { branchId: string; isPermanent: boolean };
+type Staff = { id: string; name: string; allowsHomeService?: boolean; categoryIds?: string[]; assignments?: StaffAssignment[] };
 type CoverageZone = { id: string; name: string; fee: string; description?: string | null };
 
 const COUNTRIES = [
@@ -355,10 +356,24 @@ export default function BookingWidget({
   };
 
   const displayStaff = useMemo(() => {
-    let filtered = modality === 'domicilio'
-      ? staff.filter(s => s.allowsHomeService !== false)
-      : [...staff];
+    // 1. Filtrar por sucursal seleccionada: solo mostrar staff con al menos
+    //    una asignación (permanente o temporal) a esa sucursal.
+    //    Si el staff no tiene el array de assignments (datos legacy), se omite
+    //    del filtro para no romper instalaciones antiguas.
+    const effectiveBranchId = selectedBranch?.id || (branches.length === 1 ? branches[0].id : null);
+    let filtered = staff.filter(s => {
+      if (!s.assignments) return true; // legacy: no filtrar si no hay datos
+      if (s.assignments.length === 0) return false; // sin asignaciones = no aparece
+      if (!effectiveBranchId) return true; // sin sucursal aún = mostrar todos
+      return s.assignments.some(a => a.branchId === effectiveBranchId);
+    });
 
+    // 2. Filtrar por servicio a domicilio
+    if (modality === 'domicilio') {
+      filtered = filtered.filter(s => s.allowsHomeService !== false);
+    }
+
+    // 3. Filtrar por categorías de servicio
     if (selectedServices.length > 0) {
       if (schedulingMode === 'separate') {
         // En modo separado cada servicio elige su propio especialista:
@@ -384,7 +399,7 @@ export default function BookingWidget({
     }
 
     return filtered;
-  }, [staff, modality, selectedServices, schedulingMode, currentServiceIndex]);
+  }, [staff, modality, selectedServices, schedulingMode, currentServiceIndex, selectedBranch, branches]);
 
   const isFormValid =
     guestName.trim() !== '' &&

@@ -24,7 +24,10 @@ export default async function Home({ params }: { params: { locale: string, slug:
     }),
     db.query.staff.findMany({
       where: (s, { eq, and }) => and(eq(s.tenantId, tenant.id), eq(s.isActive, true)),
-      with: { categories: true },
+      with: {
+        categories: true,
+        assignments: { columns: { branchId: true, isPermanent: true } },
+      },
     }),
     db.query.coverageZones.findMany({ where: (zones, { eq }) => eq(zones.tenantId, tenant.id) }),
   ]) : [[], [], []];
