@@ -57,6 +57,9 @@ import PhoneInput from "@/components/PhoneInput";
 import { useTranslations, useLocale } from "next-intl";
 import { Portal } from "@/components/Portal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import dynamic from "next/dynamic";
+
+const ClientNotesPreview = dynamic(() => import('./ClientNotesPreview'), { ssr: false });
 
 export default function BookingsClient({ 
   initialBookings,
@@ -1354,6 +1357,15 @@ export default function BookingsClient({
                         className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium text-slate-900 dark:text-white min-h-[80px] resize-none"
                       />
                     </div>
+
+                    {/* Client Notes Preview */}
+                    {editingBooking?.customerEmail && (
+                      <ClientNotesPreview
+                        clientEmail={editingBooking.customerEmail}
+                        clientName={editingBooking.customerName}
+                        locale={localeStr}
+                      />
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">

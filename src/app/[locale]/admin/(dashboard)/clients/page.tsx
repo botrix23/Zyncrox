@@ -4,6 +4,7 @@ import { eq, desc, and, not } from "drizzle-orm";
 import { getSession } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
 import ClientsClient from "./ClientsClient";
+import { getClientNotesCountsAction } from "@/app/actions/clientNotes";
 
 export const metadata = {
   title: "Clientes | Zyncrox",
@@ -42,10 +43,15 @@ export default async function ClientsPage({
     orderBy: [desc(bookings.startTime)]
   });
 
+  const notesCounts = await getClientNotesCountsAction();
+
   return (
-    <ClientsClient 
-      bookings={tenantBookings} 
+    <ClientsClient
+      bookings={tenantBookings}
       vipThreshold={tenant?.vipThreshold || 5}
+      notesCounts={notesCounts}
+      currentUserId={session.userId || ''}
+      currentUserRole={session.role}
     />
   );
 }

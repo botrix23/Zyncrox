@@ -1,15 +1,18 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { 
-  Search, Contact, DollarSign, Clock, Calendar, User, 
-  MapPin, Star, TrendingUp, History, X, Phone, Mail, 
-  ChevronRight, Award, Scissors, ShoppingBag, Settings2
+import {
+  Search, Contact, DollarSign, Clock, Calendar, User,
+  MapPin, Star, TrendingUp, History, X, Phone, Mail,
+  ChevronRight, Award, Scissors, ShoppingBag, Settings2, StickyNote
 } from 'lucide-react';
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { es, enUS } from "date-fns/locale";
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const ClientNotes = dynamic(() => import('./ClientNotes'), { ssr: false });
 
 interface BookingDetail {
   id: string;
@@ -23,12 +26,18 @@ interface BookingDetail {
   branch: { name: string };
 }
 
-export default function ClientsClient({ 
+export default function ClientsClient({
   bookings,
-  vipThreshold
-}: { 
-  bookings: BookingDetail[],
-  vipThreshold: number
+  vipThreshold,
+  notesCounts = {},
+  currentUserId = '',
+  currentUserRole = 'ADMIN',
+}: {
+  bookings: BookingDetail[];
+  vipThreshold: number;
+  notesCounts?: Record<string, number>;
+  currentUserId?: string;
+  currentUserRole?: string;
 }) {
   const t = useTranslations('Dashboard.clients');
   const params = useParams();
@@ -142,9 +151,15 @@ export default function ClientsClient({
                       {client.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-bold text-slate-900 dark:text-white truncate">{client.name}</span>
                         {isVip && <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+                        {client.email && notesCounts[client.email.toLowerCase()] > 0 && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 rounded-md text-[10px] font-black shrink-0">
+                            <StickyNote className="w-2.5 h-2.5" />
+                            {notesCounts[client.email.toLowerCase()]}
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
                         {client.email && <p className="text-xs text-slate-500 dark:text-zinc-400 truncate max-w-[180px]">{client.email}</p>}
@@ -199,6 +214,12 @@ export default function ClientsClient({
                                         <span className="font-bold text-slate-900 dark:text-white text-[15px] flex items-center gap-1.5">
                                           {client.name}
                                           {isVip && <Award className="w-3.5 h-3.5 text-amber-500" />}
+                                          {client.email && notesCounts[client.email.toLowerCase()] > 0 && (
+                                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 rounded-md text-[10px] font-black">
+                                              <StickyNote className="w-2.5 h-2.5" />
+                                              {notesCounts[client.email.toLowerCase()]}
+                                            </span>
+                                          )}
                                         </span>
                                         {isVip && <span className="text-xs font-black text-amber-600 uppercase tracking-tight">{t('frequent')}</span>}
                                      </div>
@@ -388,6 +409,15 @@ export default function ClientsClient({
                       </table>
                    </div>
                 </div>
+
+                {/* Client Notes */}
+                <ClientNotes
+                  clientEmail={selectedClient.email}
+                  clientName={selectedClient.name}
+                  currentUserId={currentUserId}
+                  currentUserRole={currentUserRole}
+                  locale={locale}
+                />
 
                 {/* Suggested Reward / Quick Config Link */}
                 <div className="p-5 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-purple-500/20 rounded-[2rem]">

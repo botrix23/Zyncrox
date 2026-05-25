@@ -467,3 +467,24 @@ export const absenceRequestsRelations = relations(absenceRequests, ({ one }) => 
   tenant: one(tenants, { fields: [absenceRequests.tenantId], references: [tenants.id] }),
   staff: one(staff, { fields: [absenceRequests.staffId], references: [staff.id] }),
 }));
+
+// ── Client Notes ────────────────────────────────────────────────────────────
+// Notes are keyed by clientEmail (primary) since there is no separate clients table.
+// Clients are derived from bookings, so clientEmail is the stable identifier.
+export const clientNotes = pgTable('client_notes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  clientEmail: varchar('client_email', { length: 255 }),  // null for clients without email
+  clientName: varchar('client_name', { length: 255 }).notNull(), // display name
+  authorId: uuid('author_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  authorName: varchar('author_name', { length: 255 }).notNull(), // cached at write time
+  authorRole: varchar('author_role', { length: 50 }).notNull(), // 'ADMIN' | 'STAFF'
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+export const clientNotesRelations = relations(clientNotes, ({ one }) => ({
+  tenant: one(tenants, { fields: [clientNotes.tenantId], references: [tenants.id] }),
+  author: one(users, { fields: [clientNotes.authorId], references: [users.id] }),
+}));
