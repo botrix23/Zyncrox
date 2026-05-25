@@ -1934,5 +1934,29 @@
       "d4Title": "Truly simple",
       "d4Desc": "No training needed, no technician required. Set up your business in under 15 minutes and start receiving bookings."
     }
+  },
+  "CancelBooking": {
+    "invalidToken": "Invalid link",
+    "invalidTokenDesc": "This link is not valid or has been altered. Please contact us directly if you need to cancel your appointment.",
+    "notFound": "Appointment not found",
+    "notFoundDesc": "We could not find this appointment. It may have already been deleted.",
+    "alreadyCancelled": "Appointment already cancelled",
+    "alreadyCancelledDesc": "This appointment was already cancelled. No further action is required.",
+    "alreadyFinished": "Appointment already completed",
+    "alreadyFinishedDesc": "This appointment has been completed and cannot be cancelled.",
+    "cancelledTitle": "Appointment cancelled",
+    "cancelledDesc": "Your appointment has been successfully cancelled. If you'd like to reschedule, please contact {tenantName} directly.",
+    "keptTitle": "Great, see you soon!",
+    "keptDesc": "Your appointment is confirmed. If you need to make any changes, contact us directly.",
+    "question": "Will you attend your appointment?",
+    "questionSub": "Please confirm your attendance.",
+    "keepButton": "Yes, I'll be there",
+    "cancelButton": "I won't be able to attend",
+    "service": "Service",
+    "date": "Date",
+    "time": "Time",
+    "branch": "Branch",
+    "specialist": "Specialist",
+    "contactNote": "If you have any questions, contact {tenantName} directly."
   }
 }

@@ -1934,5 +1934,29 @@
       "d4Title": "Simple de verdad",
       "d4Desc": "No necesitas capacitación ni un técnico. Configura tu negocio en menos de 15 minutos y empieza a recibir reservas."
     }
+  },
+  "CancelBooking": {
+    "invalidToken": "Enlace inválido",
+    "invalidTokenDesc": "Este enlace no es válido o ha sido alterado. Por favor contáctanos directamente si necesitas cancelar tu cita.",
+    "notFound": "Cita no encontrada",
+    "notFoundDesc": "No pudimos encontrar esta cita. Es posible que ya haya sido eliminada.",
+    "alreadyCancelled": "Cita ya cancelada",
+    "alreadyCancelledDesc": "Esta cita ya fue cancelada previamente. No se requiere ninguna acción adicional.",
+    "alreadyFinished": "Cita ya finalizada",
+    "alreadyFinishedDesc": "Esta cita ya fue completada y no puede cancelarse.",
+    "cancelledTitle": "Cita cancelada",
+    "cancelledDesc": "Tu cita ha sido cancelada exitosamente. Si deseas reagendarla, comunícate directamente con {tenantName}.",
+    "keptTitle": "¡Perfecto, te esperamos!",
+    "keptDesc": "Tu cita está confirmada. Si necesitas hacer algún cambio, contáctanos directamente.",
+    "question": "¿Asistirás a tu cita?",
+    "questionSub": "Por favor confirma tu asistencia.",
+    "keepButton": "Sí, asistiré",
+    "cancelButton": "No podré asistir",
+    "service": "Servicio",
+    "date": "Fecha",
+    "time": "Hora",
+    "branch": "Sucursal",
+    "specialist": "Especialista",
+    "contactNote": "Si tienes dudas, contáctanos directamente con {tenantName}."
   }
 }

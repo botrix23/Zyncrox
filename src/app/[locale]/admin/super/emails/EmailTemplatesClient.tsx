@@ -10,7 +10,7 @@ type Templates = Awaited<ReturnType<typeof getEmailTemplatesAction>>;
 
 const TEMPLATE_VARIABLES: Record<TemplateKey, string[]> = {
   confirmation: ['customerName', 'serviceName', 'date', 'time', 'branchName', 'staffName', 'tenantName', 'phone', 'contactEmail'],
-  reminder:     ['customerName', 'serviceName', 'date', 'time', 'branchName', 'staffName', 'tenantName', 'phone', 'contactEmail'],
+  reminder:     ['customerName', 'serviceName', 'date', 'time', 'branchName', 'staffName', 'tenantName', 'phone', 'contactEmail', 'cancelUrl'],
   cancellation: ['customerName', 'serviceName', 'date', 'time', 'branchName', 'tenantName', 'phone', 'contactEmail'],
   reschedule:   ['customerName', 'serviceName', 'oldDate', 'oldTime', 'newDate', 'newTime', 'branchName', 'staffName', 'tenantName', 'phone', 'contactEmail'],
   trialWarning: ['businessName', 'daysLeft', 'adminName'],

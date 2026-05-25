@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
           tenantName: booking.tenant.name,
           phone: tenantPhone || '',
           contactEmail: tenantContactEmail || '',
+          cancelUrl,
         };
         const emailPayload = buildEmailPayload(
           emailCfg?.emailTplReminder,

@@ -37,6 +37,7 @@ const SAMPLE: Record<EmailLocale, Record<string, string>> = {
     surveyUrl: 'https://zyncrox.com/survey/demo',
     phone: '+503 7000-0000',
     contactEmail: 'contacto@salonbella.com',
+    cancelUrl: 'https://zyncrox.com/es/cancel/demo-booking-id?token=demo-token',
   },
   en: {
     customerName: 'Mary Johnson',
@@ -56,6 +57,7 @@ const SAMPLE: Record<EmailLocale, Record<string, string>> = {
     surveyUrl: 'https://zyncrox.com/survey/demo',
     phone: '+1 (555) 000-0000',
     contactEmail: 'contact@bellasalon.com',
+    cancelUrl: 'https://zyncrox.com/en/cancel/demo-booking-id?token=demo-token',
   },
 };
 
@@ -118,6 +120,7 @@ export async function GET(req: NextRequest) {
           tenantName: sample.tenantName,
           phone: sample.phone,
           contactEmail: sample.contactEmail,
+          cancelUrl: sample.cancelUrl,
           locale,
         }));
       }
