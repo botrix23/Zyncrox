@@ -529,3 +529,27 @@ export const impersonationTokensRelations = relations(impersonationTokens, ({ on
   superAdmin: one(users, { fields: [impersonationTokens.superAdminUserId], references: [users.id] }),
   targetTenant: one(tenants, { fields: [impersonationTokens.targetTenantId], references: [tenants.id] }),
 }));
+
+// ── Super Admin Notifications ────────────────────────────────────────────────
+// Real-time notifications delivered to the Super Admin bell icon.
+// 8 event types with urgency levels (HIGH triggers email via Resend).
+export const superAdminNotifications = pgTable('super_admin_notifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // Event type — used to render appropriate icon and message template
+  type: varchar('type', { length: 50 }).notNull(),
+  // Human-readable message (already formatted, stored in the DB's default language)
+  message: text('message').notNull(),
+  // Optional link to the relevant page within the super admin panel
+  link: varchar('link', { length: 500 }),
+  // Tenant related to this notification (null for platform-wide events)
+  tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'set null' }),
+  tenantName: varchar('tenant_name', { length: 255 }),
+  // Urgency: LOW | MEDIUM | HIGH (HIGH → email via Resend)
+  urgency: varchar('urgency', { length: 10 }).notNull().default('MEDIUM'),
+  isRead: boolean('is_read').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+export const superAdminNotificationsRelations = relations(superAdminNotifications, ({ one }) => ({
+  tenant: one(tenants, { fields: [superAdminNotifications.tenantId], references: [tenants.id] }),
+}));

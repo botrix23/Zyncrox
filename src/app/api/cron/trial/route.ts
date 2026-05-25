@@ -6,6 +6,7 @@ import { addDays } from "date-fns";
 import { resend } from "@/lib/resend";
 import { TrialWarningEmail } from "@/components/emails/TrialWarningEmail";
 import { logAuditEvent } from "@/lib/audit";
+import { createNotification } from "@/lib/notifications";
 import { getPlatformEmailTemplates, buildEmailPayload } from "@/lib/emailTemplates";
 import { t as emailT, type EmailLocale } from "@/lib/emailI18n";
 import React from "react";
@@ -102,6 +103,29 @@ export async function GET(req: NextRequest) {
 
     await sendWarnings(expiring3, 3);
     await sendWarnings(expiring1, 1);
+
+    // Super Admin notifications for trials expiring in 1 day (HIGH urgency)
+    for (const tenant of expiring1) {
+      void createNotification({
+        type: 'TRIAL_EXPIRING_SOON',
+        message: `Trial de "${tenant.name}" vence en menos de 24 horas`,
+        link: `/admin/super/tenants`,
+        tenantId: tenant.id,
+        tenantName: tenant.name,
+        urgency: 'HIGH',
+      });
+    }
+    // MEDIUM urgency for 3-day warnings
+    for (const tenant of expiring3) {
+      void createNotification({
+        type: 'TRIAL_EXPIRING_SOON',
+        message: `Trial de "${tenant.name}" vence en 3 días`,
+        link: `/admin/super/tenants`,
+        tenantId: tenant.id,
+        tenantName: tenant.name,
+        urgency: 'MEDIUM',
+      });
+    }
 
     await logAuditEvent({
       action: "CRON_TRIAL_RUN",

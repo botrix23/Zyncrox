@@ -1603,6 +1603,19 @@
       "resetConfirm": "¿Restablecer este template al diseño por defecto? Se perderá la personalización guardada.",
       "previewError": "Error al cargar la vista previa.",
       "loadError": "<!-- Error al cargar el template por defecto -->"
+    },
+    "notifications": {
+      "bellLabel": "Notificaciones",
+      "title": "Notificaciones",
+      "empty": "Todo en orden",
+      "emptyHint": "Las notificaciones aparecerán aquí automáticamente.",
+      "markAllRead": "Marcar todo como leído",
+      "markingAllRead": "Marcando...",
+      "viewDetail": "Ver detalle",
+      "justNow": "Ahora mismo",
+      "minutesAgo": "hace {n}m",
+      "hoursAgo": "hace {n}h",
+      "daysAgo": "hace {n}d"
     }
   },
   "TrialPlans": {

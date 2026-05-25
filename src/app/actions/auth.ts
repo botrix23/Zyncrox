@@ -8,6 +8,7 @@ import { tenants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { logAuditEvent } from "@/lib/audit";
 import { resend } from "@/lib/resend";
+import { createNotification } from "@/lib/notifications";
 
 /**
  * Genera un slug URL-safe a partir de un nombre de negocio.
@@ -174,6 +175,16 @@ export async function registerTenantAction(formData: FormData, locale: string) {
       path: "/",
     });
     await logAuditEvent({ action: 'TENANT_REGISTERED', userId: newAdmin.id, tenantId: newTenant.id, details: { businessName, slug } });
+
+    // Super Admin notification: new tenant registered
+    void createNotification({
+      type: 'TENANT_REGISTERED',
+      message: `Nueva empresa registrada: ${businessName} (${email})`,
+      link: `/admin/super/tenants`,
+      tenantId: newTenant.id,
+      tenantName: businessName,
+    });
+
     return { success: true, slug };
   } catch (err) {
     console.error(err);

@@ -1020,3 +1020,86 @@ export async function startImpersonationAction(tenantId: string, locale: string 
 
   return { success: true as const, tokenId: token.id };
 }
+
+// ─── Super Admin Notifications (CAMBIO 6) ────────────────────────────────────
+
+// Notification types (for reference):
+// TENANT_REGISTERED    | LOW    — new tenant signed up
+// TRIAL_EXPIRING_SOON  | HIGH   — trial expires in ≤1 day
+// TRIAL_EXPIRED        | MEDIUM — trial just expired
+// PAYMENT_FAILED       | HIGH   — N1co payment webhook failed
+// PAYMENT_RECEIVED     | LOW    — successful payment received
+// TENANT_INACTIVE      | MEDIUM — no bookings in 14+ days (daily cron)
+// PLAN_LIMIT_REACHED   | MEDIUM — tenant hit plan limit (bookings, staff, etc.)
+// TENANT_SUSPENDED     | MEDIUM — tenant was manually suspended
+
+import { superAdminNotifications } from "@/db/schema";
+
+/** Create a notification entry (internal helper, usable from anywhere in the server). */
+export async function createSuperAdminNotificationAction(input: {
+  type: string;
+  message: string;
+  link?: string;
+  tenantId?: string | null;
+  tenantName?: string | null;
+  urgency?: 'LOW' | 'MEDIUM' | 'HIGH';
+}) {
+  const { type, message, link, tenantId, tenantName, urgency = 'MEDIUM' } = input;
+
+  const [notif] = await db
+    .insert(superAdminNotifications)
+    .values({ type, message, link: link ?? null, tenantId: tenantId ?? null, tenantName: tenantName ?? null, urgency })
+    .returning({ id: superAdminNotifications.id });
+
+  // Send email for HIGH-urgency events via Resend
+  if (urgency === 'HIGH') {
+    try {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const superAdminEmail = process.env.SUPER_ADMIN_EMAIL ?? 'admin@zyncrox.com';
+      await resend.emails.send({
+        from: process.env.EMAIL_FROM ?? 'Zyncrox <no-reply@zyncrox.com>',
+        to: superAdminEmail,
+        subject: `🚨 [Zyncrox] ${type.replace(/_/g, ' ')}`,
+        html: `<p><strong>${message}</strong></p>${tenantName ? `<p>Empresa: ${tenantName}</p>` : ''}${link ? `<p><a href="${process.env.NEXT_PUBLIC_APP_URL}${link}">Ver en el panel</a></p>` : ''}`,
+      });
+    } catch (err) {
+      console.error('[createSuperAdminNotificationAction] Failed to send email:', err);
+    }
+  }
+
+  return { success: true, id: notif.id };
+}
+
+/** Fetch the latest 50 notifications for the super admin dropdown. */
+export async function getSuperAdminNotificationsAction() {
+  await assertSuperAdmin();
+
+  const notifs = await db
+    .select()
+    .from(superAdminNotifications)
+    .orderBy(desc(superAdminNotifications.createdAt))
+    .limit(50);
+
+  const [unreadRow] = await db
+    .select({ cnt: count() })
+    .from(superAdminNotifications)
+    .where(eq(superAdminNotifications.isRead, false));
+
+  return {
+    notifications: notifs,
+    unreadCount: Number(unreadRow?.cnt ?? 0),
+  };
+}
+
+/** Mark all notifications as read. */
+export async function markAllNotificationsReadAction() {
+  await assertSuperAdmin();
+
+  await db
+    .update(superAdminNotifications)
+    .set({ isRead: true })
+    .where(eq(superAdminNotifications.isRead, false));
+
+  return { success: true };
+}

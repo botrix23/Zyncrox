@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth-session';
 import { SuperAdminLayoutClient } from './SuperAdminLayoutClient';
+import { getSuperAdminNotificationsAction } from '@/app/actions/superAdmin';
 
 export default async function SuperAdminLayout({
   children,
@@ -16,8 +17,15 @@ export default async function SuperAdminLayout({
     redirect(`/${locale}/admin/login`);
   }
 
+  const notifData = await getSuperAdminNotificationsAction();
+
   return (
-    <SuperAdminLayoutClient email={session.email} locale={locale}>
+    <SuperAdminLayoutClient
+      email={session.email}
+      locale={locale}
+      initialNotifications={notifData.notifications}
+      initialUnreadCount={notifData.unreadCount}
+    >
       {children}
     </SuperAdminLayoutClient>
   );

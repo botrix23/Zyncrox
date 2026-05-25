@@ -7,9 +7,33 @@ import { ShieldCheck, Users, BarChart2, FileText, LogOut, CreditCard, Menu, X, M
 import { logoutAction } from '@/app/actions/auth';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LangToggle } from '@/components/LangToggle';
+import NotificationsDropdown from '@/components/NotificationsDropdown';
 import { useTranslations } from 'next-intl';
 
-export function SuperAdminLayoutClient({ children, email, locale }: { children: React.ReactNode; email: string; locale: string }) {
+type Notification = {
+  id: string;
+  type: string;
+  message: string;
+  link: string | null;
+  tenantName: string | null;
+  urgency: string;
+  isRead: boolean;
+  createdAt: Date;
+};
+
+export function SuperAdminLayoutClient({
+  children,
+  email,
+  locale,
+  initialNotifications,
+  initialUnreadCount,
+}: {
+  children: React.ReactNode;
+  email: string;
+  locale: string;
+  initialNotifications: Notification[];
+  initialUnreadCount: number;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const t = useTranslations('SuperAdmin.nav');
@@ -33,6 +57,10 @@ export function SuperAdminLayoutClient({ children, email, locale }: { children: 
             <span className="font-black text-lg tracking-tight">Zyncrox</span>
           </div>
           <div className="flex items-center gap-1.5">
+            <NotificationsDropdown
+              initialNotifications={initialNotifications}
+              initialUnreadCount={initialUnreadCount}
+            />
             <ThemeToggle />
             <LangToggle />
             <button
@@ -114,6 +142,10 @@ export function SuperAdminLayoutClient({ children, email, locale }: { children: 
             <span className="font-bold text-sm">Super Admin</span>
           </div>
           <div className="flex items-center gap-1.5">
+            <NotificationsDropdown
+              initialNotifications={initialNotifications}
+              initialUnreadCount={initialUnreadCount}
+            />
             <ThemeToggle />
             <LangToggle />
           </div>

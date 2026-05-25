@@ -19,6 +19,7 @@ import { subscriptions, tenants } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { validateWebhookSecret, N1coWebhookPayload } from '@/lib/n1co'
 import { getPlanPrice } from '@/core/plans'
+import { createNotification } from '@/lib/notifications'
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date)
@@ -64,6 +65,13 @@ export async function POST(req: NextRequest) {
 
     const now = new Date()
 
+    // Fetch tenant name for notification messages
+    const tenant = await db.query.tenants.findFirst({
+      where: eq(tenants.id, sub.tenantId),
+      columns: { id: true, name: true },
+    })
+    const tenantName = tenant?.name ?? 'Empresa desconocida'
+
     switch (type) {
       case 'SubscriptionConfirmation': {
         // Subscription activated — ensure DB reflects ACTIVE state
@@ -108,6 +116,14 @@ export async function POST(req: NextRequest) {
           .where(eq(tenants.id, sub.tenantId))
 
         console.log(`[N1CO Webhook] SubscriptionPayment — tenant ${sub.tenantId}, amount: ${amount}`)
+        void createNotification({
+          type: 'PAYMENT_RECEIVED',
+          message: `Pago recibido de "${tenantName}" — $${amount} (${sub.plan})`,
+          link: `/admin/super/payments`,
+          tenantId: sub.tenantId,
+          tenantName,
+          urgency: 'LOW',
+        })
         break
       }
 
@@ -122,6 +138,14 @@ export async function POST(req: NextRequest) {
           .where(eq(subscriptions.id, sub.id))
 
         console.warn(`[N1CO Webhook] SubscriptionFailed — tenant ${sub.tenantId} marked PAST_DUE`)
+        void createNotification({
+          type: 'PAYMENT_FAILED',
+          message: `Pago fallido de "${tenantName}" — plan ${sub.plan}. Se otorgaron 3 días de gracia.`,
+          link: `/admin/super/tenants`,
+          tenantId: sub.tenantId,
+          tenantName,
+          urgency: 'HIGH',
+        })
         break
       }
 

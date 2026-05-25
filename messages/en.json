@@ -1601,8 +1601,22 @@
       "previewNote": "The preview uses sample data — in real sends they are replaced with the customer's data",
       "editorNote": "Click to insert at the end of the editor",
       "resetConfirm": "Reset this template to the default design? Saved customization will be lost.",
+
       "previewError": "Error loading the preview.",
       "loadError": "<!-- Error loading default template -->"
+    },
+    "notifications": {
+      "bellLabel": "Notifications",
+      "title": "Notifications",
+      "empty": "All clear",
+      "emptyHint": "Notifications will appear here automatically.",
+      "markAllRead": "Mark all as read",
+      "markingAllRead": "Marking...",
+      "viewDetail": "View detail",
+      "justNow": "Just now",
+      "minutesAgo": "{n}m ago",
+      "hoursAgo": "{n}h ago",
+      "daysAgo": "{n}d ago"
     }
   },
   "TrialPlans": {
