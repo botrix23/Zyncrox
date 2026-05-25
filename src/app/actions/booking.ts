@@ -17,6 +17,28 @@ import { getPlanFeatures } from "@/core/plans";
 import { v4 as uuidv4 } from "uuid";
 
 /**
+ * Envía un email con hasta `maxRetries` reintentos con backoff exponencial.
+ * Silencia el error final para no bloquear el flujo de reserva.
+ */
+async function sendWithRetry(
+  payload: Parameters<typeof resend.emails.send>[0],
+  maxRetries = 2
+): Promise<void> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      await resend.emails.send(payload);
+      return;
+    } catch (err) {
+      if (attempt === maxRetries) {
+        console.error(`[sendWithRetry] All ${maxRetries + 1} attempts failed:`, err);
+        return; // no-throw: el email es no-crítico
+      }
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt))); // 1s, 2s
+    }
+  }
+}
+
+/**
  * Obtiene el desplazamiento en minutos de una zona horaria IANA.
  * Ej: 'America/El_Salvador' -> -360
  */
@@ -524,6 +546,11 @@ export async function createBookingSessionAction(data: {
     const tenant = await db.query.tenants.findFirst({ where: eq(tenants.id, data.tenantId) });
     if (!tenant) return { success: false, error: "Tenant not found" };
 
+    // Bloquear reservas si el tenant está suspendido
+    if (tenant.status === 'SUSPENDED') {
+      return { success: false, error: "TENANT_SUSPENDED" };
+    }
+
     const features = getPlanFeatures(tenant.plan);
 
     if (data.bookings.length > 1 && !features.multiServiceBooking) {
@@ -818,7 +845,7 @@ export async function createBookingSessionAction(data: {
           }),
           vars2
         );
-        await resend.emails.send({
+        await sendWithRetry({
           from: `${tenant.name} <notificaciones@zyncrox.com>`,
           replyTo: (tenant as any).contactEmail || undefined,
           to: data.customerEmail,
@@ -941,7 +968,7 @@ export async function updateBookingAction(data: {
           }),
           varsR
         );
-        await resend.emails.send({
+        await sendWithRetry({
           from: `${existing.tenant.name} <notificaciones@zyncrox.com>`,
           replyTo: (existing.tenant as any).contactEmail || undefined,
           to: emailData,
@@ -997,7 +1024,7 @@ export async function deleteBookingAction(id: string, tenantId: string) {
           }),
           varsC
         );
-        await resend.emails.send({
+        await sendWithRetry({
           from: `${existing.tenant.name} <notificaciones@zyncrox.com>`,
           replyTo: (existing.tenant as any).contactEmail || undefined,
           to: existing.customerEmail,

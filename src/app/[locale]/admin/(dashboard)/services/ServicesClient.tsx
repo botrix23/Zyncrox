@@ -202,6 +202,12 @@ export default function ServicesClient({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (formData.durationMinutes < 15) {
+      alert(t('form.durationMinError'));
+      return;
+    }
+
     setIsLoading(true);
 
     const finalBranchIds = availabilityType === "all" ? [] : formData.branchIds;
@@ -730,11 +736,11 @@ export default function ServicesClient({
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.durationLabel')}</label>
-                      <input 
+                      <input
                         required
-                        type="number" 
+                        type="number"
                         value={formData.durationMinutes}
-                        min={1}
+                        min={15}
                         onChange={e => {
                           const n = parseInt(e.target.value, 10);
                           if (!isNaN(n) && n > 0) setFormData({...formData, durationMinutes: n});

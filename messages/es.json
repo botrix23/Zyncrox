@@ -312,6 +312,7 @@
         "badgeSimultaneous": "SIMULTÁNEO"
       },
       "globalServiceNote": "Servicio global: aparece en todas las sucursales. Si quieres limitarlo, edita el servicio y selecciona sucursales específicas.",
+      "durationMinError": "La duración mínima de un servicio es 15 minutos.",
       "confirmDelete": "¿Estás seguro de eliminar este servicio?",
       "errorSave": "Error al guardar el servicio",
       "errorDelete": "Error al eliminar el servicio",

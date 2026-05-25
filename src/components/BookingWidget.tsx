@@ -94,6 +94,7 @@ export default function BookingWidget({
   isAdmin,
   onBookingCreated,
   showStaffSelection,
+  tenantTimezone,
 }: {
   branches: Branch[],
   services: Service[],
@@ -128,6 +129,7 @@ export default function BookingWidget({
   isAdmin?: boolean;
   onBookingCreated?: () => void;
   showStaffSelection?: boolean;
+  tenantTimezone?: string;
 }) {
   const t = useTranslations('BookingWidget');
   const locale = useLocale();
@@ -177,7 +179,7 @@ export default function BookingWidget({
   const [showCalendar, setShowCalendar] = useState(false);
   const [openCalendarIdx, setOpenCalendarIdx] = useState<number | null>(null);
 
-  const businessTimezone = (branches[0] as any)?.tenant?.timezone || 'America/El_Salvador';
+  const businessTimezone = tenantTimezone || (branches[0] as any)?.tenant?.timezone || 'America/El_Salvador';
   const [hasTzDifference, setHasTzDifference] = useState(false);
   const [businessOffsetLabel, setBusinessOffsetLabel] = useState("");
   const [openTimeSections, setOpenTimeSections] = useState<Set<string>>(() => {
@@ -752,25 +754,6 @@ export default function BookingWidget({
       });
 
       if (result.success) {
-        if (modality === 'domicilio') {
-          const waNumber = whatsappNumber || '50370000000';
-          let message = waMessageTemplate;
-          if (!message) {
-            message = "¡Hola! Me gustaría confirmar mis citas para:\n{servicios}\n\n" +
-              "📅 *Primera cita:* {fecha}\n" +
-              "⏰ *Hora:* {hora}\n" +
-              "📍 *Modalidad:* Servicio a Domicilio\n" +
-              "👤 *Cliente:* {cliente}";
-          }
-
-          const serviceList = cartBookings.map(s => `- ${s.service.name}`).join("\n");
-          const formattedMsg = message
-            .replace(/{servicios}/g, serviceList)
-            .replace(/{fecha}/g, cartBookings[0].date!)
-            .replace(/{hora}/g, cartBookings[0].time!)
-            .replace(/{cliente}/g, guestName);
-          // Movemos la lógica de redirección al Paso 5 para mostrar primero la confirmación manual
-        }
         setStep(5);
       } else {
         const errorCode = result.error || "";
@@ -1785,6 +1768,18 @@ export default function BookingWidget({
                   {bookingSettings?.step4Title || t("title_data")}
                 </h2>
               </div>
+
+              {/* Aviso de zona horaria si el cliente está en una TZ distinta al negocio */}
+              {hasTzDifference && !isAdmin && (
+                <div className="w-full flex items-start gap-2.5 px-4 py-3 mb-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-2xl text-amber-700 dark:text-amber-400">
+                  <span className="shrink-0 mt-0.5 text-base leading-none">🕐</span>
+                  <p className="text-xs font-medium leading-snug">
+                    {locale === 'en'
+                      ? `Times are shown in the business's timezone (${businessOffsetLabel}). Your local time may differ.`
+                      : `Los horarios se muestran en la zona horaria del negocio (${businessOffsetLabel}). Tu hora local puede ser diferente.`}
+                  </p>
+                </div>
+              )}
 
               {/* Resumen de servicios con día y hora */}
               {cartBookings.length > 0 && (
