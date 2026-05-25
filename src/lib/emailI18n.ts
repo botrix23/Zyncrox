@@ -64,8 +64,8 @@ export const t = {
     l === 'en' ? 'Cancel appointment' : 'Cancelar cita',
   reminderCancelNote: (l: EmailLocale) =>
     l === 'en'
-      ? 'If you cannot attend, you can cancel your appointment by clicking the button above.'
-      : 'Si no puedes asistir, puedes cancelar tu cita haciendo clic en el botón de arriba.',
+      ? 'If you cannot attend, you can cancel your appointment by clicking the button below.'
+      : 'Si no puedes asistir, puedes cancelar tu cita haciendo clic en el botón de abajo.',
 
   // ── Cancellation ────────────────────────────────────────────────────────────
   cancellationSubject: (tenantName: string, l: EmailLocale) =>

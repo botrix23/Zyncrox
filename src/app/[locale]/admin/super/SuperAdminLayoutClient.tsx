@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShieldCheck, Users, BarChart2, FileText, LogOut, CreditCard, Menu, X, Mail } from 'lucide-react';
+import { ShieldCheck, Users, BarChart2, FileText, LogOut, CreditCard, Menu, Mail } from 'lucide-react';
 import { logoutAction } from '@/app/actions/auth';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LangToggle } from '@/components/LangToggle';
@@ -52,24 +52,15 @@ export function SuperAdminLayoutClient({
     <>
       <div className="mb-8">
         <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-purple-400" />
-            <span className="font-black text-lg tracking-tight">Zyncrox</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <ShieldCheck className="w-6 h-6 text-purple-400 shrink-0" />
+            <span className="font-black text-lg tracking-tight truncate">Zyncrox</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <NotificationsDropdown
-              initialNotifications={initialNotifications}
-              initialUnreadCount={initialUnreadCount}
-            />
-            <ThemeToggle />
-            <LangToggle />
-            <button
-              onClick={() => setMobileOpen(false)}
-              className="lg:hidden p-1.5 rounded-lg text-zinc-500 hover:text-zinc-800 dark:hover:text-white transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          {/* Notifications bell only — toggles are in the footer */}
+          <NotificationsDropdown
+            initialNotifications={initialNotifications}
+            initialUnreadCount={initialUnreadCount}
+          />
         </div>
         <p className="text-xs text-zinc-600 dark:text-zinc-500 font-semibold uppercase tracking-widest">{t('superAdmin')}</p>
       </div>
@@ -95,6 +86,11 @@ export function SuperAdminLayoutClient({
       </nav>
 
       <div className="border-t border-zinc-200 dark:border-white/5 pt-4 mt-4">
+        {/* Theme + lang toggles — comfortably spaced in the footer */}
+        <div className="flex items-center gap-2 mb-3">
+          <ThemeToggle />
+          <LangToggle />
+        </div>
         <p className="text-xs text-zinc-600 dark:text-zinc-500 mb-1">{t('activeSession')}</p>
         <p className="text-sm font-semibold truncate text-zinc-900 dark:text-white">{email}</p>
         <form action={logoutAction.bind(null, locale)}>
