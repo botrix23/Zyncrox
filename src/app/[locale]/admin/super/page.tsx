@@ -3,6 +3,7 @@ import {
   Building2, Users, Calendar, TrendingUp, ShieldAlert,
   CheckCircle, Clock, XCircle, AlertTriangle, Activity,
   FileText, ArrowRight, Wifi, WifiOff, RefreshCw,
+  DollarSign, CreditCard, BarChart3, Target,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es as dateEs, enUS } from 'date-fns/locale';
@@ -129,6 +130,7 @@ export default async function SuperAdminDashboard({ params }: { params: { locale
     newTenantsThisMonth, totalUsers, totalBookingsThisMonth, totalBookingsThisYear,
     tenantActivity, top5Active, churnRisk, bookingsByMonth,
     recentLogs, lastCronRun, wompiConfigured, expiringIn7Days,
+    mrr, revenueThisMonth, lastPayment, trialConversion,
   } = data;
 
   return (
@@ -346,22 +348,68 @@ export default async function SuperAdminDashboard({ params }: { params: { locale
       {/* ── 4. Ingresos / suscripciones ───────────────────────────────────── */}
       <section>
         <SectionHeader
-          icon={TrendingUp} title={t('revenue.title')}
+          icon={DollarSign} title={t('revenue.title')}
           subtitle={wompiConfigured ? t('revenue.wompiConfigured') : t('revenue.wompiNotConfigured')}
-          href={`/${locale}/admin/super/payments`} linkLabel={t('revenue.configureWompi')}
+          href={`/${locale}/admin/super/payments`} linkLabel={t('revenue.viewTransactions')}
         />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* MRR */}
           <div className={`${card} p-5`}>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold mb-2">{t('revenue.activeSubscriptions')}</p>
-            <p className="text-3xl font-black text-emerald-500">{activeTenants}</p>
+            <div className="inline-flex p-2.5 rounded-xl mb-4 bg-purple-600/20 text-purple-500">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold">{t('revenue.mrr')}</p>
+            <p className="text-3xl font-black text-purple-500 mt-1">${mrr.toFixed(2)}</p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('revenue.mrrSub')}</p>
+          </div>
+          {/* Revenue this month */}
+          <div className={`${card} p-5`}>
+            <div className="inline-flex p-2.5 rounded-xl mb-4 bg-emerald-600/20 text-emerald-500">
+              <DollarSign className="w-4 h-4" />
+            </div>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold">{t('revenue.revenueThisMonth')}</p>
+            <p className="text-3xl font-black text-emerald-500 mt-1">${revenueThisMonth.toFixed(2)}</p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('revenue.revenueThisMonthSub')}</p>
+          </div>
+          {/* Active subscriptions */}
+          <div className={`${card} p-5`}>
+            <div className="inline-flex p-2.5 rounded-xl mb-4 bg-blue-600/20 text-blue-500">
+              <CreditCard className="w-4 h-4" />
+            </div>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold">{t('revenue.activeSubscriptions')}</p>
+            <p className="text-3xl font-black text-blue-500 mt-1">{activeTenants}</p>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('revenue.activeSubscriptionsSub', { total: totalTenants })}</p>
           </div>
+          {/* Last payment */}
+          <div className={`${card} p-5`}>
+            <div className="inline-flex p-2.5 rounded-xl mb-4 bg-amber-600/20 text-amber-500">
+              <BarChart3 className="w-4 h-4" />
+            </div>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold">{t('revenue.lastPayment')}</p>
+            {lastPayment ? (
+              <>
+                <p className="text-lg font-black text-zinc-900 dark:text-white mt-1 truncate">{lastPayment.tenantName}</p>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                  ${lastPayment.amount.toFixed(2)} · {lastPayment.plan} · {format(lastPayment.createdAt, locale === 'en' ? 'MMM d' : 'd MMM', { locale: dateLocale })}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-2xl font-black text-zinc-400 mt-1">—</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-1">{t('revenue.lastPaymentNone')}</p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Trial / Expiring row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           <div className={`${card} p-5`}>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold mb-2">{t('revenue.onTrial')}</p>
             <p className="text-3xl font-black text-amber-500">{trialTenants}</p>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('revenue.onTrialSub')}</p>
           </div>
-          <div className={`${expiringIn7Days.length > 0 ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/20' : `${card.split(' ').slice(0,2).join(' ')} border-zinc-200 dark:border-white/5`} border rounded-2xl p-5`}>
+          <div className={`${expiringIn7Days.length > 0 ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/20' : `bg-white dark:bg-white/5 border-zinc-200 dark:border-white/5`} border rounded-2xl p-5`}>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold mb-2">{t('revenue.expiringIn7')}</p>
             <p className={`text-3xl font-black ${expiringIn7Days.length > 0 ? 'text-rose-500' : 'text-zinc-400'}`}>
               {expiringIn7Days.length}
@@ -369,6 +417,72 @@ export default async function SuperAdminDashboard({ params }: { params: { locale
             <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('revenue.expiringIn7Sub')}</p>
           </div>
         </div>
+      </section>
+
+      {/* ── 5. Conversión de trials ────────────────────────────────────────── */}
+      <section>
+        <SectionHeader icon={Target} title={t('trialConversion.title')} subtitle={t('trialConversion.subtitle')} />
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Trials started */}
+          <div className={`${card} p-5`}>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold mb-2">{t('trialConversion.trialsStarted')}</p>
+            <p className="text-3xl font-black text-zinc-900 dark:text-white">{trialConversion.trialsStarted}</p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('trialConversion.trialsStartedSub')}</p>
+          </div>
+          {/* Converted */}
+          <div className={`${card} p-5`}>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold mb-2">{t('trialConversion.converted')}</p>
+            <p className="text-3xl font-black text-emerald-500">{trialConversion.trialsConverted}</p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('trialConversion.convertedSub')}</p>
+          </div>
+          {/* Conversion rate */}
+          <div className={`${card} p-5`}>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold mb-2">{t('trialConversion.conversionRate')}</p>
+            <p className={`text-3xl font-black ${trialConversion.conversionRate >= 50 ? 'text-emerald-500' : trialConversion.conversionRate >= 25 ? 'text-amber-500' : 'text-rose-500'}`}>
+              {trialConversion.conversionRate}%
+            </p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('trialConversion.conversionRateSub')}</p>
+          </div>
+          {/* Avg days */}
+          <div className={`${card} p-5`}>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold mb-2">{t('trialConversion.avgDays')}</p>
+            <p className="text-3xl font-black text-blue-500">
+              {trialConversion.avgDaysToConvert > 0 ? trialConversion.avgDaysToConvert : '—'}
+              {trialConversion.avgDaysToConvert > 0 && <span className="text-base font-semibold text-zinc-500 ml-1">d</span>}
+            </p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('trialConversion.avgDaysSub')}</p>
+          </div>
+          {/* Abandoned */}
+          <div className={`${card} p-5`}>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 uppercase tracking-widest font-semibold mb-2">{t('trialConversion.abandoned')}</p>
+            <p className={`text-3xl font-black ${trialConversion.trialsAbandoned > 0 ? 'text-rose-500' : 'text-zinc-400'}`}>
+              {trialConversion.trialsAbandoned}
+            </p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{t('trialConversion.abandonedSub')}</p>
+          </div>
+        </div>
+
+        {/* Mini funnel bar — visual */}
+        {trialConversion.trialsStarted > 0 && (
+          <div className={`${card} p-5 mt-4`}>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 font-semibold uppercase tracking-widest mb-4">Embudo</p>
+            <div className="space-y-3">
+              {[
+                { label: t('trialConversion.trialsStarted'), value: trialConversion.trialsStarted, color: 'bg-zinc-400 dark:bg-zinc-500', pct: 100 },
+                { label: t('trialConversion.converted'), value: trialConversion.trialsConverted, color: 'bg-emerald-500', pct: trialConversion.trialsStarted > 0 ? Math.round((trialConversion.trialsConverted / trialConversion.trialsStarted) * 100) : 0 },
+                { label: t('trialConversion.abandoned'), value: trialConversion.trialsAbandoned, color: 'bg-rose-500', pct: trialConversion.trialsStarted > 0 ? Math.round((trialConversion.trialsAbandoned / trialConversion.trialsStarted) * 100) : 0 },
+              ].map(row => (
+                <div key={row.label} className="flex items-center gap-3">
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400 w-32 shrink-0">{row.label}</span>
+                  <div className="flex-1 h-2 bg-zinc-100 dark:bg-white/10 rounded-full overflow-hidden">
+                    <div className={`h-2 rounded-full ${row.color}`} style={{ width: `${row.pct}%` }} />
+                  </div>
+                  <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 w-10 text-right">{row.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ── 5 & 6. Auditoría + Estado del sistema ─────────────────────────── */}

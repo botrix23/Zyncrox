@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { tenants, users, bookings, auditLogs, staff, platformConfig, surveyQuestions } from "@/db/schema";
-import { eq, desc, count, and, gte, lte, sql, ne } from "drizzle-orm";
+import { tenants, users, bookings, auditLogs, staff, platformConfig, surveyQuestions, platformTransactions } from "@/db/schema";
+import { eq, desc, asc, count, and, gte, lte, sql, ne, sum, ilike } from "drizzle-orm";
 import bcrypt from 'bcryptjs';
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth-session";
@@ -242,10 +242,12 @@ export async function getSuperAdminDashboardDataAction() {
     recentLogs,
     lastCronLog,
     platformCfg,
+    trialConversionLogs,
+    txThisMonth,
+    lastTx,
   ] = await Promise.all([
     db.query.tenants.findMany({
       orderBy: [desc(tenants.createdAt)],
-      // No necesitamos branches en el dashboard principal, solo users para contar admins
       with: { users: { columns: { role: true } } },
     }),
     db.select({ total: count() }).from(users),
@@ -282,6 +284,22 @@ export async function getSuperAdminDashboardDataAction() {
       orderBy: [desc(auditLogs.createdAt)],
     }),
     db.select().from(platformConfig).limit(1).then(rows => rows[0] ?? null),
+    // Trial conversion: audit logs where TRIAL → ACTIVE
+    db.query.auditLogs.findMany({
+      where: eq(auditLogs.action, 'TENANT_STATUS_CHANGED'),
+      orderBy: [asc(auditLogs.createdAt)],
+    }),
+    // Revenue this month
+    db.select({ total: sum(platformTransactions.amount) })
+      .from(platformTransactions)
+      .where(and(eq(platformTransactions.status, 'SUCCEEDED'), gte(platformTransactions.createdAt, startOfMonth))),
+    // Last transaction
+    db.select()
+      .from(platformTransactions)
+      .where(eq(platformTransactions.status, 'SUCCEEDED'))
+      .orderBy(desc(platformTransactions.createdAt))
+      .limit(1)
+      .then(r => r[0] ?? null),
   ]);
 
   const staffMap = Object.fromEntries(staffCounts.map(s => [s.tenantId, s.total]));
@@ -334,6 +352,51 @@ export async function getSuperAdminDashboardDataAction() {
     })
     .slice(0, 8);
 
+  // ── Trial conversion metrics ─────────────────────────────────────────────
+  // All tenants start as TRIAL, so trialsStarted = totalTenants
+  const trialsStarted = allTenants.length;
+  const trialsConverted = allTenants.filter(t => t.status === 'ACTIVE').length;
+  const trialsAbandoned = allTenants.filter(t => t.status === 'SUSPENDED').length;
+  const conversionRate = trialsStarted > 0 ? Math.round((trialsConverted / trialsStarted) * 100) : 0;
+
+  // Average days from tenant creation to first TRIAL→ACTIVE status change
+  const conversionDaysArr: number[] = [];
+  // Map tenantId → earliest createdAt (from allTenants)
+  const tenantCreatedMap: Record<string, Date> = {};
+  for (const t of allTenants) tenantCreatedMap[t.id] = new Date(t.createdAt);
+  // Map tenantId → first TRIAL→ACTIVE conversion date
+  const convertedDates: Record<string, Date> = {};
+  for (const log of trialConversionLogs) {
+    const details = log.details as Record<string, unknown> | null;
+    if (details?.to === 'ACTIVE' && details?.from === 'TRIAL' && log.tenantId) {
+      if (!convertedDates[log.tenantId]) {
+        convertedDates[log.tenantId] = new Date(log.createdAt);
+      }
+    }
+  }
+  for (const [tenantId, convertedAt] of Object.entries(convertedDates)) {
+    const createdAt = tenantCreatedMap[tenantId];
+    if (createdAt) {
+      const days = Math.max(0, Math.round((convertedAt.getTime() - createdAt.getTime()) / 86400000));
+      conversionDaysArr.push(days);
+    }
+  }
+  const avgDaysToConvert = conversionDaysArr.length > 0
+    ? Math.round(conversionDaysArr.reduce((a, b) => a + b, 0) / conversionDaysArr.length)
+    : 0;
+
+  // ── MRR (calculated from active tenants + plan prices) ──────────────────
+  const planPrices: Record<string, number> = {
+    BASIC: parseFloat(String(platformCfg?.planPriceBasic ?? '25')),
+    PROFESSIONAL: parseFloat(String(platformCfg?.planPriceProfessional ?? '59')),
+    ENTERPRISE: parseFloat(String(platformCfg?.planPriceEnterprise ?? '99')),
+  };
+  const mrr = allTenants
+    .filter(t => t.status === 'ACTIVE')
+    .reduce((acc, t) => acc + (planPrices[t.plan] ?? 0), 0);
+
+  const revenueThisMonth = parseFloat(String(txThisMonth[0]?.total ?? '0')) || 0;
+
   return {
     totalTenants: allTenants.length,
     activeTenants: allTenants.filter(t => t.status === 'ACTIVE').length,
@@ -354,6 +417,23 @@ export async function getSuperAdminDashboardDataAction() {
     wompiConfigured: !!(platformCfg?.wompiAppId && platformCfg?.wompiApiSecret),
     expiringIn7Days: tenantActivity.filter(t => t.daysLeft !== null && t.daysLeft >= 0 && t.daysLeft <= 7),
     expiredTenants: tenantActivity.filter(t => t.daysLeft !== null && t.daysLeft < 0),
+    // Revenue
+    mrr,
+    revenueThisMonth,
+    lastPayment: lastTx ? {
+      tenantName: lastTx.tenantName,
+      amount: parseFloat(String(lastTx.amount)),
+      plan: lastTx.plan,
+      createdAt: lastTx.createdAt,
+    } : null,
+    // Trial conversion
+    trialConversion: {
+      trialsStarted,
+      trialsConverted,
+      trialsAbandoned,
+      conversionRate,
+      avgDaysToConvert,
+    },
   };
 }
 
@@ -796,4 +876,98 @@ export async function superAdminReactivateUserAction(userId: string) {
   });
 
   return { success: true };
+}
+
+// ─── GET PLATFORM TRANSACTIONS ────────────────────────────────────────────────
+export async function getPlatformTransactionsAction(filters?: {
+  status?: string;
+  plan?: string;
+  tenantSearch?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
+  await assertSuperAdmin();
+
+  const conditions = [];
+
+  if (filters?.status && filters.status !== 'ALL') {
+    conditions.push(eq(platformTransactions.status, filters.status));
+  }
+  if (filters?.plan && filters.plan !== 'ALL') {
+    conditions.push(eq(platformTransactions.plan, filters.plan));
+  }
+  if (filters?.tenantSearch) {
+    conditions.push(ilike(platformTransactions.tenantName, `%${filters.tenantSearch}%`));
+  }
+  if (filters?.dateFrom) {
+    conditions.push(gte(platformTransactions.createdAt, new Date(filters.dateFrom)));
+  }
+  if (filters?.dateTo) {
+    const to = new Date(filters.dateTo);
+    to.setHours(23, 59, 59, 999);
+    conditions.push(lte(platformTransactions.createdAt, to));
+  }
+
+  const rows = await db
+    .select()
+    .from(platformTransactions)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(platformTransactions.createdAt))
+    .limit(500);
+
+  return rows;
+}
+
+// ─── GET PLATFORM REVENUE STATS ───────────────────────────────────────────────
+export async function getPlatformRevenueStatsAction() {
+  await assertSuperAdmin();
+
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  const [allActiveTenants, cfg, txThisMonth, txPrevMonth, lastTx, txByMonthRaw] = await Promise.all([
+    db.query.tenants.findMany({ where: eq(tenants.status, 'ACTIVE'), columns: { plan: true } }),
+    db.select().from(platformConfig).limit(1).then(r => r[0] ?? null),
+    db.select({ total: sum(platformTransactions.amount) }).from(platformTransactions)
+      .where(and(eq(platformTransactions.status, 'SUCCEEDED'), gte(platformTransactions.createdAt, startOfMonth))),
+    db.select({ total: sum(platformTransactions.amount) }).from(platformTransactions)
+      .where(and(eq(platformTransactions.status, 'SUCCEEDED'), gte(platformTransactions.createdAt, startOfPrevMonth), lte(platformTransactions.createdAt, endOfPrevMonth))),
+    db.select().from(platformTransactions).where(eq(platformTransactions.status, 'SUCCEEDED'))
+      .orderBy(desc(platformTransactions.createdAt)).limit(1).then(r => r[0] ?? null),
+    db.select({
+      month: sql<string>`to_char(${platformTransactions.createdAt}, 'YYYY-MM')`,
+      total: sum(platformTransactions.amount),
+    }).from(platformTransactions)
+      .where(and(eq(platformTransactions.status, 'SUCCEEDED'), gte(platformTransactions.createdAt, sixMonthsAgo)))
+      .groupBy(sql`to_char(${platformTransactions.createdAt}, 'YYYY-MM')`)
+      .orderBy(sql`to_char(${platformTransactions.createdAt}, 'YYYY-MM')`),
+  ]);
+
+  const planPrices: Record<string, number> = {
+    BASIC: parseFloat(String(cfg?.planPriceBasic ?? '25')),
+    PROFESSIONAL: parseFloat(String(cfg?.planPriceProfessional ?? '59')),
+    ENTERPRISE: parseFloat(String(cfg?.planPriceEnterprise ?? '99')),
+  };
+  const mrr = allActiveTenants.reduce((acc, t) => acc + (planPrices[t.plan] ?? 0), 0);
+  const revenueThisMonth = parseFloat(String(txThisMonth[0]?.total ?? '0')) || 0;
+  const revenuePrevMonth = parseFloat(String(txPrevMonth[0]?.total ?? '0')) || 0;
+  const growth = revenuePrevMonth > 0 ? Math.round(((revenueThisMonth - revenuePrevMonth) / revenuePrevMonth) * 100) : 0;
+
+  const monthNamesEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthNamesEs = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const revenueByMonth = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const found = txByMonthRaw.find(r => r.month === key);
+    return { month: monthNamesEn[d.getMonth()], monthEs: monthNamesEs[d.getMonth()], year: d.getFullYear(), total: parseFloat(String(found?.total ?? '0')) || 0 };
+  });
+
+  return {
+    mrr, revenueThisMonth, revenuePrevMonth, growth,
+    lastPayment: lastTx ? { tenantName: lastTx.tenantName, amount: parseFloat(String(lastTx.amount)), plan: lastTx.plan, createdAt: lastTx.createdAt } : null,
+    revenueByMonth,
+  };
 }

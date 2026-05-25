@@ -488,3 +488,23 @@ export const clientNotesRelations = relations(clientNotes, ({ one }) => ({
   tenant: one(tenants, { fields: [clientNotes.tenantId], references: [tenants.id] }),
   author: one(users, { fields: [clientNotes.authorId], references: [users.id] }),
 }));
+
+// ── Platform Transactions ────────────────────────────────────────────────────
+// Records every payment charge (successful or failed) received by the platform.
+// Populated by the N1co webhook handler or by manual registration.
+export const platformTransactions = pgTable('platform_transactions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'set null' }),
+  tenantName: varchar('tenant_name', { length: 255 }).notNull(),       // denormalized
+  plan: varchar('plan', { length: 50 }).notNull(),                     // BASIC | PROFESSIONAL | ENTERPRISE
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  currency: varchar('currency', { length: 3 }).notNull().default('USD'),
+  status: varchar('status', { length: 20 }).notNull().default('SUCCEEDED'), // SUCCEEDED | FAILED | PENDING | REFUNDED
+  period: varchar('period', { length: 20 }).notNull().default('MONTHLY'),   // MONTHLY | ANNUAL
+  n1coTransactionId: varchar('n1co_transaction_id', { length: 255 }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+export const platformTransactionsRelations = relations(platformTransactions, ({ one }) => ({
+  tenant: one(tenants, { fields: [platformTransactions.tenantId], references: [tenants.id] }),
+}));

@@ -2,8 +2,14 @@ import { getSession } from "@/lib/auth-session";
 import { db } from "@/db";
 import { platformConfig } from "@/db/schema";
 import { redirect } from "next/navigation";
-import PaymentsClient from "./PaymentsClient";
+import PaymentsTabsClient from "./PaymentsTabsClient";
 import { parsePlanPrices } from "@/core/plans";
+import {
+  getPlatformTransactionsAction,
+  getPlatformRevenueStatsAction,
+} from "@/app/actions/superAdmin";
+
+export const dynamic = 'force-dynamic';
 
 export default async function SuperPaymentsPage({
   params,
@@ -17,17 +23,16 @@ export default async function SuperPaymentsPage({
     redirect(`/${locale}/admin/login`);
   }
 
-  // Fetch the singleton platform config row (id = 1)
-  const config = await db
-    .select()
-    .from(platformConfig)
-    .limit(1)
-    .then((rows) => rows[0] ?? null);
+  const [config, initialTransactions, revenueStats] = await Promise.all([
+    db.select().from(platformConfig).limit(1).then((rows) => rows[0] ?? null),
+    getPlatformTransactionsAction({}),
+    getPlatformRevenueStatsAction(),
+  ]);
 
   const planPrices = parsePlanPrices(config);
 
   return (
-    <PaymentsClient
+    <PaymentsTabsClient
       config={
         config ?? {
           wompiAppId: null,
@@ -36,6 +41,13 @@ export default async function SuperPaymentsPage({
         }
       }
       planPrices={planPrices}
+      initialTransactions={initialTransactions}
+      mrr={revenueStats.mrr}
+      revenueThisMonth={revenueStats.revenueThisMonth}
+      revenuePrevMonth={revenueStats.revenuePrevMonth}
+      growth={revenueStats.growth}
+      revenueByMonth={revenueStats.revenueByMonth}
+      locale={locale}
     />
   );
 }
