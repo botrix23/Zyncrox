@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import {
-  Palette, CheckCircle2, AlertCircle, Upload, Save, Eye, MonitorSmartphone, Monitor, Moon, Sun, MonitorCheck, LayoutTemplate, Link as LinkIcon, ExternalLink, Instagram, Facebook, Music, Building2, ImageIcon, Truck, Info, Settings, Share2, Copy, Trash2, Lock, Mail, User, Star
+  Palette, CheckCircle2, AlertCircle, Upload, Save, Eye, MonitorSmartphone, Monitor, Moon, Sun, MonitorCheck, LayoutTemplate, Link as LinkIcon, ExternalLink, Instagram, Facebook, Music, Building2, ImageIcon, Truck, Info, Settings, Share2, Copy, Trash2, Lock, Mail, User, Star, Pencil
 } from "lucide-react";
 import { updatePortalSettingsAction } from "@/app/actions/tenant";
 import { getRewardsAction, createRewardAction, updateRewardAction, deleteRewardAction } from "@/app/actions/loyalty";
@@ -983,7 +983,7 @@ className="w-full min-h-[150px] p-4 bg-slate-50 dark:bg-white/5 border border-sl
                       className="w-20 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-purple-500 focus:outline-none" />
                     <div className="flex-1">
                       <p className="text-sm font-bold text-slate-800 dark:text-white">{locale === 'es' ? 'Ventana de evaluación (meses)' : 'Evaluation window (months)'}</p>
-                      <p className="text-xs text-slate-500">{locale === 'es' ? 'Citas dentro de este periodo cuentan para el nivel' : 'Appointments within this period count for tier'}</p>
+                      <p className="text-xs text-slate-500">{locale === 'es' ? 'Citas dentro de este periodo cuentan para el nivel Frecuente y VIP' : 'Appointments within this period count toward Frequent and VIP tiers'}</p>
                     </div>
                   </div>
 
@@ -1142,7 +1142,7 @@ className="w-full min-h-[150px] p-4 bg-slate-50 dark:bg-white/5 border border-sl
                                   className={`text-xs px-2 py-1 rounded-full font-black ${r.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-slate-100 text-slate-500 dark:bg-white/5'}`}
                                 >{r.isActive ? (locale === 'es' ? 'Activa' : 'Active') : (locale === 'es' ? 'Inactiva' : 'Inactive')}</button>
                                 <button type="button" onClick={() => setEditingReward(r.id)} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-all">
-                                  <Settings className="w-3.5 h-3.5" />
+                                  <Pencil className="w-3.5 h-3.5" />
                                 </button>
                                 <button type="button"
                                   onClick={async () => {
