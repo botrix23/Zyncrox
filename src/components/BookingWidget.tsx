@@ -95,6 +95,7 @@ export default function BookingWidget({
   onBookingCreated,
   showStaffSelection,
   tenantTimezone,
+  pointsEnabled,
 }: {
   branches: Branch[],
   services: Service[],
@@ -130,6 +131,7 @@ export default function BookingWidget({
   onBookingCreated?: () => void;
   showStaffSelection?: boolean;
   tenantTimezone?: string;
+  pointsEnabled?: boolean;
 }) {
   const t = useTranslations('BookingWidget');
   const locale = useLocale();
@@ -179,6 +181,12 @@ export default function BookingWidget({
   const [showCalendar, setShowCalendar] = useState(false);
   const [openCalendarIdx, setOpenCalendarIdx] = useState<number | null>(null);
 
+  // Points banner state
+  const [clientPointsData, setClientPointsData] = useState<{
+    balance: number;
+    nextReward: { name: string; pointsCost: number } | null;
+  } | null>(null);
+
   const businessTimezone = tenantTimezone || (branches[0] as any)?.tenant?.timezone || 'America/El_Salvador';
   const [hasTzDifference, setHasTzDifference] = useState(false);
   const [businessOffsetLabel, setBusinessOffsetLabel] = useState("");
@@ -219,6 +227,31 @@ export default function BookingWidget({
       console.warn("TZ detection failed", e);
     }
   }, [businessTimezone]);
+
+  // Fetch client points when on step 4, pointsEnabled, and email is valid
+  useEffect(() => {
+    if (!pointsEnabled || !tenantId || step !== 4) return;
+    const emailRegexLocal = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegexLocal.test(guestEmail)) {
+      setClientPointsData(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/widget/points?tenantId=${encodeURIComponent(tenantId)}&email=${encodeURIComponent(guestEmail.toLowerCase().trim())}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.pointsEnabled && data.balance > 0) {
+          setClientPointsData({ balance: data.balance, nextReward: data.nextReward });
+        } else {
+          setClientPointsData(null);
+        }
+      } catch {
+        setClientPointsData(null);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [pointsEnabled, tenantId, guestEmail, step]);
 
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -1773,6 +1806,45 @@ export default function BookingWidget({
                   </p>
                 </div>
               )}
+
+              {/* Banner de puntos de fidelidad */}
+              {clientPointsData && !isAdmin && (() => {
+                const { balance, nextReward } = clientPointsData;
+                const canRedeem = nextReward && nextReward.pointsCost <= balance;
+                const needed = nextReward ? nextReward.pointsCost - balance : 0;
+                const accentColor = primaryColor || '#7c3aed';
+                return (
+                  <div
+                    className="w-full flex items-start gap-3 px-4 py-3 mb-5 rounded-2xl border"
+                    style={{
+                      backgroundColor: `${accentColor}15`,
+                      borderColor: `${accentColor}40`,
+                    }}
+                  >
+                    <span className="shrink-0 text-lg leading-none mt-0.5">⭐</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-black leading-snug" style={{ color: accentColor }}>
+                        {t('points_balance', { balance })}
+                      </p>
+                      {nextReward && canRedeem && (
+                        <p className="text-xs font-semibold mt-0.5 opacity-80" style={{ color: accentColor }}>
+                          {t('points_can_redeem', { reward: nextReward.name })}
+                        </p>
+                      )}
+                      {nextReward && !canRedeem && (
+                        <p className="text-xs font-semibold mt-0.5 opacity-80" style={{ color: accentColor }}>
+                          {t('points_need_more', { needed, reward: nextReward.name })}
+                        </p>
+                      )}
+                      {!nextReward && (
+                        <p className="text-xs font-semibold mt-0.5 opacity-80" style={{ color: accentColor }}>
+                          {t('points_accumulated', { balance })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Resumen de servicios con día y hora */}
               {cartBookings.length > 0 && (

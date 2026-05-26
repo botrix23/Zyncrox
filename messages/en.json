@@ -126,7 +126,11 @@
     "specialist": "Specialist",
     "time": "Time",
     "scheduling": "Scheduling",
-    "branch": "Branch"
+    "branch": "Branch",
+    "points_balance": "You have {balance} points",
+    "points_need_more": "You need {needed} more points for {reward}",
+    "points_can_redeem": "You can redeem: {reward}!",
+    "points_accumulated": "{balance} points accumulated"
   },
   "Login": {
     "title": "Login",
@@ -1400,7 +1404,7 @@
       "colBookings": "Bookings",
       "colTrial": "Trial",
       "colActions": "Actions",
-      "impersonateTitle": "Access as support",
+      "impersonateTitle": "Enter as admin",
       "changePlan": "Change plan",
       "activate": "Activate",
       "suspend": "Suspend",
@@ -1419,7 +1423,6 @@
       "trialDays": "Trial: {days}d",
       "viewUsers": "View users",
       "impersonateMenuItem": "Enter as admin",
-      "impersonateTitle": "Enter as admin",
       "impersonateMessage": "You are about to open the admin panel for:",
       "impersonateWarning": "A new tab will open. All your actions will be logged in the audit log with your Super Admin email.",
       "impersonateConfirm": "Enter",
@@ -1671,7 +1674,6 @@
       "previewNote": "The preview uses sample data — in real sends they are replaced with the customer's data",
       "editorNote": "Click to insert at the end of the editor",
       "resetConfirm": "Reset this template to the default design? Saved customization will be lost.",
-
       "previewError": "Error loading the preview.",
       "loadError": "<!-- Error loading default template -->"
     },
