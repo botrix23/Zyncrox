@@ -55,6 +55,7 @@ export default async function ClientsPage({
     vipCitasThreshold: tenant?.loyaltyVipCitasThreshold ?? null,
     vipAmountThreshold: tenant?.loyaltyVipAmountThreshold ? Number(tenant.loyaltyVipAmountThreshold) : null,
     plan: tenant?.plan ?? 'BASIC',
+    pointsEnabled: tenant?.pointsEnabled ?? false,
   };
 
   return (

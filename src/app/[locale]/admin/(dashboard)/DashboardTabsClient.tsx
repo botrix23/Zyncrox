@@ -93,6 +93,8 @@ interface DashboardTabsClientProps {
   defaultFrom: string;
   defaultTo: string;
   locale: string;
+  plan?: string;
+  pointsEnabled?: boolean;
 }
 
 export function DashboardTabsClient({
@@ -102,6 +104,8 @@ export function DashboardTabsClient({
   defaultFrom,
   defaultTo,
   locale,
+  plan,
+  pointsEnabled,
 }: DashboardTabsClientProps) {
   const t = useTranslations("Dashboard");
   const [activeTab, setActiveTab] = useState<"overview" | "analytics">("overview");
@@ -167,6 +171,8 @@ export function DashboardTabsClient({
               defaultFrom={defaultFrom}
               defaultTo={defaultTo}
               locale={locale}
+              plan={plan}
+              pointsEnabled={pointsEnabled}
             />
           ) : (
             <AnalyticsUpgradeWallInline locale={locale} />

@@ -899,7 +899,8 @@
         "staffPerformance": "Rendimiento de staff",
         "clientRetention": "Retención de clientes",
         "branchPerformance": "Rendimiento por sucursal",
-        "satisfaction": "Satisfacción"
+        "satisfaction": "Satisfacción",
+        "loyalty": "Fidelidad"
       },
       "filters": {
         "last7d": "Últ. 7 días",

@@ -899,7 +899,8 @@
         "staffPerformance": "Staff performance",
         "clientRetention": "Client retention",
         "branchPerformance": "Branch performance",
-        "satisfaction": "Satisfaction"
+        "satisfaction": "Satisfaction",
+        "loyalty": "Loyalty"
       },
       "filters": {
         "last7d": "Last 7 days",

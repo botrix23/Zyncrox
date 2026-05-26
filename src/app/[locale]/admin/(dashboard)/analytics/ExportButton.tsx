@@ -514,7 +514,7 @@ async function exportExcel(
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 interface ExportButtonProps {
-  tab: "staffPerformance" | "clientRetention" | "branchPerformance" | "satisfaction";
+  tab: "staffPerformance" | "clientRetention" | "branchPerformance" | "satisfaction" | "loyalty";
   staffData: StaffPerformanceResult | null;
   retentionData: RetentionResult | null;
   branchData: BranchPerformanceResult | null;

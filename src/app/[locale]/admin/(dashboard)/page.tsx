@@ -297,6 +297,8 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
       defaultFrom={analyticsDefaultFrom}
       defaultTo={analyticsDefaultTo}
       locale={locale}
+      plan={tenantPlan ?? undefined}
+      pointsEnabled={tenantData?.pointsEnabled ?? false}
     >
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
 

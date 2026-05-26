@@ -32,7 +32,9 @@ import {
 import { ClientRetentionTab } from "./ClientRetentionTab";
 import { BranchPerformanceTab } from "./BranchPerformanceTab";
 import { SatisfactionTab } from "./SatisfactionTab";
+import { LoyaltyTab } from "./LoyaltyTab";
 import { ExportButton } from "./ExportButton";
+import { getLoyaltyAnalyticsData, LoyaltyAnalyticsResult } from "@/app/actions/analyticsLoyalty";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,7 +54,7 @@ type SortKey = keyof Pick<
   "name" | "attended" | "cancelled" | "cancellationRate" | "noShows" | "revenue" | "avgRating" | "productiveMinutes"
 >;
 
-type TabKey = "staffPerformance" | "clientRetention" | "branchPerformance" | "satisfaction";
+type TabKey = "staffPerformance" | "clientRetention" | "branchPerformance" | "satisfaction" | "loyalty";
 
 // ─── Date presets ─────────────────────────────────────────────────────────────
 
@@ -339,9 +341,12 @@ interface AnalyticsClientProps {
   defaultFrom: string;
   defaultTo: string;
   locale: string;
+  plan?: string;
+  pointsEnabled?: boolean;
 }
 
-export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale }: AnalyticsClientProps) {
+export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale, plan, pointsEnabled }: AnalyticsClientProps) {
+  const showLoyaltyTab = plan === 'ENTERPRISE' && pointsEnabled === true;
   const t = useTranslations("Dashboard.analytics");
   const tStaff = useTranslations("Dashboard.analytics.staffPerformance");
   const tFilters = useTranslations("Dashboard.analytics.filters");
@@ -368,10 +373,15 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale }:
   const [satisfactionError, setSatisfactionError] = useState<string | null>(null);
   const [satisfactionDirty, setSatisfactionDirty] = useState(false);
 
+  const [loyaltyData, setLoyaltyData] = useState<LoyaltyAnalyticsResult | null>(null);
+  const [loyaltyError, setLoyaltyError] = useState<string | null>(null);
+  const [loyaltyDirty, setLoyaltyDirty] = useState(false);
+
   const [isStaffPending, startStaffTransition] = useTransition();
   const [isRetentionPending, startRetentionTransition] = useTransition();
   const [isBranchPending, startBranchTransition] = useTransition();
   const [isSatisfactionPending, startSatisfactionTransition] = useTransition();
+  const [isLoyaltyPending, startLoyaltyTransition] = useTransition();
 
   const branches: BranchOption[] = staffData?.branches ?? retentionData?.branches ?? [];
 
@@ -420,6 +430,15 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale }:
     });
   }, []);
 
+  const fetchLoyalty = useCallback((from: string, to: string) => {
+    startLoyaltyTransition(async () => {
+      setLoyaltyError(null);
+      const r = await getLoyaltyAnalyticsData(from, to);
+      if (r.ok) { setLoyaltyData(r.data); setLoyaltyDirty(false); }
+      else setLoyaltyError(r.error);
+    });
+  }, []);
+
   // ── Filter handlers ───────────────────────────────────────────────────────────
 
   const applyFilters = useCallback((from: string, to: string, branch: string | null) => {
@@ -428,10 +447,12 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale }:
     setRetentionDirty(true);
     setBranchDirty(true);
     setSatisfactionDirty(true);
+    setLoyaltyDirty(true);
     if (activeTab === "clientRetention") fetchRetention(from, to, branch, churnDays);
     if (activeTab === "branchPerformance") fetchBranch(from, to);
     if (activeTab === "satisfaction") fetchSatisfaction(from, to);
-  }, [activeTab, churnDays, fetchStaff, fetchRetention, fetchBranch, fetchSatisfaction]);
+    if (activeTab === "loyalty") fetchLoyalty(from, to);
+  }, [activeTab, churnDays, fetchStaff, fetchRetention, fetchBranch, fetchSatisfaction, fetchLoyalty]);
 
   const handlePreset = (key: PresetKey) => {
     const { from, to } = getPresetDates(key);
@@ -464,6 +485,9 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale }:
     if (tab === "satisfaction" && (satisfactionData === null || satisfactionDirty)) {
       fetchSatisfaction(dateFrom, dateTo);
     }
+    if (tab === "loyalty" && (loyaltyData === null || loyaltyDirty)) {
+      fetchLoyalty(dateFrom, dateTo);
+    }
   };
 
   const handleChurnDaysChange = (days: number) => {
@@ -474,10 +498,12 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale }:
   const isPending = activeTab === "staffPerformance" ? isStaffPending
     : activeTab === "clientRetention" ? isRetentionPending
     : activeTab === "branchPerformance" ? isBranchPending
+    : activeTab === "loyalty" ? isLoyaltyPending
     : isSatisfactionPending;
   const hasError = activeTab === "staffPerformance" ? staffError
     : activeTab === "clientRetention" ? retentionError
     : activeTab === "branchPerformance" ? branchError
+    : activeTab === "loyalty" ? loyaltyError
     : satisfactionError;
 
   const PRESETS: { key: PresetKey; label: string }[] = [
@@ -527,14 +553,14 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale }:
           onChange={e => handleTabChange(e.target.value as TabKey)}
           className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors shadow-sm"
         >
-          {(["staffPerformance", "clientRetention", "branchPerformance", "satisfaction"] as TabKey[]).map(tab => (
+          {(["staffPerformance", "clientRetention", "branchPerformance", "satisfaction", ...(showLoyaltyTab ? ["loyalty" as TabKey] : [])] as TabKey[]).map(tab => (
             <option key={tab} value={tab}>{t(`tabs.${tab}` as any)}</option>
           ))}
         </select>
       </div>
       {/* Desktop pill tabs */}
       <div className="hidden sm:flex gap-1 bg-slate-100 dark:bg-white/5 rounded-2xl p-1 w-auto overflow-x-auto">
-        {(["staffPerformance", "clientRetention", "branchPerformance", "satisfaction"] as TabKey[]).map(tab => (
+        {(["staffPerformance", "clientRetention", "branchPerformance", "satisfaction", ...(showLoyaltyTab ? ["loyalty" as TabKey] : [])] as TabKey[]).map(tab => (
           <button
             key={tab}
             onClick={() => handleTabChange(tab)}
@@ -597,6 +623,7 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale }:
             activeTab === "staffPerformance" ? fetchStaff(dateFrom, dateTo, branchId)
             : activeTab === "clientRetention" ? fetchRetention(dateFrom, dateTo, branchId, churnDays)
             : activeTab === "branchPerformance" ? fetchBranch(dateFrom, dateTo)
+            : activeTab === "loyalty" ? fetchLoyalty(dateFrom, dateTo)
             : fetchSatisfaction(dateFrom, dateTo)
           }
             className="ml-auto flex items-center gap-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:underline">
@@ -655,11 +682,17 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale }:
         <SatisfactionTab data={satisfactionData} isLoading={isSatisfactionPending} locale={locale ?? "es"} />
       )}
 
+      {/* Loyalty */}
+      {activeTab === "loyalty" && loyaltyData && !loyaltyError && (
+        <LoyaltyTab data={loyaltyData} isLoading={isLoyaltyPending} />
+      )}
+
       {/* Loading placeholder (first load) */}
       {((activeTab === "staffPerformance" && !staffData && !staffError) ||
         (activeTab === "clientRetention" && !retentionData && !retentionError) ||
         (activeTab === "branchPerformance" && !branchData && !branchError) ||
-        (activeTab === "satisfaction" && !satisfactionData && !satisfactionError)) && (
+        (activeTab === "satisfaction" && !satisfactionData && !satisfactionError) ||
+        (activeTab === "loyalty" && !loyaltyData && !loyaltyError)) && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Loader2 className="w-8 h-8 text-purple-500 animate-spin mb-4" />
           <p className="text-sm text-slate-400 dark:text-zinc-500">{t("loading")}</p>
