@@ -24,7 +24,7 @@ export default async function LandingPage({ params: { locale } }: { params: { lo
   }
 
   return (
-    <div className="relative min-h-screen bg-[#f5f4f2] dark:bg-[#09090b] overflow-x-hidden transition-colors duration-300 selection:bg-purple-500/30">
+    <div className="relative min-h-screen bg-[#f5f4f2] dark:bg-[#09090b] transition-colors duration-300 selection:bg-purple-500/30">
 
       {/* ── Fixed background: radial gradients ── */}
       <div
