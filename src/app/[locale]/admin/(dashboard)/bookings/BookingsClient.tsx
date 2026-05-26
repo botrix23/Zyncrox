@@ -61,26 +61,46 @@ import dynamic from "next/dynamic";
 
 const ClientNotesPreview = dynamic(() => import('./ClientNotesPreview'), { ssr: false });
 
-export default function BookingsClient({ 
+export default function BookingsClient({
   initialBookings,
   services,
   staff,
   branches,
   coverageZones = [],
   tenantId,
-  tenantSettings
-}: { 
+  tenantSettings,
+  loyaltyMap = {},
+}: {
   initialBookings: any[],
   services: any[],
   staff: any[],
   branches: any[],
   coverageZones?: any[],
   tenantId: string,
-  tenantSettings: any
+  tenantSettings: any,
+  loyaltyMap?: Record<string, string>,
 }) {
   const t = useTranslations('Dashboard.bookings');
   const localeStr = useLocale();
   const dateLocale = localeStr === 'es' ? es : enUS;
+
+  const plan: string = (tenantSettings as any)?.plan ?? 'BASIC';
+  const loyaltyEnabled: boolean = (tenantSettings as any)?.loyaltyEnabled ?? false;
+
+  // Returns loyalty tier for a booking, gated by plan and switch
+  const getBookingTier = (booking: any): 'NORMAL' | 'FREQUENT' | 'VIP' => {
+    if (!loyaltyEnabled || plan === 'BASIC') return 'NORMAL';
+    const email = booking.customerEmail;
+    if (!email) return 'NORMAL';
+    return (loyaltyMap[email] as any) || 'NORMAL';
+  };
+
+  // Inline style additions for loyalty border on calendar events
+  const loyaltyBorderStyle = (tier: string): React.CSSProperties => {
+    if (tier === 'VIP')      return { borderLeft: '4px solid #a855f7' }; // purple-500
+    if (tier === 'FREQUENT') return { borderLeft: '4px solid #f97316' }; // orange-500
+    return {};
+  };
   
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("Todas");
@@ -999,6 +1019,7 @@ export default function BookingsClient({
                         const bufferPx = travelTime > 0 && booking.isHomeService ? (travelTime * 96) / 60 : 0;
                         const bufCtx = homeServiceBufferCtx.get(booking.id);
 
+                        const bookingTier = getBookingTier(booking);
                         const items: JSX.Element[] = [];
 
                         if (bufferPx > 0 && !isCancelled) {
@@ -1032,7 +1053,7 @@ export default function BookingsClient({
                           <button
                             key={booking.id}
                             onClick={() => handleOpenEdit(booking)}
-                            style={{ top: `${top}px`, height: `${height}px`, left: `calc(${left}% + 4px)`, width: `calc(${width}% - 8px)` }}
+                            style={{ top: `${top}px`, height: `${height}px`, left: `calc(${left}% + 4px)`, width: `calc(${width}% - 8px)`, ...loyaltyBorderStyle(bookingTier) }}
                             className={`absolute z-10 p-3 rounded-2xl border transition-all text-left group overflow-hidden ${
                               isCancelled
                                 ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-60 grayscale-[0.5]'
@@ -1053,6 +1074,8 @@ export default function BookingsClient({
                                   }`} title={booking.customerName}>
                                     {booking.customerName}
                                   </h4>
+                                  {bookingTier === 'VIP'      && <span title="VIP"       className="text-[10px] shrink-0">👑</span>}
+                                  {bookingTier === 'FREQUENT' && <span title={localeStr === 'es' ? 'Frecuente' : 'Frequent'} className="text-[10px] shrink-0">⭐</span>}
                                   {bookingHasClientNotes(booking) && (
                                     <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${
                                       booking.session?.zoneId
@@ -1159,6 +1182,7 @@ export default function BookingsClient({
                             const isCancelled = booking.status === 'CANCELLED';
                             const bufferPx = travelTime > 0 && booking.isHomeService ? (travelTime * 96) / 60 : 0;
                             const bufCtx = homeServiceBufferCtx.get(booking.id);
+                            const weekTier = getBookingTier(booking);
 
                             const items: JSX.Element[] = [];
 
@@ -1183,7 +1207,7 @@ export default function BookingsClient({
                               <button
                                 key={booking.id}
                                 onClick={() => handleOpenEdit(booking)}
-                                style={{ position: 'absolute', top: `${top}px`, height: `${height}px`, left: colLeft, width: finalWidth }}
+                                style={{ position: 'absolute', top: `${top}px`, height: `${height}px`, left: colLeft, width: finalWidth, ...loyaltyBorderStyle(weekTier) }}
                                 className={`z-10 p-1.5 rounded-xl border transition-all text-left overflow-hidden ${
                                   isCancelled
                                     ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-60 grayscale-[0.5]'
@@ -1202,6 +1226,8 @@ export default function BookingsClient({
                                       <p className={`font-black text-xs truncate leading-tight ${isCancelled ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}`}>
                                         {booking.customerName}
                                       </p>
+                                      {weekTier === 'VIP'      && <span title="VIP"       className="text-[9px] shrink-0">👑</span>}
+                                      {weekTier === 'FREQUENT' && <span title={localeStr === 'es' ? 'Frecuente' : 'Frequent'} className="text-[9px] shrink-0">⭐</span>}
                                       {bookingHasClientNotes(booking) && (
                                         <MessageSquare className={`w-3 h-3 shrink-0 ${booking.session?.zoneId ? 'text-purple-500 fill-purple-500/20' : 'text-orange-500 fill-orange-500/20'}`} />
                                       )}
@@ -1357,6 +1383,44 @@ export default function BookingsClient({
                         className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium text-slate-900 dark:text-white min-h-[80px] resize-none"
                       />
                     </div>
+
+                    {/* ── Loyalty mini-summary (Pro / Business only, loyalty enabled) ── */}
+                    {loyaltyEnabled && plan !== 'BASIC' && (() => {
+                      const email = editingBooking?.customerEmail;
+                      const tier = email ? (loyaltyMap[email] || 'NORMAL') : 'NORMAL';
+                      // Compute client stats from all bookings
+                      const clientBookings = initialBookings.filter(
+                        b => b.customerEmail && b.customerEmail === email && b.status !== 'CANCELLED'
+                      );
+                      const totalCitas = clientBookings.length;
+                      const totalMonto = clientBookings.reduce((sum: number, b: any) => sum + (parseFloat(b.service?.price) || 0), 0);
+                      const firstDate = clientBookings.length > 0
+                        ? new Date(Math.min(...clientBookings.map((b: any) => new Date(b.startTime).getTime())))
+                        : null;
+                      return (
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-2">
+                          <div className="flex items-center gap-2">
+                            {tier === 'VIP' && (
+                              <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                👑 VIP
+                              </span>
+                            )}
+                            {tier === 'FREQUENT' && (
+                              <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                                ⭐ {localeStr === 'es' ? 'Frecuente' : 'Frequent'}
+                              </span>
+                            )}
+                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium">
+                              {totalCitas} {localeStr === 'es' ? 'citas' : 'appts'}
+                              {' · '}${totalMonto.toFixed(0)} {localeStr === 'es' ? 'gastados' : 'spent'}
+                              {firstDate && (
+                                <> · {localeStr === 'es' ? 'Cliente desde' : 'Client since'} {format(firstDate, 'MMM yyyy', { locale: dateLocale })}</>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Client Notes Preview */}
                     {editingBooking?.customerEmail && (

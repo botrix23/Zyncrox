@@ -528,6 +528,23 @@ export const clientLoyaltyRelations = relations(clientLoyalty, ({ one }) => ({
   tenant: one(tenants, { fields: [clientLoyalty.tenantId], references: [tenants.id] }),
 }));
 
+// ── Client Loyalty History ───────────────────────────────────────────────────
+// Append-only log of tier changes. Populated by the recalculation engine
+// whenever a client's loyaltyTier changes. Used to show "fue VIP de ene a abr 2026".
+export const clientLoyaltyHistory = pgTable('client_loyalty_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  clientEmail: varchar('client_email', { length: 255 }).notNull(),
+  clientName: varchar('client_name', { length: 255 }).notNull(),
+  previousTier: varchar('previous_tier', { length: 20 }).notNull(),  // 'NORMAL' | 'FREQUENT' | 'VIP'
+  newTier: varchar('new_tier', { length: 20 }).notNull(),
+  changedAt: timestamp('changed_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+export const clientLoyaltyHistoryRelations = relations(clientLoyaltyHistory, ({ one }) => ({
+  tenant: one(tenants, { fields: [clientLoyaltyHistory.tenantId], references: [tenants.id] }),
+}));
+
 // ── Platform Transactions ────────────────────────────────────────────────────
 // Records every payment charge (successful or failed) received by the platform.
 // Populated by the N1co webhook handler or by manual registration.

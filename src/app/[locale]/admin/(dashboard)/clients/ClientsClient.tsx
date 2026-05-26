@@ -26,18 +26,33 @@ interface BookingDetail {
   branch: { name: string };
 }
 
+type LoyaltyTier = 'NORMAL' | 'FREQUENT' | 'VIP';
+interface LoyaltyRow { clientEmail: string; loyaltyTier: string; citasPeriodo: number; montoPeriodo: string; }
+interface LoyaltyConfig {
+  enabled: boolean;
+  windowMonths: number;
+  frequentThreshold: number;
+  vipCitasThreshold: number | null;
+  vipAmountThreshold: number | null;
+  plan: string;
+}
+
 export default function ClientsClient({
   bookings,
   vipThreshold,
   notesCounts = {},
   currentUserId = '',
   currentUserRole = 'ADMIN',
+  loyaltyRows = [],
+  loyaltyConfig,
 }: {
   bookings: BookingDetail[];
   vipThreshold: number;
   notesCounts?: Record<string, number>;
   currentUserId?: string;
   currentUserRole?: string;
+  loyaltyRows?: LoyaltyRow[];
+  loyaltyConfig?: LoyaltyConfig;
 }) {
   const t = useTranslations('Dashboard.clients');
   const params = useParams();
@@ -45,6 +60,66 @@ export default function ClientsClient({
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
+  const [tierFilter, setTierFilter] = useState<'ALL' | LoyaltyTier>('ALL');
+
+  const plan = loyaltyConfig?.plan ?? 'BASIC';
+  const loyaltyEnabled = loyaltyConfig?.enabled ?? false;
+
+  // Build lookup map email → tier
+  const loyaltyMap = useMemo(() => {
+    const m: Record<string, LoyaltyTier> = {};
+    for (const row of loyaltyRows) {
+      m[row.clientEmail.toLowerCase()] = row.loyaltyTier as LoyaltyTier;
+    }
+    return m;
+  }, [loyaltyRows]);
+
+  // Returns the display tier for a client, gated by plan
+  const getClientTier = (client: any): LoyaltyTier => {
+    if (!loyaltyEnabled) return 'NORMAL';
+    const email = client.email?.toLowerCase();
+    if (email && loyaltyMap[email]) return loyaltyMap[email];
+    // Legacy fallback while engine hasn't run yet
+    if (client.totalAppointments >= (loyaltyConfig?.vipCitasThreshold ?? 999) && plan !== 'BASIC') return 'VIP';
+    if (client.totalAppointments >= (loyaltyConfig?.frequentThreshold ?? vipThreshold)) return 'FREQUENT';
+    return 'NORMAL';
+  };
+
+  // "Near upgrade" text for Business plan
+  const getNearUpgrade = (client: any, tier: LoyaltyTier): string | null => {
+    if (plan !== 'ENTERPRISE' && plan !== 'BUSINESS') return null;
+    if (!loyaltyEnabled) return null;
+    if (tier === 'VIP') return null;
+
+    const freqThreshold = loyaltyConfig?.frequentThreshold ?? vipThreshold;
+    const vipThresholdCitas = loyaltyConfig?.vipCitasThreshold;
+    const vipAmountThreshold = loyaltyConfig?.vipAmountThreshold;
+    const citas = client.totalAppointments;
+    const monto = client.totalSpent;
+
+    if (tier === 'NORMAL' && citas >= freqThreshold * 0.8) {
+      const missing = freqThreshold - citas;
+      if (missing <= 0) return null;
+      return locale === 'es'
+        ? `${missing} cita${missing !== 1 ? 's' : ''} más para ser Frecuente`
+        : `${missing} more appt${missing !== 1 ? 's' : ''} to reach Frequent`;
+    }
+    if (tier === 'FREQUENT' && vipThresholdCitas) {
+      const missingCitas = vipThresholdCitas - citas;
+      if (missingCitas > 0 && citas >= vipThresholdCitas * 0.8) {
+        const missingAmount = vipAmountThreshold ? Math.max(0, vipAmountThreshold - monto) : 0;
+        if (missingAmount > 0) {
+          return locale === 'es'
+            ? `${missingCitas} citas y $${missingAmount.toFixed(0)} más para VIP`
+            : `${missingCitas} appts & $${missingAmount.toFixed(0)} more for VIP`;
+        }
+        return locale === 'es'
+          ? `${missingCitas} cita${missingCitas !== 1 ? 's' : ''} más para VIP`
+          : `${missingCitas} more appt${missingCitas !== 1 ? 's' : ''} for VIP`;
+      }
+    }
+    return null;
+  };
 
   const clientStats = useMemo(() => {
     const clientsMap = new Map<string, any>();
@@ -95,11 +170,14 @@ export default function ClientsClient({
     return Array.from(clientsMap.values()).sort((a, b) => b.totalSpent - a.totalSpent);
   }, [bookings]);
 
-  const filteredClients = clientStats.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (c.phone && c.phone.includes(searchTerm))
-  );
+  const filteredClients = clientStats.filter(c => {
+    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (c.phone && c.phone.includes(searchTerm));
+    if (!matchesSearch) return false;
+    if (tierFilter === 'ALL') return true;
+    return getClientTier(c) === tierFilter;
+  });
 
   const topService = (client: any) => {
     return Object.entries(client.consumedServices)
@@ -113,15 +191,30 @@ export default function ClientsClient({
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t('title')}</h1>
           <p className="text-slate-500 dark:text-zinc-400 mt-1">{t('subtitle')}</p>
         </div>
-        <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 px-4 py-2 rounded-2xl border border-slate-200 dark:border-white/5 focus-within:ring-2 focus-within:ring-purple-500 transition-all w-full md:w-96 shadow-sm">
-          <Search className="w-4 h-4 text-slate-400 shrink-0" />
-          <input 
-            type="text" 
-            placeholder={t('searchPlaceholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent border-none focus:outline-none text-sm w-full placeholder:text-slate-400 dark:placeholder:text-zinc-500"
-          />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          {/* Tier filter — Pro / Business only, loyalty enabled */}
+          {loyaltyEnabled && plan !== 'BASIC' && (
+            <select
+              value={tierFilter}
+              onChange={e => setTierFilter(e.target.value as any)}
+              className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-2 px-4 text-sm font-bold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-sm"
+            >
+              <option value="ALL">{locale === 'es' ? 'Todos los niveles' : 'All levels'}</option>
+              <option value="VIP">👑 VIP</option>
+              <option value="FREQUENT">⭐ {locale === 'es' ? 'Frecuente' : 'Frequent'}</option>
+              <option value="NORMAL">{locale === 'es' ? 'Normal' : 'Normal'}</option>
+            </select>
+          )}
+          <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 px-4 py-2 rounded-2xl border border-slate-200 dark:border-white/5 focus-within:ring-2 focus-within:ring-purple-500 transition-all w-full md:w-96 shadow-sm">
+            <Search className="w-4 h-4 text-slate-400 shrink-0" />
+            <input
+              type="text"
+              placeholder={t('searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-transparent border-none focus:outline-none text-sm w-full placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+            />
+          </div>
         </div>
       </div>
 
@@ -138,7 +231,8 @@ export default function ClientsClient({
           {/* Mobile cards */}
           <div className="md:hidden space-y-3 animate-in slide-in-from-top-2 duration-300">
             {filteredClients.map((client, idx) => {
-              const isVip = client.totalAppointments >= vipThreshold;
+              const tier = getClientTier(client);
+              const nearUpgrade = getNearUpgrade(client, tier);
               const [topSvcName]: any = topService(client);
               return (
                 <div
@@ -147,13 +241,18 @@ export default function ClientsClient({
                   className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl p-4 shadow-sm hover:border-purple-500/40 transition-all cursor-pointer active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black shadow-lg shrink-0 ${isVip ? 'bg-gradient-to-br from-amber-400 to-orange-600 shadow-orange-500/20' : 'bg-gradient-to-br from-purple-500 to-indigo-600 shadow-purple-500/20'}`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black shadow-lg shrink-0 ${tier === 'VIP' ? 'bg-gradient-to-br from-purple-500 to-violet-700 shadow-purple-500/20' : tier === 'FREQUENT' ? 'bg-gradient-to-br from-amber-400 to-orange-600 shadow-orange-500/20' : 'bg-gradient-to-br from-purple-500 to-indigo-600 shadow-purple-500/20'}`}>
                       {client.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-bold text-slate-900 dark:text-white truncate">{client.name}</span>
-                        {isVip && <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+                        {tier === 'VIP' && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-full text-[10px] font-black shrink-0">👑 VIP</span>
+                        )}
+                        {tier === 'FREQUENT' && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 rounded-full text-[10px] font-black shrink-0">⭐ {locale === 'es' ? 'Frecuente' : 'Frequent'}</span>
+                        )}
                         {client.email && notesCounts[client.email.toLowerCase()] > 0 && (
                           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 rounded-md text-[10px] font-black shrink-0">
                             <StickyNote className="w-2.5 h-2.5" />
@@ -165,6 +264,9 @@ export default function ClientsClient({
                         {client.email && <p className="text-xs text-slate-500 dark:text-zinc-400 truncate max-w-[180px]">{client.email}</p>}
                         {client.phone && <p className="text-xs text-slate-400">{client.phone}</p>}
                       </div>
+                      {nearUpgrade && (
+                        <p className="text-[10px] text-purple-500 font-semibold mt-0.5">↑ {nearUpgrade}</p>
+                      )}
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-300 dark:text-zinc-600 shrink-0" />
                   </div>
@@ -172,7 +274,7 @@ export default function ClientsClient({
                     <span className="px-2.5 py-1 bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-zinc-300 text-xs rounded-lg font-bold truncate max-w-[160px]">
                       {topSvcName}
                     </span>
-                    <span className={`px-2.5 py-1 rounded-full font-black text-xs ${isVip ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10' : 'bg-purple-50 text-purple-600 dark:bg-purple-500/10'}`}>
+                    <span className={`px-2.5 py-1 rounded-full font-black text-xs ${tier === 'VIP' ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10' : 'bg-purple-50 text-purple-600 dark:bg-purple-500/10'}`}>
                       {t('table.frequencyCount', { count: client.totalAppointments })}
                     </span>
                     <span className="font-black text-slate-900 dark:text-white text-sm inline-flex items-center gap-0.5 ml-auto">
@@ -200,20 +302,26 @@ export default function ClientsClient({
                    </thead>
                    <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                       {filteredClients.map((client, idx) => {
-                          const isVip = client.totalAppointments >= vipThreshold;
-                          const [topSvcName, topSvcData]: any = topService(client);
+                          const tier = getClientTier(client);
+                          const nearUpgrade = getNearUpgrade(client, tier);
+                          const [topSvcName]: any = topService(client);
 
                           return (
                             <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => setSelectedClient(client)}>
                                <td className="p-6">
                                   <div className="flex items-center gap-3">
-                                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black shadow-lg ${isVip ? 'bg-gradient-to-br from-amber-400 to-orange-600 shadow-orange-500/20' : 'bg-gradient-to-br from-purple-500 to-indigo-600 shadow-purple-500/20'}`}>
+                                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black shadow-lg ${tier === 'VIP' ? 'bg-gradient-to-br from-purple-500 to-violet-700 shadow-purple-500/20' : tier === 'FREQUENT' ? 'bg-gradient-to-br from-amber-400 to-orange-600 shadow-orange-500/20' : 'bg-gradient-to-br from-purple-500 to-indigo-600 shadow-purple-500/20'}`}>
                                         {client.name.charAt(0).toUpperCase()}
                                      </div>
-                                     <div className="flex flex-col">
-                                        <span className="font-bold text-slate-900 dark:text-white text-[15px] flex items-center gap-1.5">
+                                     <div className="flex flex-col gap-0.5">
+                                        <span className="font-bold text-slate-900 dark:text-white text-[15px] flex items-center gap-1.5 flex-wrap">
                                           {client.name}
-                                          {isVip && <Award className="w-3.5 h-3.5 text-amber-500" />}
+                                          {tier === 'VIP' && (
+                                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-full text-[10px] font-black">👑 VIP</span>
+                                          )}
+                                          {tier === 'FREQUENT' && (
+                                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 rounded-full text-[10px] font-black">⭐ {locale === 'es' ? 'Frecuente' : 'Frequent'}</span>
+                                          )}
                                           {client.email && notesCounts[client.email.toLowerCase()] > 0 && (
                                             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 rounded-md text-[10px] font-black">
                                               <StickyNote className="w-2.5 h-2.5" />
@@ -221,7 +329,9 @@ export default function ClientsClient({
                                             </span>
                                           )}
                                         </span>
-                                        {isVip && <span className="text-xs font-black text-amber-600 uppercase tracking-tight">{t('frequent')}</span>}
+                                        {nearUpgrade && (
+                                          <span className="text-[10px] text-purple-500 font-semibold">↑ {nearUpgrade}</span>
+                                        )}
                                      </div>
                                   </div>
                                </td>
@@ -239,7 +349,7 @@ export default function ClientsClient({
                                   </div>
                                </td>
                                <td className="p-6 text-center">
-                                  <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full font-black text-xs ${isVip ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10' : 'bg-purple-50 text-purple-600 dark:bg-purple-500/10'}`}>
+                                  <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full font-black text-xs ${tier === 'VIP' ? 'bg-purple-50 text-purple-600 dark:bg-purple-500/10' : tier === 'FREQUENT' ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10' : 'bg-purple-50 text-purple-600 dark:bg-purple-500/10'}`}>
                                      {t('table.frequencyCount', { count: client.totalAppointments })}
                                   </span>
                                </td>
@@ -278,19 +388,28 @@ export default function ClientsClient({
                  </button>
                  
                  <div className="flex flex-row gap-4 items-center">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-xl shrink-0 ${selectedClient.totalAppointments >= vipThreshold ? 'bg-gradient-to-br from-amber-400 to-orange-600 shadow-orange-500/30' : 'bg-gradient-to-br from-purple-500 to-indigo-600 shadow-purple-500/30'}`}>
-                        {selectedClient.name.charAt(0).toUpperCase()}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                       <div className="flex items-center gap-2 mb-1">
-                          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight truncate">{selectedClient.name}</h2>
-                          {selectedClient.totalAppointments >= vipThreshold && (
-                            <div className="px-2 py-0.5 bg-amber-500 text-white text-xs font-black uppercase tracking-widest rounded-full shadow-lg shadow-amber-500/20 flex items-center gap-0.5">
-                               <Award className="w-2.5 h-2.5" /> {t('vipDesc')}
+                    {(() => {
+                      const selTier = getClientTier(selectedClient);
+                      return (
+                        <>
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-xl shrink-0 ${selTier === 'VIP' ? 'bg-gradient-to-br from-purple-500 to-violet-700 shadow-purple-500/30' : selTier === 'FREQUENT' ? 'bg-gradient-to-br from-amber-400 to-orange-600 shadow-orange-500/30' : 'bg-gradient-to-br from-purple-500 to-indigo-600 shadow-purple-500/30'}`}>
+                            {selectedClient.name.charAt(0).toUpperCase()}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight truncate">{selectedClient.name}</h2>
+                              {selTier === 'VIP' && (
+                                <span className="px-2.5 py-0.5 bg-purple-600 text-white text-xs font-black uppercase tracking-widest rounded-full shadow-lg shadow-purple-500/20 flex items-center gap-0.5">
+                                  👑 VIP
+                                </span>
+                              )}
+                              {selTier === 'FREQUENT' && (
+                                <span className="px-2.5 py-0.5 bg-orange-500 text-white text-xs font-black uppercase tracking-widest rounded-full shadow-lg shadow-orange-500/20 flex items-center gap-0.5">
+                                  ⭐ {locale === 'es' ? 'Frecuente' : 'Frequent'}
+                                </span>
+                              )}
                             </div>
-                          )}
-                       </div>
                        
                        <div className="flex flex-wrap gap-3 text-xs font-bold text-slate-500 dark:text-zinc-400">
                           {selectedClient.email ? (
@@ -309,6 +428,9 @@ export default function ClientsClient({
                           )}
                        </div>
                     </div>
+                        </>
+                      );
+                    })()}
                  </div>
               </div>
 
@@ -419,26 +541,60 @@ export default function ClientsClient({
                   locale={locale}
                 />
 
-                {/* Suggested Reward / Quick Config Link */}
-                <div className="p-5 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-purple-500/20 rounded-[2rem]">
-                   <div className="flex items-center justify-between gap-3 mb-2">
-                       <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                {/* Loyalty / Fidelización Panel */}
+                {loyaltyEnabled && plan !== 'BASIC' && (() => {
+                  const selTier = getClientTier(selectedClient);
+                  const nearUpgrade = getNearUpgrade(selectedClient, selTier);
+                  const tierColors = selTier === 'VIP'
+                    ? 'from-purple-500/5 to-violet-500/5 border-purple-500/20'
+                    : selTier === 'FREQUENT'
+                    ? 'from-orange-500/5 to-amber-500/5 border-orange-400/20'
+                    : 'from-indigo-500/5 to-purple-500/5 border-purple-500/20';
+                  const tierIconColor = selTier === 'VIP' ? 'text-purple-600 dark:text-purple-400' : selTier === 'FREQUENT' ? 'text-orange-500' : 'text-indigo-500 dark:text-indigo-400';
+                  return (
+                    <div className={`p-5 bg-gradient-to-br ${tierColors} border rounded-[2rem]`}>
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <div className={`flex items-center gap-2 ${tierIconColor}`}>
                           <Award className="w-4 h-4" />
-                          <h4 className="text-xs font-black uppercase tracking-widest">{t('loyaltyPotential')}</h4>
-                       </div>
-                       <button
+                          <h4 className="text-xs font-black uppercase tracking-widest">
+                            {locale === 'es' ? 'Fidelización' : 'Loyalty'}
+                          </h4>
+                        </div>
+                        <button
                           onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/admin/appearance?tab=rules`); }}
                           className="flex items-center gap-1 text-xs font-black text-indigo-500 hover:text-indigo-600 uppercase tracking-widest border border-indigo-200 dark:border-indigo-500/30 px-2 py-1 rounded-lg transition-all"
-                       >
-                          <Settings2 className="w-2.5 h-2.5" /> {t('adjustThreshold')}
-                       </button>
-                   </div>
-                   <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed font-medium">
-                      {selectedClient.totalAppointments >= vipThreshold 
-                        ? t('vipSuccess', { threshold: vipThreshold })
-                        : t('vipMissing', { count: selectedClient.totalAppointments, missing: vipThreshold - selectedClient.totalAppointments })}
-                   </p>
-                </div>
+                        >
+                          <Settings2 className="w-2.5 h-2.5" /> {locale === 'es' ? 'Configurar' : 'Settings'}
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        {selTier === 'VIP' && (
+                          <span className="px-3 py-1 bg-purple-600 text-white text-xs font-black uppercase tracking-widest rounded-full shadow-lg shadow-purple-500/20 flex items-center gap-1">
+                            👑 VIP
+                          </span>
+                        )}
+                        {selTier === 'FREQUENT' && (
+                          <span className="px-3 py-1 bg-orange-500 text-white text-xs font-black uppercase tracking-widest rounded-full shadow-lg shadow-orange-500/20 flex items-center gap-1">
+                            ⭐ {locale === 'es' ? 'Frecuente' : 'Frequent'}
+                          </span>
+                        )}
+                        {selTier === 'NORMAL' && (
+                          <span className="px-3 py-1 bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-zinc-300 text-xs font-black uppercase tracking-widest rounded-full">
+                            {locale === 'es' ? 'Normal' : 'Standard'}
+                          </span>
+                        )}
+                        <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium">
+                          {selectedClient.totalAppointments} {locale === 'es' ? 'citas' : 'appts'} · ${selectedClient.totalSpent.toFixed(0)} {locale === 'es' ? 'gastados' : 'spent'}
+                        </span>
+                      </div>
+                      {nearUpgrade && (
+                        <p className="mt-2 text-xs font-bold text-slate-500 dark:text-zinc-400 flex items-center gap-1">
+                          <TrendingUp className="w-3 h-3 text-indigo-400 shrink-0" /> {nearUpgrade}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Footer Modal - Refined */}

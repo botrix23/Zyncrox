@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { bookings, tenants } from "@/db/schema";
+import { bookings, tenants, clientLoyalty } from "@/db/schema";
 import { eq, desc, and, not } from "drizzle-orm";
 import { getSession } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
@@ -43,7 +43,19 @@ export default async function ClientsPage({
     orderBy: [desc(bookings.startTime)]
   });
 
-  const notesCounts = await getClientNotesCountsAction();
+  const [notesCounts, loyaltyRows] = await Promise.all([
+    getClientNotesCountsAction(),
+    db.select().from(clientLoyalty).where(eq(clientLoyalty.tenantId, tenantId!)),
+  ]);
+
+  const loyaltyConfig = {
+    enabled: tenant?.loyaltyEnabled ?? false,
+    windowMonths: tenant?.loyaltyWindowMonths ?? 6,
+    frequentThreshold: tenant?.loyaltyFrequentThreshold ?? 5,
+    vipCitasThreshold: tenant?.loyaltyVipCitasThreshold ?? null,
+    vipAmountThreshold: tenant?.loyaltyVipAmountThreshold ? Number(tenant.loyaltyVipAmountThreshold) : null,
+    plan: tenant?.plan ?? 'BASIC',
+  };
 
   return (
     <ClientsClient
@@ -52,6 +64,8 @@ export default async function ClientsPage({
       notesCounts={notesCounts}
       currentUserId={session.userId || ''}
       currentUserRole={session.role}
+      loyaltyRows={loyaltyRows}
+      loyaltyConfig={loyaltyConfig}
     />
   );
 }
