@@ -30,10 +30,8 @@ export const t = {
   },
   confirmationPreview: (tenantName: string, l: EmailLocale) =>
     l === 'en' ? `Your appointment at ${tenantName} has been confirmed` : `Tu cita en ${tenantName} ha sido confirmada`,
-  confirmationHeading: (name: string, hasCustomBody: boolean, l: EmailLocale) =>
-    hasCustomBody
-      ? (l === 'en' ? 'Booking Confirmation' : 'Confirmación de tu reserva')
-      : (l === 'en' ? `Hello ${name}!` : `¡Hola ${name}!`),
+  confirmationHeading: (name: string, _hasCustomBody: boolean, l: EmailLocale) =>
+    l === 'en' ? `Hello ${name}!` : `¡Hola ${name}!`,
   confirmationBody: (tenantName: string, l: EmailLocale) =>
     l === 'en'
       ? `Your appointment at ${tenantName} has been confirmed successfully. Here are the details:`
