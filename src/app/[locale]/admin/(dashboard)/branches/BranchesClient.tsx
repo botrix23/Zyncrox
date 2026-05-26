@@ -306,17 +306,14 @@ export default function BranchesClient({
                           const todayIndex = (new Date().getDay() + 6) % 7;
                           const todayId = days[todayIndex];
                           
-                          const isNewFormat = !!bh.regular;
-                          const todaySched = isNewFormat ? bh.regular[todayId] : bh;
-                          const isOpen = isNewFormat ? todaySched?.isOpen : true;
-                          
+                          const todaySched = bh.regular?.[todayId];
+                          const isOpen = todaySched?.isOpen ?? false;
+
                           let displayTime = "";
                           if (!isOpen) {
                             displayTime = t('closedToday');
-                          } else if (isNewFormat && todaySched?.slots) {
+                          } else if (todaySched?.slots?.length) {
                             displayTime = todaySched.slots.map((s: any) => `${s.open} - ${s.close}`).join(', ');
-                          } else if (todaySched?.open && todaySched?.close) {
-                            displayTime = `${todaySched.open} - ${todaySched.close}`;
                           } else {
                             displayTime = t('hoursNotAvailable');
                           }
@@ -325,7 +322,7 @@ export default function BranchesClient({
                             <div className="flex flex-col">
                               <span className="font-bold text-slate-900 dark:text-white tracking-widest uppercase text-xs mb-1 opacity-60">{t('today')}</span>
                               <span className="font-bold text-slate-700 dark:text-zinc-100">{displayTime}</span>
-                              {isNewFormat && (
+                              {bh.regular && (
                                 <span className="text-slate-400 dark:text-zinc-500 text-xs font-bold mt-0.5">
                                   {t('regularOperatingDays', { count: days.filter(d => bh.regular[d]?.isOpen).length })}
                                 </span>

@@ -125,22 +125,16 @@ export async function getAvailableSlots(
     if (branch?.businessHours) {
       try {
         const bh = JSON.parse(branch.businessHours);
-        
-        // Soporte para formato simplificado: {"open": "08:00", "close": "18:00"}
-        if (bh.open && bh.close) {
-          isOpen = true;
-          activeSlots = [{ open: bh.open, close: bh.close }];
-        } else {
-          // Formato complejo: {"regular": {...}, "special": {...}}
-          const dayOfWeek = getDayNameInEnglish(parseISO(dateStr));
-          const special = bh.special?.[dateStr];
-          const regular = bh.regular?.[dayOfWeek];
 
-          const schedule = special || regular;
-          if (schedule) {
-            isOpen = schedule.isOpen;
-            activeSlots = schedule.slots || [];
-          }
+        // Formato: {"regular": {...}, "special": {...}}
+        const dayOfWeek = getDayNameInEnglish(parseISO(dateStr));
+        const special = bh.special?.[dateStr];
+        const regular = bh.regular?.[dayOfWeek];
+
+        const schedule = special || regular;
+        if (schedule) {
+          isOpen = schedule.isOpen;
+          activeSlots = schedule.slots || [];
         }
       } catch (e) {
         console.error("Error parsing business hours:", e);

@@ -826,13 +826,6 @@ export default function BookingWidget({
         };
       }
 
-      if (bh.open && bh.close) {
-        return {
-          isOpen: true,
-          slots: [{ open: bh.open, close: bh.close }]
-        };
-      }
-
       return defaultSchedule;
     } catch (e) {
       return defaultSchedule;
