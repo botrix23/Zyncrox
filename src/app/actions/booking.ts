@@ -15,6 +15,7 @@ import React from "react";
 import { es } from "date-fns/locale";
 import { getPlanFeatures } from "@/core/plans";
 import { v4 as uuidv4 } from "uuid";
+import { earnPointsForBookingAction } from "@/app/actions/loyalty";
 
 /**
  * Envía un email con hasta `maxRetries` reintentos con backoff exponencial.
@@ -922,6 +923,8 @@ export async function updateBookingAction(data: {
       Promise.resolve().then(() =>
         sendPendingSurveyEmailsAction(data.tenantId)
       );
+      // Fire-and-forget: earn loyalty points for this booking
+      earnPointsForBookingAction(data.id).catch(console.error);
     }
 
     // 3. Send reschedule email if time changed

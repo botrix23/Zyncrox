@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { 
-  Palette, CheckCircle2, AlertCircle, Upload, Save, Eye, MonitorSmartphone, Monitor, Moon, Sun, MonitorCheck, LayoutTemplate, Link as LinkIcon, ExternalLink, Instagram, Facebook, Music, Building2, ImageIcon, Truck, Info, Settings, Share2, Copy, Trash2, Lock, Mail, User
+import {
+  Palette, CheckCircle2, AlertCircle, Upload, Save, Eye, MonitorSmartphone, Monitor, Moon, Sun, MonitorCheck, LayoutTemplate, Link as LinkIcon, ExternalLink, Instagram, Facebook, Music, Building2, ImageIcon, Truck, Info, Settings, Share2, Copy, Trash2, Lock, Mail, User, Star
 } from "lucide-react";
 import { updatePortalSettingsAction } from "@/app/actions/tenant";
+import { getRewardsAction, createRewardAction, updateRewardAction, deleteRewardAction } from "@/app/actions/loyalty";
 import { 
   getCoverageZonesAction, 
   createCoverageZoneAction, 
   updateCoverageZoneAction, 
   deleteCoverageZoneAction 
 } from "@/app/actions/zones";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -58,6 +59,17 @@ bookingSettings?: {
   [key: string]: any;
 };
 timezone?: string | null;
+// Loyalty levels
+loyaltyEnabled?: boolean;
+loyaltyWindowMonths?: number;
+loyaltyFrequentThreshold?: number;
+loyaltyVipCitasThreshold?: number | null;
+loyaltyVipAmountThreshold?: number | null;
+// Points program
+pointsEnabled?: boolean;
+pointsPerDollar?: number;
+pointsExpireEnabled?: boolean;
+pointsExpireMonths?: number;
 },
 initialZones: any[];
 initialTab?: 'design' | 'rules';
@@ -73,6 +85,7 @@ initialTab?: 'design' | 'rules';
   useEffect(() => {
     setMounted(true);
   }, []);
+
 
   // Diseño y Marca (Visual)
   const [name, setName] = useState(tenant.name || "");
@@ -103,9 +116,37 @@ const [step4Title, setStep4Title] = useState(tenant.bookingSettings?.step4Title 
   const [homeServiceLeadDays, setHomeServiceLeadDays] = useState(tenant.homeServiceLeadDays || 0);
   const [vipThreshold, setVipThreshold] = useState(tenant.vipThreshold || 5);
   const [showStaffSelection, setShowStaffSelection] = useState(tenant.showStaffSelection ?? true);
-  
+  // Loyalty levels
+  const [loyaltyEnabled, setLoyaltyEnabled] = useState(tenant.loyaltyEnabled ?? false);
+  const [loyaltyWindowMonths, setLoyaltyWindowMonths] = useState(tenant.loyaltyWindowMonths ?? 6);
+  const [loyaltyFrequentThreshold, setLoyaltyFrequentThreshold] = useState(tenant.loyaltyFrequentThreshold ?? 5);
+  const [loyaltyVipCitasThreshold, setLoyaltyVipCitasThreshold] = useState<number | ''>(tenant.loyaltyVipCitasThreshold ?? '');
+  const [loyaltyVipAmountThreshold, setLoyaltyVipAmountThreshold] = useState<number | ''>(tenant.loyaltyVipAmountThreshold ?? '');
+  // Points program
+  const [pointsEnabled, setPointsEnabled] = useState(tenant.pointsEnabled ?? false);
+  const [pointsPerDollar, setPointsPerDollar] = useState(tenant.pointsPerDollar ?? 10);
+  const [pointsExpireEnabled, setPointsExpireEnabled] = useState(tenant.pointsExpireEnabled ?? false);
+  const [pointsExpireMonths, setPointsExpireMonths] = useState(tenant.pointsExpireMonths ?? 6);
+  // Rewards management
+  const [rewards, setRewards] = useState<{id:string;name:string;description?:string|null;pointsCost:number;isActive:boolean;sortOrder:number}[]>([]);
+  const [rewardsLoaded, setRewardsLoaded] = useState(false);
+  const [newRewardName, setNewRewardName] = useState('');
+  const [newRewardDesc, setNewRewardDesc] = useState('');
+  const [newRewardCost, setNewRewardCost] = useState(500);
+  const [editingReward, setEditingReward] = useState<string | null>(null);
+
   // Zona horaria
   const [timezone, setTimezone] = useState(tenant.timezone || 'America/El_Salvador');
+
+  // Load rewards when points section becomes relevant
+  useEffect(() => {
+    if ((plan === 'ENTERPRISE') && !rewardsLoaded) {
+      getRewardsAction().then(r => {
+        if (r.success) setRewards(r.rewards as any);
+        setRewardsLoaded(true);
+      });
+    }
+  }, [plan, rewardsLoaded]);
 
   const TIMEZONES = [
     { group: 'América Central', options: [
@@ -176,6 +217,8 @@ const [step4Title, setStep4Title] = useState(tenant.bookingSettings?.step4Title 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const params = useParams();
+  const locale = (params?.locale as string) || 'es';
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -199,6 +242,15 @@ allowsHomeService,
 homeServiceLeadDays,
 vipThreshold,
 showStaffSelection,
+loyaltyEnabled,
+loyaltyWindowMonths,
+loyaltyFrequentThreshold,
+loyaltyVipCitasThreshold: loyaltyVipCitasThreshold === '' ? null : loyaltyVipCitasThreshold,
+loyaltyVipAmountThreshold: loyaltyVipAmountThreshold === '' ? null : loyaltyVipAmountThreshold,
+pointsEnabled,
+pointsPerDollar,
+pointsExpireEnabled,
+pointsExpireMonths,
 heroTitle,
 heroSubtitle,
 emailBodyTemplate,
@@ -902,34 +954,279 @@ className="w-full min-h-[150px] p-4 bg-slate-50 dark:bg-white/5 border border-sl
 </div>
 </PlanGateSection>
 
-            {/* Configuración de Fidelización */}
+            {/* ── Configuración de Fidelización ───────────────────────────── */}
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-6">
-              <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
-                <div className="p-2 bg-purple-500/10 rounded-lg">
-                  <MonitorCheck className="w-5 h-5 text-purple-600" />
+              {/* Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500/10 rounded-lg">
+                    <MonitorCheck className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <h2 className="text-xl font-bold">{locale === 'es' ? 'Fidelización' : 'Loyalty'}</h2>
                 </div>
-                <h2 className="text-xl font-bold">{tPortal('sections.fidelization')}</h2>
+                {/* Master loyalty toggle */}
+                <button
+                  type="button"
+                  onClick={() => setLoyaltyEnabled(v => !v)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${loyaltyEnabled ? 'bg-purple-600' : 'bg-slate-300 dark:bg-white/20'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${loyaltyEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
               </div>
-              <div className="space-y-4">
-                 <div className="space-y-3">
-                   <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">{tPortal('form.vipThreshold')}</label>
-                   <div className="flex items-center gap-4">
-                      <input 
-                        type="number" 
-                        min="1"
-                        max="100"
-                        value={vipThreshold}
-                        onChange={e => setVipThreshold(parseInt(e.target.value) || 1)}
-                        className="w-24 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-black text-center"
-                      />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">{tPortal('form.vipThresholdLabel')}</p>
-                        <p className="text-xs text-slate-500 italic">{tPortal('form.vipThresholdHint')}</p>
+
+              {loyaltyEnabled && (
+                <div className="space-y-5">
+                  {/* Window months */}
+                  <div className="flex items-center gap-4">
+                    <input type="number" min="1" max="24" value={loyaltyWindowMonths}
+                      onChange={e => setLoyaltyWindowMonths(parseInt(e.target.value) || 1)}
+                      className="w-20 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-slate-800 dark:text-white">{locale === 'es' ? 'Ventana de evaluación (meses)' : 'Evaluation window (months)'}</p>
+                      <p className="text-xs text-slate-500">{locale === 'es' ? 'Citas dentro de este periodo cuentan para el nivel' : 'Appointments within this period count for tier'}</p>
+                    </div>
+                  </div>
+
+                  {/* Frequent threshold */}
+                  <div className="flex items-center gap-4">
+                    <input type="number" min="1" max="100" value={loyaltyFrequentThreshold}
+                      onChange={e => setLoyaltyFrequentThreshold(parseInt(e.target.value) || 1)}
+                      className="w-20 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-slate-800 dark:text-white">⭐ {locale === 'es' ? 'Citas para nivel Frecuente' : 'Appointments for Frequent tier'}</p>
+                      <p className="text-xs text-slate-500">{locale === 'es' ? 'Clientes con ≥ este número de citas en la ventana' : 'Clients with ≥ this many appointments in the window'}</p>
+                    </div>
+                  </div>
+
+                  {/* VIP thresholds (Professional+) */}
+                  {(plan === 'PROFESSIONAL' || plan === 'ENTERPRISE') && (
+                    <div className="p-4 bg-purple-50 dark:bg-purple-500/10 rounded-2xl space-y-4 border border-purple-200/60 dark:border-purple-500/20">
+                      <p className="text-xs font-black text-purple-600 uppercase tracking-widest">👑 {locale === 'es' ? 'Nivel VIP' : 'VIP Tier'}</p>
+                      <div className="flex items-center gap-4">
+                        <input type="number" min="1" max="500"
+                          value={loyaltyVipCitasThreshold === '' ? '' : loyaltyVipCitasThreshold}
+                          placeholder="—"
+                          onChange={e => setLoyaltyVipCitasThreshold(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
+                          className="w-20 p-3 bg-white dark:bg-white/10 border border-purple-300 dark:border-purple-500/40 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                        <p className="text-sm text-slate-700 dark:text-zinc-300 flex-1">{locale === 'es' ? 'Citas mínimas para VIP (dejar vacío = sin nivel VIP)' : 'Min appointments for VIP (leave blank = no VIP tier)'}</p>
                       </div>
-                   </div>
-                 </div>
-              </div>
+                      <div className="flex items-center gap-4">
+                        <input type="number" min="1"
+                          value={loyaltyVipAmountThreshold === '' ? '' : loyaltyVipAmountThreshold}
+                          placeholder="—"
+                          onChange={e => setLoyaltyVipAmountThreshold(e.target.value === '' ? '' : parseFloat(e.target.value) || '')}
+                          className="w-20 p-3 bg-white dark:bg-white/10 border border-purple-300 dark:border-purple-500/40 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                        <p className="text-sm text-slate-700 dark:text-zinc-300 flex-1">{locale === 'es' ? 'Monto mínimo ($) para VIP (dejar vacío = solo por citas)' : 'Min spend ($) for VIP (leave blank = appointments only)'}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* ── Programa de Puntos (Business only) ─────────────────────────── */}
+            {plan === 'ENTERPRISE' ? (
+              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-500/10 rounded-lg">
+                      <Star className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold">{locale === 'es' ? 'Programa de Puntos' : 'Points Program'}</h2>
+                      <p className="text-xs text-slate-500">{locale === 'es' ? 'Independiente del sistema de niveles' : 'Independent of the tier system'}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPointsEnabled(v => !v)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${pointsEnabled ? 'bg-amber-500' : 'bg-slate-300 dark:bg-white/20'}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${pointsEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+
+                {pointsEnabled && (
+                  <div className="space-y-6">
+                    {/* Points per dollar */}
+                    <div className="flex items-center gap-4">
+                      <input type="number" min="1" max="100" value={pointsPerDollar}
+                        onChange={e => setPointsPerDollar(parseInt(e.target.value) || 1)}
+                        className="w-20 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-slate-800 dark:text-white">{locale === 'es' ? 'Puntos por cada $1 gastado' : 'Points per $1 spent'}</p>
+                        <p className="text-xs text-slate-500">{locale === 'es' ? `Ej: servicio de $25 = ${25 * pointsPerDollar} puntos` : `E.g. $25 service = ${25 * pointsPerDollar} points`}</p>
+                      </div>
+                    </div>
+
+                    {/* Expiration */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 dark:text-white">{locale === 'es' ? 'Los puntos expiran' : 'Points expire'}</p>
+                          <p className="text-xs text-slate-500">{locale === 'es' ? 'Por inactividad del cliente' : 'Due to client inactivity'}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPointsExpireEnabled(v => !v)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${pointsExpireEnabled ? 'bg-amber-500' : 'bg-slate-300 dark:bg-white/20'}`}
+                        >
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${pointsExpireEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                      </div>
+                      {pointsExpireEnabled && (
+                        <div className="flex items-center gap-4 pl-1">
+                          <input type="number" min="1" max="36" value={pointsExpireMonths}
+                            onChange={e => setPointsExpireMonths(parseInt(e.target.value) || 1)}
+                            className="w-20 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+                          <p className="text-sm text-slate-600 dark:text-zinc-400">{locale === 'es' ? 'meses sin actividad' : 'months of inactivity'}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Rewards catalog */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">{locale === 'es' ? 'Catálogo de Recompensas' : 'Rewards Catalog'}</p>
+                        <span className="text-xs text-slate-400">{rewards.length}/10</span>
+                      </div>
+
+                      {/* Existing rewards */}
+                      <div className="space-y-2">
+                        {rewards.map(r => (
+                          <div key={r.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/5">
+                            {editingReward === r.id ? (
+                              <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <input
+                                  className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-sm"
+                                  defaultValue={r.name}
+                                  id={`rew-name-${r.id}`}
+                                  placeholder={locale === 'es' ? 'Nombre' : 'Name'}
+                                />
+                                <input
+                                  className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-sm"
+                                  type="number" min="1"
+                                  defaultValue={r.pointsCost}
+                                  id={`rew-cost-${r.id}`}
+                                  placeholder={locale === 'es' ? 'Puntos' : 'Points'}
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      const nameEl = document.getElementById(`rew-name-${r.id}`) as HTMLInputElement;
+                                      const costEl = document.getElementById(`rew-cost-${r.id}`) as HTMLInputElement;
+                                      await updateRewardAction({ id: r.id, name: nameEl.value, pointsCost: parseInt(costEl.value) || r.pointsCost, isActive: r.isActive });
+                                      const fresh = await getRewardsAction();
+                                      if (fresh.success) setRewards(fresh.rewards as any);
+                                      setEditingReward(null);
+                                    }}
+                                    className="flex-1 py-2 bg-purple-600 text-white text-xs font-black rounded-lg"
+                                  >{locale === 'es' ? 'Guardar' : 'Save'}</button>
+                                  <button type="button" onClick={() => setEditingReward(null)} className="flex-1 py-2 bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-zinc-300 text-xs font-black rounded-lg">{locale === 'es' ? 'Cancelar' : 'Cancel'}</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{r.name}</p>
+                                  <p className="text-xs text-amber-600 font-bold">{r.pointsCost.toLocaleString()} {locale === 'es' ? 'pts' : 'pts'}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await updateRewardAction({ ...r, description: r.description ?? undefined, isActive: !r.isActive });
+                                    setRewards(prev => prev.map(x => x.id === r.id ? { ...x, isActive: !r.isActive } : x));
+                                  }}
+                                  className={`text-xs px-2 py-1 rounded-full font-black ${r.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-slate-100 text-slate-500 dark:bg-white/5'}`}
+                                >{r.isActive ? (locale === 'es' ? 'Activa' : 'Active') : (locale === 'es' ? 'Inactiva' : 'Inactive')}</button>
+                                <button type="button" onClick={() => setEditingReward(r.id)} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-all">
+                                  <Settings className="w-3.5 h-3.5" />
+                                </button>
+                                <button type="button"
+                                  onClick={async () => {
+                                    await deleteRewardAction(r.id);
+                                    setRewards(prev => prev.filter(x => x.id !== r.id));
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Add new reward */}
+                      {rewards.length < 10 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-amber-50 dark:bg-amber-500/10 rounded-xl border border-amber-200/60 dark:border-amber-500/20">
+                          <input
+                            className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-sm placeholder:text-slate-400"
+                            value={newRewardName}
+                            onChange={e => setNewRewardName(e.target.value)}
+                            placeholder={locale === 'es' ? 'Nombre de la recompensa' : 'Reward name'}
+                          />
+                          <div className="flex gap-2">
+                            <input
+                              className="flex-1 p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-sm"
+                              type="number" min="1"
+                              value={newRewardCost}
+                              onChange={e => setNewRewardCost(parseInt(e.target.value) || 1)}
+                              placeholder={locale === 'es' ? 'Puntos' : 'Points'}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            disabled={!newRewardName.trim()}
+                            onClick={async () => {
+                              if (!newRewardName.trim()) return;
+                              const res = await createRewardAction({ name: newRewardName, description: newRewardDesc || undefined, pointsCost: newRewardCost, isActive: true });
+                              if (res.success) {
+                                const fresh = await getRewardsAction();
+                                if (fresh.success) setRewards(fresh.rewards as any);
+                                setNewRewardName('');
+                                setNewRewardDesc('');
+                                setNewRewardCost(500);
+                              }
+                            }}
+                            className="py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-sm font-black rounded-lg transition-all"
+                          >{locale === 'es' ? '+ Agregar' : '+ Add'}</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Locked state for Basic and Professional */
+              <div className="relative bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm overflow-hidden">
+                <div className="absolute inset-0 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center gap-3 rounded-3xl">
+                  <Lock className="w-6 h-6 text-slate-400" />
+                  <p className="text-sm font-bold text-slate-600 dark:text-zinc-400 text-center px-6">
+                    {locale === 'es' ? 'Disponible en el plan Business' : 'Available on Business plan'}
+                  </p>
+                  <a href={`/${locale}/admin/billing`} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black rounded-xl transition-all">
+                    {locale === 'es' ? 'Mejorar plan' : 'Upgrade plan'}
+                  </a>
+                </div>
+                <div className="opacity-30 pointer-events-none space-y-4">
+                  <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
+                    <div className="p-2 bg-amber-500/10 rounded-lg">
+                      <Star className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <h2 className="text-xl font-bold">{locale === 'es' ? 'Programa de Puntos' : 'Points Program'}</h2>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 h-11 bg-slate-100 dark:bg-white/5 rounded-xl" />
+                    <div className="space-y-1">
+                      <div className="h-4 bg-slate-100 dark:bg-white/5 rounded w-40" />
+                      <div className="h-3 bg-slate-100 dark:bg-white/5 rounded w-52" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

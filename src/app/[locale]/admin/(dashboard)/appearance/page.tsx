@@ -55,6 +55,17 @@ export default async function AppearancePage({ params, searchParams }: { params:
         contactEmail: tenantData.contactEmail,
         bookingSettings: tenantData.bookingSettings as any,
         timezone: tenantData.timezone,
+        // Loyalty levels
+        loyaltyEnabled: tenantData.loyaltyEnabled,
+        loyaltyWindowMonths: tenantData.loyaltyWindowMonths,
+        loyaltyFrequentThreshold: tenantData.loyaltyFrequentThreshold,
+        loyaltyVipCitasThreshold: tenantData.loyaltyVipCitasThreshold,
+        loyaltyVipAmountThreshold: tenantData.loyaltyVipAmountThreshold ? Number(tenantData.loyaltyVipAmountThreshold) : null,
+        // Points program
+        pointsEnabled: tenantData.pointsEnabled,
+        pointsPerDollar: tenantData.pointsPerDollar,
+        pointsExpireEnabled: tenantData.pointsExpireEnabled,
+        pointsExpireMonths: tenantData.pointsExpireMonths,
       }}
       initialZones={coverageZones}
     />

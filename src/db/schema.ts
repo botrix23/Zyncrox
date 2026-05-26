@@ -53,6 +53,11 @@ export const tenants = pgTable('tenants', {
   loyaltyFrequentThreshold: integer('loyalty_frequent_threshold').notNull().default(5),
   loyaltyVipCitasThreshold: integer('loyalty_vip_citas_threshold'),          // null = no VIP level
   loyaltyVipAmountThreshold: decimal('loyalty_vip_amount_threshold', { precision: 10, scale: 2 }), // null = no amount req
+  // ── Points Program (ENTERPRISE / Business only) ──────────────────────────
+  pointsEnabled: boolean('points_enabled').notNull().default(false),
+  pointsPerDollar: integer('points_per_dollar').notNull().default(10),      // points awarded per $1 spent
+  pointsExpireEnabled: boolean('points_expire_enabled').notNull().default(false),
+  pointsExpireMonths: integer('points_expire_months').notNull().default(6),  // months of inactivity before expiry
   // Wompi payment gateway credentials (for tenant's own card payments)
   wompiAppId: text('wompi_app_id'),
   wompiApiSecret: text('wompi_api_secret'),
@@ -520,6 +525,9 @@ export const clientLoyalty = pgTable('client_loyalty', {
   citasPeriodo: integer('citas_periodo').notNull().default(0),     // cached count within window
   montoPeriodo: decimal('monto_periodo', { precision: 10, scale: 2 }).notNull().default('0.00'),
   lastCalculatedAt: timestamp('last_calculated_at', { withTimezone: true, mode: 'date' }),
+  // ── Points balance (updated by earnPoints / redeem / expire actions) ─────
+  loyaltyPointsBalance: integer('loyalty_points_balance').notNull().default(0),
+  loyaltyPointsLastActivity: timestamp('loyalty_points_last_activity', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
@@ -543,6 +551,44 @@ export const clientLoyaltyHistory = pgTable('client_loyalty_history', {
 
 export const clientLoyaltyHistoryRelations = relations(clientLoyaltyHistory, ({ one }) => ({
   tenant: one(tenants, { fields: [clientLoyaltyHistory.tenantId], references: [tenants.id] }),
+}));
+
+// ── Loyalty Rewards (catalog defined by tenant) ──────────────────────────────
+export const loyaltyRewards = pgTable('loyalty_rewards', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  pointsCost: integer('points_cost').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+export const loyaltyRewardsRelations = relations(loyaltyRewards, ({ one, many }) => ({
+  tenant: one(tenants, { fields: [loyaltyRewards.tenantId], references: [tenants.id] }),
+  transactions: many(loyaltyPointsTransactions),
+}));
+
+// ── Loyalty Points Transactions ───────────────────────────────────────────────
+// Append-only ledger. EARNED = positive, REDEEMED/EXPIRED = negative.
+export const loyaltyPointsTransactions = pgTable('loyalty_points_transactions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  clientEmail: varchar('client_email', { length: 255 }).notNull(),
+  clientName: varchar('client_name', { length: 255 }).notNull(),
+  type: varchar('type', { length: 20 }).notNull(), // 'EARNED' | 'REDEEMED' | 'EXPIRED'
+  points: integer('points').notNull(),             // positive for EARNED, negative for REDEEMED/EXPIRED
+  bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'set null' }),
+  rewardId: uuid('reward_id').references(() => loyaltyRewards.id, { onDelete: 'set null' }),
+  description: text('description').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+export const loyaltyPointsTransactionsRelations = relations(loyaltyPointsTransactions, ({ one }) => ({
+  tenant: one(tenants, { fields: [loyaltyPointsTransactions.tenantId], references: [tenants.id] }),
+  booking: one(bookings, { fields: [loyaltyPointsTransactions.bookingId], references: [bookings.id] }),
+  reward: one(loyaltyRewards, { fields: [loyaltyPointsTransactions.rewardId], references: [loyaltyRewards.id] }),
 }));
 
 // ── Platform Transactions ────────────────────────────────────────────────────

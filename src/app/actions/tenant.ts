@@ -101,6 +101,17 @@ export async function updatePortalSettingsAction(data: {
   homeServiceLeadDays: number;
   vipThreshold: number;
   showStaffSelection: boolean;
+  // Loyalty levels
+  loyaltyEnabled?: boolean;
+  loyaltyWindowMonths?: number;
+  loyaltyFrequentThreshold?: number;
+  loyaltyVipCitasThreshold?: number | null;
+  loyaltyVipAmountThreshold?: number | null;
+  // Points program
+  pointsEnabled?: boolean;
+  pointsPerDollar?: number;
+  pointsExpireEnabled?: boolean;
+  pointsExpireMonths?: number;
   heroTitle?: string | null;
   heroSubtitle?: string | null;
   emailBodyTemplate?: string | null;
@@ -129,6 +140,15 @@ export async function updatePortalSettingsAction(data: {
         homeServiceLeadDays: data.homeServiceLeadDays,
         vipThreshold: data.vipThreshold,
         showStaffSelection: data.showStaffSelection,
+        ...(data.loyaltyEnabled !== undefined ? { loyaltyEnabled: data.loyaltyEnabled } : {}),
+        ...(data.loyaltyWindowMonths !== undefined ? { loyaltyWindowMonths: data.loyaltyWindowMonths } : {}),
+        ...(data.loyaltyFrequentThreshold !== undefined ? { loyaltyFrequentThreshold: data.loyaltyFrequentThreshold } : {}),
+        ...(data.loyaltyVipCitasThreshold !== undefined ? { loyaltyVipCitasThreshold: data.loyaltyVipCitasThreshold } : {}),
+        ...(data.loyaltyVipAmountThreshold !== undefined ? { loyaltyVipAmountThreshold: data.loyaltyVipAmountThreshold?.toString() ?? null } : {}),
+        ...(data.pointsEnabled !== undefined ? { pointsEnabled: data.pointsEnabled } : {}),
+        ...(data.pointsPerDollar !== undefined ? { pointsPerDollar: data.pointsPerDollar } : {}),
+        ...(data.pointsExpireEnabled !== undefined ? { pointsExpireEnabled: data.pointsExpireEnabled } : {}),
+        ...(data.pointsExpireMonths !== undefined ? { pointsExpireMonths: data.pointsExpireMonths } : {}),
         heroTitle: data.heroTitle || null,
         heroSubtitle: data.heroSubtitle || null,
         emailBodyTemplate: data.emailBodyTemplate || null,
