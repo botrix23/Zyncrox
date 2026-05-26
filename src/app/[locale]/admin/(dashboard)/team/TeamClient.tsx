@@ -103,7 +103,7 @@ export function TeamClient({ initialAdmins, plan, maxAdmins, isOwner, locale }: 
     }
   };
 
-  const planLabel = plan === "PROFESSIONAL" ? "Professional" : plan === "ENTERPRISE" ? "Enterprise" : "Basic";
+  const planLabel = plan === "PROFESSIONAL" ? "Professional" : plan === "ENTERPRISE" ? "Business" : "Basic";
   const limitLabel = maxAdmins === -1 ? t("unlimited") : maxAdmins === 0 ? "0" : String(maxAdmins);
 
   return (

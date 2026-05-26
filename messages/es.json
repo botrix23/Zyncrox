@@ -433,6 +433,9 @@
     "staff": {
       "title": "Personal",
       "subtitle": "Gestiona a los profesionales que atienden en tu negocio.",
+      "tabTeam": "Equipo",
+      "tabAbsences": "Ausencias",
+      "tabRequests": "Solicitudes",
       "showStaffLabel": "Mostrar selección de personal al crear una cita",
       "showStaffHint": "Si se desactiva, el sistema asignará un especialista automáticamente.",
       "new": "Añadir miembro",
@@ -809,7 +812,7 @@
       "searchPlaceholder": "Buscar citas, clientes...",
       "superAdmin": "Súper admin",
       "admin": "Admin",
-      "staff": "Staff",
+      "staff": "Especialista",
       "billing": "Facturación",
       "settings": "Configuración",
       "changePassword": "Cambiar contraseña",
@@ -878,7 +881,7 @@
       "tempPassNote": "Compártela con el admin. Deberá cambiarla en su primer inicio de sesión.",
       "confirmDelete": "¿Eliminar a {name}? Perderá acceso inmediatamente.",
       "errorPlanLimit": "Has alcanzado el límite de {limit} admins adicionales en tu plan.",
-      "errorPlanNoExtra": "Tu plan Basic no permite admins adicionales. Actualiza a Professional o Enterprise.",
+      "errorPlanNoExtra": "Tu plan Basic no permite admins adicionales. Actualiza a Professional o Business.",
       "errorEmailExists": "Ya existe una cuenta con ese correo.",
       "errorOwnerOnly": "Solo el dueño puede gestionar administradores.",
       "errorGeneric": "Ocurrió un error. Intenta de nuevo.",
@@ -886,7 +889,7 @@
       "error_CANNOT_DELETE_OWNER": "No puedes eliminar al dueño.",
       "nonOwnerNote": "Solo el dueño del negocio puede gestionar administradores.",
       "lockedTitle": "Función exclusiva de planes superiores",
-      "lockedDesc": "Agrega gerentes y administradores adicionales actualizando a Professional o Enterprise.",
+      "lockedDesc": "Agrega gerentes y administradores adicionales actualizando a Professional o Business.",
       "upgrade": "Ver planes",
       "unlimited": "Ilimitado"
     },
@@ -1066,7 +1069,7 @@
         "colAvgOccupancy": "Ocupación promedio",
         "colTopRevenue": "Mayor ingreso",
         "colTopOccupancy": "Mayor ocupación",
-        "colStaff": "Staff",
+        "colStaff": "Especialista",
         "colNewClients": "Nuevos",
         "colRecurringClients": "Recurrentes",
         "colOccupancy": "Ocupación"
@@ -1249,7 +1252,7 @@
       "placeholder": "Escribe aquí la pregunta..."
     },
     "upgradeRequired": "Funcionalidad Premium",
-    "upgradeDesc": "Para personalizar tu sistema de encuestas con preguntas específicas necesitas una suscripción PRO o ENTERPRISE."
+    "upgradeDesc": "Para personalizar tu sistema de encuestas con preguntas específicas necesitas una suscripción PRO o Business."
   },
   "ImpersonationBanner": {
     "viewing": "Estás viendo el panel como Super Admin · Empresa: ",
@@ -1417,7 +1420,7 @@
       "apply": "Aplicar",
       "changePlanTitle": "Cambiar plan",
       "planFreeDesc": "1 sucursal · 3 staff · 5 servicios",
-      "planProDesc": "3 sucursales · 15 staff · 30 servicios",
+      "planProDesc": "3 sucursales · 15 especialistas · 30 servicios",
       "planEnterpriseDesc": "Sin límites · Todas las funciones",
       "adminCount": "{count} admin(s) · {branches} sucursal(es)",
       "bookingsAndBranches": "{bookings} reservas · {branches} suc.",
@@ -1448,7 +1451,7 @@
       "colCreated": "Creado",
       "colActions": "Acciones",
       "roleAdmin": "Admin",
-      "roleStaff": "Staff",
+      "roleStaff": "Especialista",
       "statusActive": "Activo",
       "statusPending": "Pendiente",
       "statusInactive": "Inactivo",
@@ -1574,7 +1577,7 @@
       "warningNoPlanId": "El Plan ID está vacío. N1co no podrá procesar pagos para este plan hasta configurarlo.",
       "planBasic": "Basic",
       "planProfessional": "Professional",
-      "planEnterprise": "Enterprise"
+      "planEnterprise": "Business"
     },
     "priceChangeSection": {
       "sectionTitle": "Aviso de cambio de precios",
@@ -1725,7 +1728,7 @@
         ]
       },
       "ENTERPRISE": {
-        "name": "Enterprise",
+        "name": "Business",
         "desc": "Sin límites para negocios de alto volumen.",
         "features": [
           "Sucursales ilimitadas",
@@ -1838,7 +1841,7 @@
     },
     "features": {
       "maxBranches": "Sucursales",
-      "maxStaff": "Staff",
+      "maxStaff": "Especialistas",
       "maxServices": "Servicios",
       "multiServiceBooking": "Reserva multi-servicio",
       "customTheme": "Tema personalizado",
@@ -1968,7 +1971,7 @@
       "basicLimits": "1 sucursal · 2 especialistas · 10 servicios",
       "basicCta": "Comenzar prueba gratis",
       "basicF1": "Widget de reservas + calendario",
-      "basicF2": "Reserva, reschedule y cancelación",
+      "basicF2": "Reserva, reagendamiento y cancelación",
       "basicF3": "Servicio a domicilio incluido",
       "basicF4": "Branding: logo, color y portada",
       "basicF5": "Emails de confirmación/cancelación",
@@ -2149,7 +2152,7 @@
     "edited": "editada",
     "byAuthor": "por {name}",
     "roleAdmin": "Admin",
-    "roleStaff": "Staff",
+    "roleStaff": "Especialista",
     "editAction": "Editar",
     "deleteAction": "Eliminar",
     "saveEdit": "Guardar",

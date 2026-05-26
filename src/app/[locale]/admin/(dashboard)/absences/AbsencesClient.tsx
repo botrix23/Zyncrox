@@ -18,6 +18,7 @@ export default function AbsencesClient({
   role = 'ADMIN',
   currentStaffId,
   pendingRequests = [],
+  embeddedTab,
 }: {
   initialBlocks: any[],
   branches: any[],
@@ -26,6 +27,8 @@ export default function AbsencesClient({
   role?: 'ADMIN' | 'SUPER_ADMIN' | 'STAFF',
   currentStaffId?: string,
   pendingRequests?: any[],
+  /** When set, hides header + internal tabs and shows only this content */
+  embeddedTab?: 'blocks' | 'pending',
 }) {
   const isStaffRole = role === 'STAFF';
   const t = useTranslations('Dashboard.absences');
@@ -33,7 +36,7 @@ export default function AbsencesClient({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'blocks' | 'pending'>('blocks');
+  const [activeTab, setActiveTab] = useState<'blocks' | 'pending'>(embeddedTab ?? 'blocks');
   const [localPending, setLocalPending] = useState<any[]>(pendingRequests);
   const router = useRouter();
 
@@ -166,40 +169,57 @@ export default function AbsencesClient({
         onCancel={() => setDeleteBlockId(null)}
       />
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t('title')}</h1>
-            <p className="text-slate-500 dark:text-zinc-400 mt-1">
-              {isStaffRole ? t('subtitleStaff') : t('subtitle')}
-            </p>
-          </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl text-sm font-bold shadow-xl shadow-rose-500/20 transition-all active:scale-95"
-          >
-            <Plus className="w-5 h-5" />
-            {isStaffRole ? t('newStaff') : t('new')}
-          </button>
-        </div>
+        {/* Header — hidden in embedded mode */}
+        {!embeddedTab && (
+          <>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t('title')}</h1>
+                <p className="text-slate-500 dark:text-zinc-400 mt-1">
+                  {isStaffRole ? t('subtitleStaff') : t('subtitle')}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl text-sm font-bold shadow-xl shadow-rose-500/20 transition-all active:scale-95"
+              >
+                <Plus className="w-5 h-5" />
+                {isStaffRole ? t('newStaff') : t('new')}
+              </button>
+            </div>
 
-        {/* Tabs — solo para ADMIN */}
-        {!isStaffRole && (
-          <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
+            {/* Tabs — solo para ADMIN, solo en standalone */}
+            {!isStaffRole && (
+              <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
+                <button
+                  onClick={() => setActiveTab('blocks')}
+                  className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === 'blocks' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+                >
+                  {t('tabBlocks')}
+                </button>
+                <button
+                  onClick={() => setActiveTab('pending')}
+                  className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-150 flex items-center gap-2 ${activeTab === 'pending' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+                >
+                  {t('tabPending')}
+                  {localPending.length > 0 && (
+                    <span className="bg-rose-500 text-white text-xs font-black rounded-full w-5 h-5 flex items-center justify-center">{localPending.length}</span>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* In embedded mode, show the add button inline */}
+        {embeddedTab && embeddedTab === 'blocks' && (
+          <div className="flex justify-end">
             <button
-              onClick={() => setActiveTab('blocks')}
-              className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === 'blocks' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl text-sm font-bold shadow-lg shadow-rose-500/20 transition-all active:scale-95"
             >
-              {t('tabBlocks')}
-            </button>
-            <button
-              onClick={() => setActiveTab('pending')}
-              className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-150 flex items-center gap-2 ${activeTab === 'pending' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
-            >
-              {t('tabPending')}
-              {localPending.length > 0 && (
-                <span className="bg-rose-500 text-white text-xs font-black rounded-full w-5 h-5 flex items-center justify-center">{localPending.length}</span>
-              )}
+              <Plus className="w-4 h-4" />
+              {isStaffRole ? t('newStaff') : t('new')}
             </button>
           </div>
         )}

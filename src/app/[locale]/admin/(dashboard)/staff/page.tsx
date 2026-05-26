@@ -1,7 +1,7 @@
 import React from 'react';
 import { db } from '@/db';
-import { staff as staffTable, branches as branchesTable, serviceCategories, tenants } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { staff as staffTable, branches as branchesTable, serviceCategories, tenants, blocks, absenceRequests } from '@/db/schema';
+import { eq, desc, and, ne } from 'drizzle-orm';
 import { getSession, getEffectiveTenantId } from '@/lib/auth-session';
 import { redirect } from 'next/navigation';
 import { checkPlanLimit } from '@/lib/plan-guard';
@@ -16,7 +16,10 @@ export default async function StaffPage() {
     redirect('/admin/login');
   }
 
-  const [dbStaff, dbBranches, dbCategories, planLimit, tenant] = await Promise.all([
+  const isStaffRole = session?.role === 'STAFF';
+  const currentStaffId = session?.staffId ?? undefined;
+
+  const [dbStaff, dbBranches, dbCategories, planLimit, tenant, initialBlocks, pendingRequests] = await Promise.all([
     db.query.staff.findMany({
       where: eq(staffTable.tenantId, tenantId),
       with: {
@@ -34,6 +37,20 @@ export default async function StaffPage() {
     }),
     checkPlanLimit(tenantId, 'staff'),
     db.query.tenants.findFirst({ where: eq(tenants.id, tenantId), columns: { showStaffSelection: true } }),
+    // Absence blocks
+    isStaffRole && currentStaffId
+      ? db.select().from(absenceRequests).where(
+          and(eq(absenceRequests.tenantId, tenantId), eq(absenceRequests.staffId, currentStaffId))
+        ).orderBy(desc(absenceRequests.startTime))
+      : db.select().from(blocks).where(
+          and(eq(blocks.tenantId, tenantId), ne(blocks.status, 'CANCELLED'))
+        ).orderBy(desc(blocks.startTime)),
+    // Pending absence requests (admin only)
+    isStaffRole
+      ? Promise.resolve([])
+      : db.select().from(absenceRequests).where(
+          and(eq(absenceRequests.tenantId, tenantId), eq(absenceRequests.status, 'PENDING'))
+        ).orderBy(desc(absenceRequests.createdAt)),
   ]);
 
   return (
@@ -45,6 +62,10 @@ export default async function StaffPage() {
       planLimit={planLimit.limit}
       plan={planLimit.plan}
       showStaffSelection={tenant?.showStaffSelection ?? true}
+      role={session?.role ?? 'ADMIN'}
+      currentStaffId={currentStaffId}
+      initialBlocks={initialBlocks}
+      pendingRequests={pendingRequests}
     />
   );
 }

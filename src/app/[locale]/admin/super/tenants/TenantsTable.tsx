@@ -19,7 +19,13 @@ const statusConfig = {
 const planConfig = {
   BASIC:        { color: 'text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-white/10' },
   PROFESSIONAL: { color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10' },
-  ENTERPRISE: { color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10' },
+  ENTERPRISE:   { color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10' },
+};
+
+const PLAN_DISPLAY: Record<string, string> = {
+  BASIC: 'Basic',
+  PROFESSIONAL: 'Professional',
+  ENTERPRISE: 'Business',
 };
 
 type PlanType = 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
@@ -40,7 +46,7 @@ function PlanChangeModal({
   const plans: { value: PlanType; label: string; desc: string }[] = [
     { value: 'BASIC',        label: 'Basic',        desc: t('planFreeDesc') },
     { value: 'PROFESSIONAL', label: 'Professional', desc: t('planProDesc') },
-    { value: 'ENTERPRISE', label: 'Enterprise',  desc: t('planEnterpriseDesc') },
+    { value: 'ENTERPRISE', label: 'Business',  desc: t('planEnterpriseDesc') },
   ];
 
   return (
@@ -478,7 +484,7 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${planCfg.color}`}>{tenant.plan}</span>
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${planCfg.color}`}>{PLAN_DISPLAY[tenant.plan] ?? tenant.plan}</span>
                     </td>
                     <td className="px-6 py-4 text-center font-bold text-zinc-900 dark:text-white">{tenant.bookingCount}</td>
                     <td className="px-6 py-4 text-center">
@@ -563,7 +569,7 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
                   <cfg.icon className="w-3 h-3" />
                   {tStatus(tenant.status as any)}
                 </span>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${planCfg.color}`}>{tenant.plan}</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${planCfg.color}`}>{PLAN_DISPLAY[tenant.plan] ?? tenant.plan}</span>
                 <span className="text-xs text-zinc-600 dark:text-zinc-400">{tenant.bookingCount} reservas · {tenant.branchCount} suc.</span>
                 {tenant.daysLeft !== null && (
                   <span className={`text-xs font-bold ${tenant.daysLeft < 3 ? 'text-rose-500' : tenant.daysLeft < 7 ? 'text-amber-500' : 'text-zinc-500 dark:text-zinc-400'}`}>

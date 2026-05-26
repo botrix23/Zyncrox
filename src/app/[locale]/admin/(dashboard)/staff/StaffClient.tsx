@@ -25,8 +25,11 @@ import {
   Copy,
   Check,
   Eye,
-  EyeOff
+  EyeOff,
+  CalendarOff,
+  ClipboardList,
 } from 'lucide-react';
+import AbsencesClient from '../absences/AbsencesClient';
 import { createStaffAction, updateStaffAction, deleteStaffAction, getStaffFutureBookingCount, toggleStaffActiveAction } from "@/app/actions/staff";
 import { updateShowStaffSelectionAction } from "@/app/actions/tenant";
 import { createStaffAccessAction, revokeStaffAccessAction, reactivateStaffAccessAction } from "@/app/actions/staffAccess";
@@ -48,6 +51,10 @@ export default function StaffClient({
   planLimit,
   plan,
   showStaffSelection: initialShowStaffSelection = true,
+  role = 'ADMIN',
+  currentStaffId,
+  initialBlocks = [],
+  pendingRequests = [],
 }: {
   initialStaff: any[],
   branches: any[],
@@ -56,11 +63,18 @@ export default function StaffClient({
   planLimit?: number,
   plan?: string,
   showStaffSelection?: boolean,
+  role?: 'ADMIN' | 'SUPER_ADMIN' | 'STAFF',
+  currentStaffId?: string,
+  initialBlocks?: any[],
+  pendingRequests?: any[],
 }) {
   const limit = planLimit ?? 999;
   const activeStaffCount = initialStaff.filter((m: any) => m.isActive !== false).length;
   const atLimit = activeStaffCount >= limit;
   const t = useTranslations('Dashboard.staff');
+  const isStaffRole = role === 'STAFF';
+  type StaffTab = 'team' | 'absences' | 'requests';
+  const [activeMainTab, setActiveMainTab] = useState<StaffTab>(role === 'STAFF' ? 'absences' : 'team');
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<any | null>(null);
@@ -374,6 +388,75 @@ export default function StaffClient({
         onCancel={() => setRevokeTarget(null)}
       />
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+        {/* ── Top-level tabs: Equipo / Ausencias / Solicitudes ── */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t('title')}</h1>
+          </div>
+          {/* Tab selector — shown for all roles but Solicitudes hidden for STAFF */}
+          <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit overflow-x-auto">
+            <button
+              onClick={() => setActiveMainTab('team')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 ${activeMainTab === 'team' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+            >
+              <User className="w-4 h-4" />
+              {t('tabTeam')}
+            </button>
+            <button
+              onClick={() => setActiveMainTab('absences')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 ${activeMainTab === 'absences' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+            >
+              <CalendarOff className="w-4 h-4" />
+              {t('tabAbsences')}
+            </button>
+            {!isStaffRole && (
+              <button
+                onClick={() => setActiveMainTab('requests')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 ${activeMainTab === 'requests' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+              >
+                <ClipboardList className="w-4 h-4" />
+                {t('tabRequests')}
+                {pendingRequests.length > 0 && (
+                  <span className="bg-rose-500 text-white text-xs font-black rounded-full w-5 h-5 flex items-center justify-center shrink-0">
+                    {pendingRequests.length}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ── Tab: Ausencias ── */}
+        {activeMainTab === 'absences' && (
+          <AbsencesClient
+            initialBlocks={initialBlocks}
+            branches={branches}
+            staff={initialStaff}
+            tenantId={tenantId}
+            role={role}
+            currentStaffId={currentStaffId}
+            pendingRequests={pendingRequests}
+            embeddedTab="blocks"
+          />
+        )}
+
+        {/* ── Tab: Solicitudes ── */}
+        {!isStaffRole && activeMainTab === 'requests' && (
+          <AbsencesClient
+            initialBlocks={initialBlocks}
+            branches={branches}
+            staff={initialStaff}
+            tenantId={tenantId}
+            role={role}
+            currentStaffId={currentStaffId}
+            pendingRequests={pendingRequests}
+            embeddedTab="pending"
+          />
+        )}
+
+        {/* ── Tab: Equipo (contenido original) ── */}
+        {activeMainTab === 'team' && (<>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t('title')}</h1>
@@ -598,7 +681,6 @@ export default function StaffClient({
           );
         })}
       </div>
-    </div>
 
       {/* Modals */}
       {isModalOpen && (
@@ -1044,6 +1126,10 @@ export default function StaffClient({
           </div>
         </Portal>
       )}
+        </>)}
+        {/* end tab: team */}
+      </div>
+      {/* end outer space-y-6 */}
     </>
   );
 }

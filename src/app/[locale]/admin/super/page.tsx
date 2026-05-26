@@ -26,6 +26,12 @@ const planColor: Record<string, string> = {
   ENTERPRISE:   'text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10',
 };
 
+const PLAN_DISPLAY_NAMES: Record<string, string> = {
+  BASIC: 'Basic',
+  PROFESSIONAL: 'Professional',
+  ENTERPRISE: 'Business',
+};
+
 const auditActionConfig: Record<string, { color: string; label: string }> = {
   LOGIN_SUCCESS:         { color: 'text-emerald-500', label: 'Login exitoso' },
   LOGIN_FAILED:          { color: 'text-rose-500',    label: 'Login fallido' },
@@ -390,7 +396,7 @@ export default async function SuperAdminDashboard({ params }: { params: { locale
               <>
                 <p className="text-lg font-black text-zinc-900 dark:text-white mt-1 truncate">{lastPayment.tenantName}</p>
                 <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-                  ${lastPayment.amount.toFixed(2)} · {lastPayment.plan} · {format(lastPayment.createdAt, locale === 'en' ? 'MMM d' : 'd MMM', { locale: dateLocale })}
+                  ${lastPayment.amount.toFixed(2)} · {PLAN_DISPLAY_NAMES[lastPayment.plan] ?? lastPayment.plan} · {format(lastPayment.createdAt, locale === 'en' ? 'MMM d' : 'd MMM', { locale: dateLocale })}
                 </p>
               </>
             ) : (
@@ -612,7 +618,7 @@ export default async function SuperAdminDashboard({ params }: { params: { locale
               return (
                 <div key={plan} className="mb-3 last:mb-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${planColor[plan]}`}>{plan}</span>
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${planColor[plan]}`}>{PLAN_DISPLAY_NAMES[plan] ?? plan}</span>
                     <span className="text-xs text-zinc-600 dark:text-zinc-400">{cnt} ({pct}%)</span>
                   </div>
                   <div className="w-full bg-zinc-100 dark:bg-white/5 rounded-full h-1.5">

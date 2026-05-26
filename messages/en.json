@@ -496,7 +496,10 @@
       },
       "confirmDelete": "Are you sure you want to delete \"{name}\"?",
       "errorSave": "Error saving team member",
-      "errorDelete": "Error deleting team member"
+      "errorDelete": "Error deleting team member",
+      "tabTeam": "Team",
+      "tabAbsences": "Absences",
+      "tabRequests": "Requests"
     },
     "absences": {
       "title": "Absences & Blocks",
@@ -809,7 +812,7 @@
       "searchPlaceholder": "Search appointments, clients...",
       "superAdmin": "Super admin",
       "admin": "Admin",
-      "staff": "Staff",
+      "staff": "Specialist",
       "billing": "Billing",
       "settings": "Settings",
       "changePassword": "Change password",
@@ -878,7 +881,7 @@
       "tempPassNote": "Share it with the admin. They must change it on first login.",
       "confirmDelete": "Remove {name}? They will lose access immediately.",
       "errorPlanLimit": "You have reached the limit of {limit} additional admins on your plan.",
-      "errorPlanNoExtra": "Your Basic plan does not allow additional admins. Upgrade to Professional or Enterprise.",
+      "errorPlanNoExtra": "Your Basic plan does not allow additional admins. Upgrade to Professional or Business.",
       "errorEmailExists": "An account with that email already exists.",
       "errorOwnerOnly": "Only the owner can manage administrators.",
       "errorGeneric": "An error occurred. Please try again.",
@@ -886,7 +889,7 @@
       "error_CANNOT_DELETE_OWNER": "You cannot delete the owner.",
       "nonOwnerNote": "Only the business owner can manage administrators.",
       "lockedTitle": "Feature available on higher plans",
-      "lockedDesc": "Add branch managers and additional admins by upgrading to Professional or Enterprise.",
+      "lockedDesc": "Add branch managers and additional admins by upgrading to Professional or Business.",
       "upgrade": "View plans",
       "unlimited": "Unlimited"
     },
@@ -1066,7 +1069,7 @@
         "colAvgOccupancy": "Avg. occupancy",
         "colTopRevenue": "Top by revenue",
         "colTopOccupancy": "Top by occupancy",
-        "colStaff": "Staff",
+        "colStaff": "Specialist",
         "colNewClients": "New clients",
         "colRecurringClients": "Recurring clients",
         "colOccupancy": "Occupancy"
@@ -1204,7 +1207,7 @@
       "globalNPS": "Global NPS",
       "netPoints": "net points",
       "noNPS": "no NPS data",
-      "avgStaffRating": "Avg. Staff Rating",
+      "avgStaffRating": "Avg. Specialist Rating",
       "responseRate": "Response rate",
       "responseRateSub": "of {sent} sent",
       "noData": "--"
@@ -1249,7 +1252,7 @@
       "placeholder": "Write your question here..."
     },
     "upgradeRequired": "Premium Feature",
-    "upgradeDesc": "To customize your survey system with specific questions you need a PRO or ENTERPRISE subscription."
+    "upgradeDesc": "To customize your survey system with specific questions you need a PRO or Business subscription."
   },
   "ImpersonationBanner": {
     "viewing": "You are viewing this panel as Super Admin · Company: ",
@@ -1417,7 +1420,7 @@
       "apply": "Apply",
       "changePlanTitle": "Change plan",
       "planFreeDesc": "1 branch · 3 staff · 5 services",
-      "planProDesc": "3 branches · 15 staff · 30 services",
+      "planProDesc": "3 branches · 15 specialists · 30 services",
       "planEnterpriseDesc": "No limits · All features",
       "adminCount": "{count} admin(s) · {branches} branch(es)",
       "bookingsAndBranches": "{bookings} bookings · {branches} br.",
@@ -1448,7 +1451,7 @@
       "colCreated": "Created",
       "colActions": "Actions",
       "roleAdmin": "Admin",
-      "roleStaff": "Staff",
+      "roleStaff": "Specialist",
       "statusActive": "Active",
       "statusPending": "Pending",
       "statusInactive": "Inactive",
@@ -1574,7 +1577,7 @@
       "warningNoPlanId": "Plan ID is empty. N1co won't be able to process payments for this plan until it's configured.",
       "planBasic": "Basic",
       "planProfessional": "Professional",
-      "planEnterprise": "Enterprise"
+      "planEnterprise": "Business"
     },
     "priceChangeSection": {
       "sectionTitle": "Price change notice",
@@ -1725,7 +1728,7 @@
         ]
       },
       "ENTERPRISE": {
-        "name": "Enterprise",
+        "name": "Business",
         "desc": "No limits for high-volume businesses.",
         "features": [
           "Unlimited branches",
@@ -1838,7 +1841,7 @@
     },
     "features": {
       "maxBranches": "Branches",
-      "maxStaff": "Staff",
+      "maxStaff": "Specialists",
       "maxServices": "Services",
       "multiServiceBooking": "Multi-service booking",
       "customTheme": "Custom theme",
@@ -2019,7 +2022,7 @@
       "cmpCoverage": "Coverage zones & rates",
       "cmpAssignSpec": "Create & assign specialists",
       "cmpAbsences": "Absence management",
-      "cmpStaffRole": "STAFF role access",
+      "cmpStaffRole": "Specialist role access",
       "cmpMyBookings": "My appointments view",
       "cmpSpecialtyCat": "Specialty categories",
       "cmpRotations": "Multi-location rotations",
@@ -2149,7 +2152,7 @@
     "edited": "edited",
     "byAuthor": "by {name}",
     "roleAdmin": "Admin",
-    "roleStaff": "Staff",
+    "roleStaff": "Specialist",
     "editAction": "Edit",
     "deleteAction": "Delete",
     "saveEdit": "Save",

@@ -59,6 +59,12 @@ function StatusBadge({ status, t }: { status: string; t: ReturnType<typeof useTr
 }
 
 // ─── Plan badge ───────────────────────────────────────────────────────────────
+const PLAN_DISPLAY_NAMES: Record<string, string> = {
+  BASIC: 'Basic',
+  PROFESSIONAL: 'Professional',
+  ENTERPRISE: 'Business',
+};
+
 function PlanBadge({ plan }: { plan: string }) {
   const map: Record<string, string> = {
     BASIC: 'text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-white/10',
@@ -67,7 +73,7 @@ function PlanBadge({ plan }: { plan: string }) {
   };
   return (
     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${map[plan] ?? map.BASIC}`}>
-      {plan}
+      {PLAN_DISPLAY_NAMES[plan] ?? plan}
     </span>
   );
 }
@@ -224,7 +230,7 @@ export default function TransactionsTab({
             <option value="ALL">{t('filterAll')} {t('colPlan')}</option>
             <option value="BASIC">Basic</option>
             <option value="PROFESSIONAL">Professional</option>
-            <option value="ENTERPRISE">Enterprise</option>
+            <option value="ENTERPRISE">Business</option>
           </select>
 
           {/* Company search */}
