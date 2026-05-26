@@ -9,13 +9,8 @@
   --primary-hover: #7c3aed;
 }
 
-html {
-  overflow-x: hidden;
-}
-
 body {
-  overflow-x: hidden;
-  overscroll-behavior: none;
+  overflow-x: clip;
   color: var(--foreground);
   background-color: var(--background);
   background-image: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
