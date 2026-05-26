@@ -52,7 +52,7 @@ export function LandingPricingSection() {
     { f: t("cmpBranding"),       b: true,   p: true,   e: true  },
     { f: t("cmpTheme"),          b: false,  p: true,   e: true  },
     { f: t("cmpHero"),           b: false,  p: true,   e: true  },
-    { f: t("cmpWidgetSteps"),    b: false,  p: true,   e: true  },
+    { f: t("cmpWidgetSteps"),    b: false,  p: false,  e: true  },
     { f: t("cmpEmailTemplate"),  b: false,  p: true,   e: true  },
     { cat: t("catComms") },
     { f: t("cmpEmailNotif"),     b: true,   p: true,   e: true  },
@@ -73,6 +73,7 @@ export function LandingPricingSection() {
     { f: t("cmpDedicatedSupport"),b:false,  p: false,  e: true  },
     { f: t("cmpOnboarding"),     b: false,  p: false,  e: true  },
     { f: t("cmpTraining"),       b: false,  p: false,  e: true  },
+    { f: t("cmpAuditLogs"),      b: false,  p: false,  e: true  },
   ];
 
   return (
