@@ -46,7 +46,13 @@ export const tenants = pgTable('tenants', {
   emailBodyTemplate: text('email_body_template'),
   showStaffSelection: boolean('show_staff_selection').default(true).notNull(),
   reviewsEnabled: boolean('reviews_enabled').default(false).notNull(),
-  vipThreshold: integer('vip_threshold').notNull().default(5),
+  vipThreshold: integer('vip_threshold').notNull().default(5), // legacy — kept for backward compat
+  // ── Loyalty / Fidelización ───────────────────────────────────────────────
+  loyaltyEnabled: boolean('loyalty_enabled').notNull().default(false),
+  loyaltyWindowMonths: integer('loyalty_window_months').notNull().default(6),
+  loyaltyFrequentThreshold: integer('loyalty_frequent_threshold').notNull().default(5),
+  loyaltyVipCitasThreshold: integer('loyalty_vip_citas_threshold'),          // null = no VIP level
+  loyaltyVipAmountThreshold: decimal('loyalty_vip_amount_threshold', { precision: 10, scale: 2 }), // null = no amount req
   // Wompi payment gateway credentials (for tenant's own card payments)
   wompiAppId: text('wompi_app_id'),
   wompiApiSecret: text('wompi_api_secret'),
@@ -499,6 +505,27 @@ export const clientNotes = pgTable('client_notes', {
 export const clientNotesRelations = relations(clientNotes, ({ one }) => ({
   tenant: one(tenants, { fields: [clientNotes.tenantId], references: [tenants.id] }),
   author: one(users, { fields: [clientNotes.authorId], references: [users.id] }),
+}));
+
+// ── Client Loyalty ───────────────────────────────────────────────────────────
+// One row per (tenantId, clientEmail) — upserted by the recalculation engine.
+// Clients without email cannot be reliably tracked across bookings → excluded.
+export const clientLoyalty = pgTable('client_loyalty', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  clientEmail: varchar('client_email', { length: 255 }).notNull(),
+  clientName: varchar('client_name', { length: 255 }).notNull(),  // last known display name
+  // 'NORMAL' | 'FREQUENT' | 'VIP'
+  loyaltyTier: varchar('loyalty_tier', { length: 20 }).notNull().default('NORMAL'),
+  citasPeriodo: integer('citas_periodo').notNull().default(0),     // cached count within window
+  montoPeriodo: decimal('monto_periodo', { precision: 10, scale: 2 }).notNull().default('0.00'),
+  lastCalculatedAt: timestamp('last_calculated_at', { withTimezone: true, mode: 'date' }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+export const clientLoyaltyRelations = relations(clientLoyalty, ({ one }) => ({
+  tenant: one(tenants, { fields: [clientLoyalty.tenantId], references: [tenants.id] }),
 }));
 
 // ── Platform Transactions ────────────────────────────────────────────────────
