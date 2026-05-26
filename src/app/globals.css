@@ -15,6 +15,7 @@ html {
 
 body {
   overflow-x: hidden;
+  overscroll-behavior: none;
   color: var(--foreground);
   background-color: var(--background);
   background-image: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),

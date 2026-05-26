@@ -36,7 +36,7 @@ export default async function LandingPage({ params: { locale } }: { params: { lo
       />
 
       {/* ── Animated drifting orbs ── */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-clip">
         <div
           className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full opacity-[0.07] dark:opacity-[0.10] animate-orb-drift-1"
           style={{ background: "radial-gradient(circle, #7c3aed 0%, transparent 70%)" }}
