@@ -20,14 +20,17 @@ import {
   Save,
   Users,
   Power,
-  PowerOff
+  PowerOff,
+  Home,
+  AlertCircle,
 } from 'lucide-react';
 import { Portal } from "@/components/Portal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createServiceAction, updateServiceAction, deleteServiceAction, reorderServicesAction, toggleServiceActiveAction } from "@/app/actions/services";
 import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from "@/app/actions/categories";
-import { updateHomeServiceTravelTimeAction } from "@/app/actions/tenant";
-import { useRouter } from "next/navigation";
+import { updateHomeServiceTravelTimeAction, updateHomeServiceSettingsAction } from "@/app/actions/tenant";
+import { createCoverageZoneAction, deleteCoverageZoneAction } from "@/app/actions/zones";
+import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 const PRESET_COLORS = [
@@ -44,6 +47,11 @@ export default function ServicesClient({
   initialTravelTime = 0,
   planLimit,
   plan,
+  allowsHomeService: initialAllowsHomeService = true,
+  homeServiceTermsEnabled: initialTermsEnabled = false,
+  homeServiceTerms: initialTerms = '',
+  homeServiceLeadDays: initialLeadDays = 0,
+  initialZones = [],
 }: {
   initialServices: any[],
   branches: any[],
@@ -52,17 +60,37 @@ export default function ServicesClient({
   initialTravelTime?: number,
   planLimit?: number,
   plan?: string,
+  allowsHomeService?: boolean,
+  homeServiceTermsEnabled?: boolean,
+  homeServiceTerms?: string,
+  homeServiceLeadDays?: number,
+  initialZones?: any[],
 }) {
   const limit = planLimit ?? 999;
   const activeServices = initialServices.filter(s => s.isActive !== false);
   const atLimit = activeServices.length >= limit;
   const t = useTranslations('Dashboard.services');
-  const [activeTab, setActiveTab] = useState<'services' | 'categories'>('services');
+  const tPortal = useTranslations('Dashboard.portal');
+  const [activeTab, setActiveTab] = useState<'services' | 'categories' | 'domicilio'>('services');
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const params = useParams();
+  const locale = (params?.locale as string) || 'es';
+
+  // Domicilio tab state
+  const [domAllowsHomeService, setDomAllowsHomeService] = useState(initialAllowsHomeService);
+  const [domTermsEnabled, setDomTermsEnabled] = useState(initialTermsEnabled);
+  const [domTerms, setDomTerms] = useState(initialTerms);
+  const [domLeadDays, setDomLeadDays] = useState(initialLeadDays);
+  const [zones, setZones] = useState<any[]>(initialZones);
+  const [isAddingZone, setIsAddingZone] = useState(false);
+  const [newZone, setNewZone] = useState({ name: '', fee: '0', description: '' });
+  const [deleteZoneId, setDeleteZoneId] = useState<string | null>(null);
+  const [domMessage, setDomMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [isSavingDom, setIsSavingDom] = useState(false);
 
   // Travel time state — empty string means "no override set", 0 kept as number for the action
   const [travelTimeStr, setTravelTimeStr] = useState(initialTravelTime > 0 ? String(initialTravelTime) : '');
@@ -77,6 +105,50 @@ export default function ServicesClient({
       setTimeout(() => setTravelTimeSaved(false), 2000);
     }
     setSavingTravelTime(false);
+  };
+
+  // Domicilio handlers
+  const handleSaveDomicilio = async () => {
+    setIsSavingDom(true);
+    setDomMessage(null);
+    const result = await updateHomeServiceSettingsAction({
+      tenantId,
+      allowsHomeService: domAllowsHomeService,
+      homeServiceTermsEnabled: domTermsEnabled,
+      homeServiceTerms: domTerms,
+      homeServiceLeadDays: domLeadDays,
+    });
+    if (result.success) {
+      setDomMessage({ type: 'success', text: tPortal('successSave') });
+      router.refresh();
+    } else {
+      setDomMessage({ type: 'error', text: tPortal('errorSave') });
+    }
+    setIsSavingDom(false);
+  };
+
+  const handleAddZone = async () => {
+    if (!newZone.name) return;
+    const res = await createCoverageZoneAction({ tenantId, ...newZone });
+    if (res.success) {
+      setZones([...zones, (res as any).zone]);
+      setNewZone({ name: '', fee: '0', description: '' });
+      setIsAddingZone(false);
+    }
+  };
+
+  const handleDeleteZone = (id: string) => {
+    setDeleteZoneId(id);
+  };
+
+  const confirmDeleteZone = async () => {
+    if (!deleteZoneId) return;
+    const id = deleteZoneId;
+    setDeleteZoneId(null);
+    const res = await deleteCoverageZoneAction(id);
+    if (res.success) {
+      setZones(zones.filter(z => z.id !== id));
+    }
   };
 
   // Category CRUD state
@@ -316,6 +388,15 @@ export default function ServicesClient({
       onConfirm={confirmDeleteCategory}
       onCancel={() => setDeleteCatIdSvc(null)}
     />
+    <ConfirmDialog
+      open={!!deleteZoneId}
+      title={tPortal('form.deleteZoneConfirm')}
+      message="La zona de cobertura se eliminará. Esta acción no se puede deshacer."
+      confirmLabel="Sí, eliminar"
+      variant="danger"
+      onConfirm={confirmDeleteZone}
+      onCancel={() => setDeleteZoneId(null)}
+    />
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Page header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -335,19 +416,21 @@ export default function ServicesClient({
               {activeServices.length} / {limit} · {plan ?? 'BASIC'}
             </span>
           )}
-          <button
-            onClick={() => activeTab === 'services' ? (!atLimit && handleOpenModal()) : handleOpenCatModal()}
-            disabled={activeTab === 'services' && atLimit}
-            title={activeTab === 'services' && atLimit ? `Límite de ${limit} servicios alcanzado. Actualiza tu plan para agregar más.` : undefined}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold shadow-xl transition-all ${
-              activeTab === 'services' && atLimit
-                ? 'bg-slate-200 dark:bg-zinc-700 text-slate-400 dark:text-zinc-500 cursor-not-allowed shadow-none'
-                : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-500/20 active:scale-95'
-            }`}
-          >
-            <Plus className="w-5 h-5" />
-            {activeTab === 'services' ? t('new') : 'Nueva categoría'}
-          </button>
+          {activeTab !== 'domicilio' && (
+            <button
+              onClick={() => activeTab === 'services' ? (!atLimit && handleOpenModal()) : handleOpenCatModal()}
+              disabled={activeTab === 'services' && atLimit}
+              title={activeTab === 'services' && atLimit ? `Límite de ${limit} servicios alcanzado. Actualiza tu plan para agregar más.` : undefined}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold shadow-xl transition-all ${
+                activeTab === 'services' && atLimit
+                  ? 'bg-slate-200 dark:bg-zinc-700 text-slate-400 dark:text-zinc-500 cursor-not-allowed shadow-none'
+                  : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-500/20 active:scale-95'
+              }`}
+            >
+              <Plus className="w-5 h-5" />
+              {activeTab === 'services' ? t('new') : 'Nueva categoría'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -365,54 +448,16 @@ export default function ServicesClient({
         >
           <Tag className="w-4 h-4 shrink-0" /> {t('tabCategories')}
         </button>
+        <button
+          onClick={() => setActiveTab('domicilio')}
+          className={`flex items-center gap-2 py-2 px-5 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === 'domicilio' ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+        >
+          <Home className="w-4 h-4 shrink-0" /> {t('tabDomicilio')}
+        </button>
       </div>
 
       {/* ---- SERVICES TAB ---- */}
       {activeTab === 'services' && (<>
-
-      {/* Tiempo de traslado a domicilio */}
-      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-5 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-10 h-10 bg-amber-500/10 rounded-2xl flex items-center justify-center shrink-0">
-              <Truck className="w-5 h-5 text-amber-500" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{t('travelTimeTitle')}</p>
-              <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">{t('travelTimeDesc')}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-2.5">
-              <input
-                type="number"
-                min={0}
-                max={120}
-                step={5}
-                value={travelTimeStr}
-                onChange={e => setTravelTimeStr(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="0"
-                className="w-16 bg-transparent text-center font-black text-slate-900 dark:text-white text-lg outline-none"
-              />
-              <span className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">min</span>
-            </div>
-            <button
-              onClick={handleSaveTravelTime}
-              disabled={savingTravelTime}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all ${travelTimeSaved ? 'bg-emerald-500 text-white' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/20'} disabled:opacity-60`}
-            >
-              {savingTravelTime ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : travelTimeSaved ? (
-                <CheckCircle2 className="w-4 h-4" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              {travelTimeSaved ? t('travelTimeSaved') : t('travelTimeSave')}
-            </button>
-          </div>
-        </div>
-      </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-center">
         <div className="flex-1 relative w-full">
@@ -1129,6 +1174,225 @@ export default function ServicesClient({
           </Portal>
         )}
       </>)}
+
+      {/* ---- DOMICILIO TAB ---- */}
+      {activeTab === 'domicilio' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {/* Status message */}
+          {domMessage && (
+            <div className={`p-4 rounded-2xl flex items-center gap-3 animate-in zoom-in-95 duration-300 ${
+              domMessage.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border border-rose-500/20 text-rose-500'
+            }`}>
+              {domMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+              <p className="font-bold text-sm">{domMessage.text}</p>
+            </div>
+          )}
+
+          {/* Tiempo de traslado */}
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="w-10 h-10 bg-amber-500/10 rounded-2xl flex items-center justify-center shrink-0">
+                  <Truck className="w-5 h-5 text-amber-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{t('travelTimeTitle')}</p>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">{t('travelTimeDesc')}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-2.5">
+                  <input
+                    type="number"
+                    min={0}
+                    max={120}
+                    step={5}
+                    value={travelTimeStr}
+                    onChange={e => setTravelTimeStr(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="0"
+                    className="w-16 bg-transparent text-center font-black text-slate-900 dark:text-white text-lg outline-none"
+                  />
+                  <span className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">min</span>
+                </div>
+                <button
+                  onClick={handleSaveTravelTime}
+                  disabled={savingTravelTime}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all ${travelTimeSaved ? 'bg-emerald-500 text-white' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/20'} disabled:opacity-60`}
+                >
+                  {savingTravelTime ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : travelTimeSaved ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  {travelTimeSaved ? t('travelTimeSaved') : t('travelTimeSave')}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Home service config */}
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-8">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
+              <div className="p-2 bg-purple-500/10 rounded-lg">
+                <Truck className="w-5 h-5 text-purple-500" />
+              </div>
+              <h2 className="text-xl font-bold">{tPortal('sections.homeService')}</h2>
+            </div>
+
+            {/* allowsHomeService toggle */}
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">{tPortal('form.allowsHomeService')}</label>
+              <div className="flex items-start justify-between gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 min-h-[64px]">
+                <div className="pr-4">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{tPortal('form.allowsHomeServiceLabel')}</p>
+                  <p className="text-xs text-slate-500 italic">{tPortal('form.allowsHomeServiceHint')}</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                  <input type="checkbox" checked={domAllowsHomeService} onChange={e => setDomAllowsHomeService(e.target.checked)} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
+            </div>
+
+            {domAllowsHomeService && (
+              <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300 border-l-2 border-purple-500 pl-4 ml-2">
+                {/* Terms */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">{tPortal('form.terms')}</label>
+                  <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{tPortal('form.termsRequired')}</p>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" checked={domTermsEnabled} onChange={e => setDomTermsEnabled(e.target.checked)} className="sr-only peer" />
+                      <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                  </div>
+                </div>
+
+                {domTermsEnabled && (
+                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-2">
+                      {tPortal('form.termsContent')} <span title={tPortal('form.termsTooltip')}><Info className="w-3.5 h-3.5 text-zinc-500" /></span>
+                    </label>
+                    <textarea
+                      value={domTerms}
+                      onChange={e => setDomTerms(e.target.value)}
+                      placeholder={tPortal('form.termsPlaceholder')}
+                      className="w-full min-h-[120px] p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none text-sm"
+                    />
+                  </div>
+                )}
+
+                {/* Lead days + zones */}
+                <div className="pt-4 border-t border-slate-100 dark:border-white/10 space-y-6">
+                  {/* Lead days */}
+                  <div className="space-y-3">
+                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">{tPortal('form.leadDays')}</label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="number"
+                        min="0"
+                        max="90"
+                        value={domLeadDays}
+                        onChange={e => setDomLeadDays(parseInt(e.target.value) || 0)}
+                        className="w-24 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-black text-center"
+                      />
+                      <p className="text-xs text-slate-500 italic flex-1">{tPortal('form.leadDaysHint')}</p>
+                    </div>
+                  </div>
+
+                  {/* Coverage zones */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">{tPortal('form.zoneTitle')}</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingZone(true)}
+                        className="px-4 py-2 bg-purple-500/10 text-purple-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-purple-500/20 transition-all active:scale-95"
+                      >
+                        {tPortal('form.addZone')}
+                      </button>
+                    </div>
+
+                    {isAddingZone && (
+                      <div className="p-5 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 border border-purple-500/20 rounded-3xl space-y-4 animate-in zoom-in-95 duration-200 shadow-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="col-span-2 sm:col-span-1">
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 block">{tPortal('form.newZoneName')}</label>
+                            <input
+                              placeholder={tPortal('form.newZoneName')}
+                              value={newZone.name}
+                              onChange={e => setNewZone({...newZone, name: e.target.value})}
+                              className="w-full p-3 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-bold"
+                            />
+                          </div>
+                          <div className="col-span-2 sm:col-span-1">
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 block">{tPortal('form.newZoneFee')}</label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-3.5 text-slate-400 text-sm font-bold">$</span>
+                              <input
+                                type="number"
+                                placeholder={tPortal('form.newZoneFee')}
+                                value={newZone.fee}
+                                onChange={e => setNewZone({...newZone, fee: e.target.value})}
+                                className="w-full p-3 pl-8 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-3 pt-2">
+                          <button type="button" onClick={() => setIsAddingZone(false)} className="text-xs font-bold text-slate-500">{tPortal('form.cancel')}</button>
+                          <button type="button" onClick={handleAddZone} className="px-6 py-2.5 bg-purple-600 text-white rounded-xl text-xs font-black shadow-lg shadow-purple-500/20 transition-all">{tPortal('form.create')}</button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-2">
+                      {zones.map(zone => (
+                        <div key={zone.id} className="flex items-center justify-between p-4 bg-white dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 group hover:border-purple-500/50 transition-all">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                              <Truck className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-black text-slate-900 dark:text-white">{zone.name}</p>
+                              <p className="text-xs text-emerald-600 font-bold tracking-tight">+${zone.fee} {tPortal('form.feeLabel')}</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteZone(zone.id)}
+                            className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Save button */}
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={handleSaveDomicilio}
+                disabled={isSavingDom}
+                className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl text-sm font-bold shadow-xl shadow-purple-500/20 transition-all disabled:opacity-60"
+              >
+                {isSavingDom ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                {tPortal('form.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </>
   );

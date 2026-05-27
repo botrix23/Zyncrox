@@ -1,6 +1,6 @@
 import React from 'react';
 import { db } from '@/db';
-import { services as servicesTable, branches as branchesTable, serviceCategories, tenants } from '@/db/schema';
+import { services as servicesTable, branches as branchesTable, serviceCategories, tenants, coverageZones } from '@/db/schema';
 import { eq, asc } from 'drizzle-orm';
 import { getSession, getEffectiveTenantId } from '@/lib/auth-session';
 import { redirect } from 'next/navigation';
@@ -17,7 +17,7 @@ export default async function ServicesPage() {
   }
   const sessionTenantId = tenantId as string;
 
-  const [dbServices, dbBranches, dbCategories, tenant, planLimit] = await Promise.all([
+  const [dbServices, dbBranches, dbCategories, tenant, planLimit, dbZones] = await Promise.all([
     db.query.services.findMany({
       where: eq(servicesTable.tenantId, sessionTenantId),
       with: { branches: true, categories: { with: { category: true } } },
@@ -30,6 +30,7 @@ export default async function ServicesPage() {
     }),
     db.query.tenants.findFirst({ where: eq(tenants.id, sessionTenantId) }),
     checkPlanLimit(sessionTenantId, 'services'),
+    db.select().from(coverageZones).where(eq(coverageZones.tenantId, sessionTenantId)),
   ]);
 
   return (
@@ -41,6 +42,11 @@ export default async function ServicesPage() {
       initialTravelTime={(tenant as any)?.homeServiceTravelTime ?? 0}
       planLimit={planLimit.limit}
       plan={planLimit.plan}
+      allowsHomeService={tenant?.allowsHomeService ?? true}
+      homeServiceTermsEnabled={tenant?.homeServiceTermsEnabled ?? false}
+      homeServiceTerms={tenant?.homeServiceTerms ?? ''}
+      homeServiceLeadDays={tenant?.homeServiceLeadDays ?? 0}
+      initialZones={dbZones}
     />
   );
 }

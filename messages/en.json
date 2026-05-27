@@ -343,7 +343,8 @@
       "confirmDeleteCategory": "Delete category?",
       "deleteCategoryMsg": "This will unlink it from all associated services and staff. This action cannot be undone.",
       "deleteConfirmLabel": "Yes, delete",
-      "deleteServiceMsg": "The service will be permanently deleted. This action cannot be undone."
+      "deleteServiceMsg": "The service will be permanently deleted. This action cannot be undone.",
+      "tabDomicilio": "Home Service"
     },
     "bookings": {
       "title": "Appointments / bookings",
@@ -605,7 +606,11 @@
         "service": "Service",
         "staffBranch": "Staff / Branch",
         "amount": "Amount"
-      }
+      },
+      "tabDirectory": "Directory",
+      "tabLoyalty": "Loyalty",
+      "tabPoints": "Points",
+      "tabSurveys": "Surveys"
     },
     "tabs": {
       "overview": "Overview",

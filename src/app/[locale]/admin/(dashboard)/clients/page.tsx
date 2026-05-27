@@ -1,10 +1,12 @@
 import { db } from "@/db";
-import { bookings, tenants, clientLoyalty } from "@/db/schema";
-import { eq, desc, and, not } from "drizzle-orm";
+import { bookings, tenants, clientLoyalty, surveyQuestions, reviews as reviewsTable } from "@/db/schema";
+import { eq, desc, asc, and, not, count } from "drizzle-orm";
 import { getSession } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
 import ClientsClient from "./ClientsClient";
 import { getClientNotesCountsAction } from "@/app/actions/clientNotes";
+import { getRewardsAction } from "@/app/actions/loyalty";
+import { getPlanFeatures } from "@/core/plans";
 
 export const metadata = {
   title: "Clientes | Zyncrox",
@@ -43,10 +45,36 @@ export default async function ClientsPage({
     orderBy: [desc(bookings.startTime)]
   });
 
-  const [notesCounts, loyaltyRows] = await Promise.all([
+  const [notesCounts, loyaltyRows, questions, reviews, surveyEmailSentResult, rewardsResult] = await Promise.all([
     getClientNotesCountsAction(),
     db.select().from(clientLoyalty).where(eq(clientLoyalty.tenantId, tenantId!)),
+    db.query.surveyQuestions.findMany({
+      where: eq(surveyQuestions.tenantId, tenantId!),
+      orderBy: [asc(surveyQuestions.sortOrder)],
+    }),
+    db.query.reviews.findMany({
+      where: eq(reviewsTable.tenantId, tenantId!),
+      with: {
+        booking: {
+          with: {
+            staff: true,
+            service: true,
+          }
+        }
+      },
+      orderBy: [desc(reviewsTable.createdAt)],
+    }),
+    db.select({ value: count() })
+      .from(bookings)
+      .where(and(eq(bookings.tenantId, tenantId!), eq(bookings.surveyEmailSent, true))),
+    getRewardsAction(),
   ]);
+
+  const totalSurveySent = surveyEmailSentResult[0]?.value ?? 0;
+  const planFeatures = getPlanFeatures(tenant?.plan);
+  const canUseSurveys = planFeatures.surveys;
+  const canUseAdvanced = planFeatures.nps;
+  const initialRewards = rewardsResult.success ? (rewardsResult as any).rewards : [];
 
   const loyaltyConfig = {
     enabled: tenant?.loyaltyEnabled ?? false,
@@ -56,6 +84,9 @@ export default async function ClientsPage({
     vipAmountThreshold: tenant?.loyaltyVipAmountThreshold ? Number(tenant.loyaltyVipAmountThreshold) : null,
     plan: tenant?.plan ?? 'BASIC',
     pointsEnabled: tenant?.pointsEnabled ?? false,
+    pointsPerDollar: tenant?.pointsPerDollar ?? 10,
+    pointsExpireEnabled: tenant?.pointsExpireEnabled ?? false,
+    pointsExpireMonths: tenant?.pointsExpireMonths ?? 6,
   };
 
   return (
@@ -67,6 +98,19 @@ export default async function ClientsPage({
       currentUserRole={session.role}
       loyaltyRows={loyaltyRows}
       loyaltyConfig={loyaltyConfig}
+      tenantId={tenantId!}
+      initialRewards={initialRewards}
+      surveyProps={{
+        tenantId: tenantId!,
+        initialEnabled: tenant?.reviewsEnabled ?? false,
+        initialQuestions: questions,
+        initialReviews: reviews,
+        canUseAdvanced,
+        locale,
+        slug: tenant?.slug ?? '',
+        totalSurveySent,
+        canUseSurveys,
+      }}
     />
   );
 }

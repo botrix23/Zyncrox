@@ -5,9 +5,11 @@ import {
   Search, Contact, DollarSign, Clock, Calendar, User,
   MapPin, Star, TrendingUp, History, X, Phone, Mail,
   ChevronRight, Award, Scissors, ShoppingBag, Settings2, StickyNote,
-  Gift, Loader2, Check, AlertCircle
+  Gift, Loader2, Check, AlertCircle, MonitorCheck, Lock, Pencil, Trash2,
+  Save, CheckCircle2, ClipboardList
 } from 'lucide-react';
-import { getClientPointsAction, redeemRewardAction } from "@/app/actions/loyalty";
+import { getClientPointsAction, redeemRewardAction, getRewardsAction, createRewardAction, updateRewardAction, deleteRewardAction } from "@/app/actions/loyalty";
+import { updateLoyaltySettingsAction, updatePointsSettingsAction } from "@/app/actions/tenant";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { es, enUS } from "date-fns/locale";
@@ -15,6 +17,7 @@ import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
 const ClientNotes = dynamic(() => import('./ClientNotes'), { ssr: false });
+const SurveyClient = dynamic(() => import('../surveys/SurveyClient'), { ssr: false });
 
 interface BookingDetail {
   id: string;
@@ -38,6 +41,9 @@ interface LoyaltyConfig {
   vipAmountThreshold: number | null;
   plan: string;
   pointsEnabled?: boolean;
+  pointsPerDollar?: number;
+  pointsExpireEnabled?: boolean;
+  pointsExpireMonths?: number;
 }
 
 interface PointsTransaction {
@@ -64,6 +70,9 @@ export default function ClientsClient({
   currentUserRole = 'ADMIN',
   loyaltyRows = [],
   loyaltyConfig,
+  tenantId = '',
+  initialRewards = [],
+  surveyProps,
 }: {
   bookings: BookingDetail[];
   vipThreshold: number;
@@ -72,6 +81,19 @@ export default function ClientsClient({
   currentUserRole?: string;
   loyaltyRows?: LoyaltyRow[];
   loyaltyConfig?: LoyaltyConfig;
+  tenantId?: string;
+  initialRewards?: any[];
+  surveyProps?: {
+    tenantId: string;
+    initialEnabled: boolean;
+    initialQuestions: any[];
+    initialReviews: any[];
+    canUseAdvanced: boolean;
+    locale: string;
+    slug: string;
+    totalSurveySent: number;
+    canUseSurveys: boolean;
+  };
 }) {
   const t = useTranslations('Dashboard.clients');
   const params = useParams();
@@ -95,6 +117,81 @@ export default function ClientsClient({
   const plan = loyaltyConfig?.plan ?? 'BASIC';
   const pointsEnabled = loyaltyConfig?.pointsEnabled ?? false;
   const loyaltyEnabled = loyaltyConfig?.enabled ?? false;
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'directory' | 'loyalty' | 'points' | 'surveys'>('directory');
+
+  // Loyalty edit state
+  const [loyaltyEditEnabled, setLoyaltyEditEnabled] = useState(loyaltyConfig?.enabled ?? false);
+  const [loyaltyWindowMonths, setLoyaltyWindowMonths] = useState(loyaltyConfig?.windowMonths ?? 6);
+  const [loyaltyFreqThreshold, setLoyaltyFreqThreshold] = useState(loyaltyConfig?.frequentThreshold ?? 5);
+  const [loyaltyVipCitas, setLoyaltyVipCitas] = useState<number | ''>(loyaltyConfig?.vipCitasThreshold ?? '');
+  const [loyaltyVipAmount, setLoyaltyVipAmount] = useState<number | ''>(loyaltyConfig?.vipAmountThreshold ?? '');
+  const [loyaltySaving, setLoyaltySaving] = useState(false);
+  const [loyaltyMessage, setLoyaltyMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Points edit state
+  const [pointsEditEnabled, setPointsEditEnabled] = useState(loyaltyConfig?.pointsEnabled ?? false);
+  const [pointsPerDollar, setPointsPerDollar] = useState(loyaltyConfig?.pointsPerDollar ?? 10);
+  const [pointsExpireEnabled, setPointsExpireEnabled] = useState(loyaltyConfig?.pointsExpireEnabled ?? false);
+  const [pointsExpireMonths, setPointsExpireMonths] = useState(loyaltyConfig?.pointsExpireMonths ?? 6);
+  const [pointsSaving, setPointsSaving] = useState(false);
+  const [pointsMessage, setPointsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // Rewards state
+  const [rewards, setRewards] = useState<any[]>(initialRewards);
+  const [rewardsLoaded, setRewardsLoaded] = useState(initialRewards.length > 0);
+  const [newRewardName, setNewRewardName] = useState('');
+  const [newRewardCost, setNewRewardCost] = useState(500);
+  const [editingRewardId, setEditingRewardId] = useState<string | null>(null);
+
+  const handleSaveLoyalty = async () => {
+    setLoyaltySaving(true);
+    setLoyaltyMessage(null);
+    const result = await updateLoyaltySettingsAction({
+      tenantId,
+      loyaltyEnabled: loyaltyEditEnabled,
+      loyaltyWindowMonths,
+      loyaltyFrequentThreshold: loyaltyFreqThreshold,
+      loyaltyVipCitasThreshold: loyaltyVipCitas === '' ? null : loyaltyVipCitas,
+      loyaltyVipAmountThreshold: loyaltyVipAmount === '' ? null : loyaltyVipAmount,
+    });
+    if (result.success) {
+      setLoyaltyMessage({ type: 'success', text: locale === 'es' ? 'Configuración guardada' : 'Settings saved' });
+      router.refresh();
+    } else {
+      setLoyaltyMessage({ type: 'error', text: locale === 'es' ? 'Error al guardar' : 'Error saving' });
+    }
+    setLoyaltySaving(false);
+  };
+
+  const handleSavePoints = async () => {
+    setPointsSaving(true);
+    setPointsMessage(null);
+    const result = await updatePointsSettingsAction({
+      tenantId,
+      pointsEnabled: pointsEditEnabled,
+      pointsPerDollar,
+      pointsExpireEnabled,
+      pointsExpireMonths,
+    });
+    if (result.success) {
+      setPointsMessage({ type: 'success', text: locale === 'es' ? 'Configuración guardada' : 'Settings saved' });
+      router.refresh();
+    } else {
+      setPointsMessage({ type: 'error', text: locale === 'es' ? 'Error al guardar' : 'Error saving' });
+    }
+    setPointsSaving(false);
+  };
+
+  // Load rewards when points tab opens
+  useEffect(() => {
+    if (activeTab === 'points' && plan === 'ENTERPRISE' && !rewardsLoaded) {
+      getRewardsAction().then(r => {
+        if (r.success) setRewards((r as any).rewards);
+        setRewardsLoaded(true);
+      });
+    }
+  }, [activeTab, plan, rewardsLoaded]);
 
   // Build lookup map email → tier
   const loyaltyMap = useMemo(() => {
@@ -279,8 +376,47 @@ export default function ClientsClient({
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t('title')}</h1>
           <p className="text-slate-500 dark:text-zinc-400 mt-1">{t('subtitle')}</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-          {/* Tier filter — Pro / Business only, loyalty enabled */}
+      </div>
+
+      {/* Tab switcher */}
+      <div className="hidden md:flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
+        {(['directory', 'loyalty', 'points', 'surveys'] as const).map(tab => {
+          const icons = { directory: Contact, loyalty: MonitorCheck, points: Star, surveys: ClipboardList };
+          const labels: Record<string, string> = {
+            directory: t('tabDirectory'),
+            loyalty: t('tabLoyalty'),
+            points: t('tabPoints'),
+            surveys: t('tabSurveys'),
+          };
+          const Icon = icons[tab];
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === tab ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+            >
+              <Icon className="w-4 h-4 shrink-0" /> {labels[tab]}
+            </button>
+          );
+        })}
+      </div>
+      {/* Mobile: select */}
+      <div className="md:hidden">
+        <select
+          value={activeTab}
+          onChange={e => setActiveTab(e.target.value as any)}
+          className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 px-4 text-sm font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        >
+          <option value="directory">{t('tabDirectory')}</option>
+          <option value="loyalty">{t('tabLoyalty')}</option>
+          <option value="points">{t('tabPoints')}</option>
+          <option value="surveys">{t('tabSurveys')}</option>
+        </select>
+      </div>
+
+      {/* ---- DIRECTORY TAB ---- */}
+      {activeTab === 'directory' && (<>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {loyaltyEnabled && plan !== 'BASIC' && (
             <select
               value={tierFilter}
@@ -304,7 +440,6 @@ export default function ClientsClient({
             />
           </div>
         </div>
-      </div>
 
       {clientStats.length === 0 ? (
           <div className="text-center py-24 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-[32px] shadow-sm">
@@ -460,6 +595,277 @@ export default function ClientsClient({
              </div>
           </div>
         </>
+      )}
+      </>)}
+
+      {/* ---- LOYALTY TAB ---- */}
+      {activeTab === 'loyalty' && (
+        <div className="space-y-6 max-w-2xl animate-in fade-in duration-300">
+          {loyaltyMessage && (
+            <div className={`p-4 rounded-2xl flex items-center gap-3 ${loyaltyMessage.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border border-rose-500/20 text-rose-500'}`}>
+              {loyaltyMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+              <p className="font-bold text-sm">{loyaltyMessage.text}</p>
+            </div>
+          )}
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/10 rounded-lg"><MonitorCheck className="w-5 h-5 text-purple-600" /></div>
+                <h2 className="text-xl font-bold">{locale === 'es' ? 'Fidelización' : 'Loyalty'}</h2>
+              </div>
+              <button type="button" onClick={() => setLoyaltyEditEnabled(v => !v)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${loyaltyEditEnabled ? 'bg-purple-600' : 'bg-slate-300 dark:bg-white/20'}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${loyaltyEditEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            {loyaltyEditEnabled && (
+              <div className="space-y-5">
+                <div className="flex items-center gap-4">
+                  <input type="number" min="1" max="24" value={loyaltyWindowMonths}
+                    onChange={e => setLoyaltyWindowMonths(parseInt(e.target.value) || 1)}
+                    className="w-20 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">{locale === 'es' ? 'Ventana de evaluación (meses)' : 'Evaluation window (months)'}</p>
+                    <p className="text-xs text-slate-500">{locale === 'es' ? 'Citas dentro de este periodo cuentan para el nivel Frecuente y VIP' : 'Appointments within this period count toward Frequent and VIP tiers'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <input type="number" min="1" max="100" value={loyaltyFreqThreshold}
+                    onChange={e => setLoyaltyFreqThreshold(parseInt(e.target.value) || 1)}
+                    className="w-20 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">⭐ {locale === 'es' ? 'Citas para nivel Frecuente' : 'Appointments for Frequent tier'}</p>
+                    <p className="text-xs text-slate-500">{locale === 'es' ? 'Clientes con ≥ este número de citas en la ventana' : 'Clients with ≥ this many appointments in the window'}</p>
+                  </div>
+                </div>
+                {(plan === 'PROFESSIONAL' || plan === 'ENTERPRISE') && (
+                  <div className="p-4 bg-purple-50 dark:bg-purple-500/10 rounded-2xl space-y-4 border border-purple-200/60 dark:border-purple-500/20">
+                    <p className="text-xs font-black text-purple-600 uppercase tracking-widest">👑 {locale === 'es' ? 'Nivel VIP' : 'VIP Tier'}</p>
+                    <div className="flex items-center gap-4">
+                      <input type="number" min="1" max="500" value={loyaltyVipCitas === '' ? '' : loyaltyVipCitas} placeholder="—"
+                        onChange={e => setLoyaltyVipCitas(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
+                        className="w-20 p-3 bg-white dark:bg-white/10 border border-purple-300 dark:border-purple-500/40 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                      <p className="text-sm text-slate-700 dark:text-zinc-300 flex-1">{locale === 'es' ? 'Citas mínimas para VIP (dejar vacío = sin nivel VIP)' : 'Min appointments for VIP (leave blank = no VIP tier)'}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <input type="number" min="1" value={loyaltyVipAmount === '' ? '' : loyaltyVipAmount} placeholder="—"
+                        onChange={e => setLoyaltyVipAmount(e.target.value === '' ? '' : parseFloat(e.target.value) || '')}
+                        className="w-20 p-3 bg-white dark:bg-white/10 border border-purple-300 dark:border-purple-500/40 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                      <p className="text-sm text-slate-700 dark:text-zinc-300 flex-1">{locale === 'es' ? 'Monto mínimo ($) para VIP (dejar vacío = solo por citas)' : 'Min spend ($) for VIP (leave blank = appointments only)'}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="flex justify-end pt-2">
+              <button onClick={handleSaveLoyalty} disabled={loyaltySaving}
+                className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl text-sm font-bold shadow-xl shadow-purple-500/20 transition-all disabled:opacity-60">
+                {loyaltySaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
+                {locale === 'es' ? 'Guardar cambios' : 'Save changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---- POINTS TAB ---- */}
+      {activeTab === 'points' && (
+        <div className="space-y-6 max-w-2xl animate-in fade-in duration-300">
+          {pointsMessage && (
+            <div className={`p-4 rounded-2xl flex items-center gap-3 ${pointsMessage.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border border-rose-500/20 text-rose-500'}`}>
+              {pointsMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+              <p className="font-bold text-sm">{pointsMessage.text}</p>
+            </div>
+          )}
+          {plan === 'ENTERPRISE' ? (
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-500/10 rounded-lg"><Star className="w-5 h-5 text-amber-500" /></div>
+                  <div>
+                    <h2 className="text-xl font-bold">{locale === 'es' ? 'Programa de Puntos' : 'Points Program'}</h2>
+                    <p className="text-xs text-slate-500">{locale === 'es' ? 'Independiente del sistema de niveles' : 'Independent of the tier system'}</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setPointsEditEnabled(v => !v)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${pointsEditEnabled ? 'bg-amber-500' : 'bg-slate-300 dark:bg-white/20'}`}>
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${pointsEditEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+              {pointsEditEnabled && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <input type="number" min="1" max="100" value={pointsPerDollar}
+                      onChange={e => setPointsPerDollar(parseInt(e.target.value) || 1)}
+                      className="w-20 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-slate-800 dark:text-white">{locale === 'es' ? 'Puntos por cada $1 gastado' : 'Points per $1 spent'}</p>
+                      <p className="text-xs text-slate-500">{locale === 'es' ? `Ej: servicio de $25 = ${25 * pointsPerDollar} puntos` : `E.g. $25 service = ${25 * pointsPerDollar} points`}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-slate-800 dark:text-white">{locale === 'es' ? 'Los puntos expiran' : 'Points expire'}</p>
+                        <p className="text-xs text-slate-500">{locale === 'es' ? 'Por inactividad del cliente' : 'Due to client inactivity'}</p>
+                      </div>
+                      <button type="button" onClick={() => setPointsExpireEnabled(v => !v)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${pointsExpireEnabled ? 'bg-amber-500' : 'bg-slate-300 dark:bg-white/20'}`}>
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${pointsExpireEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+                    {pointsExpireEnabled && (
+                      <div className="flex items-center gap-4 pl-1">
+                        <input type="number" min="1" max="36" value={pointsExpireMonths}
+                          onChange={e => setPointsExpireMonths(parseInt(e.target.value) || 1)}
+                          className="w-20 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black text-center focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+                        <p className="text-sm text-slate-600 dark:text-zinc-400">{locale === 'es' ? 'meses sin actividad' : 'months of inactivity'}</p>
+                      </div>
+                    )}
+                  </div>
+                  {/* Rewards catalog */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">{locale === 'es' ? 'Catálogo de Recompensas' : 'Rewards Catalog'}</p>
+                      <span className="text-xs text-slate-400">{rewards.length}/10</span>
+                    </div>
+                    <div className="space-y-2">
+                      {rewards.map(r => (
+                        <div key={r.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/5">
+                          {editingRewardId === r.id ? (
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <input className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-sm"
+                                defaultValue={r.name} id={`rew-name-${r.id}`} placeholder={locale === 'es' ? 'Nombre' : 'Name'} />
+                              <input className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-sm"
+                                type="number" min="1" defaultValue={r.pointsCost} id={`rew-cost-${r.id}`} placeholder={locale === 'es' ? 'Puntos' : 'Points'} />
+                              <div className="flex gap-2">
+                                <button type="button" onClick={async () => {
+                                  const nameEl = document.getElementById(`rew-name-${r.id}`) as HTMLInputElement;
+                                  const costEl = document.getElementById(`rew-cost-${r.id}`) as HTMLInputElement;
+                                  await updateRewardAction({ id: r.id, name: nameEl.value, pointsCost: parseInt(costEl.value) || r.pointsCost, isActive: r.isActive });
+                                  const fresh = await getRewardsAction();
+                                  if (fresh.success) setRewards((fresh as any).rewards);
+                                  setEditingRewardId(null);
+                                }} className="flex-1 py-2 bg-purple-600 text-white text-xs font-black rounded-lg">{locale === 'es' ? 'Guardar' : 'Save'}</button>
+                                <button type="button" onClick={() => setEditingRewardId(null)} className="flex-1 py-2 bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-zinc-300 text-xs font-black rounded-lg">{locale === 'es' ? 'Cancelar' : 'Cancel'}</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{r.name}</p>
+                                <p className="text-xs text-amber-600 font-bold">{r.pointsCost.toLocaleString()} pts</p>
+                              </div>
+                              <button type="button" onClick={async () => {
+                                await updateRewardAction({ ...r, description: r.description ?? undefined, isActive: !r.isActive });
+                                setRewards(prev => prev.map((x: any) => x.id === r.id ? { ...x, isActive: !r.isActive } : x));
+                              }} className={`text-xs px-2 py-1 rounded-full font-black ${r.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-slate-100 text-slate-500 dark:bg-white/5'}`}>
+                                {r.isActive ? (locale === 'es' ? 'Activa' : 'Active') : (locale === 'es' ? 'Inactiva' : 'Inactive')}
+                              </button>
+                              <button type="button" onClick={() => setEditingRewardId(r.id)} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-all">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button type="button" onClick={async () => {
+                                await deleteRewardAction(r.id);
+                                setRewards(prev => prev.filter((x: any) => x.id !== r.id));
+                              }} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {rewards.length < 10 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-amber-50 dark:bg-amber-500/10 rounded-xl border border-amber-200/60 dark:border-amber-500/20">
+                        <input className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-sm placeholder:text-slate-400"
+                          value={newRewardName} onChange={e => setNewRewardName(e.target.value)}
+                          placeholder={locale === 'es' ? 'Nombre de la recompensa' : 'Reward name'} />
+                        <input className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-sm"
+                          type="number" min="1" value={newRewardCost} onChange={e => setNewRewardCost(parseInt(e.target.value) || 1)}
+                          placeholder={locale === 'es' ? 'Puntos' : 'Points'} />
+                        <button type="button" disabled={!newRewardName.trim()} onClick={async () => {
+                          if (!newRewardName.trim()) return;
+                          const res = await createRewardAction({ name: newRewardName, pointsCost: newRewardCost, isActive: true });
+                          if (res.success) {
+                            const fresh = await getRewardsAction();
+                            if (fresh.success) setRewards((fresh as any).rewards);
+                            setNewRewardName(''); setNewRewardCost(500);
+                          }
+                        }} className="py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-sm font-black rounded-lg transition-all">
+                          {locale === 'es' ? '+ Agregar' : '+ Add'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end pt-2">
+                <button onClick={handleSavePoints} disabled={pointsSaving}
+                  className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl text-sm font-bold shadow-xl shadow-purple-500/20 transition-all disabled:opacity-60">
+                  {pointsSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
+                  {locale === 'es' ? 'Guardar cambios' : 'Save changes'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="relative bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm overflow-hidden">
+              <div className="absolute inset-0 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center gap-3 rounded-3xl">
+                <Lock className="w-6 h-6 text-slate-400" />
+                <p className="text-sm font-bold text-slate-600 dark:text-zinc-400 text-center px-6">
+                  {locale === 'es' ? 'Disponible en el plan Business' : 'Available on Business plan'}
+                </p>
+                <a href={`/${locale}/admin/billing`} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black rounded-xl transition-all">
+                  {locale === 'es' ? 'Mejorar plan' : 'Upgrade plan'}
+                </a>
+              </div>
+              <div className="opacity-30 pointer-events-none space-y-4">
+                <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
+                  <div className="p-2 bg-amber-500/10 rounded-lg"><Star className="w-5 h-5 text-amber-500" /></div>
+                  <h2 className="text-xl font-bold">{locale === 'es' ? 'Programa de Puntos' : 'Points Program'}</h2>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-11 bg-slate-100 dark:bg-white/5 rounded-xl" />
+                  <div className="space-y-1">
+                    <div className="h-4 bg-slate-100 dark:bg-white/5 rounded w-40" />
+                    <div className="h-3 bg-slate-100 dark:bg-white/5 rounded w-52" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ---- SURVEYS TAB ---- */}
+      {activeTab === 'surveys' && surveyProps && (
+        <div className="animate-in fade-in duration-300">
+          {!surveyProps.canUseSurveys ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-20 rounded-3xl border border-dashed border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-white/[0.02]">
+              <div className="flex items-center justify-center w-14 h-14 rounded-full bg-zinc-200 dark:bg-white/10">
+                <Lock className="w-7 h-7 text-zinc-500 dark:text-zinc-400" />
+              </div>
+              <div className="text-center max-w-sm">
+                <p className="font-bold text-slate-800 dark:text-white text-lg">Encuestas no disponibles</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Las encuestas están disponibles desde el plan Professional. Actualiza tu plan para acceder.</p>
+              </div>
+              <a href={`/${locale}/admin/billing`} className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-3 py-1.5 rounded-full">
+                {locale === 'es' ? 'Ver planes' : 'View plans'}
+              </a>
+            </div>
+          ) : (
+            <SurveyClient
+              tenantId={surveyProps.tenantId}
+              initialEnabled={surveyProps.initialEnabled}
+              initialQuestions={surveyProps.initialQuestions}
+              initialReviews={surveyProps.initialReviews}
+              canUseAdvanced={surveyProps.canUseAdvanced}
+              locale={surveyProps.locale}
+              slug={surveyProps.slug}
+              totalSurveySent={surveyProps.totalSurveySent}
+            />
+          )}
+        </div>
       )}
 
       {/* MODAL DE HISTORIAL DETALLADO */}

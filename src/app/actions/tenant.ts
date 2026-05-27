@@ -83,6 +83,83 @@ export async function updateHomeServiceTravelTimeAction(tenantId: string, travel
   }
 }
 
+export async function updateHomeServiceSettingsAction(data: {
+  tenantId: string;
+  allowsHomeService: boolean;
+  homeServiceTermsEnabled: boolean;
+  homeServiceTerms?: string;
+  homeServiceLeadDays: number;
+}) {
+  try {
+    await db.update(tenants)
+      .set({
+        allowsHomeService: data.allowsHomeService,
+        homeServiceTermsEnabled: data.homeServiceTermsEnabled,
+        homeServiceTerms: data.homeServiceTerms ?? null,
+        homeServiceLeadDays: data.homeServiceLeadDays,
+        updatedAt: new Date(),
+      })
+      .where(eq(tenants.id, data.tenantId));
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating home service settings:', error);
+    return { success: false };
+  }
+}
+
+export async function updateLoyaltySettingsAction(data: {
+  tenantId: string;
+  loyaltyEnabled: boolean;
+  loyaltyWindowMonths: number;
+  loyaltyFrequentThreshold: number;
+  loyaltyVipCitasThreshold?: number | null;
+  loyaltyVipAmountThreshold?: number | null;
+}) {
+  try {
+    await db.update(tenants)
+      .set({
+        loyaltyEnabled: data.loyaltyEnabled,
+        loyaltyWindowMonths: data.loyaltyWindowMonths,
+        loyaltyFrequentThreshold: data.loyaltyFrequentThreshold,
+        ...(data.loyaltyVipCitasThreshold !== undefined ? { loyaltyVipCitasThreshold: data.loyaltyVipCitasThreshold } : {}),
+        ...(data.loyaltyVipAmountThreshold !== undefined ? { loyaltyVipAmountThreshold: data.loyaltyVipAmountThreshold?.toString() ?? null } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(tenants.id, data.tenantId));
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating loyalty settings:', error);
+    return { success: false };
+  }
+}
+
+export async function updatePointsSettingsAction(data: {
+  tenantId: string;
+  pointsEnabled: boolean;
+  pointsPerDollar: number;
+  pointsExpireEnabled: boolean;
+  pointsExpireMonths: number;
+}) {
+  try {
+    await db.update(tenants)
+      .set({
+        pointsEnabled: data.pointsEnabled,
+        pointsPerDollar: data.pointsPerDollar,
+        pointsExpireEnabled: data.pointsExpireEnabled,
+        pointsExpireMonths: data.pointsExpireMonths,
+        updatedAt: new Date(),
+      })
+      .where(eq(tenants.id, data.tenantId));
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating points settings:', error);
+    return { success: false };
+  }
+}
+
 export async function updatePortalSettingsAction(data: {
   tenantId: string;
   name: string;

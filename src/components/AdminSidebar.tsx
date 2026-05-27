@@ -83,9 +83,9 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
     { name: t('branches'), icon: MapPin, href: `/${locale}/admin/branches`, active: pathname.includes('/branches'), staffVisible: false },
     { name: t('services'), icon: Sparkles, href: `/${locale}/admin/services`, active: pathname.includes('/services') || pathname.includes('/categories'), staffVisible: false },
     { name: t('staff'), icon: Users, href: `/${locale}/admin/staff`, active: pathname.includes('/staff') || pathname.includes('/absences'), staffVisible: true },
-    { name: t('clients'), icon: Contact, href: `/${locale}/admin/clients`, active: pathname.includes('/clients'), staffVisible: false },
+    { name: t('clients'), icon: Contact, href: `/${locale}/admin/clients`, active: pathname.includes('/clients') || pathname.includes('/surveys'), staffVisible: false },
     { name: t('appearance'), icon: Palette, href: `/${locale}/admin/appearance`, active: pathname.includes('/appearance'), staffVisible: false },
-    { name: t('surveys'), icon: ClipboardList, href: `/${locale}/admin/surveys`, active: pathname.includes('/surveys'), staffVisible: false },
+    // { name: t('surveys'), icon: ClipboardList, href: `/${locale}/admin/surveys`, active: pathname.includes('/surveys'), staffVisible: false },
     // { name: t('products'), icon: Package, href: `/${locale}/admin/products`, active: pathname.includes('/products'), staffVisible: false },
   ];
 
