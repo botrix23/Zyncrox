@@ -1,4 +1,8 @@
 import { cookies } from "next/headers";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { cache } from "react";
 
 export type SessionUser = {
   email: string;
@@ -14,6 +18,19 @@ export type SessionUser = {
   impersonatedTenantName?: string;
 };
 
+const checkUserSession = cache(async (userId: string) => {
+  try {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { id: true, isActive: true },
+    });
+    return user || null;
+  } catch (e) {
+    console.error("Error in checkUserSession db query:", e);
+    return null;
+  }
+});
+
 /**
  * Obtiene la sesión actual desde las cookies de forma segura en el servidor.
  */
@@ -22,7 +39,15 @@ export async function getSession(): Promise<SessionUser | null> {
   if (!sessionCookie) return null;
 
   try {
-    return JSON.parse(sessionCookie.value) as SessionUser;
+    const session = JSON.parse(sessionCookie.value) as SessionUser;
+    if (!session.userId) return null;
+
+    const dbUser = await checkUserSession(session.userId);
+    if (!dbUser || !dbUser.isActive) {
+      return null;
+    }
+
+    return session;
   } catch (e) {
     return null;
   }

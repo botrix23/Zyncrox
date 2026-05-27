@@ -345,6 +345,20 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
           plan={adminsTarget.plan}
           recoveryEmail={(adminsTarget as any).recoveryEmail ?? null}
           onClose={() => setAdminsTarget(null)}
+          onAdminsChange={(updatedUsers) => {
+            setTenants(prev => prev.map(ten => {
+              if (ten.id === adminsTarget.id) {
+                const nonAdmins = ten.users?.filter(u => u.role !== 'ADMIN') ?? [];
+                const mergedUsers = [...nonAdmins, ...updatedUsers];
+                return {
+                  ...ten,
+                  users: mergedUsers,
+                  adminCount: updatedUsers.length
+                };
+              }
+              return ten;
+            }));
+          }}
         />
       )}
       {usersTarget && (

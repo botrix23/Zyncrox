@@ -25,12 +25,14 @@ export default function TenantAdminsModal({
   plan,
   recoveryEmail,
   onClose,
+  onAdminsChange,
 }: {
   tenantId: string;
   tenantName: string;
   plan: string;
   recoveryEmail?: string | null;
   onClose: () => void;
+  onAdminsChange?: (users: { id: string; email: string; role: string }[]) => void;
 }) {
   const [admins, setAdmins] = useState<Admin[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,6 +58,12 @@ export default function TenantAdminsModal({
       setLoading(false);
     });
   }, [tenantId]);
+
+  useEffect(() => {
+    if (admins) {
+      onAdminsChange?.(admins.map(a => ({ id: a.id, email: a.email, role: 'ADMIN' })));
+    }
+  }, [admins, onAdminsChange]);
 
   const reload = async () => {
     const data = await getTenantAdminsAction(tenantId);

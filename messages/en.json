@@ -324,7 +324,7 @@
       "inactive": "Inactive",
       "active": "Active",
       "reactivate": "Reactivate",
-      "deactivated": "Deactivated by plan change",
+      "deactivated": "Deactivated",
       "planLimitReactivate": "You are at your plan limit. Deactivate another service to reactivate this one.",
       "toggleError": "Error changing service status.",
       "tabServices": "Services",
