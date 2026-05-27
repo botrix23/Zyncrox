@@ -22,9 +22,11 @@ import { DashboardExport } from '@/components/dashboard/DashboardExport';
 import { canUseFeature } from '@/core/plans';
 import { DashboardTabsClient } from './DashboardTabsClient';
 import { StatsUpgradeWall } from './StatsUpgradeWall';
+import { getTranslations } from 'next-intl/server';
 
 export default async function AdminDashboard({ params: { locale } }: { params: { locale: string } }) {
   const session = await getSession();
+  const t = await getTranslations('Dashboard.dashboard');
 
   let tenantId: string | null = null;
   const isAdmin = session?.role !== 'STAFF';
@@ -218,10 +220,11 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
   // ── STAFF ──────────────────────────────────────────────────────────────────
   type StaffEntry = { name: string; attended: number; cancelled: number; pending: number; absenceCount: number; absenceMinutes: number };
   const staffMap = new Map<string, StaffEntry>();
+  const unassignedLabel = t('unassigned');
 
   for (const b of bookingsThisMonthRaw) {
     const key = b.staffId ?? '__unassigned__';
-    const name = b.staff?.name ?? 'Sin asignar';
+    const name = b.staff?.name ?? unassignedLabel;
     if (!staffMap.has(key)) staffMap.set(key, { name, attended: 0, cancelled: 0, pending: 0, absenceCount: 0, absenceMinutes: 0 });
     const e = staffMap.get(key)!;
     if (b.status === 'FINALIZADA') e.attended++;
@@ -271,7 +274,8 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
 
   const portalUrl = `/${locale}/${tenantData?.slug ?? ''}`;
   const monthLabel = format(now, "MMMM yyyy", { locale: dateLocale });
-  const todayLabel = format(now, "EEEE d 'de' MMMM", { locale: dateLocale });
+  const todayDateFormat = t('todayDateFormat');
+  const todayLabel = format(now, todayDateFormat, { locale: dateLocale });
 
   // Feature gates
   const tenantPlan = tenantData?.plan ?? null;
@@ -309,7 +313,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
             Dashboard — <span className="text-purple-600">{monthLabel}</span>
           </h1>
           <p className="text-slate-500 dark:text-zinc-400 text-sm mt-1 capitalize">
-            {todayLabel} · Generado a las {format(now, 'HH:mm')}
+            {todayLabel} · {t('generatedAt', { time: format(now, 'HH:mm') })}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -325,17 +329,19 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
             <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-black text-amber-800 dark:text-amber-300 uppercase tracking-widest">
-                Citas por asignar
+                {t('unassignedTitle')}
               </p>
               <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
-                {unassignedBookings.length} cita{unassignedBookings.length !== 1 ? 's' : ''} quedaron sin profesional al eliminar un miembro del equipo. Asígnalas o cancélalas manualmente.
+                {unassignedBookings.length === 1
+                  ? t('unassignedDesc_one', { count: unassignedBookings.length })
+                  : t('unassignedDesc_other', { count: unassignedBookings.length })}
               </p>
             </div>
             <Link
               href={`/${locale}/admin/bookings?status=PENDING_ASSIGNMENT`}
               className="ml-auto shrink-0 flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 px-3 py-1.5 rounded-xl transition-colors"
             >
-              Ver todas <ExternalLink className="w-3 h-3" />
+              {t('viewAll')} <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
           <div className="space-y-2">
@@ -358,8 +364,8 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
             <Share2 className="w-4 h-4 text-purple-600" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">Tu enlace de reservas</p>
-            <p className="text-xs text-slate-500 dark:text-zinc-400">Compártelo con tus clientes para recibir citas directamente</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">{t('portalLinkTitle')}</p>
+            <p className="text-xs text-slate-500 dark:text-zinc-400">{t('portalLinkSubtitle')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-1.5 shrink-0">
@@ -380,16 +386,16 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Calendar className="w-5 h-5 text-purple-600 shrink-0" />
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">Resumen del día</h2>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">{t('todaySummaryTitle')}</h2>
         </div>
 
         {/* Contadores de estado */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           {[
-            { label: 'Total citas', value: todayTotal, color: 'from-purple-600 to-indigo-600', Icon: Calendar },
-            { label: 'Confirmadas', value: todayConfirmed, color: 'from-emerald-500 to-teal-600', Icon: CheckCircle },
-            { label: 'Pendientes', value: todayPending, color: 'from-amber-500 to-orange-500', Icon: Clock },
-            { label: 'Canceladas', value: todayCancelled, color: 'from-red-500 to-rose-600', Icon: XCircle },
+            { label: t('statTotalBookings'), value: todayTotal, color: 'from-purple-600 to-indigo-600', Icon: Calendar },
+            { label: t('statConfirmed'), value: todayConfirmed, color: 'from-emerald-500 to-teal-600', Icon: CheckCircle },
+            { label: t('statPending'), value: todayPending, color: 'from-amber-500 to-orange-500', Icon: Clock },
+            { label: t('statCancelled'), value: todayCancelled, color: 'from-red-500 to-rose-600', Icon: XCircle },
           ].map(s => (
             <div key={s.label} className="bg-white dark:bg-zinc-900/50 border border-slate-100 dark:border-white/5 rounded-2xl p-4 shadow-sm">
               <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center mb-3`}>
@@ -407,7 +413,9 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
               <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300">
-                {todayAlerts.length} cita{todayAlerts.length !== 1 ? 's' : ''} pendiente{todayAlerts.length !== 1 ? 's' : ''} en las próximas 2 horas
+                {todayAlerts.length === 1
+                  ? t('pendingAlerts_one', { count: todayAlerts.length })
+                  : t('pendingAlerts_other', { count: todayAlerts.length })}
               </h3>
             </div>
             <div className="space-y-2">
@@ -416,7 +424,9 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
                   <span className="text-sm font-semibold text-slate-900 dark:text-white flex-1 min-w-0 truncate">{a.customer}</span>
                   <span className="text-xs text-slate-500 dark:text-zinc-400">{a.service}</span>
                   <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{a.time}</span>
-                  <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">en {a.minutesLeft} min</span>
+                  <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
+                    {t('inMinutes', { min: a.minutesLeft })}
+                  </span>
                 </div>
               ))}
             </div>
@@ -425,13 +435,12 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
 
         {/* Próximas citas del día */}
         <h3 className="text-sm font-semibold text-slate-500 dark:text-zinc-400 mb-3">
-          Próximas citas del día
+          {t('upcomingToday')}
         </h3>
         {todayUpcoming.length > 0 ? (
           <div className="space-y-2">
-            {/* Cabeceras columnas — solo escritorio */}
             <div className="hidden md:grid md:grid-cols-5 gap-4 px-4 py-2 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-              <span>Cliente</span><span>Servicio</span><span>Hora</span><span>Staff</span><span>Sucursal</span>
+              <span>{t('colClient')}</span><span>{t('colService')}</span><span>{t('colTime')}</span><span>{t('colStaff')}</span><span>{t('colBranch')}</span>
             </div>
             {todayUpcoming.map(b => (
               <div
@@ -442,11 +451,11 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
                 <div className="text-sm text-slate-600 dark:text-zinc-300 truncate">{b.service}</div>
                 <div className="text-sm font-bold text-purple-600 dark:text-purple-400">{b.time}</div>
                 <div className="flex gap-1.5 items-center text-xs text-slate-500 dark:text-zinc-400">
-                  <span className="text-slate-400 dark:text-zinc-600 md:hidden">Staff:</span>
+                  <span className="text-slate-400 dark:text-zinc-600 md:hidden">{t('colStaff')}:</span>
                   <span className="truncate">{b.staffName}</span>
                 </div>
                 <div className="flex gap-1.5 items-center text-xs text-slate-500 dark:text-zinc-400">
-                  <span className="text-slate-400 dark:text-zinc-600 md:hidden">Sucursal:</span>
+                  <span className="text-slate-400 dark:text-zinc-600 md:hidden">{t('colBranch')}:</span>
                   <span className="truncate">{b.branchName}</span>
                 </div>
               </div>
@@ -454,25 +463,25 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
           </div>
         ) : (
           <div className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 rounded-2xl p-8 text-center">
-            <p className="text-sm text-slate-400 dark:text-zinc-500">No hay más citas programadas para hoy</p>
+            <p className="text-sm text-slate-400 dark:text-zinc-500">{t('noBookingsToday')}</p>
           </div>
         )}
       </section>
 
-      {/* ═══ SECCIONES 2 y 3: SEMANA + MES (requiere weeklyMonthlyStats) ═══ */}
+      {/* ═══ SECCIONES 2 y 3: SEMANA + MES ═══ */}
       {canUseWeeklyMonthlyStats ? (
         <>
           {/* ═══ SECCIÓN 2: RESUMEN DE LA SEMANA ═══ */}
           <section>
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="w-5 h-5 text-purple-600 shrink-0" />
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">Resumen de la semana</h2>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">{t('weekSummaryTitle')}</h2>
             </div>
             <div className="bg-white dark:bg-zinc-900/50 border border-slate-100 dark:border-white/5 rounded-2xl p-6 shadow-sm">
               <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
                 <div>
                   <p className="text-3xl font-bold text-slate-900 dark:text-white">{thisWeekTotal}</p>
-                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">citas esta semana</p>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">{t('bookingsThisWeek')}</p>
                 </div>
                 <div className={`inline-flex items-center gap-1 text-sm font-bold px-3 py-1.5 rounded-full ${
                   weekChange > 0
@@ -481,18 +490,18 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
                     ? 'bg-red-500/10 text-red-500'
                     : 'bg-slate-100 dark:bg-white/5 text-slate-500'
                 }`}>
-                  {weekChange > 0 ? '↑' : weekChange < 0 ? '↓' : '—'}&nbsp;{Math.abs(weekChange)}% vs semana anterior
+                  {weekChange > 0 ? '↑' : weekChange < 0 ? '↓' : '—'}&nbsp;{Math.abs(weekChange)}{t('vsLastWeek')}
                 </div>
               </div>
               <WeeklyBarChart thisWeek={thisWeekByDay} prevWeek={prevWeekByDay} />
               <div className="flex items-center gap-5 mt-5 text-xs text-slate-500 dark:text-zinc-400">
                 <span className="flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-sm bg-purple-600 inline-block" />
-                  Esta semana
+                  {t('thisWeekLabel')}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-sm bg-purple-200 dark:bg-purple-900/40 inline-block" />
-                  Semana anterior
+                  {t('lastWeekLabel')}
                 </span>
               </div>
             </div>
@@ -503,16 +512,16 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
             <div className="flex items-center gap-2 mb-4">
               <Users className="w-5 h-5 text-purple-600 shrink-0" />
               <h2 className="text-base font-bold text-slate-900 dark:text-white capitalize">
-                Métricas del mes · {monthLabel}
+                {t('monthMetricsTitle')} · {monthLabel}
               </h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
               {[
-                { label: 'Total citas',      value: monthTotal,          sub: 'en el mes',                                                             alert: false },
-                { label: 'Confirmadas',      value: monthConfirmed,      sub: monthTotal > 0 ? `${Math.round((monthConfirmed / monthTotal) * 100)}% del total` : '0%', alert: false },
-                { label: 'Canceladas',       value: monthCancelled,      sub: `Tasa: ${cancellationRate}%`,                                            alert: cancellationRate > 20 },
-                { label: 'Clientes nuevos',  value: newClientsThisMonth, sub: 'primera cita este mes',                                                 alert: false },
-                { label: 'Clientes activos', value: activeClients60Days, sub: 'últ. 60 días',                                                          alert: false },
+                { label: t('statTotalBookings'), value: monthTotal, sub: t('subInMonth'), alert: false },
+                { label: t('statConfirmed'), value: monthConfirmed, sub: monthTotal > 0 ? `${Math.round((monthConfirmed / monthTotal) * 100)}% ${t('subInMonth')}` : '0%', alert: false },
+                { label: t('statCancelled'), value: monthCancelled, sub: t('subCancellationRate', { rate: cancellationRate }), alert: cancellationRate > 20 },
+                { label: t('statNewClients'), value: newClientsThisMonth, sub: t('subFirstBooking'), alert: false },
+                { label: t('statActiveClients'), value: activeClients60Days, sub: t('subLast60Days'), alert: false },
               ].map(m => (
                 <div
                   key={m.label}
@@ -537,13 +546,13 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Award className="w-5 h-5 text-purple-600 shrink-0" />
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Rendimiento de servicios</h2>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">{t('servicePerformanceTitle')}</h2>
           </div>
           <div className="bg-white dark:bg-zinc-900/50 border border-slate-100 dark:border-white/5 rounded-2xl p-6 shadow-sm">
             {worstServiceCancellation && worstServiceCancellation.rate > 0 && (
               <div className="mb-5 flex items-center gap-2 flex-wrap bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/20 rounded-xl px-4 py-2.5">
                 <XCircle className="w-4 h-4 text-red-500 shrink-0" />
-                <span className="text-xs text-slate-600 dark:text-zinc-400">Mayor tasa de cancelación:</span>
+                <span className="text-xs text-slate-600 dark:text-zinc-400">{t('highestCancellation')}</span>
                 <span className="text-xs font-bold text-red-500">
                   &ldquo;{worstServiceCancellation.name}&rdquo; — {worstServiceCancellation.rate}%
                 </span>
@@ -551,10 +560,10 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
             )}
             <div className="space-y-2">
               <div className="hidden md:flex justify-between px-4 py-2 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-                <span>Servicio</span>
+                <span>{t('colService')}</span>
                 <div className="flex gap-16 pr-2">
-                  <span>Citas</span>
-                  <span>Cancelación</span>
+                  <span>{t('colBookings')}</span>
+                  <span>{t('colCancellation')}</span>
                 </div>
               </div>
               {topServices.map((svc, i) => (
@@ -584,25 +593,25 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
         <section>
           <div className="flex items-center gap-2 mb-4">
             <UserCheck className="w-5 h-5 text-purple-600 shrink-0" />
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Rendimiento de staff</h2>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">{t('staffPerformanceTitle')}</h2>
           </div>
 
           {topStaff && (
             <div className="mb-4 flex items-center gap-3 flex-wrap bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/20 rounded-2xl px-4 py-3">
               <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
-              <span className="text-sm text-slate-600 dark:text-zinc-300">Staff destacado del mes:</span>
+              <span className="text-sm text-slate-600 dark:text-zinc-300">{t('featuredStaff')}</span>
               <span className="text-sm font-bold text-amber-700 dark:text-amber-400">{topStaff.name}</span>
-              <span className="text-xs text-slate-500 dark:text-zinc-400 ml-auto">{topStaff.attended} finalizadas</span>
+              <span className="text-xs text-slate-500 dark:text-zinc-400 ml-auto">{topStaff.attended} {t('finalizedLabel')}</span>
             </div>
           )}
 
           <div className="space-y-2">
             <div className="hidden md:grid md:grid-cols-5 gap-4 px-4 py-2 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-              <span>Staff</span>
-              <span className="text-center">Finalizadas</span>
-              <span className="text-center">Canceladas</span>
-              <span className="text-center">Ausencias</span>
-              <span className="text-center">Horas ausente</span>
+              <span>{t('colStaff')}</span>
+              <span className="text-center">{t('colFinalized')}</span>
+              <span className="text-center">{t('statCancelled')}</span>
+              <span className="text-center">{t('colAbsences')}</span>
+              <span className="text-center">{t('colAbsenceTime')}</span>
             </div>
             {staffPerformance.map((s, i) => (
               <div
@@ -616,19 +625,19 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
                   <span className="font-semibold text-sm text-slate-900 dark:text-white truncate">{s.name}</span>
                 </div>
                 <div className="flex justify-between md:justify-center items-center">
-                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">Finalizadas</span>
+                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">{t('colFinalized')}</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400">{s.attended}</span>
                 </div>
                 <div className="flex justify-between md:justify-center items-center">
-                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">Canceladas</span>
+                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">{t('statCancelled')}</span>
                   <span className={`font-bold ${s.cancelled > 0 ? 'text-red-500' : 'text-slate-300 dark:text-zinc-600'}`}>{s.cancelled}</span>
                 </div>
                 <div className="flex justify-between md:justify-center items-center">
-                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">Ausencias</span>
+                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">{t('colAbsences')}</span>
                   <span className={`font-bold ${s.absenceCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-300 dark:text-zinc-600'}`}>{s.absenceCount}</span>
                 </div>
                 <div className="flex justify-between md:justify-center items-center">
-                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">Horas ausente</span>
+                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">{t('colAbsenceTime')}</span>
                   <span className="text-sm text-slate-600 dark:text-zinc-300">
                     {s.absenceMinutes > 0 ? `${(s.absenceMinutes / 60).toFixed(1)}h` : '—'}
                   </span>
@@ -644,24 +653,24 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Building className="w-5 h-5 text-purple-600 shrink-0" />
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Rendimiento por sucursal</h2>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">{t('branchPerformanceTitle')}</h2>
           </div>
 
           {branchPerformance[0] && (
             <div className="mb-4 flex items-center gap-3 flex-wrap bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/20 rounded-2xl px-4 py-3">
               <Building className="w-4 h-4 text-purple-500 shrink-0" />
-              <span className="text-sm text-slate-600 dark:text-zinc-300">Mayor actividad:</span>
+              <span className="text-sm text-slate-600 dark:text-zinc-300">{t('topBranch')}</span>
               <span className="text-sm font-bold text-purple-700 dark:text-purple-400">{branchPerformance[0].name}</span>
-              <span className="text-xs text-slate-500 dark:text-zinc-400 ml-auto">{branchPerformance[0].bookings} citas este mes</span>
+              <span className="text-xs text-slate-500 dark:text-zinc-400 ml-auto">{branchPerformance[0].bookings} {t('bookingsThisMonth')}</span>
             </div>
           )}
 
           <div className="space-y-2">
             <div className="hidden md:grid md:grid-cols-4 gap-4 px-4 py-2 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-              <span>Sucursal</span>
-              <span className="text-center">Citas</span>
-              <span className="text-center">Ausencias</span>
-              <span className="text-center">Tiempo ausente</span>
+              <span>{t('colBranch')}</span>
+              <span className="text-center">{t('colBookings')}</span>
+              <span className="text-center">{t('colAbsences')}</span>
+              <span className="text-center">{t('colAbsenceTime')}</span>
             </div>
             {branchPerformance.map((br, i) => (
               <div
@@ -670,17 +679,17 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
               >
                 <div className="col-span-2 md:col-span-1 font-semibold text-sm text-slate-900 dark:text-white">{br.name}</div>
                 <div className="flex justify-between md:justify-center items-center">
-                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">Citas</span>
+                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">{t('colBookings')}</span>
                   <span className="font-bold text-purple-600 dark:text-purple-400">{br.bookings}</span>
                 </div>
                 <div className="flex justify-between md:justify-center items-center">
-                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">Ausencias</span>
+                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">{t('colAbsences')}</span>
                   <span className={`font-bold ${br.absenceCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-300 dark:text-zinc-600'}`}>
                     {br.absenceCount}
                   </span>
                 </div>
                 <div className="flex justify-between md:justify-center items-center">
-                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">Tiempo ausente</span>
+                  <span className="text-xs text-slate-400 dark:text-zinc-500 md:hidden">{t('colAbsenceTime')}</span>
                   <span className="text-sm text-slate-500 dark:text-zinc-400">
                     {br.absenceMinutes > 0 ? `${(br.absenceMinutes / 60).toFixed(1)}h` : '—'}
                   </span>
@@ -695,7 +704,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Star className="w-5 h-5 text-purple-600 shrink-0" />
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">Encuestas / Satisfacción</h2>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">{t('surveyTitle')}</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
@@ -712,10 +721,10 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2">calificación promedio del mes</p>
+              <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2">{t('avgRating')}</p>
             </div>
             <div className="mt-4 flex items-center justify-between bg-slate-50 dark:bg-white/5 rounded-xl px-4 py-3">
-              <span className="text-sm text-slate-600 dark:text-zinc-300">Encuestas respondidas</span>
+              <span className="text-sm text-slate-600 dark:text-zinc-300">{t('surveyResponses')}</span>
               <span className="font-bold text-slate-900 dark:text-white tabular-nums">
                 {reviewsThisMonthRaw.length}
                 <span className="text-slate-400 dark:text-zinc-500 font-normal"> / {monthFinalizada}</span>
@@ -725,7 +734,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
 
           {/* Últimas 5 respuestas */}
           <div className="bg-white dark:bg-zinc-900/50 border border-slate-100 dark:border-white/5 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-500 dark:text-zinc-400 mb-4">Últimas respuestas</h3>
+            <h3 className="text-sm font-semibold text-slate-500 dark:text-zinc-400 mb-4">{t('lastResponses')}</h3>
             {lastReviews.length > 0 ? (
               <div className="space-y-4">
                 {lastReviews.map((r, i) => (
@@ -745,7 +754,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-center py-8">
-                <p className="text-sm text-slate-400 dark:text-zinc-500 text-center">Sin encuestas este mes</p>
+                <p className="text-sm text-slate-400 dark:text-zinc-500 text-center">{t('noSurveys')}</p>
               </div>
             )}
           </div>
