@@ -314,7 +314,8 @@
         "badgeGlobal": "GLOBAL",
         "badgeExclusive": "EXCLUSIVE",
         "badgeSimultaneous": "SIMULTANEOUS",
-        "globalServiceNote": "This service is available at all branches since it has no specific branch assignment."
+        "globalServiceNote": "All branches",
+        "specificServiceNote": "Selected branches only"
       },
       "globalServiceNote": "Global service: appears in all branches. To restrict it, edit the service and select specific branches.",
       "durationMinError": "The minimum duration for a service is 15 minutes.",

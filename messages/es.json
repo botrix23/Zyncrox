@@ -314,7 +314,8 @@
         "badgeGlobal": "GLOBAL",
         "badgeExclusive": "EXCLUSIVO",
         "badgeSimultaneous": "SIMULTÁNEO",
-        "globalServiceNote": "Este servicio está disponible en todas las sucursales al no tener asignación específica."
+        "globalServiceNote": "Todas las sucursales",
+        "specificServiceNote": "Sucursales seleccionadas"
       },
       "globalServiceNote": "Servicio global: aparece en todas las sucursales. Si quieres limitarlo, edita el servicio y selecciona sucursales específicas.",
       "durationMinError": "La duración mínima de un servicio es 15 minutos.",
