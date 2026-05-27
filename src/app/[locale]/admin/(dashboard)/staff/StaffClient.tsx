@@ -69,11 +69,15 @@ export default function StaffClient({
   pendingRequests?: any[],
 }) {
   const limit = planLimit ?? 999;
-  const activeStaffCount = initialStaff.filter((m: any) => m.isActive !== false).length;
-  const atLimit = activeStaffCount >= limit;
   const t = useTranslations('Dashboard.staff');
   const isStaffRole = role === 'STAFF';
   type StaffTab = 'team' | 'absences' | 'requests';
+
+  // Local staff list state — avoids relying on router.refresh() for UI updates
+  const [staffList, setStaffList] = useState<any[]>(initialStaff);
+  const activeStaffCount = staffList.filter((m: any) => m.isActive !== false).length;
+  const atLimit = activeStaffCount >= limit;
+
   const [activeMainTab, setActiveMainTab] = useState<StaffTab>(role === 'STAFF' ? 'absences' : 'team');
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,7 +113,7 @@ export default function StaffClient({
     await updateShowStaffSelectionAction(tenantId, value);
   };
 
-  const filteredStaff = initialStaff.filter(s =>
+  const filteredStaff = staffList.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -253,7 +257,29 @@ export default function StaffClient({
 
     if (result.success) {
       setIsModalOpen(false);
-      router.refresh();
+      if (editingMember) {
+        // Optimistic local update — no need to wait for router.refresh()
+        setStaffList(prev => prev.map(m =>
+          m.id === editingMember.id
+            ? {
+                ...m,
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+                emergencyContactName: formData.emergencyContactName,
+                emergencyContactPhone: formData.emergencyContactPhone,
+                inheritBranchHours: formData.inheritBranchHours,
+                allowsHomeService: formData.allowsHomeService,
+                branchId: finalBranchId,
+                assignments: processedAssignments,
+                categoryIds: formData.categoryIds,
+              }
+            : m
+        ));
+      } else {
+        // New member: refresh to get the ID and full data from DB
+        router.refresh();
+      }
     } else if (result.error === 'PLAN_LIMIT_EXCEEDED') {
       alert(`Límite del plan ${plan ?? 'BASIC'} alcanzado (${result.current}/${result.limit} empleados). Actualiza tu plan para agregar más.`);
     } else {
@@ -277,7 +303,9 @@ export default function StaffClient({
       alert(result.error);
       return;
     }
-    router.refresh();
+    setStaffList(prev => prev.map(m =>
+      m.id === id ? { ...m, isActive: !currentlyActive } : m
+    ));
   };
 
   const confirmDeleteStaff = async () => {
@@ -285,7 +313,7 @@ export default function StaffClient({
     const { id } = deleteStaffTarget;
     setDeleteStaffTarget(null);
     await deleteStaffAction(id, tenantId);
-    router.refresh();
+    setStaffList(prev => prev.filter(m => m.id !== id));
   };
 
   useEffect(() => {
