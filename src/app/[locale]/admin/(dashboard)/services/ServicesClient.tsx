@@ -572,14 +572,17 @@ export default function ServicesClient({
                   ))}
                 </div>
                 {!service.isExclusive && (
-                  <div className="flex items-start gap-2 px-3 py-2 mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/40 rounded-xl text-blue-700 dark:text-blue-400">
-                    <span className="shrink-0 mt-0.5 text-base leading-none">ℹ️</span>
-                    <p className="text-xs font-medium leading-snug">
-                      {(service.branches || []).length === 0
-                        ? t('form.globalServiceNote')
-                        : t('form.specificServiceNote')}
-                    </p>
-                  </div>
+                  (service.branches || []).length === 0 ? (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <Info className="w-3.5 h-3.5 text-slate-400 cursor-help transition-colors hover:text-purple-500 shrink-0" />
+                      <p className="text-xs font-bold text-blue-500 dark:text-blue-400">{t('form.globalServiceNote')}</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <Info className="w-3.5 h-3.5 text-slate-400 cursor-help transition-colors hover:text-purple-500 shrink-0" />
+                      <p className="text-xs font-bold text-emerald-500 dark:text-emerald-400">{t('form.specificServiceNote')}</p>
+                    </div>
+                  )
                 )}
                 {/* Inclusiones / exclusiones */}
                 {((service.includes?.length > 0) || (service.excludes?.length > 0)) && (
@@ -709,14 +712,17 @@ export default function ServicesClient({
                         ))}
                       </div>
                       {!service.isExclusive && (
-                        <div className="flex items-start gap-2 px-3 py-2 mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/40 rounded-xl text-blue-700 dark:text-blue-400 max-w-md">
-                          <span className="shrink-0 mt-0.5 text-base leading-none">ℹ️</span>
-                          <p className="text-xs font-medium leading-snug">
-                            {(service.branches || []).length === 0
-                              ? t('form.globalServiceNote')
-                              : t('form.specificServiceNote')}
-                          </p>
-                        </div>
+                        (service.branches || []).length === 0 ? (
+                          <div className="flex items-center gap-1.5 mt-2">
+                            <Info className="w-3.5 h-3.5 text-slate-400 cursor-help transition-colors hover:text-purple-500 shrink-0" />
+                            <p className="text-xs font-bold text-blue-500 dark:text-blue-400">{t('form.globalServiceNote')}</p>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 mt-2">
+                            <Info className="w-3.5 h-3.5 text-slate-400 cursor-help transition-colors hover:text-purple-500 shrink-0" />
+                            <p className="text-xs font-bold text-emerald-500 dark:text-emerald-400">{t('form.specificServiceNote')}</p>
+                          </div>
+                        )
                       )}
                     </div>
                   </div>

@@ -87,6 +87,10 @@ export default function BookingsClient({
   const plan: string = (tenantSettings as any)?.plan ?? 'BASIC';
   const loyaltyEnabled: boolean = (tenantSettings as any)?.loyaltyEnabled ?? false;
 
+  // Local state so optimistic updates and server refreshes both work
+  const [bookingsList, setBookingsList] = useState<any[]>(initialBookings);
+  useEffect(() => { setBookingsList(initialBookings); }, [initialBookings]);
+
   // Returns loyalty tier for a booking, gated by plan and switch
   const getBookingTier = (booking: any): 'NORMAL' | 'FREQUENT' | 'VIP' => {
     if (!loyaltyEnabled || plan === 'BASIC') return 'NORMAL';
@@ -146,7 +150,7 @@ export default function BookingsClient({
   const homeServiceBufferCtx = (() => {
     const map = new Map<string, { showPre: boolean; showPost: boolean }>();
     const groups = new Map<string, any[]>();
-    initialBookings.forEach(b => {
+    bookingsList.forEach(b => {
       if (!b.isHomeService) return;
       const key = b.sessionId || b.id;
       if (!groups.has(key)) groups.set(key, []);
@@ -542,7 +546,7 @@ export default function BookingsClient({
 
   const handleOpenCreate = () => setIsWidgetModalOpen(true);
 
-  const filteredBookings = initialBookings.filter(b => {
+  const filteredBookings = bookingsList.filter(b => {
     const matchesSearch = b.customerName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = activeTab === "Todas" || 
       (activeTab === "Confirmadas" && b.status === "CONFIRMED") ||
@@ -662,6 +666,14 @@ export default function BookingsClient({
 
       if (result.success) {
         if (editingBooking) {
+          // Optimistic update: reflect the edited booking immediately
+          const start = parse(`${formData.date} ${formData.time}`, "yyyy-MM-dd HH:mm", new Date());
+          const end = addMinutes(start, formData.durationMinutes);
+          setBookingsList(prev => prev.map(b =>
+            b.id === editingBooking.id
+              ? { ...b, ...formData, startTime: start, endTime: end }
+              : b
+          ));
           setIsEditModalOpen(false);
           setEditingBooking(null);
         } else {
@@ -692,6 +704,7 @@ export default function BookingsClient({
     setDeleteBookingId(null);
     const result = await deleteBookingAction(id, tenantId);
     if (result.success) {
+      setBookingsList(prev => prev.filter(b => b.id !== id));
       setIsEditModalOpen(false);
       setEditingBooking(null);
       router.refresh();
@@ -1003,7 +1016,7 @@ export default function BookingsClient({
                   ))}
                   <div className="absolute inset-0 p-4">
                     {(() => {
-                      const dayEvents = initialBookings.filter(b => isSameDay(new Date(b.startTime), calendarDate));
+                      const dayEvents = bookingsList.filter(b => isSameDay(new Date(b.startTime), calendarDate));
                       const layoutEvents = getEventLayout(dayEvents);
                       
                       return layoutEvents.flatMap((booking: any) => {
@@ -1167,7 +1180,7 @@ export default function BookingsClient({
 
                         {/* Booking blocks */}
                         {weekDays.map((day, di) => {
-                          const dayBookings = initialBookings.filter(b => isSameDay(new Date(b.startTime), day));
+                          const dayBookings = bookingsList.filter(b => isSameDay(new Date(b.startTime), day));
                           const layoutEvents = getEventLayout(dayBookings);
                           
                           return layoutEvents.flatMap((booking: any) => {
