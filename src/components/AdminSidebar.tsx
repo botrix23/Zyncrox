@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Settings,
 } from 'lucide-react';
 import { getPlanDisplayName } from '@/core/plans';
 import Link from 'next/link';
@@ -85,6 +86,7 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
     { name: t('staff'), icon: Users, href: `/${locale}/admin/staff`, active: pathname.includes('/staff') || pathname.includes('/absences'), staffVisible: true },
     { name: t('clients'), icon: Contact, href: `/${locale}/admin/clients`, active: pathname.includes('/clients') || pathname.includes('/surveys'), staffVisible: false },
     { name: t('appearance'), icon: Palette, href: `/${locale}/admin/appearance`, active: pathname.includes('/appearance'), staffVisible: false },
+    { name: t('settings'), icon: Settings, href: `/${locale}/admin/settings`, active: pathname.includes('/settings'), staffVisible: false },
     // { name: t('surveys'), icon: ClipboardList, href: `/${locale}/admin/surveys`, active: pathname.includes('/surveys'), staffVisible: false },
     // { name: t('products'), icon: Package, href: `/${locale}/admin/products`, active: pathname.includes('/products'), staffVisible: false },
   ];

@@ -684,7 +684,22 @@
       "confirmDeactivateDesc": "Deactivate {name}? They will lose access to the system.",
       "confirmTransferTitle": "Transfer ownership",
       "confirmTransferDesc": "Transfer account ownership to {name}? They will become the new owner and you will lose that role.",
-      "errorTransfer": "Error transferring ownership. Please try again."
+      "errorTransfer": "Error transferring ownership. Please try again.",
+      "generalTitle": "General",
+      "generalSubtitle": "Timezone and business settings",
+      "timezoneLabel": "Business timezone",
+      "timezoneHint": "Current zone",
+      "comunicacionTitle": "Communication",
+      "comunicacionSubtitle": "Emails and messaging",
+      "emailLocaleLabel": "Email language",
+      "emailLocaleHint": "Confirmation, reminder and cancellation emails will be sent in this language.",
+      "emailTemplateLabel": "Email body template",
+      "emailTemplatePlaceholder": "Write a custom message for the confirmation email...",
+      "emailVariables": "Available variables",
+      "whatsappLabel": "WhatsApp number",
+      "whatsappHint": "Displayed in confirmation emails so the client can contact you.",
+      "savedSuccess": "Changes saved successfully!",
+      "savedError": "Error saving. Please try again."
     },
     "portal": {
       "title": "My web portal",
@@ -718,7 +733,8 @@
         "cover": "Cover Image",
         "color": "Primary Color",
         "email": "Email Notifications",
-        "fidelization": "Loyalty & Rewards"
+        "fidelization": "Loyalty & Rewards",
+        "widgetConfig": "Widget Configuration"
       },
       "form": {
         "businessName": "Commercial Name",
@@ -778,7 +794,9 @@
         "vipThresholdLabel": "Number of required appointments",
         "vipThresholdHint": "Customers who reach this number of appointments will receive a special status in their history.",
         "save": "Save changes",
-        "saving": "Saving..."
+        "saving": "Saving...",
+        "contactEmailLabel": "Contact email",
+        "contactEmailHint": "Displayed in client emails so they can reach you. Leave empty to hide it."
       },
       "colors": {
         "purple": "Purple",

@@ -684,7 +684,22 @@
       "confirmDeactivateDesc": "¿Desactivar a {name}? Perderá acceso al sistema.",
       "confirmTransferTitle": "Ceder titularidad",
       "confirmTransferDesc": "¿Ceder la titularidad de la cuenta a {name}? Pasará a ser el propietario y tú perderás ese rol.",
-      "errorTransfer": "Error al transferir la titularidad. Intenta de nuevo."
+      "errorTransfer": "Error al transferir la titularidad. Intenta de nuevo.",
+      "generalTitle": "General",
+      "generalSubtitle": "Zona horaria y ajustes del negocio",
+      "timezoneLabel": "Zona horaria del negocio",
+      "timezoneHint": "Zona actual",
+      "comunicacionTitle": "Comunicación",
+      "comunicacionSubtitle": "Emails y mensajería",
+      "emailLocaleLabel": "Idioma de los correos",
+      "emailLocaleHint": "Los correos de confirmación, recordatorio y cancelación se enviarán en este idioma.",
+      "emailTemplateLabel": "Plantilla del cuerpo del email",
+      "emailTemplatePlaceholder": "Escribe un mensaje personalizado para el email de confirmación...",
+      "emailVariables": "Variables disponibles",
+      "whatsappLabel": "Número de WhatsApp",
+      "whatsappHint": "Se muestra en los correos de confirmación para que el cliente pueda contactarte.",
+      "savedSuccess": "¡Cambios guardados correctamente!",
+      "savedError": "Error al guardar. Intenta de nuevo."
     },
     "portal": {
       "title": "Mi portal web",
@@ -718,7 +733,8 @@
         "cover": "Imagen de portada",
         "color": "Color primario",
         "email": "Notificaciones por Email",
-        "fidelization": "Fidelización y compensaciones"
+        "fidelization": "Fidelización y compensaciones",
+        "widgetConfig": "Configuración del widget"
       },
       "form": {
         "businessName": "Nombre comercial",
@@ -778,7 +794,9 @@
         "vipThresholdLabel": "Número de citas requeridas",
         "vipThresholdHint": "Los clientes que alcancen este número de citas recibirán un estatus especial en su historial.",
         "save": "Guardar cambios",
-        "saving": "Guardando..."
+        "saving": "Guardando...",
+        "contactEmailLabel": "Correo de contacto",
+        "contactEmailHint": "Se mostrará en los correos al cliente para que pueda contactarte. Déjalo vacío para ocultarlo."
       },
       "colors": {
         "purple": "Púrpura",

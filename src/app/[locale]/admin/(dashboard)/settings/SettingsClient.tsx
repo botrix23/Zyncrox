@@ -2,8 +2,16 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Users, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, AlertCircle, ShieldCheck, UserCog, LifeBuoy, Save, Crown, X, AlertTriangle } from 'lucide-react';
-import { getAdminsAction, createAdminAction, toggleAdminAction, deleteAdminAction, updateRecoveryEmailAction, transferOwnershipAction } from '@/app/actions/adminUsers';
+import {
+  Users, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, AlertCircle,
+  ShieldCheck, UserCog, LifeBuoy, Save, Crown, X, AlertTriangle, Globe,
+  Mail, MessageSquare, CheckCircle2, Info,
+} from 'lucide-react';
+import {
+  getAdminsAction, createAdminAction, toggleAdminAction, deleteAdminAction,
+  updateRecoveryEmailAction, transferOwnershipAction,
+} from '@/app/actions/adminUsers';
+import { updateConfiguracionAction } from '@/app/actions/tenant';
 
 type Admin = Awaited<ReturnType<typeof getAdminsAction>>[number];
 
@@ -14,6 +22,54 @@ type ConfirmState =
   | null;
 
 const ADMIN_LIMITS: Record<string, number> = { BASIC: 1, PROFESSIONAL: 2, ENTERPRISE: Infinity };
+
+const TIMEZONES = [
+  { group: 'América Central', options: [
+    { value: 'America/El_Salvador', label: 'El Salvador, Guatemala, Honduras (GMT-6)' },
+    { value: 'America/Costa_Rica',  label: 'Costa Rica, Nicaragua (GMT-6)' },
+    { value: 'America/Panama',      label: 'Panamá (GMT-5)' },
+    { value: 'America/Mexico_City', label: 'México Centro (GMT-6)' },
+    { value: 'America/Monterrey',   label: 'México Norte (GMT-6)' },
+    { value: 'America/Tijuana',     label: 'México Noroeste (GMT-7)' },
+  ]},
+  { group: 'América del Sur', options: [
+    { value: 'America/Bogota',      label: 'Colombia, Ecuador, Perú (GMT-5)' },
+    { value: 'America/Caracas',     label: 'Venezuela (GMT-4)' },
+    { value: 'America/La_Paz',      label: 'Bolivia (GMT-4)' },
+    { value: 'America/Santiago',    label: 'Chile (GMT-4/-3)' },
+    { value: 'America/Argentina/Buenos_Aires', label: 'Argentina, Uruguay (GMT-3)' },
+    { value: 'America/Sao_Paulo',   label: 'Brasil Este (GMT-3)' },
+    { value: 'America/Manaus',      label: 'Brasil Oeste (GMT-4)' },
+  ]},
+  { group: 'América del Norte', options: [
+    { value: 'America/New_York',    label: 'Este de EE.UU. (GMT-5/-4)' },
+    { value: 'America/Chicago',     label: 'Centro de EE.UU. (GMT-6/-5)' },
+    { value: 'America/Denver',      label: 'Montaña de EE.UU. (GMT-7/-6)' },
+    { value: 'America/Los_Angeles', label: 'Pacífico de EE.UU. (GMT-8/-7)' },
+    { value: 'America/Anchorage',   label: 'Alaska (GMT-9/-8)' },
+    { value: 'Pacific/Honolulu',    label: 'Hawái (GMT-10)' },
+  ]},
+  { group: 'Caribe', options: [
+    { value: 'America/Puerto_Rico', label: 'Puerto Rico, Rep. Dominicana (GMT-4)' },
+    { value: 'America/Havana',      label: 'Cuba (GMT-5/-4)' },
+    { value: 'America/Jamaica',     label: 'Jamaica (GMT-5)' },
+  ]},
+  { group: 'Europa', options: [
+    { value: 'UTC',                 label: 'UTC (GMT+0)' },
+    { value: 'Europe/London',       label: 'Londres (GMT+0/+1)' },
+    { value: 'Europe/Madrid',       label: 'España, Francia (GMT+1/+2)' },
+    { value: 'Europe/Berlin',       label: 'Alemania, Italia (GMT+1/+2)' },
+    { value: 'Europe/Moscow',       label: 'Moscú (GMT+3)' },
+  ]},
+  { group: 'Asia / Pacífico', options: [
+    { value: 'Asia/Dubai',          label: 'Dubai (GMT+4)' },
+    { value: 'Asia/Kolkata',        label: 'India (GMT+5:30)' },
+    { value: 'Asia/Bangkok',        label: 'Tailandia, Vietnam (GMT+7)' },
+    { value: 'Asia/Singapore',      label: 'Singapur, Malasia (GMT+8)' },
+    { value: 'Asia/Tokyo',          label: 'Japón (GMT+9)' },
+    { value: 'Australia/Sydney',    label: 'Sídney (GMT+10/+11)' },
+  ]},
+];
 
 function ConfirmModal({
   state,
@@ -30,7 +86,6 @@ function ConfirmModal({
 }) {
   const isDelete = state.type === 'delete';
   const isTransfer = state.type === 'transfer';
-  const isToggle = state.type === 'toggle';
 
   const title = isDelete
     ? t('confirmDeleteTitle')
@@ -79,7 +134,9 @@ function ConfirmModal({
               disabled={loading}
               className={confirmCls}
             >
-              {loading ? <span className="flex justify-center"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /></span> : t('confirm')}
+              {loading
+                ? <span className="flex justify-center"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /></span>
+                : t('confirm')}
             </button>
           </div>
         </div>
@@ -93,14 +150,36 @@ export default function SettingsClient({
   plan,
   currentUserId,
   initialRecoveryEmail,
+  tenantId,
+  initialTimezone,
+  initialEmailLocale,
+  initialEmailBodyTemplate,
+  initialWhatsappNumber,
+  initialWaMessageTemplate,
 }: {
   initialAdmins: Admin[];
   plan: string;
   currentUserId: string;
   initialRecoveryEmail: string | null;
+  tenantId: string;
+  initialTimezone: string;
+  initialEmailLocale: string;
+  initialEmailBodyTemplate: string;
+  initialWhatsappNumber: string;
+  initialWaMessageTemplate: string;
 }) {
   const t = useTranslations('Dashboard.settings');
 
+  // ── Configuración general ──────────────────────────────────────────────────
+  const [timezone, setTimezone] = useState(initialTimezone);
+  const [emailLocale, setEmailLocale] = useState(initialEmailLocale);
+  const [emailBodyTemplate, setEmailBodyTemplate] = useState(initialEmailBodyTemplate);
+  const [whatsappNumber, setWhatsappNumber] = useState(initialWhatsappNumber);
+  const [waMessageTemplate, setWaMessageTemplate] = useState(initialWaMessageTemplate);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [configMessage, setConfigMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // ── Administradores ────────────────────────────────────────────────────────
   const [admins, setAdmins] = useState(initialAdmins);
   const [recoveryEmail, setRecoveryEmail] = useState(initialRecoveryEmail ?? '');
   const [savingRecovery, setSavingRecovery] = useState(false);
@@ -121,6 +200,26 @@ export default function SettingsClient({
   const canAdd = activeCount < limit;
   const planLimitLabel = limit === Infinity ? t('planLimitUnlimited') : `${limit} admin${limit !== 1 ? 's' : ''}`;
   const currentUserIsOwner = admins.find(a => a.id === currentUserId)?.isOwner ?? false;
+
+  const handleSaveConfig = async () => {
+    setSavingConfig(true);
+    setConfigMessage(null);
+    const res = await updateConfiguracionAction({
+      tenantId,
+      timezone,
+      emailLocale,
+      emailBodyTemplate: emailBodyTemplate || null,
+      whatsappNumber: whatsappNumber || null,
+      waMessageTemplate: waMessageTemplate || null,
+    });
+    if (res.success) {
+      setConfigMessage({ type: 'success', text: t('savedSuccess') });
+      setTimeout(() => setConfigMessage(null), 3000);
+    } else {
+      setConfigMessage({ type: 'error', text: t('savedError') });
+    }
+    setSavingConfig(false);
+  };
 
   const handleSaveRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,7 +303,7 @@ export default function SettingsClient({
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-8">
       {confirmState && (
         <ConfirmModal
           state={confirmState}
@@ -223,163 +322,295 @@ export default function SettingsClient({
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{t('subtitle')}</p>
       </div>
 
-      {/* Sección admins */}
-      <div className="bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/5 rounded-3xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-purple-500/10 rounded-xl flex items-center justify-center">
-              <Users className="w-4 h-4 text-purple-500" />
-            </div>
-            <div>
-              <h2 className="font-black text-zinc-900 dark:text-white text-sm">{t('adminsTitle')}</h2>
-              <p className="text-xs text-zinc-500">{t('adminsSubtitle', { plan, limit: planLimitLabel })}</p>
-            </div>
-          </div>
-          <span className={`text-xs font-bold px-2 py-1 rounded-full ${activeCount >= limit ? 'bg-rose-500/10 text-rose-500' : 'bg-zinc-100 dark:bg-white/5 text-zinc-500 dark:text-zinc-400'}`}>
-            {limit !== Infinity ? t('activeCountWithLimit', { count: activeCount, limit }) : t('activeCountPlural', { count: activeCount })}
-          </span>
-        </div>
+      {/* ── Sección: General ──────────────────────────────────────────────── */}
+      <div className="space-y-4">
+        <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+          <Globe className="w-4 h-4 text-blue-500" />
+          {t('generalTitle')}
+        </h2>
 
-        <div className="p-6 space-y-4">
-          {tempPassword && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 space-y-2">
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                <ShieldCheck className="w-4 h-4" />
-                {t('tempPasswordBanner')}
-              </div>
-              <div className="flex items-center gap-2 bg-white dark:bg-black/30 rounded-xl px-3 py-2">
-                <code className="flex-1 text-sm font-mono text-zinc-800 dark:text-zinc-200 select-all">{tempPassword}</code>
-                <button onClick={handleCopy} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
-                  {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                </button>
-              </div>
-              <p className="text-xs text-emerald-600 dark:text-emerald-500">{t('tempPasswordShare')}</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-xs font-bold">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
-            </div>
-          )}
-
+        <div className="bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/5 rounded-3xl p-6 space-y-4">
           <div className="space-y-2">
-            {admins.map(admin => (
-              <div key={admin.id} className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-white/5 rounded-2xl">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black shrink-0 ${admin.isActive ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' : 'bg-zinc-200 dark:bg-white/10 text-zinc-400'}`}>
-                  {admin.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className={`font-bold text-sm truncate ${admin.isActive ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 line-through'}`}>
-                      {admin.name}
-                    </p>
-                    {admin.id === currentUserId && (
-                      <span className="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold px-1.5 py-0.5 rounded-md shrink-0">{t('you')}</span>
-                    )}
-                    {admin.isOwner && (
-                      <span className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded-md shrink-0 flex items-center gap-1">
-                        <Crown className="w-3 h-3" />{t('owner')}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-500 truncate">{admin.email}</p>
-                </div>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${admin.isActive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-white/10 text-zinc-400'}`}>
-                  {admin.isActive ? t('active') : t('inactive')}
-                </span>
-
-                {/* Acciones: solo sobre admins no-owner, y solo si quien mira es el owner */}
-                {!admin.isOwner && currentUserIsOwner && (
-                  <>
-                    {/* Ceder titularidad */}
-                    <button
-                      onClick={() => setConfirmState({ type: 'transfer', admin })}
-                      disabled={actionId === admin.id}
-                      title={t('transferOwnership')}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all disabled:opacity-40"
-                    >
-                      <Crown className="w-5 h-5" />
-                    </button>
-                    {/* Toggle activo/inactivo */}
-                    <button
-                      onClick={() => setConfirmState({ type: 'toggle', admin, newActive: !admin.isActive })}
-                      disabled={actionId === admin.id}
-                      title={admin.isActive ? t('deactivate') : t('activate')}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all disabled:opacity-40"
-                    >
-                      {admin.isActive ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-                    </button>
-                    {/* Eliminar */}
-                    <button
-                      onClick={() => setConfirmState({ type: 'delete', admin })}
-                      disabled={actionId === admin.id}
-                      title={t('delete')}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all disabled:opacity-40"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </>
-                )}
-              </div>
-            ))}
+            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+              {t('timezoneLabel')}
+            </label>
+            <select
+              value={timezone}
+              onChange={e => setTimezone(e.target.value)}
+              className="w-full p-3 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-zinc-900 dark:text-white"
+            >
+              {TIMEZONES.map(group => (
+                <optgroup key={group.group} label={group.group}>
+                  {group.options.map(tz => (
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              {t('timezoneHint')}: <span className="font-mono font-bold text-zinc-600 dark:text-zinc-300">{timezone}</span>
+            </p>
           </div>
-
-          {showCreate ? (
-            <form onSubmit={handleCreate} className="space-y-3 border border-purple-500/20 bg-purple-500/5 rounded-2xl p-4">
-              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{t('newAdminTitle')}</p>
-              <input
-                type="text"
-                placeholder={t('namePlaceholder')}
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                required
-                className="w-full bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-zinc-900 dark:text-white outline-none focus:border-purple-500/50 transition-colors placeholder:text-zinc-400"
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={newEmail}
-                onChange={e => setNewEmail(e.target.value)}
-                required
-                className="w-full bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-zinc-900 dark:text-white outline-none focus:border-purple-500/50 transition-colors placeholder:text-zinc-400"
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => { setShowCreate(false); setError(''); }}
-                  className="flex-1 py-2.5 rounded-xl bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-300 font-bold text-sm hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors"
-                >
-                  {t('cancel')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  {creating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('createAdmin')}
-                </button>
-              </div>
-            </form>
-          ) : (
-            currentUserIsOwner && (
-              <button
-                onClick={() => { setShowCreate(true); setError(''); setTempPassword(null); }}
-                disabled={!canAdd}
-                title={!canAdd ? t('errorPlanLimit', { plan, limit }) : ''}
-                className="w-full py-3 rounded-2xl border border-dashed border-zinc-300 dark:border-white/10 text-zinc-500 dark:text-zinc-400 hover:border-purple-500/50 hover:text-purple-500 hover:bg-purple-500/5 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-sm flex items-center justify-center gap-2 transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                {t('addAdmin')}
-                {!canAdd && <span className="text-xs font-normal opacity-70">{t('planLimitReached')}</span>}
-              </button>
-            )
-          )}
         </div>
       </div>
 
-      {/* Sección contacto de recuperación */}
+      {/* ── Sección: Comunicación ─────────────────────────────────────────── */}
+      <div className="space-y-4">
+        <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+          <Mail className="w-4 h-4 text-blue-500" />
+          {t('comunicacionTitle')}
+        </h2>
+
+        <div className="bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/5 rounded-3xl p-6 space-y-5">
+          {/* Idioma de correos */}
+          <div className="space-y-2">
+            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+              {t('emailLocaleLabel')}
+            </label>
+            <div className="flex gap-3">
+              {[{ value: 'es', label: '🇪🇸 Español' }, { value: 'en', label: '🇺🇸 English' }].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setEmailLocale(opt.value)}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${
+                    emailLocale === opt.value
+                      ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                      : 'border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/10'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500">
+              {t('emailLocaleHint')}
+            </p>
+          </div>
+
+          {/* WhatsApp de contacto */}
+          <div className="space-y-2">
+            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+              {t('whatsappLabel')}
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
+                <MessageSquare className="w-4 h-4" />
+              </div>
+              <input
+                type="tel"
+                value={whatsappNumber}
+                onChange={e => setWhatsappNumber(e.target.value)}
+                placeholder="Ej: 50370000000"
+                className="w-full pl-10 p-3 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-zinc-900 dark:text-white"
+              />
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500">{t('whatsappHint')}</p>
+          </div>
+
+          {/* Plantilla de email */}
+          <div className="space-y-2">
+            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+              {t('emailTemplateLabel')}
+            </label>
+            <textarea
+              value={emailBodyTemplate}
+              onChange={e => setEmailBodyTemplate(e.target.value)}
+              placeholder={t('emailTemplatePlaceholder')}
+              className="w-full min-h-[120px] p-4 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all resize-none text-sm text-zinc-900 dark:text-white"
+            />
+            <div className="bg-blue-500/5 p-3 rounded-xl border border-blue-500/10">
+              <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-widest">
+                {t('emailVariables')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {['{cliente}', '{servicio}', '{fecha}', '{hora}', '{negocio}', '{sucursal}'].map(v => (
+                  <code key={v} className="text-xs bg-white dark:bg-white/5 text-blue-500 px-2 py-1 rounded border border-blue-500/20">{v}</code>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Status + Save button */}
+        {configMessage && (
+          <div className={`p-3 rounded-2xl flex items-center gap-3 text-sm font-bold ${
+            configMessage.type === 'success'
+              ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+              : 'bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400'
+          }`}>
+            {configMessage.type === 'success'
+              ? <CheckCircle2 className="w-4 h-4 shrink-0" />
+              : <AlertCircle className="w-4 h-4 shrink-0" />}
+            {configMessage.text}
+          </div>
+        )}
+
+        <button
+          onClick={handleSaveConfig}
+          disabled={savingConfig}
+          className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20 text-sm"
+        >
+          {savingConfig
+            ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            : <Save className="w-4 h-4" />}
+          {t('save')}
+        </button>
+      </div>
+
+      {/* ── Sección: Administradores ──────────────────────────────────────── */}
+      <div className="space-y-4">
+        <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+          <Users className="w-4 h-4 text-purple-500" />
+          {t('adminsTitle')}
+        </h2>
+
+        <div className="bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/5 rounded-3xl overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-white/5">
+            <p className="text-xs text-zinc-500">{t('adminsSubtitle', { plan, limit: planLimitLabel })}</p>
+            <span className={`text-xs font-bold px-2 py-1 rounded-full ${activeCount >= limit ? 'bg-rose-500/10 text-rose-500' : 'bg-zinc-100 dark:bg-white/5 text-zinc-500 dark:text-zinc-400'}`}>
+              {limit !== Infinity ? t('activeCountWithLimit', { count: activeCount, limit }) : t('activeCountPlural', { count: activeCount })}
+            </span>
+          </div>
+
+          <div className="p-6 space-y-4">
+            {tempPassword && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                  <ShieldCheck className="w-4 h-4" />
+                  {t('tempPasswordBanner')}
+                </div>
+                <div className="flex items-center gap-2 bg-white dark:bg-black/30 rounded-xl px-3 py-2">
+                  <code className="flex-1 text-sm font-mono text-zinc-800 dark:text-zinc-200 select-all">{tempPassword}</code>
+                  <button onClick={handleCopy} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+                    {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-emerald-600 dark:text-emerald-500">{t('tempPasswordShare')}</p>
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-xs font-bold">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {admins.map(admin => (
+                <div key={admin.id} className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-white/5 rounded-2xl">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black shrink-0 ${admin.isActive ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' : 'bg-zinc-200 dark:bg-white/10 text-zinc-400'}`}>
+                    {admin.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={`font-bold text-sm truncate ${admin.isActive ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 line-through'}`}>
+                        {admin.name}
+                      </p>
+                      {admin.id === currentUserId && (
+                        <span className="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold px-1.5 py-0.5 rounded-md shrink-0">{t('you')}</span>
+                      )}
+                      {admin.isOwner && (
+                        <span className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded-md shrink-0 flex items-center gap-1">
+                          <Crown className="w-3 h-3" />{t('owner')}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-500 truncate">{admin.email}</p>
+                  </div>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${admin.isActive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-white/10 text-zinc-400'}`}>
+                    {admin.isActive ? t('active') : t('inactive')}
+                  </span>
+
+                  {!admin.isOwner && currentUserIsOwner && (
+                    <>
+                      <button
+                        onClick={() => setConfirmState({ type: 'transfer', admin })}
+                        disabled={actionId === admin.id}
+                        title={t('transferOwnership')}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all disabled:opacity-40"
+                      >
+                        <Crown className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => setConfirmState({ type: 'toggle', admin, newActive: !admin.isActive })}
+                        disabled={actionId === admin.id}
+                        title={admin.isActive ? t('deactivate') : t('activate')}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all disabled:opacity-40"
+                      >
+                        {admin.isActive ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                      </button>
+                      <button
+                        onClick={() => setConfirmState({ type: 'delete', admin })}
+                        disabled={actionId === admin.id}
+                        title={t('delete')}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all disabled:opacity-40"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {showCreate ? (
+              <form onSubmit={handleCreate} className="space-y-3 border border-purple-500/20 bg-purple-500/5 rounded-2xl p-4">
+                <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{t('newAdminTitle')}</p>
+                <input
+                  type="text"
+                  placeholder={t('namePlaceholder')}
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  required
+                  className="w-full bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-zinc-900 dark:text-white outline-none focus:border-purple-500/50 transition-colors placeholder:text-zinc-400"
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={newEmail}
+                  onChange={e => setNewEmail(e.target.value)}
+                  required
+                  className="w-full bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-zinc-900 dark:text-white outline-none focus:border-purple-500/50 transition-colors placeholder:text-zinc-400"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setShowCreate(false); setError(''); }}
+                    className="flex-1 py-2.5 rounded-xl bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-300 font-bold text-sm hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors"
+                  >
+                    {t('cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creating}
+                    className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    {creating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('createAdmin')}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              currentUserIsOwner && (
+                <button
+                  onClick={() => { setShowCreate(true); setError(''); setTempPassword(null); }}
+                  disabled={!canAdd}
+                  title={!canAdd ? t('errorPlanLimit', { plan, limit }) : ''}
+                  className="w-full py-3 rounded-2xl border border-dashed border-zinc-300 dark:border-white/10 text-zinc-500 dark:text-zinc-400 hover:border-purple-500/50 hover:text-purple-500 hover:bg-purple-500/5 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  {t('addAdmin')}
+                  {!canAdd && <span className="text-xs font-normal opacity-70">{t('planLimitReached')}</span>}
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Sección: Contacto de recuperación ─────────────────────────────── */}
       <div className="bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/5 rounded-3xl overflow-hidden">
         <div className="flex items-center gap-3 px-6 py-4 border-b border-zinc-100 dark:border-white/5">
           <div className="w-9 h-9 bg-amber-500/10 rounded-xl flex items-center justify-center">

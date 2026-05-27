@@ -251,3 +251,91 @@ export async function updatePortalSettingsAction(data: {
     return { success: false, error: "Failed to update appearance" };
   }
 }
+
+export async function updateAppearanceAction(data: {
+  tenantId: string;
+  name: string;
+  primaryColor: string;
+  theme: string;
+  coverUrl?: string | null;
+  logoUrl?: string | null;
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+  tiktokUrl?: string | null;
+  heroTitle?: string | null;
+  heroSubtitle?: string | null;
+  contactEmail?: string | null;
+  showStaffSelection?: boolean;
+  bookingSettings?: any;
+}) {
+  try {
+    const session = await getSession();
+    await db.update(tenants)
+      .set({
+        name: data.name,
+        primaryColor: data.primaryColor,
+        theme: data.theme,
+        coverUrl: data.coverUrl ?? null,
+        logoUrl: data.logoUrl ?? null,
+        instagramUrl: data.instagramUrl ?? null,
+        facebookUrl: data.facebookUrl ?? null,
+        tiktokUrl: data.tiktokUrl ?? null,
+        heroTitle: data.heroTitle ?? null,
+        heroSubtitle: data.heroSubtitle ?? null,
+        contactEmail: data.contactEmail ?? null,
+        showStaffSelection: data.showStaffSelection ?? true,
+        bookingSettings: data.bookingSettings,
+        updatedAt: new Date(),
+      })
+      .where(eq(tenants.id, data.tenantId));
+
+    await logAuditEvent({
+      action: 'APPEARANCE_UPDATED',
+      userId: session?.userId,
+      tenantId: data.tenantId,
+      details: { theme: data.theme, primaryColor: data.primaryColor },
+    });
+
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating appearance:', error);
+    return { success: false, error: 'Failed to update appearance' };
+  }
+}
+
+export async function updateConfiguracionAction(data: {
+  tenantId: string;
+  timezone: string;
+  emailLocale: string;
+  emailBodyTemplate?: string | null;
+  whatsappNumber?: string | null;
+  waMessageTemplate?: string | null;
+}) {
+  try {
+    const session = await getSession();
+    await db.update(tenants)
+      .set({
+        timezone: data.timezone,
+        emailLocale: data.emailLocale,
+        emailBodyTemplate: data.emailBodyTemplate ?? null,
+        whatsappNumber: data.whatsappNumber ?? null,
+        waMessageTemplate: data.waMessageTemplate ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(tenants.id, data.tenantId));
+
+    await logAuditEvent({
+      action: 'SETTINGS_UPDATED',
+      userId: session?.userId,
+      tenantId: data.tenantId,
+      details: { timezone: data.timezone, emailLocale: data.emailLocale },
+    });
+
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating configuracion:', error);
+    return { success: false, error: 'Failed to update settings' };
+  }
+}

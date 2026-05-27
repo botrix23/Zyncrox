@@ -20,7 +20,16 @@ export default async function SettingsPage({ params }: { params: { locale: strin
   const [tenant, admins] = await Promise.all([
     db.query.tenants.findFirst({
       where: eq(tenants.id, tenantId),
-      columns: { plan: true, name: true, recoveryEmail: true },
+      columns: {
+        plan: true,
+        name: true,
+        recoveryEmail: true,
+        timezone: true,
+        emailLocale: true,
+        emailBodyTemplate: true,
+        whatsappNumber: true,
+        waMessageTemplate: true,
+      },
     }),
     getAdminsAction(),
   ]);
@@ -31,6 +40,12 @@ export default async function SettingsPage({ params }: { params: { locale: strin
       plan={tenant?.plan ?? 'BASIC'}
       currentUserId={session.userId ?? ''}
       initialRecoveryEmail={tenant?.recoveryEmail ?? null}
+      tenantId={tenantId}
+      initialTimezone={tenant?.timezone ?? 'America/El_Salvador'}
+      initialEmailLocale={tenant?.emailLocale ?? 'es'}
+      initialEmailBodyTemplate={tenant?.emailBodyTemplate ?? ''}
+      initialWhatsappNumber={tenant?.whatsappNumber ?? ''}
+      initialWaMessageTemplate={tenant?.waMessageTemplate ?? ''}
     />
   );
 }
