@@ -57,6 +57,9 @@ export const metadata: Metadata = {
     description: META_DESCRIPTION,
     images: ["https://www.zyncrox.com/icons/icon-512x512.png"],
   },
+};
+
+export const viewport = {
   themeColor: "#8b5cf6",
 };
 
