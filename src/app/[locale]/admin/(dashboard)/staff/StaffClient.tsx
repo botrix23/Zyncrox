@@ -259,6 +259,11 @@ export default function StaffClient({
       setIsModalOpen(false);
       if (editingMember) {
         // Optimistic local update — no need to wait for router.refresh()
+        // Rebuild full category objects from the categories prop so cards render correctly
+        const updatedCategories = (categories ?? [])
+          .filter((cat: any) => formData.categoryIds.includes(cat.id))
+          .map((cat: any) => ({ categoryId: cat.id, category: cat }));
+
         setStaffList(prev => prev.map(m =>
           m.id === editingMember.id
             ? {
@@ -272,7 +277,7 @@ export default function StaffClient({
                 allowsHomeService: formData.allowsHomeService,
                 branchId: finalBranchId,
                 assignments: processedAssignments,
-                categoryIds: formData.categoryIds,
+                categories: updatedCategories,
               }
             : m
         ));

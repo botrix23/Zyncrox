@@ -18,6 +18,7 @@ import {
 import { createBranchAction, updateBranchAction, deleteBranchAction, toggleBranchActiveAction } from "@/app/actions/branches";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useCallback } from "react";
+
 import PhoneInput from "@/components/PhoneInput";
 import BusinessHoursPicker from "@/components/BusinessHoursPicker";
 
@@ -39,7 +40,12 @@ export default function BranchesClient({
   plan?: string,
 }) {
   const limit = planLimit ?? 999;
-  const activeBranches = initialBranches.filter(b => b.isActive !== false);
+
+  // Local list state — synced via useEffect when router.refresh() pushes new props
+  const [branchList, setBranchList] = useState<any[]>(initialBranches);
+  useEffect(() => { setBranchList(initialBranches); }, [initialBranches]);
+
+  const activeBranches = branchList.filter(b => b.isActive !== false);
   const atLimit = activeBranches.length >= limit;
   const t = useTranslations('Dashboard.branches');
   const [searchTerm, setSearchTerm] = useState("");
@@ -60,7 +66,7 @@ export default function BranchesClient({
     businessHours: ""
   });
 
-  const filteredBranches = initialBranches.filter(b => 
+  const filteredBranches = branchList.filter(b =>
     b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (b.address && b.address.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -107,7 +113,13 @@ export default function BranchesClient({
 
     if (result.success) {
       setIsModalOpen(false);
-      router.refresh();
+      if (editingBranch) {
+        setBranchList(prev => prev.map(b =>
+          b.id === editingBranch.id ? { ...b, ...formData } : b
+        ));
+      } else {
+        router.refresh(); // Need DB-generated ID for new branch
+      }
     } else if (result.error === 'PLAN_LIMIT_EXCEEDED') {
       alert(`${plan ?? 'BASIC'}: ${result.current}/${result.limit}. ${t('planLimitReactivate')}`);
     } else {
@@ -129,12 +141,13 @@ export default function BranchesClient({
     const { id } = deleteBranchTarget;
     setDeleteBranchTarget(null);
     await deleteBranchAction(id, tenantId);
-    router.refresh();
+    setBranchList(prev => prev.filter(b => b.id !== id));
   };
 
   const handleToggleActive = async (branch: any) => {
     setOpenMenu(null);
     setMenuPos(null);
+    const newActive = branch.isActive === false;
     const result = await toggleBranchActiveAction(branch.id, tenantId, branch.isActive !== false);
     if (!result.success) {
       if (result.error === 'PLAN_LIMIT_EXCEEDED') {
@@ -142,8 +155,11 @@ export default function BranchesClient({
       } else {
         alert(t('toggleError'));
       }
+    } else {
+      setBranchList(prev => prev.map(b =>
+        b.id === branch.id ? { ...b, isActive: newActive } : b
+      ));
     }
-    router.refresh();
   };
 
   // Close menu on click outside
@@ -342,7 +358,7 @@ export default function BranchesClient({
         })}
       </div>
 
-      {initialBranches.length === 0 && (
+      {branchList.length === 0 && (
         <div className="text-center py-20 bg-slate-50 dark:bg-black/20 rounded-3xl border-2 border-dashed border-slate-200 dark:border-white/5">
           <MapPin className="w-12 h-12 text-slate-300 dark:text-zinc-700 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('noBranches')}</h3>
@@ -435,7 +451,7 @@ export default function BranchesClient({
           >
             {/* Toggle active/inactive */}
             {(() => {
-              const b = initialBranches.find(b => b.id === openMenu);
+              const b = branchList.find(b => b.id === openMenu);
               if (!b) return null;
               const isInactive = b.isActive === false;
               return (
@@ -458,7 +474,7 @@ export default function BranchesClient({
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                const b = initialBranches.find(b => b.id === openMenu);
+                const b = branchList.find(b => b.id === openMenu);
                 if (b) handleDelete(b.id, b.name);
                 setOpenMenu(null);
               }}

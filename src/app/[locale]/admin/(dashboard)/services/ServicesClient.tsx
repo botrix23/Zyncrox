@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -67,7 +67,12 @@ export default function ServicesClient({
   initialZones?: any[],
 }) {
   const limit = planLimit ?? 999;
-  const activeServices = initialServices.filter(s => s.isActive !== false);
+
+  // Local list state — synced via useEffect when router.refresh() pushes new props
+  const [serviceList, setServiceList] = useState<any[]>(initialServices);
+  useEffect(() => { setServiceList(initialServices); }, [initialServices]);
+
+  const activeServices = serviceList.filter(s => s.isActive !== false);
   const atLimit = activeServices.length >= limit;
   const t = useTranslations('Dashboard.services');
   const tPortal = useTranslations('Dashboard.portal');
@@ -215,6 +220,7 @@ export default function ServicesClient({
   const [newExclude, setNewExclude] = useState("");
 
   const handleToggleActive = async (service: any) => {
+    const newActive = service.isActive === false; // toggling
     const result = await toggleServiceActiveAction(service.id, tenantId, service.isActive !== false);
     if (!result.success) {
       if (result.error === 'PLAN_LIMIT_EXCEEDED') {
@@ -222,11 +228,14 @@ export default function ServicesClient({
       } else {
         alert(t('toggleError'));
       }
+    } else {
+      setServiceList(prev => prev.map(s =>
+        s.id === service.id ? { ...s, isActive: newActive } : s
+      ));
     }
-    router.refresh();
   };
 
-  const filteredServices = initialServices
+  const filteredServices = serviceList
     .filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
@@ -299,7 +308,7 @@ export default function ServicesClient({
         ...formData,
         branchIds: finalBranchIds,
         categoryIds: formData.categoryIds,
-        sortOrder: initialServices.length
+        sortOrder: serviceList.length
       });
     }
 
@@ -326,7 +335,7 @@ export default function ServicesClient({
     setDeleteServiceId(null);
     const result = await deleteServiceAction(id, tenantId);
     if (result.success) {
-      router.refresh();
+      setServiceList(prev => prev.filter(s => s.id !== id));
     }
   };
 
@@ -339,9 +348,15 @@ export default function ServicesClient({
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     [newOrder[currentIndex], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[currentIndex]];
 
+    const reindexed = newOrder.map((s, i) => ({ ...s, sortOrder: i }));
+    setServiceList(prev => {
+      const filteredIds = new Set(reindexed.map(s => s.id));
+      const unchanged = prev.filter(s => !filteredIds.has(s.id));
+      return [...unchanged, ...reindexed].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    });
+
     const orderedIds = newOrder.map(s => s.id);
     await reorderServicesAction(tenantId, orderedIds);
-    router.refresh();
   };
 
   const addTag = (type: 'includes' | 'excludes') => {
@@ -409,7 +424,7 @@ export default function ServicesClient({
             <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${
               atLimit
                 ? 'bg-red-500/10 border-red-500/30 text-red-500'
-                : initialServices.length >= limit - 1
+                : serviceList.length >= limit - 1
                   ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
                   : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400'
             }`}>
@@ -472,7 +487,7 @@ export default function ServicesClient({
         </div>
         <div className="shrink-0 px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
           <p className="text-xs font-bold text-slate-500 dark:text-zinc-400">
-            {searchTerm ? `Encontrados: ${filteredServices.length}` : `Total servicios: ${initialServices.length}`}
+            {searchTerm ? `Encontrados: ${filteredServices.length}` : `Total servicios: ${serviceList.length}`}
           </p>
         </div>
       </div>
