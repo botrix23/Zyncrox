@@ -778,6 +778,7 @@ export async function createBookingSessionAction(data: {
         newBookings.push(nb);
       }
 
+      console.log(`[createBookingSessionAction] TX committed: sessionId=${session.id} bookingIds=[${newBookings.map(b => b.id).join(',')}] tenantId=${data.tenantId}`);
       return { session, bookings: newBookings };
     });
 
