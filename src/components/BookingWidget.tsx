@@ -791,15 +791,29 @@ export default function BookingWidget({
       } else {
         const errorCode = result.error || "";
         if (errorCode === "STAFF_UNAVAILABLE" || errorCode === "STAFF_BUSY") {
-          alert("El horario seleccionado ya no está disponible. Por favor elige otro horario e intenta de nuevo.");
+          // Ninguna cita fue creada (la TX es atómica). Limpiar estado para que el
+          // usuario pueda reintentar desde cero sin duplicados en el cart.
+          setSelectedDate(null);
+          setSelectedTime(null);
+          setSelectedStaff(null);
+          if (schedulingMode === 'separate') {
+            // En modo separado: volver al primer servicio para re-agendar todos
+            setCartBookings([]);
+            setCurrentServiceIndex(0);
+          }
+          alert("❌ Ninguna cita fue confirmada.\n\nEl horario seleccionado ya no está disponible para uno o más servicios. Por favor elige un nuevo horario e intenta de nuevo.");
           setStep(3);
+        } else if (errorCode === "TENANT_SUSPENDED") {
+          alert("Este negocio no está disponible en este momento.");
+        } else if (errorCode === "MULTI_SERVICE_NOT_ALLOWED") {
+          alert("Tu plan actual no permite reservar múltiples servicios a la vez.");
         } else {
-          alert("Ocurrió un error al procesar tu reserva. Por favor intenta de nuevo.");
+          alert("❌ No pudimos confirmar tu reserva. Por favor intenta de nuevo o contáctanos directamente.");
         }
       }
     } catch (err) {
       console.error("Critical error during session checkout:", err);
-      alert("Error crítico al procesar la sesión de reservas");
+      alert("❌ Error al procesar tu reserva. Por favor intenta de nuevo.");
     } finally {
       setIsFinishing(false);
     }
@@ -1784,7 +1798,21 @@ export default function BookingWidget({
                 <button
                   onClick={() => {
                     setStep(3);
-                    setCartBookings(prev => prev.slice(0, -1));
+                    setSelectedDate(null);
+                    setSelectedTime(null);
+                    if (schedulingMode === 'separate') {
+                      // En modo separado: quitar el último servicio y retroceder el índice
+                      const prevIndex = cartBookings.length - 1;
+                      const prevBooking = cartBookings[prevIndex - 1];
+                      setCartBookings(prev => prev.slice(0, -1));
+                      setCurrentServiceIndex(prevIndex);
+                      if (prevBooking) {
+                        setSelectedDate(prevBooking.date);
+                        setSelectedTime(prevBooking.time);
+                        setSelectedStaff(prevBooking.staff);
+                      }
+                    }
+                    // En modo bulk: no tocar cartBookings — se re-genera completo al confirmar horario
                   }}
                   className="p-2 bg-white dark:bg-white/5 hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl text-slate-600 dark:text-zinc-300 transition-colors"
                 >
