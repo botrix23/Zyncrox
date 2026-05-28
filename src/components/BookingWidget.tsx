@@ -1425,7 +1425,7 @@ export default function BookingWidget({
           {/* STEP 3: Select Date & Time (and STAFF) */}
           {step === 3 && (
             <div className="relative z-10 flex flex-col w-full animate-in fade-in slide-in-from-right-8 duration-500 text-slate-900 dark:text-white">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-6">
                 <button
                   onClick={() => {
                     if (schedulingMode === 'separate' && currentServiceIndex > 0) {
@@ -1448,7 +1448,7 @@ export default function BookingWidget({
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                   {schedulingMode === 'separate'
                     ? `Cita ${currentServiceIndex + 1} de ${selectedServices.length}`
                     : (bookingSettings?.step3Title || t("title_specialist"))
@@ -1790,7 +1790,7 @@ export default function BookingWidget({
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <h2 className="text-2xl font-black tracking-widest">
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                   {bookingSettings?.step4Title || t("title_data")}
                 </h2>
               </div>
