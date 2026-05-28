@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { bookings, services, staff, blocks, branches, tenants, staffAssignments, bookingSessions, slotLocks, reviews } from "@/db/schema";
 import { eq, and, gte, lte, or, isNull, desc, not, lt, gt, ne } from "drizzle-orm";
@@ -857,6 +858,10 @@ export async function createBookingSessionAction(data: {
     if (data.sessionToken) {
       await db.delete(slotLocks).where(eq(slotLocks.sessionToken, data.sessionToken));
     }
+
+    // Invalidar cache del admin para que las nuevas citas aparezcan inmediatamente
+    revalidatePath('/es/admin/bookings');
+    revalidatePath('/en/admin/bookings');
 
     return { success: true, session: result.session, bookings: result.bookings };
   } catch (error) {

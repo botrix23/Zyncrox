@@ -78,6 +78,8 @@ export default async function BookingsPage() {
     categoryIds: (s.categories || []).map((c: any) => c.categoryId),
   }));
 
+  console.log(`[BookingsPage] tenantId=${tenantId} totalBookings=${dbBookings.length} latestStart=${dbBookings[0]?.startTime?.toISOString() ?? 'none'}`);
+
   // Build a quick-lookup map: email → loyaltyTier
   const loyaltyMap: Record<string, string> = {};
   for (const row of loyaltyRows) {
