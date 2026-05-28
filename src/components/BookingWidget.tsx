@@ -1076,7 +1076,7 @@ export default function BookingWidget({
                           ${(servicesTotal + sidebarTransferTotal).toFixed(2)}
                         </p>
                         <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                          {totalDuration} min · {selectedServices.length} {selectedServices.length === 1 ? 'servicio' : 'servicios'}
+                          {totalDuration} min · {selectedServices.length} {selectedServices.length === 1 ? t("service_singular") : t("service_plural")}
                         </p>
                       </div>
                     </div>
@@ -1336,7 +1336,7 @@ export default function BookingWidget({
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                  ¿Cómo prefieres tus citas?
+                  {t("scheduling_how")}
                 </h2>
               </div>
 
@@ -1360,8 +1360,8 @@ export default function BookingWidget({
                 >
                   <div className="bg-purple-500/20 p-4 rounded-full text-purple-400 group-hover:scale-110 transition-transform shrink-0"><Layers className="w-8 h-8" /></div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-purple-400">Todo seguido (Recomendado)</h3>
-                    <p className="text-slate-400 dark:text-zinc-500 text-sm mt-1">Realiza todos tus servicios en una sola visita, uno tras otro.</p>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-purple-400">{t("all_together_title")}</h3>
+                    <p className="text-slate-400 dark:text-zinc-500 text-sm mt-1">{t("all_together_desc")}</p>
                   </div>
                 </button>
 
@@ -1372,10 +1372,10 @@ export default function BookingWidget({
                       <Layers className="w-5 h-5 text-purple-500 shrink-0 mt-0.5" />
                       <div>
                         <p className="text-sm font-black text-slate-900 dark:text-white leading-snug">
-                          ¡Tenemos una opción para ahorrarte tiempo!
+                          {t("simul_prompt_title")}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                          Algunos de tus servicios pueden realizarse al mismo tiempo con diferentes especialistas. ¿Deseas programarlos de forma simultánea?
+                          {t("simul_prompt_desc")}
                         </p>
                       </div>
                     </div>
@@ -1389,7 +1389,7 @@ export default function BookingWidget({
                         }}
                         className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm font-black tracking-wide transition-all active:scale-95"
                       >
-                        Sí, al mismo tiempo
+                        {t("yes_simultaneous")}
                       </button>
                       <button
                         onClick={() => {
@@ -1400,7 +1400,7 @@ export default function BookingWidget({
                         }}
                         className="flex-1 py-3 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white rounded-xl text-sm font-black tracking-wide transition-all active:scale-95"
                       >
-                        No, uno tras otro
+                        {t("no_sequential")}
                       </button>
                     </div>
                   </div>
@@ -1450,7 +1450,7 @@ export default function BookingWidget({
                 </button>
                 <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                   {schedulingMode === 'separate'
-                    ? `Cita ${currentServiceIndex + 1} de ${selectedServices.length}`
+                    ? t("appointment_x_of_y", { current: currentServiceIndex + 1, total: selectedServices.length })
                     : (bookingSettings?.step3Title || t("title_specialist"))
                   }
                 </h2>
@@ -1472,7 +1472,7 @@ export default function BookingWidget({
                     ) : (
                       selectedServices.map((s, i) => (
                         <span key={s.id} className="flex items-center gap-1.5 text-sm font-bold text-purple-600 dark:text-purple-400">
-                          {i > 0 && <span className="text-slate-300 dark:text-zinc-600 font-normal">+</span>}
+                          {i > 0 && <span className="text-purple-300 dark:text-purple-300 font-bold">+</span>}
                           {s.name}
                         </span>
                       ))
