@@ -1790,7 +1790,7 @@ export default function BookingWidget({
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <h2 className="text-2xl font-black tracking-widest uppercase">
+                <h2 className="text-2xl font-black tracking-widest">
                   {bookingSettings?.step4Title || t("title_data")}
                 </h2>
               </div>
