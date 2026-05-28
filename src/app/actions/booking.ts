@@ -604,9 +604,25 @@ export async function createBookingSessionAction(data: {
       return new Date(nominalUtc.getTime() - offset * 60000);
     };
 
-    // 3. Transacción de Base de Datos
+    // 3. Pre-transaction validation & diagnostic log
+    console.log(`[createBookingSessionAction] START tenantId=${data.tenantId} customer=${data.customerEmail} numBookings=${data.bookings.length} bookings=${JSON.stringify(data.bookings.map(b => ({ svc: b.serviceId?.slice(0,8), branch: b.branchId?.slice(0,8), staff: b.staffId || 'any', start: b.startTime })))}`);
+
+    // Validate required fields before entering transaction
+    for (let i = 0; i < data.bookings.length; i++) {
+      const b = data.bookings[i];
+      if (!b.branchId) {
+        console.error(`[createBookingSessionAction] VALIDATION_FAIL booking[${i}] missing branchId`);
+        return { success: false, error: 'MISSING_BRANCH' };
+      }
+      if (!b.serviceId) {
+        console.error(`[createBookingSessionAction] VALIDATION_FAIL booking[${i}] missing serviceId`);
+        return { success: false, error: 'MISSING_SERVICE' };
+      }
+    }
+
+    // 4. Transacción de Base de Datos
     const result = await db.transaction(async (tx) => {
-      // 3a. Crear la sesión agrupadora
+      // 4a. Crear la sesión agrupadora
       const [session] = await tx.insert(bookingSessions).values({
         tenantId: data.tenantId,
         customerName: data.customerName,
@@ -779,8 +795,11 @@ export async function createBookingSessionAction(data: {
         newBookings.push(nb);
       }
 
-      console.log(`[createBookingSessionAction] TX committed: sessionId=${session.id} bookingIds=[${newBookings.map(b => b.id).join(',')}] tenantId=${data.tenantId}`);
+      console.log(`[createBookingSessionAction] TX committed: sessionId=${session.id} tenantId=${data.tenantId} bookingIds=[${newBookings.map(b => b.id).join(',')}] count=${newBookings.length}`);
       return { session, bookings: newBookings };
+    }).catch((txError: any) => {
+      console.error(`[createBookingSessionAction] TX FAILED tenantId=${data.tenantId} error=${txError?.message || txError}`);
+      throw txError; // re-throw so outer catch handles it
     });
 
     // 4. Enviar Correo de Confirmación
@@ -863,6 +882,7 @@ export async function createBookingSessionAction(data: {
     revalidatePath('/es/admin/bookings');
     revalidatePath('/en/admin/bookings');
 
+    console.log(`[createBookingSessionAction] SUCCESS tenantId=${data.tenantId} sessionId=${result.session.id} bookingIds=[${result.bookings.map((b: any) => b.id).join(',')}]`);
     return { success: true, session: result.session, bookings: result.bookings };
   } catch (error) {
     console.error("Error creating booking session:", error);

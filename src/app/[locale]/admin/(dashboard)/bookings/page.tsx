@@ -80,6 +80,28 @@ export default async function BookingsPage() {
 
   console.log(`[BookingsPage] tenantId=${tenantId} totalBookings=${dbBookings.length} latestStart=${dbBookings[0]?.startTime?.toISOString() ?? 'none'}`);
 
+  // DIAGNOSTIC: show last 10 bookings across ALL tenants to detect cross-tenant booking issues
+  try {
+    const allRecentBookings = await db.select({
+      id: bookingsTable.id,
+      tenantId: bookingsTable.tenantId,
+      startTime: bookingsTable.startTime,
+      customerEmail: bookingsTable.customerEmail,
+      status: bookingsTable.status,
+    }).from(bookingsTable)
+    .orderBy(desc(bookingsTable.startTime))
+    .limit(10);
+    console.log(`[BookingsPage-XTenant] last10=${JSON.stringify(allRecentBookings.map(b => ({
+      id: b.id?.slice(0,8),
+      tid: b.tenantId?.slice(0,8),
+      start: b.startTime?.toISOString(),
+      email: b.customerEmail,
+      status: b.status
+    })))}`);
+  } catch (diagErr) {
+    console.error('[BookingsPage-XTenant] diagnostic failed:', diagErr);
+  }
+
   // Build a quick-lookup map: email → loyaltyTier
   const loyaltyMap: Record<string, string> = {};
   for (const row of loyaltyRows) {
