@@ -283,20 +283,6 @@ export default function AppearanceClient({
                 />
               </div>
 
-              {/* Hero title */}
-              <PlanGateSection plan={plan} feature="customHero" upgradeMessage="El título personalizado del hero está disponible desde el plan Professional.">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">{tPortal('form.heroTitle')}</label>
-                  <input
-                    type="text"
-                    value={heroTitle}
-                    onChange={e => setHeroTitle(e.target.value)}
-                    placeholder={tWidget('hero_title')}
-                    className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
-                  />
-                </div>
-              </PlanGateSection>
-
               {/* Hero subtitle */}
               <PlanGateSection plan={plan} feature="customHero" upgradeMessage="El subtítulo personalizado del hero está disponible desde el plan Professional.">
                 <div>

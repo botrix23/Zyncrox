@@ -743,7 +743,7 @@
         "businessPlaceholder": "Business name",
         "heroTitle": "Portal Hero Title",
         "heroTitlePlaceholder": "e.g. The best Spa experience",
-        "heroSubtitle": "Hero Subtitle",
+        "heroSubtitle": "Subtitle",
         "heroSubtitlePlaceholder": "e.g. Book your appointment in seconds",
         "heroSubtitleHint": "Descriptive text shown below your business name on the portal.",
         "footerLabel": "Widget footer",

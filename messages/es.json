@@ -743,7 +743,7 @@
         "businessPlaceholder": "Nombre del negocio",
         "heroTitle": "Título Hero del portal",
         "heroTitlePlaceholder": "Ej: La mejor experiencia de Spa",
-        "heroSubtitle": "Subtítulo Hero",
+        "heroSubtitle": "Subtítulo",
         "heroSubtitlePlaceholder": "Ej: Reserva tu cita en segundos",
         "heroSubtitleHint": "Texto descriptivo debajo del nombre de tu negocio en el portal.",
         "footerLabel": "Pie de página del widget",
