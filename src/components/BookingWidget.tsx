@@ -737,6 +737,23 @@ export default function BookingWidget({
 
       const buildBookingEntry = (item: typeof cartBookings[0], start: Date) => {
         const end = new Date(start.getTime() + item.service.durationMinutes * 60000);
+
+        // Calcular allowedStaffIds por las categorías específicas de ESTE servicio,
+        // no por el displayStaff global que puede estar filtrado para otro servicio.
+        let allowedStaffIds: string[] | undefined;
+        if (!item.staff?.id) {
+          const svcCats: string[] = item.service.categoryIds || [];
+          const eligibleForService = svcCats.length === 0
+            ? staff
+            : staff.filter(s => {
+                const sCats: string[] = s.categoryIds || [];
+                return svcCats.some(cat => sCats.includes(cat));
+              });
+          allowedStaffIds = eligibleForService.length > 0
+            ? eligibleForService.map(s => s.id)
+            : staff.map(s => s.id);
+        }
+
         return {
           branchId: selectedBranch?.id || branches[0]?.id || '',
           serviceId: item.service.id,
@@ -745,7 +762,7 @@ export default function BookingWidget({
           endTime: format(end, "yyyy-MM-dd'T'HH:mm:ss"),
           price: item.service.price,
           isSimultaneous: !!item.service.allowSimultaneous,
-          ...(!item.staff?.id ? { allowedStaffIds: displayStaff.map(s => s.id) } : {})
+          ...(allowedStaffIds ? { allowedStaffIds } : {})
         };
       };
 
