@@ -311,7 +311,8 @@ export default function BookingsClient({
       return requiredCategoryIds.every(catId => staffCats.includes(catId));
     });
 
-    // Si ningún staff cumple las categorías, mostrar todos los de la modalidad como fallback
+    // Si ningún staff cumple las categorías, mostrar todos los de la modalidad como fallback visual
+    // (el filtro real por categorías se aplica en el momento de crear la cita, por servicio individual)
     return categoryFiltered.length > 0 ? categoryFiltered : byModality;
   }, [staff, modality, selectedBranch, selectedServicesList, schedulingMode, currentServiceIndex]);
 
@@ -625,7 +626,19 @@ export default function BookingsClient({
                 endTime: formatLocalIso(end),
                 price: item.service.price.toString()
               };
-              if (!item.staff?.id) entry.allowedStaffIds = filteredStaff.map((s: any) => s.id);
+              if (!item.staff?.id) {
+                // Filtrar staff por las categorías específicas de ESTE servicio
+                const svcCats: string[] = item.service.categoryIds || [];
+                const eligibleForService = svcCats.length === 0
+                  ? staff
+                  : staff.filter((s: any) => {
+                      const sCats: string[] = s.categoryIds || [];
+                      return svcCats.every(cat => sCats.includes(cat));
+                    });
+                entry.allowedStaffIds = eligibleForService.length > 0
+                  ? eligibleForService.map((s: any) => s.id)
+                  : staff.map((s: any) => s.id);
+              }
               entries.push(entry);
             }
             groupStart = addMinutes(groupStart, maxDur);
@@ -648,7 +661,19 @@ export default function BookingsClient({
               endTime: formatLocalIso(end),
               price: item.service.price.toString()
             };
-            if (!item.staff?.id) entry.allowedStaffIds = filteredStaff.map((s: any) => s.id);
+            if (!item.staff?.id) {
+              // Filtrar staff por las categorías específicas de ESTE servicio
+              const svcCats: string[] = item.service.categoryIds || [];
+              const eligibleForService = svcCats.length === 0
+                ? staff
+                : staff.filter((s: any) => {
+                    const sCats: string[] = s.categoryIds || [];
+                    return svcCats.every(cat => sCats.includes(cat));
+                  });
+              entry.allowedStaffIds = eligibleForService.length > 0
+                ? eligibleForService.map((s: any) => s.id)
+                : staff.map((s: any) => s.id);
+            }
             return entry;
           });
         }
