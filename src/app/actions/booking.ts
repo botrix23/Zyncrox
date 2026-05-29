@@ -293,7 +293,10 @@ export async function getAvailableSlots(
       let current = addMinutes(localTramoStart, -offsetMinutes);
       const tramoEndUtc = addMinutes(localTramoEnd, -offsetMinutes);
 
-      while (isBefore(addMinutes(current, duration), tramoEndUtc) || format(addMinutes(current, duration), 'HH:mm') === tramo.close) {
+      // Incluir slots cuyo fin está ANTES o EXACTAMENTE en el cierre del tramo (en UTC).
+      // La comparación anterior usaba format() en UTC vs tramo.close en hora local,
+      // lo que excluía el slot que termina exactamente a la hora de cierre (ej: 10:00 con 120 min hasta las 12:00).
+      while (!isAfter(addMinutes(current, duration), tramoEndUtc)) {
         const slotStart = current;
         const slotEnd = addMinutes(current, duration);
         
