@@ -659,11 +659,13 @@ export async function createBookingSessionAction(data: {
           const slotDate = format(localStartForSlot, 'yyyy-MM-dd');
 
           // Intentar asignar el staff preferido de la sesión (para bulk: misma persona para todos los servicios)
+          // SOLO si el staff preferido también es elegible para ESTE servicio (tiene las categorías requeridas)
           if (sessionPreferredStaffId) {
+            const isAllowedForThisService = !bData.allowedStaffIds || bData.allowedStaffIds.includes(sessionPreferredStaffId);
             const isInSessionConflict = sessionStaffAssignments.some(sas =>
               sas.staffId === sessionPreferredStaffId && sas.start < utcEnd && sas.end > utcStart
             );
-            if (!isInSessionConflict) {
+            if (isAllowedForThisService && !isInSessionConflict) {
               const preferredData = await getAvailableSlots(
                 slotDate,
                 bData.serviceId,
@@ -724,24 +726,26 @@ export async function createBookingSessionAction(data: {
 
                 if (possibleStaffIds.length === 0) throw new Error("STAFF_UNAVAILABLE");
 
-                // Asignación equitativa: preferir al staff con menos citas ese día
-                const dayStart = new Date(`${format(utcStart, 'yyyy-MM-dd')}T00:00:00Z`);
-                const dayEnd   = new Date(`${format(utcStart, 'yyyy-MM-dd')}T23:59:59Z`);
+                // Asignación equitativa: preferir al staff con menos citas en el mes de la cita
+                const yearMonth = format(utcStart, 'yyyy-MM');
+                const monthStart = new Date(`${yearMonth}-01T00:00:00Z`);
+                const nextMonth = new Date(monthStart);
+                nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
 
-                const dayBookings = await tx
+                const monthBookings = await tx
                   .select({ staffId: bookings.staffId })
                   .from(bookings)
                   .where(
                     and(
                       eq(bookings.tenantId, data.tenantId),
                       not(eq(bookings.status, 'CANCELLED')),
-                      gte(bookings.startTime, dayStart),
-                      lte(bookings.startTime, dayEnd)
+                      gte(bookings.startTime, monthStart),
+                      lt(bookings.startTime, nextMonth)
                     )
                   );
 
                 const loadMap = new Map<string, number>();
-                for (const b of dayBookings) {
+                for (const b of monthBookings) {
                   if (b.staffId) loadMap.set(b.staffId, (loadMap.get(b.staffId) ?? 0) + 1);
                 }
 
