@@ -529,7 +529,12 @@ export default function BookingWidget({
               return Math.max(...simulGroups.map(g => g.length));
             }
             if (schedulingMode === 'separate' && selectedServices[currentServiceIndex]?.allowSimultaneous) {
-              const confirmedSimul = cartBookings.filter(b => b.service.allowSimultaneous).length;
+              // Solo contar instancias del MISMO servicio ya confirmadas en el carrito.
+              // Otros servicios simultáneos (de distinto tipo) no consumen capacidad de este servicio.
+              const currentSvcId = selectedServices[currentServiceIndex]?.id;
+              const confirmedSimul = cartBookings.filter(b =>
+                b.service.allowSimultaneous && b.service.id === currentSvcId
+              ).length;
               return confirmedSimul + 1;
             }
             return 1;
