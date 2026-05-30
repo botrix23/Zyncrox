@@ -1056,7 +1056,7 @@ export default function ClientsClient({
                           </h4>
                         </div>
                         <button
-                          onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/admin/appearance?tab=rules`); }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedClient(null); setActiveTab('points'); }}
                           className="flex items-center gap-1 text-xs font-black text-indigo-500 hover:text-indigo-600 uppercase tracking-widest border border-indigo-200 dark:border-indigo-500/30 px-2 py-1 rounded-lg transition-all"
                         >
                           <Settings2 className="w-2.5 h-2.5" /> {locale === 'es' ? 'Configurar' : 'Settings'}
