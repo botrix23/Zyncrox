@@ -69,6 +69,7 @@ interface ClientNotesProps {
   currentUserId: string;
   currentUserRole: string;
   locale: string;
+  collapsible?: boolean; // when true, non-warning notes are hidden behind a toggle
 }
 
 export default function ClientNotes({
@@ -77,6 +78,7 @@ export default function ClientNotes({
   currentUserId,
   currentUserRole,
   locale,
+  collapsible = false,
 }: ClientNotesProps) {
   const t = useTranslations('ClientNotes');
   const [notes, setNotes] = useState<Note[]>([]);
@@ -87,6 +89,7 @@ export default function ClientNotes({
   const [editContent, setEditContent] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [notesExpanded, setNotesExpanded] = useState(false);
   const editRef = useRef<HTMLTextAreaElement>(null);
 
   // Load notes on mount
@@ -194,6 +197,8 @@ export default function ClientNotes({
             const canEdit = isAdmin || note.authorId === currentUserId;
             const isEditing = editingId === note.id;
             const isDeleting = deletingId === note.id;
+            // In collapsible mode, hide non-warning notes unless expanded
+            if (collapsible && !isWarning && !notesExpanded) return null;
 
             return (
               <div
@@ -204,15 +209,12 @@ export default function ClientNotes({
                     : 'bg-white dark:bg-white/[0.03] border-slate-100 dark:border-white/5'
                 }`}
               >
-                {/* Warning indicator */}
                 {isWarning && (
                   <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest mb-2">
                     <AlertTriangle className="w-3 h-3" />
                     {t('warningNote')}
                   </div>
                 )}
-
-                {/* Content or edit form */}
                 {isEditing ? (
                   <div className="space-y-2">
                     <div className="relative">
@@ -228,72 +230,43 @@ export default function ClientNotes({
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => handleSaveEdit(note.id)}
-                        disabled={!editContent.trim()}
-                        className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white text-xs font-bold rounded-lg transition-colors"
-                      >
-                        {t('saveEdit')}
-                      </button>
-                      <button
-                        onClick={() => setEditingId(null)}
-                        className="px-3 py-1.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-600 dark:text-zinc-400 text-xs font-bold rounded-lg transition-colors"
-                      >
-                        {t('cancelEdit')}
-                      </button>
+                      <button onClick={() => handleSaveEdit(note.id)} disabled={!editContent.trim()} className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white text-xs font-bold rounded-lg transition-colors">{t('saveEdit')}</button>
+                      <button onClick={() => setEditingId(null)} className="px-3 py-1.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-600 dark:text-zinc-400 text-xs font-bold rounded-lg transition-colors">{t('cancelEdit')}</button>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap break-words">
-                    {note.content}
-                  </p>
+                  <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap break-words">{note.content}</p>
                 )}
-
-                {/* Footer: author + date + actions */}
                 {!isEditing && (
                   <div className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-100 dark:border-white/5">
                     <div className="flex items-center gap-2 min-w-0">
-                      {/* Role badge */}
-                      <span className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-md ${
-                        note.authorRole === 'ADMIN' || note.authorRole === 'SUPER_ADMIN'
-                          ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300'
-                          : 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300'
-                      }`}>
+                      <span className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-md ${note.authorRole === 'ADMIN' || note.authorRole === 'SUPER_ADMIN' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300' : 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300'}`}>
                         {note.authorRole === 'ADMIN' || note.authorRole === 'SUPER_ADMIN' ? t('roleAdmin') : t('roleStaff')}
                       </span>
-                      <span className="text-xs text-slate-500 dark:text-zinc-400 truncate font-medium">
-                        {note.authorName}
-                      </span>
+                      <span className="text-xs text-slate-500 dark:text-zinc-400 truncate font-medium">{note.authorName}</span>
                       <span className="text-slate-300 dark:text-zinc-700 text-xs">·</span>
-                      <span
-                        title={formatFull(note.createdAt)}
-                        className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0 cursor-default"
-                      >
-                        {formatRelative(note.createdAt, locale)}
-                        {isEdited && <span className="ml-1 opacity-70">({t('edited')})</span>}
+                      <span title={formatFull(note.createdAt)} className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0 cursor-default">
+                        {formatRelative(note.createdAt, locale)}{isEdited && <span className="ml-1 opacity-70">({t('edited')})</span>}
                       </span>
                     </div>
-
-                    {/* Action buttons */}
                     {(canEdit || isAdmin) && (
-                      <NoteActions
-                        canEdit={canEdit}
-                        canDelete={isAdmin}
-                        isDeleting={isDeleting}
-                        confirmDeleteId={confirmDeleteId}
-                        noteId={note.id}
-                        onEdit={() => startEdit(note)}
-                        onDeleteRequest={() => setConfirmDeleteId(note.id)}
-                        onDeleteConfirm={() => handleDelete(note.id)}
-                        onDeleteCancel={() => setConfirmDeleteId(null)}
-                        t={t}
-                      />
+                      <NoteActions canEdit={canEdit} canDelete={isAdmin} isDeleting={isDeleting} confirmDeleteId={confirmDeleteId} noteId={note.id} onEdit={() => startEdit(note)} onDeleteRequest={() => setConfirmDeleteId(note.id)} onDeleteConfirm={() => handleDelete(note.id)} onDeleteCancel={() => setConfirmDeleteId(null)} t={t} />
                     )}
                   </div>
                 )}
               </div>
             );
           })}
+          {/* Collapsible toggle for non-warning notes */}
+          {collapsible && notes.filter(n => !isWarningNote(n.content)).length > 0 && (
+            <button
+              onClick={() => setNotesExpanded(p => !p)}
+              className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors"
+            >
+              <span>{notesExpanded ? (locale === 'es' ? 'Ocultar notas' : 'Hide notes') : (locale === 'es' ? `Ver ${notes.filter(n => !isWarningNote(n.content)).length} nota(s)` : `Show ${notes.filter(n => !isWarningNote(n.content)).length} note(s)`)}</span>
+              <span className="text-[10px]">{notesExpanded ? '▲' : '▼'}</span>
+            </button>
+          )}
         </div>
       )}
     </div>

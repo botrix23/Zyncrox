@@ -160,3 +160,43 @@ export async function deleteClientNoteAction(noteId: string) {
 
   return { success: true };
 }
+
+// ─── Update client contact info (email + phone) across all their bookings ──
+export async function updateClientContactAction({
+  oldEmail,
+  newEmail,
+  newPhone,
+}: {
+  oldEmail: string | null;
+  newEmail: string;
+  newPhone: string;
+}) {
+  const session = await getSession();
+  if (!session) return { success: false, error: 'Unauthorized' };
+  if (session.role === 'STAFF') return { success: false, error: 'Forbidden' };
+
+  const tenantId = getEffectiveTenantId(session);
+  if (!tenantId) return { success: false, error: 'No tenant' };
+
+  const { bookings } = await import('@/db/schema');
+  const { eq, and } = await import('drizzle-orm');
+
+  try {
+    const normalized = normalizeEmail(oldEmail);
+    if (!normalized) return { success: false, error: 'No email to match' };
+
+    await db.update(bookings)
+      .set({
+        customerEmail: newEmail.trim() || null,
+        customerPhone: newPhone.trim() || null,
+      })
+      .where(and(
+        eq(bookings.tenantId, tenantId),
+        eq(bookings.customerEmail, normalized)
+      ));
+
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
