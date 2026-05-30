@@ -84,20 +84,21 @@ function getPresetDates(key: PresetKey): { from: string; to: string } {
 
 // ─── Staff Performance sub-components ────────────────────────────────────────
 
-function SummaryCards({ summary, rows, t }: {
+function SummaryCards({ summary, rows, t, isFuture }: {
   summary: StaffPerformanceResult["summary"];
   rows: StaffPerformanceRow[];
   t: ReturnType<typeof useTranslations<"Dashboard.analytics.staffPerformance">>;
+  isFuture?: boolean;
 }) {
   const cards = [
     {
-      label: t("attended"),
+      label: isFuture ? t("scheduled") : t("attended"),
       value: summary.totalAttended.toString(),
       sub: t("specialists", { count: rows.length }),
       icon: Users, color: "text-purple-600", bg: "bg-purple-500/10",
     },
     {
-      label: t("periodRevenue"),
+      label: isFuture ? t("projectedRevenue") : t("periodRevenue"),
       value: fmtCurrency(summary.totalRevenue),
       sub: summary.totalAttended > 0 ? t("avgPerBooking", { amount: fmtCurrency(summary.totalRevenue / summary.totalAttended) }) : "—",
       icon: DollarSign, color: "text-emerald-600", bg: "bg-emerald-500/10",
@@ -642,7 +643,7 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale, p
       {/* Staff Performance */}
       {activeTab === "staffPerformance" && staffData && !staffError && (
         <div className={`space-y-5 transition-opacity duration-200 ${isStaffPending ? "opacity-50 pointer-events-none" : ""}`}>
-          <SummaryCards summary={staffData.summary} rows={staffData.rows} t={tStaff} />
+          <SummaryCards summary={staffData.summary} rows={staffData.rows} t={tStaff} isFuture={new Date(dateFrom) > new Date()} />
 
           {staffData.rows.length > 0 && (
             <div className="bg-white dark:bg-zinc-900/60 border border-slate-100 dark:border-white/5 rounded-2xl p-6 shadow-sm">

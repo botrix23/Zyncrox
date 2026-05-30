@@ -952,7 +952,9 @@
       },
       "staffPerformance": {
         "attended": "Attended bookings",
+        "scheduled": "Scheduled bookings",
         "periodRevenue": "Period revenue",
+        "projectedRevenue": "Projected revenue",
         "cancellationRate": "Cancellation rate",
         "avgTeamCancel": "team average",
         "avgRating": "Average rating",

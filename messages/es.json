@@ -952,7 +952,9 @@
       },
       "staffPerformance": {
         "attended": "Citas atendidas",
+        "scheduled": "Citas agendadas",
         "periodRevenue": "Ingresos del periodo",
+        "projectedRevenue": "Ingresos proyectados",
         "cancellationRate": "Tasa de cancelación",
         "avgTeamCancel": "promedio del equipo",
         "avgRating": "Calificación promedio",

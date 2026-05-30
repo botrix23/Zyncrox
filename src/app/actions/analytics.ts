@@ -172,6 +172,11 @@ export async function getStaffPerformanceData(
     } else if (b.status === 'CONFIRMED' && b.startTime < now) {
       // No-show: was confirmed but the date passed without being finalized
       entry.noShows++;
+    } else if ((b.status === 'CONFIRMED' || b.status === 'PENDING') && b.startTime >= now) {
+      // Cita futura agendada: contar como proyección (ingresos y minutos esperados)
+      entry.attended++;
+      entry.revenue += parseFloat((b as any).service?.price ?? '0');
+      entry.productiveMinutes += (b as any).service?.durationMinutes ?? 0;
     }
   }
 
