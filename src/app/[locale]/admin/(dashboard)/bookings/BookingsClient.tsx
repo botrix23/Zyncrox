@@ -684,7 +684,8 @@ export default function BookingsClient({
           customerEmail: formData.customerEmail,
           customerPhone: formData.customerPhone,
           zoneId: selectedZone?.id,
-          notes: formData.notes, 
+          notes: formData.notes,
+          schedulingMode,
           bookings: sessionBookings
         });
       }

@@ -529,6 +529,7 @@ export async function createBookingSessionAction(data: {
   notes?: string;
   isHomeService?: boolean;
   sessionToken?: string; // para liberar soft locks al confirmar
+  schedulingMode?: 'bulk' | 'separate'; // bulk = mismo especialista preferido; separate = balanceo independiente
   bookings: {
     branchId: string;
     serviceId: string;
@@ -658,9 +659,10 @@ export async function createBookingSessionAction(data: {
           const slotTime = `${String(localStartForSlot.getUTCHours()).padStart(2, '0')}:${String(localStartForSlot.getUTCMinutes()).padStart(2, '0')}`;
           const slotDate = format(localStartForSlot, 'yyyy-MM-dd');
 
-          // Intentar asignar el staff preferido de la sesión (para bulk: misma persona para todos los servicios)
-          // SOLO si el staff preferido también es elegible para ESTE servicio (tiene las categorías requeridas)
-          if (sessionPreferredStaffId) {
+          // En modo bulk secuencial: intentar reusar el mismo especialista para continuidad.
+          // En modo separate: cada servicio elige independientemente por balanceo de carga.
+          // El staff preferido solo aplica si además tiene las categorías requeridas.
+          if (sessionPreferredStaffId && data.schedulingMode === 'bulk') {
             const isAllowedForThisService = !bData.allowedStaffIds || bData.allowedStaffIds.includes(sessionPreferredStaffId);
             const isInSessionConflict = sessionStaffAssignments.some(sas =>
               sas.staffId === sessionPreferredStaffId && sas.start < utcEnd && sas.end > utcStart
