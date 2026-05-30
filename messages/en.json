@@ -945,6 +945,7 @@
         "last30d": "Last 30 days",
         "thisMonth": "This month",
         "prevMonth": "Previous month",
+        "nextMonth": "Next month",
         "last3m": "Last 3 months",
         "allBranches": "All branches",
         "sortHint": "Click column to sort"

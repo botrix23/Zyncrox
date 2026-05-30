@@ -945,6 +945,7 @@
         "last30d": "Últ. 30 días",
         "thisMonth": "Este mes",
         "prevMonth": "Mes anterior",
+        "nextMonth": "Mes siguiente",
         "last3m": "Últ. 3 meses",
         "allBranches": "Todas las sucursales",
         "sortHint": "Clic en columna para ordenar"

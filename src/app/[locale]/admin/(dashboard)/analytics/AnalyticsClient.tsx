@@ -7,7 +7,7 @@ import {
   BarChart2, Loader2, AlertTriangle, RefreshCw,
 } from "lucide-react";
 import {
-  format, subDays, startOfMonth, endOfMonth, subMonths,
+  format, subDays, startOfMonth, endOfMonth, subMonths, addMonths,
   startOfDay, endOfDay,
 } from "date-fns";
 
@@ -58,7 +58,7 @@ type TabKey = "staffPerformance" | "clientRetention" | "branchPerformance" | "sa
 
 // ─── Date presets ─────────────────────────────────────────────────────────────
 
-type PresetKey = "7d" | "30d" | "thisMonth" | "prevMonth" | "3m";
+type PresetKey = "7d" | "30d" | "thisMonth" | "prevMonth" | "nextMonth" | "3m";
 
 function getPresetDates(key: PresetKey): { from: string; to: string } {
   const now = new Date();
@@ -72,6 +72,10 @@ function getPresetDates(key: PresetKey): { from: string; to: string } {
     case "prevMonth": {
       const prev = subMonths(now, 1);
       return { from: format(startOfMonth(prev), "yyyy-MM-dd"), to: format(endOfMonth(prev), "yyyy-MM-dd") };
+    }
+    case "nextMonth": {
+      const next = addMonths(now, 1);
+      return { from: format(startOfMonth(next), "yyyy-MM-dd"), to: format(endOfMonth(next), "yyyy-MM-dd") };
     }
     case "3m":
       return { from: format(startOfDay(subDays(now, 89)), "yyyy-MM-dd"), to: format(endOfDay(now), "yyyy-MM-dd") };
@@ -511,6 +515,7 @@ export function AnalyticsClient({ initialData, defaultFrom, defaultTo, locale, p
     { key: "30d", label: tFilters("last30d") },
     { key: "thisMonth", label: tFilters("thisMonth") },
     { key: "prevMonth", label: tFilters("prevMonth") },
+    { key: "nextMonth", label: tFilters("nextMonth") },
     { key: "3m", label: tFilters("last3m") },
   ];
 
