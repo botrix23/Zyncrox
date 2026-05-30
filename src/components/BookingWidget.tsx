@@ -411,22 +411,22 @@ export default function BookingWidget({
     // 3. Filtrar por categorías de servicio
     if (selectedServices.length > 0) {
       if (schedulingMode === 'separate') {
-        // En modo separado cada servicio elige su propio especialista:
-        // filtrar solo por el servicio que se está agendando en este momento.
+        // En modo separado cada servicio elige su propio especialista.
+        // El staff debe cubrir TODAS las categorías del servicio actual (every).
         const currentCategoryIds = selectedServices[currentServiceIndex]?.categoryIds || [];
         if (currentCategoryIds.length > 0) {
           filtered = filtered.filter(s =>
-            (s.categoryIds || []).some(cId => currentCategoryIds.includes(cId))
+            currentCategoryIds.every(cId => (s.categoryIds || []).includes(cId))
           );
         }
       } else {
         // En modo bulk un mismo especialista atiende TODOS los servicios:
-        // debe tener al menos una categoría de CADA servicio que tenga categorías asignadas.
+        // debe cubrir TODAS las categorías de CADA servicio con categorías asignadas.
         const servicesWithCategories = selectedServices.filter(s => (s.categoryIds || []).length > 0);
         if (servicesWithCategories.length > 0) {
           filtered = filtered.filter(s =>
             servicesWithCategories.every(service =>
-              (service.categoryIds || []).some(cId => (s.categoryIds || []).includes(cId))
+              (service.categoryIds || []).every(cId => (s.categoryIds || []).includes(cId))
             )
           );
         }
@@ -743,8 +743,8 @@ export default function BookingWidget({
       const buildBookingEntry = (item: typeof cartBookings[0], start: Date) => {
         const end = new Date(start.getTime() + item.service.durationMinutes * 60000);
 
-        // Calcular allowedStaffIds por las categorías específicas de ESTE servicio,
-        // no por el displayStaff global que puede estar filtrado para otro servicio.
+        // Calcular allowedStaffIds por las categorías específicas de ESTE servicio.
+        // El staff debe cubrir TODAS las categorías requeridas (every), no solo una (some).
         let allowedStaffIds: string[] | undefined;
         if (!item.staff?.id) {
           const svcCats: string[] = item.service.categoryIds || [];
@@ -752,7 +752,7 @@ export default function BookingWidget({
             ? staff
             : staff.filter(s => {
                 const sCats: string[] = s.categoryIds || [];
-                return svcCats.some(cat => sCats.includes(cat));
+                return svcCats.every(cat => sCats.includes(cat));
               });
           allowedStaffIds = eligibleForService.length > 0
             ? eligibleForService.map(s => s.id)
@@ -1919,7 +1919,7 @@ export default function BookingWidget({
                               </span>
                               <span className="flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-zinc-400">
                                 <Clock className="w-3 h-3" />
-                                {b.time}
+                                {formatTo12h(b.time!)}
                               </span>
                               {b.staff && (
                                 <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-zinc-500">
