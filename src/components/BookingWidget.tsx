@@ -1089,7 +1089,7 @@ export default function BookingWidget({
                                     </span>
                                     <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
                                       <Clock className="w-3 h-3" />
-                                      {booking.time}
+                                      {formatTo12h(booking.time)}
                                     </span>
                                   </div>
                                 )}
