@@ -818,9 +818,10 @@
       "noReviews": "No se han recibido encuestas aún.",
       "table": {
         "rating": "Calif.",
+        "client": "Cliente",
         "staffService": "Staff / Servicio",
         "comment": "Comentario",
-        "date": "Fecha",
+        "appointmentDate": "Fecha de cita",
         "staffFallback": "Personal",
         "serviceFallback": "Servicio"
       }

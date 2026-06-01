@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Plus, 
-  Trash2, 
-  GripVertical, 
-  Star, 
-  CheckCircle2, 
-  MessageSquare, 
-  Info, 
+import {
+  Plus,
+  Trash2,
+  GripVertical,
+  Star,
+  CheckCircle2,
+  MessageSquare,
+  Info,
   Lock,
   ChevronUp,
   ChevronDown,
@@ -18,7 +18,9 @@ import {
   Copy,
   BarChart3,
   Settings,
-  ExternalLink
+  ExternalLink,
+  User,
+  CalendarDays
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Portal } from "@/components/Portal";
@@ -392,15 +394,16 @@ export default function SurveyClient({
                   <thead>
                     <tr className="border-b border-slate-50 dark:border-white/5">
                       <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-2 text-center">{t('audit.table.rating')}</th>
+                      <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.client')}</th>
                       <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.staffService')}</th>
                       <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.comment')}</th>
-                      <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.date')}</th>
+                      <th className="pb-4 text-xs font-black tracking-widest text-slate-400 px-4">{t('audit.table.appointmentDate')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-white/5">
                     {initialReviews.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-20 text-center space-y-4">
+                        <td colSpan={5} className="py-20 text-center space-y-4">
                            <Info className="w-12 h-12 text-slate-100 dark:text-zinc-800 mx-auto" />
                            <p className="text-sm font-bold text-slate-400 italic">{t('audit.noReviews')}</p>
                         </td>
@@ -414,13 +417,26 @@ export default function SurveyClient({
                                <Star className="w-3 h-3 text-yellow-400 fill-current" />
                              </div>
                           </td>
+                          <td className="py-5 px-4 max-w-[180px]">
+                             <div className="flex items-center gap-2">
+                               <div className="w-7 h-7 rounded-full bg-purple-500/10 flex items-center justify-center shrink-0">
+                                 <User className="w-3.5 h-3.5 text-purple-500" />
+                               </div>
+                               <div className="space-y-0.5 min-w-0">
+                                 <p className="text-sm font-black text-slate-900 dark:text-white truncate">{r.booking?.customerName || '—'}</p>
+                                 {r.booking?.customerPhone && (
+                                   <p className="text-[11px] font-bold text-slate-400 truncate">{r.booking.customerPhone}</p>
+                                 )}
+                               </div>
+                             </div>
+                          </td>
                           <td className="py-5 px-4 max-w-[200px]">
                              <div className="space-y-0.5">
                                <p className="text-sm font-black text-slate-900 dark:text-white truncate">{r.booking?.staff?.name || t('audit.table.staffFallback')}</p>
                                <p className="text-[11px] font-bold text-slate-400 truncate">{r.booking?.service?.name || t('audit.table.serviceFallback')}</p>
                              </div>
                           </td>
-                          <td className="py-5 px-4 min-w-[300px]">
+                          <td className="py-5 px-4 min-w-[260px]">
                              <div className="space-y-2">
                                {r.comment && (
                                  <p className="text-sm text-slate-700 dark:text-zinc-300 font-medium italic">"{r.comment}"</p>
@@ -436,7 +452,21 @@ export default function SurveyClient({
                              </div>
                           </td>
                           <td className="py-5 px-4">
-                             <span className="text-[11px] font-bold text-slate-400">{new Date(r.createdAt).toLocaleDateString(locale)}</span>
+                             <div className="flex items-center gap-1.5 text-slate-500 dark:text-zinc-400">
+                               <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                               <div className="space-y-0.5">
+                                 <p className="text-[11px] font-bold">
+                                   {r.booking?.startTime
+                                     ? new Date(r.booking.startTime).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
+                                     : '—'}
+                                 </p>
+                                 {r.booking?.startTime && (
+                                   <p className="text-[10px] font-bold text-slate-400">
+                                     {new Date(r.booking.startTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
+                                   </p>
+                                 )}
+                               </div>
+                             </div>
                           </td>
                         </tr>
                       ))

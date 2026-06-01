@@ -818,9 +818,10 @@
       "noReviews": "No surveys received yet.",
       "table": {
         "rating": "Rating",
+        "client": "Client",
         "staffService": "Staff / Service",
         "comment": "Comment",
-        "date": "Date",
+        "appointmentDate": "Appointment date",
         "staffFallback": "Staff",
         "serviceFallback": "Service"
       }
