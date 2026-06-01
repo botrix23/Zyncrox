@@ -1397,7 +1397,7 @@ export default function ServicesClient({
                               <div>
                                 <div className="flex items-center gap-2">
                                   <p className="text-sm font-black text-slate-900 dark:text-white">{zone.name}</p>
-                                  {!isZoneActive && <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded-md">{tPortal('form.deactivated') || 'Inactiva'}</span>}
+                                  {!isZoneActive && <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded-md">{locale === 'es' ? 'Inactiva' : 'Inactive'}</span>}
                                 </div>
                                 <p className="text-xs text-emerald-600 font-bold tracking-tight">+${zone.fee} {tPortal('form.feeLabel')}</p>
                               </div>
@@ -1406,7 +1406,7 @@ export default function ServicesClient({
                               <button
                                 type="button"
                                 onClick={() => handleToggleZone(zone)}
-                                title={isZoneActive ? (tPortal('form.deactivateZone') || 'Desactivar') : (tPortal('form.activateZone') || 'Activar')}
+                                title={isZoneActive ? (locale === 'es' ? 'Desactivar zona' : 'Deactivate zone') : (locale === 'es' ? 'Activar zona' : 'Activate zone')}
                                 className={`p-2 rounded-xl transition-all ${isZoneActive ? 'text-amber-500 hover:bg-amber-500/10' : 'text-emerald-500 hover:bg-emerald-500/10'}`}
                               >
                                 {isZoneActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
