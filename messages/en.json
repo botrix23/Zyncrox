@@ -282,7 +282,12 @@
       "reactivate": "Reactivate",
       "deactivated": "Deactivated",
       "planLimitReactivate": "You are at your plan limit. Deactivate another branch to reactivate this one.",
-      "toggleError": "Error changing branch status."
+      "toggleError": "Error changing branch status.",
+      "confirmDeactivateTitle": "Deactivate branch",
+      "confirmDeactivateMsg": "\"{name}\" will not be available for new bookings.",
+      "confirmActivateTitle": "Activate branch",
+      "confirmActivateMsg": "\"{name}\" will be available for bookings again.",
+      "confirmToggleBtn": "Confirm"
     },
     "services": {
       "title": "Services",
@@ -356,7 +361,12 @@
       "deleteCategoryMsg": "This will unlink it from all associated services and staff. This action cannot be undone.",
       "deleteConfirmLabel": "Yes, delete",
       "deleteServiceMsg": "The service will be permanently deleted. This action cannot be undone.",
-      "tabDomicilio": "Home Service"
+      "tabDomicilio": "Home Service",
+      "confirmDeactivateTitle": "Deactivate service",
+      "confirmDeactivateMsg": "\"{name}\" will not appear in the widget and cannot receive new bookings.",
+      "confirmActivateTitle": "Activate service",
+      "confirmActivateMsg": "\"{name}\" will be available for bookings again.",
+      "confirmToggleBtn": "Confirm"
     },
     "bookings": {
       "title": "Appointments / bookings",
@@ -515,7 +525,12 @@
       "tabTeam": "Team",
       "tabAbsences": "Absences",
       "tabRequests": "Requests",
-      "deactivated": "Deactivated"
+      "deactivated": "Deactivated",
+      "confirmDeactivateTitle": "Deactivate specialist",
+      "confirmDeactivateMsg": "\"{name}\" will not appear in the widget and will lose portal access.",
+      "confirmActivateTitle": "Reactivate specialist",
+      "confirmActivateMsg": "\"{name}\" will be available to receive bookings again.",
+      "confirmToggleBtn": "Confirm"
     },
     "absences": {
       "title": "Absences & Blocks",

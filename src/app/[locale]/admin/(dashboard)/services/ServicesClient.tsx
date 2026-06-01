@@ -146,7 +146,12 @@ export default function ServicesClient({
     setDeleteZoneId(id);
   };
 
-  const handleToggleZone = async (zone: any) => {
+  const handleToggleZone = (zone: any) => setPendingToggleZone(zone);
+
+  const confirmToggleZone = async () => {
+    if (!pendingToggleZone) return;
+    const zone = pendingToggleZone;
+    setPendingToggleZone(null);
     const newActive = zone.isActive === false ? true : false;
     const res = await updateCoverageZoneAction({ id: zone.id, isActive: newActive });
     if (res.success) {
@@ -227,8 +232,13 @@ export default function ServicesClient({
   const [newInclude, setNewInclude] = useState("");
   const [newExclude, setNewExclude] = useState("");
 
-  const handleToggleActive = async (service: any) => {
-    const newActive = service.isActive === false; // toggling
+  const handleToggleActive = (service: any) => setPendingToggleService(service);
+
+  const confirmToggleService = async () => {
+    if (!pendingToggleService) return;
+    const service = pendingToggleService;
+    setPendingToggleService(null);
+    const newActive = service.isActive === false;
     const result = await toggleServiceActiveAction(service.id, tenantId, service.isActive !== false);
     if (!result.success) {
       if (result.error === 'PLAN_LIMIT_EXCEEDED') {
@@ -332,6 +342,8 @@ export default function ServicesClient({
   };
 
   const [deleteServiceId, setDeleteServiceId] = useState<string | null>(null);
+  const [pendingToggleService, setPendingToggleService] = useState<any | null>(null);
+  const [pendingToggleZone, setPendingToggleZone] = useState<any | null>(null);
 
   const handleDelete = (id: string) => {
     setDeleteServiceId(id);
@@ -419,6 +431,28 @@ export default function ServicesClient({
       variant="danger"
       onConfirm={confirmDeleteZone}
       onCancel={() => setDeleteZoneId(null)}
+    />
+    <ConfirmDialog
+      open={!!pendingToggleService}
+      title={pendingToggleService?.isActive === false ? t('confirmActivateTitle') : t('confirmDeactivateTitle')}
+      message={(pendingToggleService?.isActive === false ? t('confirmActivateMsg') : t('confirmDeactivateMsg')).replace('{name}', pendingToggleService?.name ?? '')}
+      confirmLabel={t('confirmToggleBtn')}
+      cancelLabel={locale === 'es' ? 'Cancelar' : 'Cancel'}
+      variant="warning"
+      onConfirm={confirmToggleService}
+      onCancel={() => setPendingToggleService(null)}
+    />
+    <ConfirmDialog
+      open={!!pendingToggleZone}
+      title={pendingToggleZone?.isActive === false ? (locale === 'es' ? 'Activar zona' : 'Activate zone') : (locale === 'es' ? 'Desactivar zona' : 'Deactivate zone')}
+      message={pendingToggleZone?.isActive === false
+        ? (locale === 'es' ? `"${pendingToggleZone?.name}" volverá a estar disponible.` : `"${pendingToggleZone?.name}" will be available again.`)
+        : (locale === 'es' ? `"${pendingToggleZone?.name}" no aparecerá en el widget.` : `"${pendingToggleZone?.name}" will not appear in the widget.`)}
+      confirmLabel={locale === 'es' ? 'Confirmar' : 'Confirm'}
+      cancelLabel={locale === 'es' ? 'Cancelar' : 'Cancel'}
+      variant="warning"
+      onConfirm={confirmToggleZone}
+      onCancel={() => setPendingToggleZone(null)}
     />
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Page header */}

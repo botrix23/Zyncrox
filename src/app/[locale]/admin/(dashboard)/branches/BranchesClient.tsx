@@ -129,6 +129,7 @@ export default function BranchesClient({
   };
 
   const [deleteBranchTarget, setDeleteBranchTarget] = useState<{ id: string; name: string } | null>(null);
+  const [pendingToggleBranch, setPendingToggleBranch] = useState<any | null>(null);
 
   const handleDelete = (id: string, name: string) => {
     setOpenMenu(null);
@@ -144,9 +145,16 @@ export default function BranchesClient({
     setBranchList(prev => prev.filter(b => b.id !== id));
   };
 
-  const handleToggleActive = async (branch: any) => {
+  const handleToggleActive = (branch: any) => {
     setOpenMenu(null);
     setMenuPos(null);
+    setPendingToggleBranch(branch);
+  };
+
+  const confirmToggleBranch = async () => {
+    if (!pendingToggleBranch) return;
+    const branch = pendingToggleBranch;
+    setPendingToggleBranch(null);
     const newActive = branch.isActive === false;
     const result = await toggleBranchActiveAction(branch.id, tenantId, branch.isActive !== false);
     if (!result.success) {
@@ -200,6 +208,16 @@ export default function BranchesClient({
       variant="danger"
       onConfirm={confirmDeleteBranch}
       onCancel={() => setDeleteBranchTarget(null)}
+    />
+    <ConfirmDialog
+      open={!!pendingToggleBranch}
+      title={pendingToggleBranch?.isActive === false ? t('confirmActivateTitle') : t('confirmDeactivateTitle')}
+      message={(pendingToggleBranch?.isActive === false ? t('confirmActivateMsg') : t('confirmDeactivateMsg')).replace('{name}', pendingToggleBranch?.name ?? '')}
+      confirmLabel={t('confirmToggleBtn')}
+      cancelLabel={t('cancel') || 'Cancelar'}
+      variant="warning"
+      onConfirm={confirmToggleBranch}
+      onCancel={() => setPendingToggleBranch(null)}
     />
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}

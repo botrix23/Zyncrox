@@ -282,7 +282,12 @@
       "reactivate": "Reactivar",
       "deactivated": "Desactivado",
       "planLimitReactivate": "Estás en el límite de tu plan. Desactiva otra sucursal para poder reactivar esta.",
-      "toggleError": "Error al cambiar el estado de la sucursal."
+      "toggleError": "Error al cambiar el estado de la sucursal.",
+      "confirmDeactivateTitle": "Desactivar sucursal",
+      "confirmDeactivateMsg": "\"{name}\" no estará disponible para nuevas reservas.",
+      "confirmActivateTitle": "Activar sucursal",
+      "confirmActivateMsg": "\"{name}\" volverá a estar disponible para reservas.",
+      "confirmToggleBtn": "Confirmar"
     },
     "services": {
       "title": "Servicios",
@@ -356,7 +361,12 @@
       "confirmDeleteCategory": "¿Eliminar categoría?",
       "deleteCategoryMsg": "Se desvinculará de todos los servicios y personal asociados. Esta acción no se puede deshacer.",
       "deleteConfirmLabel": "Sí, eliminar",
-      "deleteServiceMsg": "El servicio se eliminará permanentemente. Esta acción no se puede deshacer."
+      "deleteServiceMsg": "El servicio se eliminará permanentemente. Esta acción no se puede deshacer.",
+      "confirmDeactivateTitle": "Desactivar servicio",
+      "confirmDeactivateMsg": "\"{name}\" no aparecerá en el widget ni podrán agendarse nuevas citas.",
+      "confirmActivateTitle": "Activar servicio",
+      "confirmActivateMsg": "\"{name}\" volverá a estar disponible para reservas.",
+      "confirmToggleBtn": "Confirmar"
     },
     "bookings": {
       "title": "Citas",
@@ -515,7 +525,12 @@
       "confirmDelete": "¿Estás seguro de eliminar a \"{name}\"?",
       "errorSave": "Error al guardar el miembro del equipo",
       "errorDelete": "Error al eliminar el miembro del equipo",
-      "deactivated": "Desactivado"
+      "deactivated": "Desactivado",
+      "confirmDeactivateTitle": "Desactivar especialista",
+      "confirmDeactivateMsg": "\"{name}\" no aparecerá en el widget y perderá acceso al portal.",
+      "confirmActivateTitle": "Reactivar especialista",
+      "confirmActivateMsg": "\"{name}\" volverá a estar disponible para recibir citas.",
+      "confirmToggleBtn": "Confirmar"
     },
     "absences": {
       "title": "Ausencias y bloqueos",
