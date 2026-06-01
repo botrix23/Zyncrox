@@ -7,6 +7,8 @@ import { getMessages } from 'next-intl/server';
 import { ThemeProvider } from "../../components/ThemeProvider";
 import PWARegister from "../../components/PWARegister";
 
+const BASE_URL = "https://www.zyncrox.com";
+
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const dmSerif = DM_Serif_Display({
   subsets: ['latin'],
@@ -18,46 +20,61 @@ const dmSerif = DM_Serif_Display({
 const META_DESCRIPTION =
   "Zyncrox es la plataforma de reservas online que se adapta a tu negocio. Personaliza tu portal, ofrece servicios a domicilio y gestiona tu equipo. Prueba 7 días gratis.";
 
-export const metadata: Metadata = {
-  title: "Zyncrox | Reservas que se adaptan a tu negocio",
-  description: META_DESCRIPTION,
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Zyncrox",
-  },
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: "/icons/icon-192x192.png",
-    shortcut: "/favicon.ico",
-  },
-  openGraph: {
-    type: "website",
-    url: "https://www.zyncrox.com",
+export async function generateMetadata({
+  params: { locale },
+}: {
+  params: { locale: string };
+}): Promise<Metadata> {
+  return {
     title: "Zyncrox | Reservas que se adaptan a tu negocio",
     description: META_DESCRIPTION,
-    siteName: "Zyncrox",
-    images: [
-      {
-        url: "https://www.zyncrox.com/icons/icon-512x512.png",
-        width: 512,
-        height: 512,
-        alt: "Zyncrox Logo",
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: "Zyncrox",
+    },
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: "/icons/icon-192x192.png",
+      shortcut: "/favicon.ico",
+    },
+    // Canonical + hreflang: tells Google which locale is authoritative and how they relate
+    alternates: {
+      canonical: `${BASE_URL}/${locale}`,
+      languages: {
+        "es": `${BASE_URL}/es`,
+        "en": `${BASE_URL}/en`,
+        "x-default": `${BASE_URL}/es`,
       },
-    ],
-  },
-  twitter: {
-    card: "summary",
-    title: "Zyncrox | Reservas que se adaptan a tu negocio",
-    description: META_DESCRIPTION,
-    images: ["https://www.zyncrox.com/icons/icon-512x512.png"],
-  },
-};
+    },
+    openGraph: {
+      type: "website",
+      url: `${BASE_URL}/${locale}`,
+      title: "Zyncrox | Reservas que se adaptan a tu negocio",
+      description: META_DESCRIPTION,
+      siteName: "Zyncrox",
+      images: [
+        {
+          url: `${BASE_URL}/icons/icon-512x512.png`,
+          width: 512,
+          height: 512,
+          alt: "Zyncrox Logo",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary",
+      title: "Zyncrox | Reservas que se adaptan a tu negocio",
+      description: META_DESCRIPTION,
+      images: [`${BASE_URL}/icons/icon-512x512.png`],
+    },
+  };
+}
 
 export const viewport = {
   themeColor: "#8b5cf6",

@@ -5,14 +5,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/"],
+        allow: "/",
         disallow: [
           "/*/admin/",
-          "/*/super/",
           "/api/",
-          "/*/change-password",
-          "/*/reset-password",
-          "/*/forgot-password",
         ],
       },
     ],
