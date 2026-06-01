@@ -61,8 +61,8 @@ export default async function BookingsPage() {
         assignments: { columns: { branchId: true, isPermanent: true } },
       },
     }),
-    db.select().from(branches).where(eq(branches.tenantId, tenantId)),
-    db.select().from(coverageZones).where(eq(coverageZones.tenantId, tenantId)),
+    db.select().from(branches).where(and(eq(branches.tenantId, tenantId), eq(branches.isActive, true))),
+    db.select().from(coverageZones).where(and(eq(coverageZones.tenantId, tenantId), eq(coverageZones.isActive, true))),
     db.query.tenants.findFirst({
       where: eq(tenants.id, tenantId)
     }),

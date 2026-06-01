@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { tenants, branches, services, staff } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import BookingWidget from '@/components/BookingWidget';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export default async function Home({ params }: { params: { locale: string, slug:
   });
 
   // 2. Extraer los datos reales si el tenant existe
-  const tenantBranches = tenant ? await db.select().from(branches).where(eq(branches.tenantId, tenant.id)) : [];
+  const tenantBranches = tenant ? await db.select().from(branches).where(and(eq(branches.tenantId, tenant.id), eq(branches.isActive, true))) : [];
 
   const [rawServices, rawStaff, coverageZones] = tenant ? await Promise.all([
     db.query.services.findMany({
@@ -29,7 +29,7 @@ export default async function Home({ params }: { params: { locale: string, slug:
         assignments: { columns: { branchId: true, isPermanent: true } },
       },
     }),
-    db.query.coverageZones.findMany({ where: (zones, { eq }) => eq(zones.tenantId, tenant.id) }),
+    db.query.coverageZones.findMany({ where: (zones, { eq, and }) => and(eq(zones.tenantId, tenant.id), eq(zones.isActive, true)) }),
   ]) : [[], [], []];
 
   // Aplanar categoryIds a arrays de strings para el widget
