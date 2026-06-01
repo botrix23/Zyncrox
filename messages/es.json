@@ -1352,11 +1352,14 @@
       },
       "table": {
         "rating": "Calif.",
-        "staffService": "Staff / Servicio",
+        "customer": "Cliente",
+        "staffService": "Especialista / Servicio",
+        "bookingDate": "Fecha de cita",
+        "submittedDate": "Enviada",
         "comment": "Comentario",
-        "date": "Fecha",
         "staffFallback": "Sin asignar",
-        "serviceFallback": "Servicio"
+        "serviceFallback": "Servicio",
+        "noCustomer": "Sin nombre"
       }
     },
     "modal": {

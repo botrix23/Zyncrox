@@ -1352,11 +1352,14 @@
       },
       "table": {
         "rating": "Rating",
+        "customer": "Client",
         "staffService": "Staff / Service",
+        "bookingDate": "Appointment",
+        "submittedDate": "Submitted",
         "comment": "Comment",
-        "date": "Date",
         "staffFallback": "Unassigned",
-        "serviceFallback": "Service"
+        "serviceFallback": "Service",
+        "noCustomer": "No name"
       }
     },
     "modal": {

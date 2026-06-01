@@ -34,6 +34,12 @@ export default async function SurveysPage({ params: { locale } }: { params: { lo
       where: eq(reviewsTable.tenantId, tenantId),
       with: {
         booking: {
+          columns: {
+            id: true,
+            startTime: true,
+            customerName: true,
+            customerEmail: true,
+          },
           with: {
             staff: true,
             service: true
