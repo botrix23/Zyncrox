@@ -294,6 +294,7 @@ export default function StaffClient({
   };
 
   const [deleteStaffTarget, setDeleteStaffTarget] = useState<{ id: string; name: string; bookingCount: number } | null>(null);
+  const [pendingToggleStaff, setPendingToggleStaff] = useState<{ id: string; name: string; currentlyActive: boolean } | null>(null);
 
   const handleDelete = async (id: string, name: string) => {
     setOpenMenu(null);
@@ -301,8 +302,16 @@ export default function StaffClient({
     setDeleteStaffTarget({ id, name, bookingCount });
   };
 
-  const handleToggleActive = async (id: string, currentlyActive: boolean) => {
+  const handleToggleActive = (id: string, currentlyActive: boolean) => {
     setOpenMenu(null);
+    const member = staffList.find(m => m.id === id);
+    if (member) setPendingToggleStaff({ id, name: member.name, currentlyActive });
+  };
+
+  const confirmToggleStaff = async () => {
+    if (!pendingToggleStaff) return;
+    const { id, currentlyActive } = pendingToggleStaff;
+    setPendingToggleStaff(null);
     const result = await toggleStaffActiveAction(id, tenantId, !currentlyActive);
     if (!result.success && result.error) {
       alert(result.error);
@@ -410,6 +419,15 @@ export default function StaffClient({
         variant="danger"
         onConfirm={confirmDeleteStaff}
         onCancel={() => setDeleteStaffTarget(null)}
+      />
+      <ConfirmDialog
+        open={!!pendingToggleStaff}
+        title={pendingToggleStaff?.currentlyActive ? t('confirmDeactivateTitle') : t('confirmActivateTitle')}
+        message={(pendingToggleStaff?.currentlyActive ? t('confirmDeactivateMsg') : t('confirmActivateMsg')).replace('{name}', pendingToggleStaff?.name ?? '')}
+        confirmLabel={t('confirmToggleBtn')}
+        variant="warning"
+        onConfirm={confirmToggleStaff}
+        onCancel={() => setPendingToggleStaff(null)}
       />
       <ConfirmDialog
         open={!!revokeTarget}
@@ -909,7 +927,7 @@ export default function StaffClient({
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-black text-slate-500 ml-1">{t('form.rotationTitle')}</label>
                       {formData.assignments.length < 4 && (
-                        <button type="button" onClick={handleAddAssignment} className="text-[9px] font-black text-purple-600 bg-purple-500/10 px-3 py-1.5 rounded-xl hover:bg-purple-500/20 transition-all">
+                        <button type="button" onClick={handleAddAssignment} className="text-xs font-black text-purple-600 bg-purple-500/10 px-4 py-2 rounded-xl hover:bg-purple-500/20 transition-all">
                           + {t('form.addAssignment')}
                         </button>
                       )}
