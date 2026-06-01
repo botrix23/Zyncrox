@@ -1087,7 +1087,7 @@ export default function StaffClient({
                   }`}
                 >
                   {isCurrentlyActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  {isCurrentlyActive ? 'Desactivar' : 'Reactivar'}
+                  {isCurrentlyActive ? t('form.deactivate') : t('form.reactivate')}
                 </button>
               );
             })()}

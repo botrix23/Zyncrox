@@ -505,7 +505,9 @@
         "reviewsHistory": "Reviews History",
         "noReviews": "No reviews for this member yet.",
         "noComment": "No optional comment.",
-        "deleteProfile": "Delete professional profile"
+        "deleteProfile": "Delete professional profile",
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate"
       },
       "confirmDelete": "Are you sure you want to delete \"{name}\"?",
       "errorSave": "Error saving team member",

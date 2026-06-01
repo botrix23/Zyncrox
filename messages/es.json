@@ -508,7 +508,9 @@
         "reviewsHistory": "Historial de Reseñas",
         "noReviews": "Aún no hay reseñas para este miembro.",
         "noComment": "Sin comentario opcional.",
-        "deleteProfile": "Eliminar perfil profesional"
+        "deleteProfile": "Eliminar perfil profesional",
+        "deactivate": "Desactivar",
+        "reactivate": "Reactivar"
       },
       "confirmDelete": "¿Estás seguro de eliminar a \"{name}\"?",
       "errorSave": "Error al guardar el miembro del equipo",

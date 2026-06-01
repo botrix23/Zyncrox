@@ -29,7 +29,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createServiceAction, updateServiceAction, deleteServiceAction, reorderServicesAction, toggleServiceActiveAction } from "@/app/actions/services";
 import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from "@/app/actions/categories";
 import { updateHomeServiceTravelTimeAction, updateHomeServiceSettingsAction } from "@/app/actions/tenant";
-import { createCoverageZoneAction, deleteCoverageZoneAction } from "@/app/actions/zones";
+import { createCoverageZoneAction, deleteCoverageZoneAction, updateCoverageZoneAction } from "@/app/actions/zones";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -144,6 +144,14 @@ export default function ServicesClient({
 
   const handleDeleteZone = (id: string) => {
     setDeleteZoneId(id);
+  };
+
+  const handleToggleZone = async (zone: any) => {
+    const newActive = zone.isActive === false ? true : false;
+    const res = await updateCoverageZoneAction({ id: zone.id, isActive: newActive });
+    if (res.success) {
+      setZones(prev => prev.map(z => z.id === zone.id ? { ...z, isActive: newActive } : z));
+    }
   };
 
   const confirmDeleteZone = async () => {
@@ -1378,26 +1386,42 @@ export default function ServicesClient({
                     )}
 
                     <div className="flex flex-col gap-2">
-                      {zones.map(zone => (
-                        <div key={zone.id} className="flex items-center justify-between p-4 bg-white dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 group hover:border-purple-500/50 transition-all">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                              <Truck className="w-4 h-4" />
+                      {zones.map(zone => {
+                        const isZoneActive = zone.isActive !== false;
+                        return (
+                          <div key={zone.id} className={`flex items-center justify-between p-4 rounded-2xl border group transition-all ${isZoneActive ? 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-purple-500/50' : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200/50 dark:border-white/5 opacity-60'}`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isZoneActive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-200 dark:bg-white/10 text-slate-400'}`}>
+                                <Truck className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-black text-slate-900 dark:text-white">{zone.name}</p>
+                                  {!isZoneActive && <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded-md">{tPortal('form.deactivated') || 'Inactiva'}</span>}
+                                </div>
+                                <p className="text-xs text-emerald-600 font-bold tracking-tight">+${zone.fee} {tPortal('form.feeLabel')}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-sm font-black text-slate-900 dark:text-white">{zone.name}</p>
-                              <p className="text-xs text-emerald-600 font-bold tracking-tight">+${zone.fee} {tPortal('form.feeLabel')}</p>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleZone(zone)}
+                                title={isZoneActive ? (tPortal('form.deactivateZone') || 'Desactivar') : (tPortal('form.activateZone') || 'Activar')}
+                                className={`p-2 rounded-xl transition-all ${isZoneActive ? 'text-amber-500 hover:bg-amber-500/10' : 'text-emerald-500 hover:bg-emerald-500/10'}`}
+                              >
+                                {isZoneActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteZone(zone.id)}
+                                className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteZone(zone.id)}
-                            className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
