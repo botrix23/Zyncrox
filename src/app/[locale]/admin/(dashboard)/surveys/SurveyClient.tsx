@@ -630,7 +630,11 @@ export default function SurveyClient({
                       <div className="flex items-center gap-4 text-xs font-bold text-slate-500 dark:text-zinc-400 border-t border-slate-100 dark:border-white/5 pt-2.5">
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('audit.table.bookingDate')}</span>
-                          <span className="text-slate-700 dark:text-zinc-300">{r.booking?.startTime ? new Date(r.booking.startTime).toLocaleDateString(locale) : '—'}</span>
+                          <span className="text-slate-700 dark:text-zinc-300">
+                            {r.booking?.startTime
+                              ? `${new Date(r.booking.startTime).toLocaleDateString(locale)} ${new Date(r.booking.startTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`
+                              : '—'}
+                          </span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('audit.table.submittedDate')}</span>
@@ -690,9 +694,16 @@ export default function SurveyClient({
                           </td>
                           {/* Booking date */}
                           <td className="py-4 px-3 whitespace-nowrap">
-                            <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                              {r.booking?.startTime ? new Date(r.booking.startTime).toLocaleDateString(locale) : '—'}
-                            </span>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                                {r.booking?.startTime ? new Date(r.booking.startTime).toLocaleDateString(locale) : '—'}
+                              </span>
+                              {r.booking?.startTime && (
+                                <span className="text-[11px] font-bold text-purple-500">
+                                  {new Date(r.booking.startTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           {/* Comment + responses */}
                           <td className="py-4 px-3 min-w-[200px] max-w-[320px]">
