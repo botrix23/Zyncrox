@@ -18,7 +18,7 @@ export default async function Home({ params }: { params: { locale: string, slug:
 
   const [rawServices, rawStaff, coverageZones] = tenant ? await Promise.all([
     db.query.services.findMany({
-      where: (srv, { eq }) => eq(srv.tenantId, tenant.id),
+      where: (srv, { eq, and }) => and(eq(srv.tenantId, tenant.id), eq(srv.isActive, true)),
       with: { branches: true, categories: true },
       orderBy: (srv, { asc }) => [asc(srv.sortOrder)],
     }),
