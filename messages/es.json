@@ -280,7 +280,7 @@
       "inactive": "Inactiva",
       "active": "Activa",
       "reactivate": "Reactivar",
-      "deactivated": "Desactivada",
+      "deactivated": "Desactivado",
       "planLimitReactivate": "Estás en el límite de tu plan. Desactiva otra sucursal para poder reactivar esta.",
       "toggleError": "Error al cambiar el estado de la sucursal."
     },
@@ -514,7 +514,8 @@
       },
       "confirmDelete": "¿Estás seguro de eliminar a \"{name}\"?",
       "errorSave": "Error al guardar el miembro del equipo",
-      "errorDelete": "Error al eliminar el miembro del equipo"
+      "errorDelete": "Error al eliminar el miembro del equipo",
+      "deactivated": "Desactivado"
     },
     "absences": {
       "title": "Ausencias y bloqueos",

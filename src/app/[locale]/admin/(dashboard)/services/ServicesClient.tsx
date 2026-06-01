@@ -1397,7 +1397,7 @@ export default function ServicesClient({
                               <div>
                                 <div className="flex items-center gap-2">
                                   <p className="text-sm font-black text-slate-900 dark:text-white">{zone.name}</p>
-                                  {!isZoneActive && <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded-md">{locale === 'es' ? 'Inactiva' : 'Inactive'}</span>}
+                                  {!isZoneActive && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">{locale === 'es' ? 'Desactivado' : 'Deactivated'}</span>}
                                 </div>
                                 <p className="text-xs text-emerald-600 font-bold tracking-tight">+${zone.fee} {tPortal('form.feeLabel')}</p>
                               </div>

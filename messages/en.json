@@ -514,7 +514,8 @@
       "errorDelete": "Error deleting team member",
       "tabTeam": "Team",
       "tabAbsences": "Absences",
-      "tabRequests": "Requests"
+      "tabRequests": "Requests",
+      "deactivated": "Deactivated"
     },
     "absences": {
       "title": "Absences & Blocks",

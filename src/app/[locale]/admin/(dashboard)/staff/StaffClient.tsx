@@ -583,8 +583,8 @@ export default function StaffClient({
               <div className="flex flex-col items-center">
                 <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">{member.name}</h3>
                 {member.isActive === false && (
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-zinc-700 text-slate-500 dark:text-zinc-400 mb-1">
-                    Inactivo
+                  <span className="inline-block mb-1 text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    {t('deactivated')}
                   </span>
                 )}
                 {avgRating && (
