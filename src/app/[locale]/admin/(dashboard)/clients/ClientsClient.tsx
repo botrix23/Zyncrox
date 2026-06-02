@@ -876,11 +876,11 @@ export default function ClientsClient({
                 <Lock className="w-7 h-7 text-zinc-500 dark:text-zinc-400" />
               </div>
               <div className="text-center max-w-sm">
-                <p className="font-bold text-slate-800 dark:text-white text-lg">Encuestas no disponibles</p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Las encuestas están disponibles desde el plan Professional. Actualiza tu plan para acceder.</p>
+                <p className="font-bold text-slate-800 dark:text-white text-lg">{t('surveysUpgradeTitle')}</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{t('surveysUpgradeDesc')}</p>
               </div>
               <a href={`/${locale}/admin/billing`} className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-3 py-1.5 rounded-full">
-                {locale === 'es' ? 'Ver planes' : 'View plans'}
+                {t('surveysUpgradeCta')}
               </a>
             </div>
           ) : (

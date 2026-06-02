@@ -666,7 +666,10 @@
       "tabDirectory": "Directorio",
       "tabLoyalty": "Fidelización",
       "tabPoints": "Puntos",
-      "tabSurveys": "Encuestas"
+      "tabSurveys": "Encuestas",
+      "surveysUpgradeTitle": "Encuestas no disponibles",
+      "surveysUpgradeDesc": "Las encuestas están disponibles desde el plan Professional. Actualiza tu plan para acceder.",
+      "surveysUpgradeCta": "Ver planes"
     },
     "tabs": {
       "overview": "Vista general",
@@ -887,7 +890,9 @@
         "service2": "Arreglo de Barba",
         "service2Desc": "20 min",
         "defaultBusiness": "Mi negocio"
-      }
+      },
+      "heroSubtitleUpgrade": "El subtítulo personalizado del hero está disponible desde el plan Professional.",
+      "customThemeUpgrade": "La selección de tema claro/oscuro está disponible desde el plan Professional."
     },
     "header": {
       "searchPlaceholder": "Buscar citas, clientes...",

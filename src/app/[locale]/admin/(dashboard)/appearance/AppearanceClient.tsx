@@ -284,7 +284,7 @@ export default function AppearanceClient({
               </div>
 
               {/* Hero subtitle */}
-              <PlanGateSection plan={plan} feature="customHero" upgradeMessage="El subtítulo personalizado del hero está disponible desde el plan Professional.">
+              <PlanGateSection plan={plan} feature="customHero" upgradeMessage={tPortal('heroSubtitleUpgrade')}>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">{tPortal('form.heroSubtitle')}</label>
                   <input
@@ -410,7 +410,7 @@ export default function AppearanceClient({
           </div>
 
           {/* Theme */}
-          <PlanGateSection plan={plan} feature="customTheme" upgradeMessage="La selección de tema claro/oscuro está disponible desde el plan Professional.">
+          <PlanGateSection plan={plan} feature="customTheme" upgradeMessage={tPortal('customThemeUpgrade')}>
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-4 shadow-sm space-y-3">
               <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-white/10">
                 <div className="p-1.5 bg-purple-500/10 rounded-lg"><Monitor className="w-4 h-4 text-purple-600" /></div>

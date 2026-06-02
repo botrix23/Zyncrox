@@ -666,7 +666,10 @@
       "tabDirectory": "Directory",
       "tabLoyalty": "Loyalty",
       "tabPoints": "Points",
-      "tabSurveys": "Surveys"
+      "tabSurveys": "Surveys",
+      "surveysUpgradeTitle": "Surveys not available",
+      "surveysUpgradeDesc": "Surveys are available from the Professional plan. Upgrade to access this feature.",
+      "surveysUpgradeCta": "View plans"
     },
     "tabs": {
       "overview": "Overview",
@@ -887,7 +890,9 @@
         "service2": "Beard Trim",
         "service2Desc": "20 min",
         "defaultBusiness": "My business"
-      }
+      },
+      "heroSubtitleUpgrade": "The custom hero subtitle is available from the Professional plan.",
+      "customThemeUpgrade": "Light/dark theme selection is available from the Professional plan."
     },
     "header": {
       "searchPlaceholder": "Search appointments, clients...",
