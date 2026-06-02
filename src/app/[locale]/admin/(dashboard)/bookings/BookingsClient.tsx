@@ -1356,7 +1356,28 @@ export default function BookingsClient({
                 </button>
               </div>
               
-              {editingBooking ? (
+              {editingBooking && isStaffRole ? (
+                /* MODO STAFF — solo lectura + notas */
+                <div className="flex flex-col h-full overflow-hidden">
+                  <div className="p-7 space-y-5 overflow-y-auto custom-scrollbar flex-1">
+                    {/* Info básica de la cita (solo lectura) */}
+                    <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-4 space-y-2 border border-slate-100 dark:border-white/10">
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{t('form.customerName')}</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">{editingBooking.customerName}</p>
+                      {editingBooking.customerEmail && <p className="text-xs text-slate-400">{editingBooking.customerEmail}</p>}
+                      {editingBooking.customerPhone && <p className="text-xs text-slate-400">{editingBooking.customerPhone}</p>}
+                    </div>
+                    {/* Client Notes */}
+                    {editingBooking.customerEmail && (
+                      <ClientNotesPreview
+                        clientEmail={editingBooking.customerEmail}
+                        clientName={editingBooking.customerName}
+                        locale={localeStr}
+                      />
+                    )}
+                  </div>
+                </div>
+              ) : editingBooking ? (
                 /* MODO EDICIÓN (LEGACY) */
                 <form onSubmit={handleSaveEdit} className="flex flex-col h-full overflow-hidden">
                   <div className="p-7 space-y-6 overflow-y-auto custom-scrollbar flex-1">
