@@ -404,6 +404,7 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
                   </Link>
                 )}
 
+                {!isStaff && (
                 <Link
                   href={`/${locale}/admin/settings`}
                   onClick={() => setAvatarOpen(false)}
@@ -414,6 +415,7 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
                   </span>
                   {t('settings')}
                 </Link>
+                )}
 
                 <Link
                   href={`/${locale}/admin/change-password`}

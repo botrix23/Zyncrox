@@ -118,6 +118,7 @@ export default async function BookingsPage() {
       tenantId={tenantId}
       tenantSettings={tenant}
       loyaltyMap={loyaltyMap}
+      userRole={session?.role ?? 'ADMIN'}
     />
   );
 }

@@ -70,6 +70,7 @@ export default function BookingsClient({
   tenantId,
   tenantSettings,
   loyaltyMap = {},
+  userRole = 'ADMIN',
 }: {
   initialBookings: any[],
   services: any[],
@@ -79,7 +80,9 @@ export default function BookingsClient({
   tenantId: string,
   tenantSettings: any,
   loyaltyMap?: Record<string, string>,
+  userRole?: string,
 }) {
+  const isStaffRole = userRole === 'STAFF';
   const t = useTranslations('Dashboard.bookings');
   const localeStr = useLocale();
   const dateLocale = localeStr === 'es' ? es : enUS;
@@ -776,13 +779,15 @@ export default function BookingsClient({
                   <LayoutList className="w-5 h-5" />
                 </button>
             </div>
-            <button 
+            {!isStaffRole && (
+            <button
               onClick={handleOpenCreate}
               className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl text-sm font-bold shadow-xl shadow-purple-500/20 transition-all active:scale-95"
             >
                 <Calendar className="w-5 h-5" />
                 {t('new')}
             </button>
+            )}
         </div>
       </div>
 

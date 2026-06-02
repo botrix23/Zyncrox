@@ -199,7 +199,7 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
           <div className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl">
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-900 dark:text-white truncate leading-tight">{tenantName}</p>
-              {tenantPlan && (
+              {tenantPlan && !isStaff && (
                 <span className={`inline-block mt-0.5 text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
                   tenantPlan === 'ENTERPRISE'
                     ? 'bg-amber-500/15 text-amber-500'
