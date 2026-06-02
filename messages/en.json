@@ -517,7 +517,9 @@
         "noComment": "No optional comment.",
         "deleteProfile": "Delete professional profile",
         "deactivate": "Deactivate",
-        "reactivate": "Reactivate"
+        "reactivate": "Reactivate",
+        "rotationLocked": "Temporary rotation is available from the Professional plan.",
+        "rotationLockedDesc": "Upgrade your plan to assign temporary branches to your team."
       },
       "confirmDelete": "Are you sure you want to delete \"{name}\"?",
       "errorSave": "Error saving team member",
@@ -551,11 +553,7 @@
       "accessModalConfirm": "Got it",
       "categoriesUpgradeTitle": "Categories not available",
       "categoriesUpgradeDesc": "Specialty categories are available from the Professional plan.",
-      "categoriesUpgradeCta": "View plans",
-      "form": {
-        "rotationLocked": "Temporary rotation is available from the Professional plan.",
-        "rotationLockedDesc": "Upgrade your plan to assign temporary branches to your team."
-      }
+      "categoriesUpgradeCta": "View plans"
     },
     "absences": {
       "title": "Absences & Blocks",

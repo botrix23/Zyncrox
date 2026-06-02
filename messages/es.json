@@ -520,7 +520,9 @@
         "noComment": "Sin comentario opcional.",
         "deleteProfile": "Eliminar perfil profesional",
         "deactivate": "Desactivar",
-        "reactivate": "Reactivar"
+        "reactivate": "Reactivar",
+        "rotationLocked": "La rotación temporal está disponible desde el plan Professional.",
+        "rotationLockedDesc": "Actualiza tu plan para asignar sucursales temporales a tu equipo."
       },
       "confirmDelete": "¿Estás seguro de eliminar a \"{name}\"?",
       "errorSave": "Error al guardar el miembro del equipo",
@@ -551,11 +553,7 @@
       "accessModalConfirm": "Entendido",
       "categoriesUpgradeTitle": "Categorías no disponibles",
       "categoriesUpgradeDesc": "Las categorías de especialidad están disponibles desde el plan Professional.",
-      "categoriesUpgradeCta": "Ver planes",
-      "form": {
-        "rotationLocked": "La rotación temporal está disponible desde el plan Professional.",
-        "rotationLockedDesc": "Actualiza tu plan para asignar sucursales temporales a tu equipo."
-      }
+      "categoriesUpgradeCta": "Ver planes"
     },
     "absences": {
       "title": "Ausencias y bloqueos",
