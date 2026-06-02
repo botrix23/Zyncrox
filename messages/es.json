@@ -532,6 +532,7 @@
       "confirmActivateMsg": "\"{name}\" volverá a estar disponible para recibir citas.",
       "confirmToggleBtn": "Confirmar",
       "accessCreate": "Crear acceso al portal",
+      "accessResendPassword": "Reenviar contraseña temporal",
       "accessActive": "Acceso activo",
       "accessPending": "Acceso pendiente",
       "accessInactive": "Acceso inactivo",

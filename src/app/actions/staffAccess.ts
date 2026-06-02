@@ -122,3 +122,39 @@ export async function reactivateStaffAccessAction(staffId: string, tenantId: str
     return { success: false, error: "Error al reactivar acceso" };
   }
 }
+
+export async function resetStaffPasswordAction(staffId: string, tenantId: string) {
+  try {
+    const session = await getSession();
+    if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.role)) {
+      return { success: false, error: "No autorizado" };
+    }
+
+    const existing = await db.query.users.findFirst({
+      where: and(eq(users.staffId, staffId), eq(users.tenantId, tenantId)),
+    });
+
+    if (!existing) return { success: false, error: "Este profesional no tiene acceso creado" };
+
+    const tempPassword = generateTempPassword();
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 48);
+
+    await db.update(users)
+      .set({
+        password: hashedPassword,
+        mustChangePassword: true,
+        tempPasswordExpiresAt: expiresAt,
+        isActive: true,
+      })
+      .where(and(eq(users.staffId, staffId), eq(users.tenantId, tenantId)));
+
+    revalidatePath("/", "layout");
+    return { success: true, tempPassword };
+  } catch (error) {
+    console.error("Error resetting staff password:", error);
+    return { success: false, error: "Error al resetear contraseña" };
+  }
+}

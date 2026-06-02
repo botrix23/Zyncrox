@@ -532,6 +532,7 @@
       "confirmActivateMsg": "\"{name}\" will be available to receive bookings again.",
       "confirmToggleBtn": "Confirm",
       "accessCreate": "Create portal access",
+      "accessResendPassword": "Resend temporary password",
       "accessActive": "Access active",
       "accessPending": "Pending first login",
       "accessInactive": "Access inactive",
