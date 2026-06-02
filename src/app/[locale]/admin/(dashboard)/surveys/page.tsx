@@ -82,7 +82,7 @@ export default async function SurveysPage({ params: { locale } }: { params: { lo
             <p className="font-bold text-slate-800 dark:text-white text-lg">{t('upgradeTitle')}</p>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{t('upgradeDesc2')}</p>
           </div>
-          <a href="../billing" className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity">
+          <a href={`/${locale}/admin/billing`} className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity">
             {t('upgradeCta')}
           </a>
         </div>

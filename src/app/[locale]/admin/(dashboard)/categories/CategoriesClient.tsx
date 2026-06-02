@@ -5,7 +5,7 @@ import { Plus, Search, Tag, Trash2, X, Edit2, Lock } from 'lucide-react';
 import { Portal } from "@/components/Portal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from "@/app/actions/categories";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 const PRESET_COLORS = [
@@ -27,6 +27,8 @@ export default function CategoriesClient({
 }) {
   const t = useTranslations('Dashboard.staff');
   const router = useRouter();
+  const params = useParams();
+  const locale = (params?.locale as string) || 'es';
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -90,7 +92,7 @@ export default function CategoriesClient({
           <p className="font-bold text-slate-800 dark:text-white text-lg">{t('categoriesUpgradeTitle')}</p>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{t('categoriesUpgradeDesc')}</p>
         </div>
-        <a href="../billing" className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity">
+        <a href={`/${locale}/admin/billing`} className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity">
           {t('categoriesUpgradeCta')}
         </a>
       </div>

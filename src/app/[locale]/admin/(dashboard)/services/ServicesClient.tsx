@@ -32,6 +32,8 @@ import { updateHomeServiceTravelTimeAction, updateHomeServiceSettingsAction } fr
 import { createCoverageZoneAction, deleteCoverageZoneAction, updateCoverageZoneAction } from "@/app/actions/zones";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { canUseFeature } from "@/core/plans";
+import { Lock } from "lucide-react";
 
 const PRESET_COLORS = [
   '#8b5cf6', '#ec4899', '#10b981', '#f59e0b',
@@ -1121,6 +1123,20 @@ export default function ServicesClient({
 
       {/* ---- CATEGORIES TAB ---- */}
       {activeTab === 'categories' && (<>
+        {!canUseFeature(plan, 'staffCategories') ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-20 rounded-3xl border border-dashed border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-white/[0.02]">
+            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-zinc-200 dark:bg-white/10">
+              <Lock className="w-7 h-7 text-zinc-500 dark:text-zinc-400" />
+            </div>
+            <div className="text-center max-w-sm">
+              <p className="font-bold text-slate-800 dark:text-white text-lg">{t('categoriesUpgradeTitle')}</p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{t('categoriesUpgradeDesc')}</p>
+            </div>
+            <a href={`/${(params as any)?.locale || 'es'}/admin/billing`} className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity">
+              {t('categoriesUpgradeCta')}
+            </a>
+          </div>
+        ) : (<>
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
@@ -1244,6 +1260,7 @@ export default function ServicesClient({
             </div>
           </Portal>
         )}
+      </>)}
       </>)}
 
       {/* ---- DOMICILIO TAB ---- */}
