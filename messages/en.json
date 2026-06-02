@@ -454,7 +454,7 @@
       "week": "Week"
     },
     "staff": {
-      "title": "Staff / team",
+      "title": "Staff",
       "subtitle": "Manage the professionals who provide services in your business.",
       "showStaffLabel": "Show staff selection when booking",
       "showStaffHint": "If disabled, the system will automatically assign a specialist.",
@@ -650,7 +650,7 @@
       "dashboard": "Dashboard",
       "bookings": "Bookings",
       "services": "Services",
-      "staff": "Staff / team",
+      "staff": "Staff",
       "absences": "Absences",
       "clients": "Clients",
       "branches": "Branches",
