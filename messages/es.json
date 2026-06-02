@@ -530,7 +530,17 @@
       "confirmDeactivateMsg": "\"{name}\" no aparecerá en el widget y perderá acceso al portal.",
       "confirmActivateTitle": "Reactivar especialista",
       "confirmActivateMsg": "\"{name}\" volverá a estar disponible para recibir citas.",
-      "confirmToggleBtn": "Confirmar"
+      "confirmToggleBtn": "Confirmar",
+      "accessCreate": "Crear acceso al portal",
+      "accessActive": "Acceso activo",
+      "accessPending": "Acceso pendiente",
+      "accessInactive": "Acceso inactivo",
+      "accessRevoke": "Revocar",
+      "accessReactivate": "Reactivar",
+      "accessUnavailable": "Acceso no disponible en tu plan",
+      "accessRevokeTitle": "¿Revocar acceso de {name}?",
+      "accessRevokeMsg": "{name} ya no podrá iniciar sesión en el portal.",
+      "accessRevokeConfirm": "Sí, revocar"
     },
     "absences": {
       "title": "Ausencias y bloqueos",

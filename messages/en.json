@@ -530,7 +530,17 @@
       "confirmDeactivateMsg": "\"{name}\" will not appear in the widget and will lose portal access.",
       "confirmActivateTitle": "Reactivate specialist",
       "confirmActivateMsg": "\"{name}\" will be available to receive bookings again.",
-      "confirmToggleBtn": "Confirm"
+      "confirmToggleBtn": "Confirm",
+      "accessCreate": "Create portal access",
+      "accessActive": "Access active",
+      "accessPending": "Pending first login",
+      "accessInactive": "Access inactive",
+      "accessRevoke": "Revoke",
+      "accessReactivate": "Reactivate",
+      "accessUnavailable": "Access not available on your plan",
+      "accessRevokeTitle": "Revoke access for {name}?",
+      "accessRevokeMsg": "{name} will no longer be able to log in to the portal.",
+      "accessRevokeConfirm": "Yes, revoke"
     },
     "absences": {
       "title": "Absences & Blocks",
