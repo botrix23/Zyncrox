@@ -49,6 +49,18 @@ const PLAN_NAMES: Record<PlanType, string> = {
 }
 const PLAN_ORDER: Record<string, number> = { BASIC: 0, PROFESSIONAL: 1, ENTERPRISE: 2 }
 
+const PLAN_SUBTITLES: Record<PlanType, { en: string; es: string }> = {
+  BASIC:        { en: 'For independent professionals', es: 'Para profesionales independientes' },
+  PROFESSIONAL: { en: 'For mid-size salons',           es: 'Para salones medianos' },
+  ENTERPRISE:   { en: 'For chains & clinics',          es: 'Para cadenas y clínicas' },
+}
+
+const PLAN_HIGHLIGHTS: Record<PlanType, { en: string; es: string }> = {
+  BASIC:        { en: '1 location · 2 specialists · 10 services', es: '1 sucursal · 2 especialistas · 10 servicios' },
+  PROFESSIONAL: { en: '3 locations · 15 specialists · 30 services', es: '3 sucursales · 15 especialistas · 30 servicios' },
+  ENTERPRISE:   { en: 'Unlimited everything',                       es: 'Todo ilimitado' },
+}
+
 const FEATURE_KEYS: Array<keyof typeof PLAN_FEATURES.BASIC> = [
   'maxBranches', 'maxStaff', 'maxServices', 'multiServiceBooking',
   'customTheme', 'customHero', 'customEmailTemplate', 'simultaneousServices',
@@ -273,8 +285,10 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {PLANS.map(p => (
               <div key={p} className={`rounded-2xl border p-4 cursor-pointer transition-all ${p === currentPlan ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-zinc-200 dark:border-white/10 hover:border-purple-400'}`}>
-                <div className="text-sm font-bold mb-1">{PLAN_NAMES[p]}</div>
-                <div className="text-2xl font-black mb-3">${prices[p]}<span className="text-sm font-normal text-zinc-500">{t('perMonth')}</span></div>
+                <div className="text-sm font-bold mb-0.5">{PLAN_NAMES[p]}</div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">{PLAN_SUBTITLES[p][locale as 'en' | 'es'] ?? PLAN_SUBTITLES[p].en}</p>
+                <div className="text-2xl font-black mb-1">${prices[p]}<span className="text-sm font-normal text-zinc-500">{t('perMonth')}</span></div>
+                <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-3">{PLAN_HIGHLIGHTS[p][locale as 'en' | 'es'] ?? PLAN_HIGHLIGHTS[p].en}</p>
                 <button onClick={() => { setTargetPlan(p); setModal('reactivate') }}
                   className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">
                   {t('suspended.reactivateWith', { plan: PLAN_NAMES[p] })}
@@ -304,8 +318,10 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {PLANS.map(p => (
               <div key={p} className="rounded-2xl border border-zinc-200 dark:border-white/10 p-4">
-                <div className="text-sm font-bold mb-1">{PLAN_NAMES[p]}</div>
-                <div className="text-2xl font-black mb-3">${prices[p]}<span className="text-sm font-normal text-zinc-500">{t('perMonth')}</span></div>
+                <div className="text-sm font-bold mb-0.5">{PLAN_NAMES[p]}</div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">{PLAN_SUBTITLES[p][locale as 'en' | 'es'] ?? PLAN_SUBTITLES[p].en}</p>
+                <div className="text-2xl font-black mb-1">${prices[p]}<span className="text-sm font-normal text-zinc-500">{t('perMonth')}</span></div>
+                <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-3">{PLAN_HIGHLIGHTS[p][locale as 'en' | 'es'] ?? PLAN_HIGHLIGHTS[p].en}</p>
                 <ul className="space-y-1 mb-4">
                   {FEATURE_KEYS.slice(0, 6).map(key => (
                     <li key={key} className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
@@ -424,13 +440,15 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
               const isUpgrade = PLAN_ORDER[p] > PLAN_ORDER[currentPlan]
               return (
                 <div key={p} className={`rounded-2xl border p-4 transition-all ${isCurrent ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/10' : 'border-zinc-200 dark:border-white/10'}`}>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold">{PLAN_NAMES[p]}</span>
                       {isCurrent && <span className="px-2 py-0.5 bg-purple-600 text-white text-xs font-bold rounded-full">{t('changePlan.current')}</span>}
                     </div>
                     <span className="text-lg font-black">${prices[p]}<span className="text-xs font-normal text-zinc-500">{t('perMonth')}</span></span>
                   </div>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">{PLAN_SUBTITLES[p][locale as 'en' | 'es'] ?? PLAN_SUBTITLES[p].en}</p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-2">{PLAN_HIGHLIGHTS[p][locale as 'en' | 'es'] ?? PLAN_HIGHLIGHTS[p].en}</p>
                   <ul className="space-y-1 mb-3">
                     {FEATURE_KEYS.slice(0, 5).map(key => (
                       <li key={key} className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   Users, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, AlertCircle,
@@ -170,6 +171,8 @@ export default function SettingsClient({
   initialWaMessageTemplate: string;
 }) {
   const t = useTranslations('Dashboard.settings');
+  const params = useParams();
+  const locale = (params?.locale as string) || 'es';
 
   // ── Configuración general ──────────────────────────────────────────────────
   const [timezone, setTimezone] = useState(initialTimezone);
@@ -439,7 +442,7 @@ export default function SettingsClient({
                 <Lock className="w-4 h-4 text-zinc-400 shrink-0" />
                 <div>
                   <p className="text-xs font-black text-zinc-600 dark:text-zinc-300">{t('emailTemplateLocked')}</p>
-                  <a href="../billing" className="text-[11px] text-purple-500 font-bold hover:underline">{t('emailTemplateLockedCta')}</a>
+                  <a href={`/${locale}/admin/billing`} className="text-[11px] text-purple-500 font-bold hover:underline">{t('emailTemplateLockedCta')}</a>
                 </div>
               </div>
             )}
