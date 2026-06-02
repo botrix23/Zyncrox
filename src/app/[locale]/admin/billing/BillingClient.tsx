@@ -56,9 +56,9 @@ const PLAN_SUBTITLES: Record<PlanType, { en: string; es: string }> = {
 }
 
 const PLAN_HIGHLIGHTS: Record<PlanType, { en: string; es: string }> = {
-  BASIC:        { en: '1 location · 2 specialists · 10 services', es: '1 sucursal · 2 especialistas · 10 servicios' },
-  PROFESSIONAL: { en: '3 locations · 15 specialists · 30 services', es: '3 sucursales · 15 especialistas · 30 servicios' },
-  ENTERPRISE:   { en: 'Unlimited everything',                       es: 'Todo ilimitado' },
+  BASIC:        { en: '1 location · 2 specialists · 20 services', es: '1 sucursal · 2 especialistas · 20 servicios' },
+  PROFESSIONAL: { en: '3 locations · 15 specialists · 50 services', es: '3 sucursales · 15 especialistas · 50 servicios' },
+  ENTERPRISE:   { en: 'Unlimited everything',                        es: 'Todo ilimitado' },
 }
 
 const FEATURE_KEYS: Array<keyof typeof PLAN_FEATURES.BASIC> = [
