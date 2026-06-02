@@ -50,7 +50,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   BASIC: {
     maxBranches: 1,
     maxStaff: 2,
-    maxServices: 10,
+    maxServices: 20,
 
     multiServiceBooking: false,
     separateServiceScheduling: false,
@@ -82,7 +82,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   PROFESSIONAL: {
     maxBranches: 3,
     maxStaff: 15,
-    maxServices: 30,
+    maxServices: 50,
 
     multiServiceBooking: true,
     separateServiceScheduling: true,
