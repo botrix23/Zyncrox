@@ -26,7 +26,7 @@ export default async function StaffPage() {
         assignments: true,
         reviews: true,
         categories: { with: { category: true } },
-        user: { columns: { id: true, isActive: true } },
+        user: { columns: { id: true, isActive: true, mustChangePassword: true } },
       },
       orderBy: desc(staffTable.createdAt),
     }),

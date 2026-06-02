@@ -32,7 +32,7 @@ import {
 import AbsencesClient from '../absences/AbsencesClient';
 import { createStaffAction, updateStaffAction, deleteStaffAction, getStaffFutureBookingCount, toggleStaffActiveAction } from "@/app/actions/staff";
 import { updateShowStaffSelectionAction } from "@/app/actions/tenant";
-import { createStaffAccessAction, revokeStaffAccessAction, reactivateStaffAccessAction } from "@/app/actions/staffAccess";
+import { createStaffAccessAction, revokeStaffAccessAction, reactivateStaffAccessAction, resetStaffPasswordAction } from "@/app/actions/staffAccess";
 import { Tag } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useCallback } from "react";
@@ -403,6 +403,16 @@ export default function StaffClient({
     }
   };
 
+  const handleResetPassword = async (member: any) => {
+    const result = await resetStaffPasswordAction(member.id, tenantId);
+    if (result.success && result.tempPassword) {
+      setTempPasswordModal({ name: member.name, email: member.email, password: result.tempPassword });
+      router.refresh();
+    } else {
+      alert(result.error || 'Error al resetear contraseña');
+    }
+  };
+
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
   return (
@@ -431,9 +441,9 @@ export default function StaffClient({
       />
       <ConfirmDialog
         open={!!revokeTarget}
-        title={`¿Revocar acceso de ${revokeTarget?.name}?`}
-        message="Su sesión se cerrará en la próxima acción. Podrás reactivarla después."
-        confirmLabel="Sí, revocar"
+        title={t('accessRevokeTitle').replace('{name}', revokeTarget?.name ?? '')}
+        message={t('accessRevokeMsg').replace('{name}', revokeTarget?.name ?? '')}
+        confirmLabel={t('accessRevokeConfirm')}
         variant="warning"
         onConfirm={confirmRevokeAccess}
         onCancel={() => setRevokeTarget(null)}
@@ -682,31 +692,42 @@ export default function StaffClient({
                 {canUseFeature(plan, 'staffAccess') ? (
                   member.user ? (
                     member.user.isActive ? (
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 text-xs font-black text-emerald-600 dark:text-emerald-400">
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          Acceso activo
-                        </span>
-                        <button
-                          onClick={() => handleRevokeAccess(member)}
-                          className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-rose-500 px-2.5 py-1.5 rounded-xl hover:bg-rose-500/5 transition-all"
-                        >
-                          <ShieldOff className="w-3 h-3" />
-                          Revocar
-                        </button>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className={`flex items-center gap-1.5 text-xs font-black ${member.user.mustChangePassword ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            {member.user.mustChangePassword ? <Clock className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                            {member.user.mustChangePassword ? t('accessPending') : t('accessActive')}
+                          </span>
+                          <button
+                            onClick={() => handleRevokeAccess(member)}
+                            className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-rose-500 px-2.5 py-1.5 rounded-xl hover:bg-rose-500/5 transition-all"
+                          >
+                            <ShieldOff className="w-3 h-3" />
+                            {t('accessRevoke')}
+                          </button>
+                        </div>
+                        {member.user.mustChangePassword && (
+                          <button
+                            onClick={() => handleResetPassword(member)}
+                            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl transition-all border border-amber-500/10"
+                          >
+                            <KeyRound className="w-3 h-3" />
+                            {t('accessResendPassword')}
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-center justify-between">
                         <span className="flex items-center gap-1.5 text-xs font-black text-slate-400">
                           <ShieldOff className="w-3.5 h-3.5" />
-                          Acceso inactivo
+                          {t('accessInactive')}
                         </span>
                         <button
                           onClick={() => handleReactivateAccess(member)}
                           className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-emerald-500 px-2.5 py-1.5 rounded-xl hover:bg-emerald-500/5 transition-all"
                         >
                           <ShieldCheck className="w-3 h-3" />
-                          Reactivar
+                          {t('accessReactivate')}
                         </button>
                       </div>
                     )
@@ -716,13 +737,13 @@ export default function StaffClient({
                       className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-500/5 hover:bg-purple-500/10 rounded-xl transition-all border border-purple-500/10"
                     >
                       <KeyRound className="w-3 h-3" />
-                      Crear acceso al portal
+                      {t('accessCreate')}
                     </button>
                   )
                 ) : (
                   <div className="flex items-center gap-1.5 text-xs font-black text-slate-400">
                     <ShieldOff className="w-3.5 h-3.5" />
-                    Acceso no disponible en tu plan
+                    {t('accessUnavailable')}
                   </div>
                 )}
               </div>
