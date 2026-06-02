@@ -71,13 +71,20 @@ export default function ClientNotesPreview({
     roleAdmin: isEs ? 'Admin' : 'Admin',
     roleStaff: isEs ? 'Staff' : 'Staff',
     warning: isEs ? 'Alerta' : 'Alert',
+    pinned: isEs ? 'Fijada' : 'Pinned',
     seeMore: isEs ? 'ver más' : 'see more',
     seeLess: isEs ? 'ver menos' : 'see less',
   };
 
   useEffect(() => {
-    getClientNotesPreviewAction(clientEmail, clientName, 3).then(({ notes }) => {
-      setNotes((notes as Note[]) || []);
+    getClientNotesPreviewAction(clientEmail, clientName, 10).then(({ notes }) => {
+      // Pin alert notes to the top
+      const sorted = [...((notes as Note[]) || [])].sort((a, b) => {
+        const aWarn = isWarningNote(a.content) ? 0 : 1;
+        const bWarn = isWarningNote(b.content) ? 0 : 1;
+        return aWarn - bWarn;
+      });
+      setNotes(sorted);
       setLoading(false);
     });
     // Also fetch total count (we load the same 3, but the action gives us only 3)
@@ -174,8 +181,11 @@ export default function ClientNotesPreview({
                 className={`px-4 py-3 ${isWarning ? 'bg-amber-50/80 dark:bg-amber-900/10' : ''}`}
               >
                 {isWarning && (
-                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-[10px] font-black mb-1">
-                    <AlertTriangle className="w-3 h-3" /> {labels.warning}
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-[10px] font-black">
+                      <AlertTriangle className="w-3 h-3" /> {labels.warning}
+                    </div>
+                    <span className="text-[10px] text-amber-500 font-black">📌 {labels.pinned}</span>
                   </div>
                 )}
                 <p className="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap break-words">
