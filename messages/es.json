@@ -366,7 +366,10 @@
       "confirmDeactivateMsg": "\"{name}\" no aparecerá en el widget ni podrán agendarse nuevas citas.",
       "confirmActivateTitle": "Activar servicio",
       "confirmActivateMsg": "\"{name}\" volverá a estar disponible para reservas.",
-      "confirmToggleBtn": "Confirmar"
+      "confirmToggleBtn": "Confirmar",
+      "categoriesUpgradeTitle": "Categorías no disponibles",
+      "categoriesUpgradeDesc": "Las categorías de servicios están disponibles desde el plan Professional.",
+      "categoriesUpgradeCta": "Ver planes"
     },
     "bookings": {
       "title": "Citas",

@@ -366,7 +366,10 @@
       "confirmDeactivateMsg": "\"{name}\" will not appear in the widget and cannot receive new bookings.",
       "confirmActivateTitle": "Activate service",
       "confirmActivateMsg": "\"{name}\" will be available for bookings again.",
-      "confirmToggleBtn": "Confirm"
+      "confirmToggleBtn": "Confirm",
+      "categoriesUpgradeTitle": "Categories not available",
+      "categoriesUpgradeDesc": "Service categories are available from the Professional plan.",
+      "categoriesUpgradeCta": "View plans"
     },
     "bookings": {
       "title": "Appointments / bookings",
