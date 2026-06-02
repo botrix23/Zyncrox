@@ -208,7 +208,7 @@ export default function TenantUsersModal({
   const [toast, setToast] = useState<{ msg: string; success: boolean } | null>(null);
 
   const staffLimit = STAFF_LIMITS[plan] ?? 2;
-  const staffCount = tenantUsers.filter(u => u.role === 'STAFF').length;
+  const staffCount = tenantUsers.filter(u => u.role === 'STAFF' && u.isActive).length;
   const adminCount = tenantUsers.filter(u => u.role === 'ADMIN').length;
   const usagePercent = staffLimit >= 9999 ? 0 : Math.round((staffCount / staffLimit) * 100);
   const atLimit = staffLimit < 9999 && staffCount >= staffLimit;
