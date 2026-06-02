@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Search, Tag, Trash2, X, Edit2 } from 'lucide-react';
+import { Plus, Search, Tag, Trash2, X, Edit2, Lock } from 'lucide-react';
 import { Portal } from "@/components/Portal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from "@/app/actions/categories";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 const PRESET_COLORS = [
   '#8b5cf6', '#ec4899', '#10b981', '#f59e0b',
@@ -18,10 +19,13 @@ type Category = { id: string; name: string; color: string; tenantId: string; cre
 export default function CategoriesClient({
   initialCategories,
   tenantId,
+  canUseCategories = true,
 }: {
   initialCategories: Category[];
   tenantId: string;
+  canUseCategories?: boolean;
 }) {
+  const t = useTranslations('Dashboard.staff');
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -75,6 +79,23 @@ export default function CategoriesClient({
     await deleteCategoryAction(id, tenantId);
     router.refresh();
   };
+
+  if (!canUseCategories) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20 rounded-3xl border border-dashed border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-white/[0.02]">
+        <div className="flex items-center justify-center w-14 h-14 rounded-full bg-zinc-200 dark:bg-white/10">
+          <Lock className="w-7 h-7 text-zinc-500 dark:text-zinc-400" />
+        </div>
+        <div className="text-center max-w-sm">
+          <p className="font-bold text-slate-800 dark:text-white text-lg">{t('categoriesUpgradeTitle')}</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{t('categoriesUpgradeDesc')}</p>
+        </div>
+        <a href="../billing" className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity">
+          {t('categoriesUpgradeCta')}
+        </a>
+      </div>
+    );
+  }
 
   return (
     <>

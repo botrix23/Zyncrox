@@ -541,7 +541,21 @@
       "accessUnavailable": "Acceso no disponible en tu plan",
       "accessRevokeTitle": "¿Revocar acceso de {name}?",
       "accessRevokeMsg": "{name} ya no podrá iniciar sesión en el portal.",
-      "accessRevokeConfirm": "Sí, revocar"
+      "accessRevokeConfirm": "Sí, revocar",
+      "accessModalTitle": "Acceso creado",
+      "accessModalSubtitle": "Comparte estos datos con {name}",
+      "accessModalTempPassword": "Contraseña temporal",
+      "accessModalCopy": "Copiar",
+      "accessModalCopied": "Copiado",
+      "accessModalHint": "El profesional puede cambiar su contraseña después de iniciar sesión.",
+      "accessModalConfirm": "Entendido",
+      "categoriesUpgradeTitle": "Categorías no disponibles",
+      "categoriesUpgradeDesc": "Las categorías de especialidad están disponibles desde el plan Professional.",
+      "categoriesUpgradeCta": "Ver planes",
+      "form": {
+        "rotationLocked": "La rotación temporal está disponible desde el plan Professional.",
+        "rotationLockedDesc": "Actualiza tu plan para asignar sucursales temporales a tu equipo."
+      }
     },
     "absences": {
       "title": "Ausencias y bloqueos",
@@ -737,6 +751,8 @@
       "emailTemplateLabel": "Plantilla del cuerpo del email",
       "emailTemplatePlaceholder": "Escribe un mensaje personalizado para el email de confirmación...",
       "emailVariables": "Variables disponibles",
+      "emailTemplateLocked": "La edición del cuerpo del email está disponible desde el plan Professional.",
+      "emailTemplateLockedCta": "Ver planes",
       "whatsappLabel": "Número de WhatsApp",
       "whatsappHint": "Se muestra en los correos de confirmación para que el cliente pueda contactarte.",
       "savedSuccess": "¡Cambios guardados correctamente!",
@@ -1378,7 +1394,10 @@
       "placeholder": "Escribe aquí la pregunta..."
     },
     "upgradeRequired": "Funcionalidad Premium",
-    "upgradeDesc": "Para personalizar tu sistema de encuestas con preguntas específicas necesitas una suscripción PRO o Business."
+    "upgradeDesc": "Para personalizar tu sistema de encuestas con preguntas específicas necesitas una suscripción PRO o Business.",
+    "upgradeTitle": "Encuestas no disponibles",
+    "upgradeDesc2": "Las encuestas están disponibles desde el plan Professional. Actualiza tu plan para acceder a esta función.",
+    "upgradeCta": "Ver planes"
   },
   "ImpersonationBanner": {
     "viewing": "Estás viendo el panel como Super Admin · Empresa: ",

@@ -541,7 +541,21 @@
       "accessUnavailable": "Access not available on your plan",
       "accessRevokeTitle": "Revoke access for {name}?",
       "accessRevokeMsg": "{name} will no longer be able to log in to the portal.",
-      "accessRevokeConfirm": "Yes, revoke"
+      "accessRevokeConfirm": "Yes, revoke",
+      "accessModalTitle": "Access created",
+      "accessModalSubtitle": "Share these credentials with {name}",
+      "accessModalTempPassword": "Temporary password",
+      "accessModalCopy": "Copy",
+      "accessModalCopied": "Copied",
+      "accessModalHint": "The professional can change their password after logging in.",
+      "accessModalConfirm": "Got it",
+      "categoriesUpgradeTitle": "Categories not available",
+      "categoriesUpgradeDesc": "Specialty categories are available from the Professional plan.",
+      "categoriesUpgradeCta": "View plans",
+      "form": {
+        "rotationLocked": "Temporary rotation is available from the Professional plan.",
+        "rotationLockedDesc": "Upgrade your plan to assign temporary branches to your team."
+      }
     },
     "absences": {
       "title": "Absences & Blocks",
@@ -737,6 +751,8 @@
       "emailTemplateLabel": "Email body template",
       "emailTemplatePlaceholder": "Write a custom message for the confirmation email...",
       "emailVariables": "Available variables",
+      "emailTemplateLocked": "Email body editing is available from the Professional plan.",
+      "emailTemplateLockedCta": "View plans",
       "whatsappLabel": "WhatsApp number",
       "whatsappHint": "Displayed in confirmation emails so the client can contact you.",
       "savedSuccess": "Changes saved successfully!",
@@ -1378,7 +1394,10 @@
       "placeholder": "Write your question here..."
     },
     "upgradeRequired": "Premium Feature",
-    "upgradeDesc": "To customize your survey system with specific questions you need a PRO or Business subscription."
+    "upgradeDesc": "To customize your survey system with specific questions you need a PRO or Business subscription.",
+    "upgradeTitle": "Surveys not available",
+    "upgradeDesc2": "Surveys are available from the Professional plan. Upgrade your plan to access this feature.",
+    "upgradeCta": "View plans"
   },
   "ImpersonationBanner": {
     "viewing": "You are viewing this panel as Super Admin · Company: ",
