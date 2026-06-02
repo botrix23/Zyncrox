@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { users, tenants } from "@/db/schema";
-import { eq, and, ne } from "drizzle-orm";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { getSession } from "@/lib/auth-session";
@@ -48,28 +48,6 @@ export async function changePasswordAction(newPassword: string, confirmPassword:
       tempPasswordExpiresAt: null,
     })
     .where(eq(users.id, session.userId));
-
-  // Si este usuario es el contacto de recuperación del tenant,
-  // desactivar todos los demás admins para evitar accesos duplicados.
-  if (session.tenantId) {
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, session.userId),
-      columns: { email: true },
-    });
-    const tenant = await db.query.tenants.findFirst({
-      where: eq(tenants.id, session.tenantId),
-      columns: { recoveryEmail: true },
-    });
-    if (user && tenant?.recoveryEmail && user.email === tenant.recoveryEmail) {
-      await db.update(users)
-        .set({ isActive: false })
-        .where(and(
-          eq(users.tenantId, session.tenantId),
-          eq(users.role, 'ADMIN'),
-          ne(users.id, session.userId),
-        ));
-    }
-  }
 
   // Actualizar la cookie para quitar el flag mustChangePassword
   cookies().set("zync_session", JSON.stringify({
