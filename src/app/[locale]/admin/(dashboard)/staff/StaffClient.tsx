@@ -28,6 +28,7 @@ import {
   EyeOff,
   CalendarOff,
   ClipboardList,
+  Lock,
 } from 'lucide-react';
 import AbsencesClient from '../absences/AbsencesClient';
 import { createStaffAction, updateStaffAction, deleteStaffAction, getStaffFutureBookingCount, toggleStaffActiveAction } from "@/app/actions/staff";
@@ -947,12 +948,21 @@ export default function StaffClient({
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-black text-slate-500 ml-1">{t('form.rotationTitle')}</label>
-                      {formData.assignments.length < 4 && (
+                      {canUseFeature(plan, 'staffRotations') && formData.assignments.length < 4 && (
                         <button type="button" onClick={handleAddAssignment} className="text-xs font-black text-purple-600 bg-purple-500/10 px-4 py-2 rounded-xl hover:bg-purple-500/20 transition-all">
                           + {t('form.addAssignment')}
                         </button>
                       )}
                     </div>
+                    {!canUseFeature(plan, 'staffRotations') && (
+                      <div className="flex items-center gap-3 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
+                        <Lock className="w-4 h-4 text-amber-500 shrink-0" />
+                        <div>
+                          <p className="text-xs font-black text-amber-600 dark:text-amber-400">{t('form.rotationLocked')}</p>
+                          <p className="text-[11px] text-amber-500/80 font-medium mt-0.5">{t('form.rotationLockedDesc')}</p>
+                        </div>
+                      </div>
+                    )}
                     
                     {formData.assignments.filter(a => !a.isPermanent).length === 0 && (
                       <div className="p-8 border-2 border-dashed border-slate-100 dark:border-white/5 rounded-3xl text-center">
@@ -1156,8 +1166,8 @@ export default function StaffClient({
                   <KeyRound className="w-6 h-6 text-emerald-500" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black tracking-tight">Acceso creado</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Comparte estos datos con {tempPasswordModal.name}</p>
+                  <h3 className="text-xl font-black tracking-tight">{t('accessModalTitle')}</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{t('accessModalSubtitle').replace('{name}', tempPasswordModal.name)}</p>
                 </div>
               </div>
 
@@ -1167,7 +1177,7 @@ export default function StaffClient({
                   <p className="text-sm font-bold text-slate-900 dark:text-white">{tempPasswordModal.email}</p>
                 </div>
                 <div className="p-4 bg-emerald-50 dark:bg-emerald-500/5 rounded-2xl border border-emerald-200 dark:border-emerald-500/20 space-y-1">
-                  <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Contraseña temporal</p>
+                  <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">{t('accessModalTempPassword')}</p>
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-lg font-black text-slate-900 dark:text-white tracking-widest font-mono">{tempPasswordModal.password}</p>
                     <button
@@ -1179,19 +1189,19 @@ export default function StaffClient({
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl text-xs font-bold transition-all shrink-0"
                     >
                       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copied ? 'Copiado' : 'Copiar'}
+                      {copied ? t('accessModalCopied') : t('accessModalCopy')}
                     </button>
                   </div>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-400 font-medium text-center">El profesional puede cambiar su contraseña después de iniciar sesión.</p>
+              <p className="text-xs text-slate-400 font-medium text-center">{t('accessModalHint')}</p>
 
               <button
                 onClick={() => setTempPasswordModal(null)}
                 className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold text-sm transition-all hover:opacity-80"
               >
-                Entendido
+                {t('accessModalConfirm')}
               </button>
             </div>
           </div>

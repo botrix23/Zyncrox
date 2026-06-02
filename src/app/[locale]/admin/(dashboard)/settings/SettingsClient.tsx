@@ -5,13 +5,14 @@ import { useTranslations } from 'next-intl';
 import {
   Users, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, AlertCircle,
   ShieldCheck, UserCog, LifeBuoy, Save, Crown, X, AlertTriangle, Globe,
-  Mail, MessageSquare, CheckCircle2, Info,
+  Mail, MessageSquare, CheckCircle2, Info, Lock,
 } from 'lucide-react';
 import {
   getAdminsAction, createAdminAction, toggleAdminAction, deleteAdminAction,
   updateRecoveryEmailAction, transferOwnershipAction,
 } from '@/app/actions/adminUsers';
 import { updateConfiguracionAction } from '@/app/actions/tenant';
+import { canUseFeature } from '@/core/plans';
 
 type Admin = Awaited<ReturnType<typeof getAdminsAction>>[number];
 
@@ -414,22 +415,34 @@ export default function SettingsClient({
             <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
               {t('emailTemplateLabel')}
             </label>
-            <textarea
-              value={emailBodyTemplate}
-              onChange={e => setEmailBodyTemplate(e.target.value)}
-              placeholder={t('emailTemplatePlaceholder')}
-              className="w-full min-h-[120px] p-4 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all resize-none text-sm text-zinc-900 dark:text-white"
-            />
-            <div className="bg-blue-500/5 p-3 rounded-xl border border-blue-500/10">
-              <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-widest">
-                {t('emailVariables')}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {['{cliente}', '{servicio}', '{fecha}', '{hora}', '{negocio}', '{sucursal}'].map(v => (
-                  <code key={v} className="text-xs bg-white dark:bg-white/5 text-blue-500 px-2 py-1 rounded border border-blue-500/20">{v}</code>
-                ))}
+            {canUseFeature(plan, 'customEmailTemplate') ? (
+              <>
+                <textarea
+                  value={emailBodyTemplate}
+                  onChange={e => setEmailBodyTemplate(e.target.value)}
+                  placeholder={t('emailTemplatePlaceholder')}
+                  className="w-full min-h-[120px] p-4 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all resize-none text-sm text-zinc-900 dark:text-white"
+                />
+                <div className="bg-blue-500/5 p-3 rounded-xl border border-blue-500/10">
+                  <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-widest">
+                    {t('emailVariables')}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {['{cliente}', '{servicio}', '{fecha}', '{hora}', '{negocio}', '{sucursal}'].map(v => (
+                      <code key={v} className="text-xs bg-white dark:bg-white/5 text-blue-500 px-2 py-1 rounded border border-blue-500/20">{v}</code>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-3 p-4 bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl">
+                <Lock className="w-4 h-4 text-zinc-400 shrink-0" />
+                <div>
+                  <p className="text-xs font-black text-zinc-600 dark:text-zinc-300">{t('emailTemplateLocked')}</p>
+                  <a href="../billing" className="text-[11px] text-purple-500 font-bold hover:underline">{t('emailTemplateLockedCta')}</a>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
