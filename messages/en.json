@@ -1565,8 +1565,8 @@
       "cancel": "Cancel",
       "apply": "Apply",
       "changePlanTitle": "Change plan",
-      "planFreeDesc": "1 branch · 3 staff · 5 services",
-      "planProDesc": "3 branches · 15 specialists · 30 services",
+      "planFreeDesc": "1 branch · 2 specialists · 20 services",
+      "planProDesc": "3 branches · 15 specialists · 50 services",
       "planEnterpriseDesc": "No limits · All features",
       "adminCount": "{count} admin(s) · {branches} branch(es)",
       "bookingsAndBranches": "{bookings} bookings · {branches} br.",
@@ -1578,7 +1578,8 @@
       "impersonateConfirm": "Enter",
       "impersonateCancel": "Cancel",
       "impersonateError": "Could not start session. Please try again.",
-      "impersonateRateLimit": "Limit reached. You can start a maximum of 10 sessions per hour."
+      "impersonateRateLimit": "Limit reached. You can start a maximum of 10 sessions per hour.",
+      "manageAdmins": "Manage admins"
     },
     "tenantUsersModal": {
       "title": "Company users",
