@@ -905,7 +905,8 @@
       "trialPlan": "Plan trial",
       "trialDaysLeft": "{days} días restantes",
       "trialExpiresToday": "Expira hoy",
-      "trialActive": "Trial activo"
+      "trialActive": "Trial activo",
+      "manageAdmins": "Gestión de admins"
     },
     "home": {
       "title": "Dashboard admin",

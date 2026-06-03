@@ -493,8 +493,8 @@ export default function ServicesClient({
         </div>
       </div>
 
-      {/* Tab switcher */}
-      <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
+      {/* Tab switcher — desktop */}
+      <div className="hidden md:flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
         <button
           onClick={() => setActiveTab('services')}
           className={`flex items-center gap-2 py-2 px-5 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === 'services' ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
@@ -513,6 +513,19 @@ export default function ServicesClient({
         >
           <Home className="w-4 h-4 shrink-0" /> {t('tabDomicilio')}
         </button>
+      </div>
+      {/* Tab switcher — mobile */}
+      <div className="md:hidden relative">
+        <select
+          value={activeTab}
+          onChange={e => setActiveTab(e.target.value as any)}
+          className="w-full appearance-none bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+        >
+          <option value="services">{t('tabServices')}</option>
+          <option value="categories">{t('tabCategories')}</option>
+          <option value="domicilio">{t('tabDomicilio')}</option>
+        </select>
+        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
       </div>
 
       {/* ---- SERVICES TAB ---- */}
