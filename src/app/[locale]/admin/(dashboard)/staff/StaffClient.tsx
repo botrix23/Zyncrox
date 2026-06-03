@@ -456,8 +456,8 @@ export default function StaffClient({
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t('title')}</h1>
           </div>
-          {/* Tab selector — shown for all roles but Solicitudes hidden for STAFF */}
-          <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit overflow-x-auto">
+          {/* Tab selector desktop — shown for all roles but Solicitudes hidden for STAFF */}
+          <div className="hidden md:flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit overflow-x-auto">
             <button
               onClick={() => setActiveMainTab('team')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 ${activeMainTab === 'team' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
@@ -487,6 +487,20 @@ export default function StaffClient({
               </button>
             )}
           </div>
+        </div>
+
+        {/* Tab selector — mobile */}
+        <div className="md:hidden relative">
+          <select
+            value={activeMainTab}
+            onChange={e => setActiveMainTab(e.target.value as StaffTab)}
+            className="w-full appearance-none bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+          >
+            {!isStaffRole && <option value="team">{t('tabTeam')}</option>}
+            <option value="absences">{t('tabAbsences')}</option>
+            {!isStaffRole && <option value="requests">{t('tabRequests')}{pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ''}</option>}
+          </select>
+          <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
         </div>
 
         {/* ── Tab: Ausencias ── */}

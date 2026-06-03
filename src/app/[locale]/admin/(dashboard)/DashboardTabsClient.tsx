@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { TrendingUp, BarChart2, Lock } from "lucide-react";
+import { TrendingUp, BarChart2, Lock, ChevronDown } from "lucide-react";
 import { AnalyticsClient } from "./analytics/AnalyticsClient";
 import type { StaffPerformanceResult } from "@/app/actions/analytics";
 
@@ -117,12 +117,12 @@ export function DashboardTabsClient({
 
   return (
     <div className="space-y-6 pb-10">
-      {/* ── Tab bar ── */}
-      <div className="flex gap-1 bg-slate-100 dark:bg-white/5 rounded-2xl p-1 w-full sm:w-auto sm:inline-flex">
+      {/* ── Tab bar — desktop ── */}
+      <div className="hidden md:inline-flex gap-1 bg-slate-100 dark:bg-white/5 rounded-2xl p-1">
         {/* Vista general tab */}
         <button
           onClick={() => setActiveTab("overview")}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-150 whitespace-nowrap ${
+          className={`flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-150 whitespace-nowrap ${
             activeTab === "overview"
               ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm"
               : "text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200"
@@ -131,10 +131,10 @@ export function DashboardTabsClient({
           {t("tabs.overview")}
         </button>
 
-        {/* Analítica avanzada tab — visible to all admin roles */}
+        {/* Analítica avanzada tab */}
         <button
           onClick={() => setActiveTab("analytics")}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-150 whitespace-nowrap ${
+          className={`flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-150 whitespace-nowrap ${
             activeTab === "analytics"
               ? "bg-white dark:bg-zinc-900 text-purple-600 shadow-sm"
               : "text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200"
@@ -142,7 +142,6 @@ export function DashboardTabsClient({
         >
           <TrendingUp className={`w-3.5 h-3.5 shrink-0 ${activeTab === "analytics" ? "text-purple-600" : "text-slate-400 dark:text-zinc-500"}`} />
           {t("tabs.analytics")}
-          {/* Business badge */}
           {!canUseAnalytics ? (
             <span className="flex items-center gap-0.5 bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-md shrink-0">
               <Lock className="w-2 h-2" />
@@ -154,6 +153,19 @@ export function DashboardTabsClient({
             </span>
           )}
         </button>
+      </div>
+
+      {/* ── Tab bar — mobile ── */}
+      <div className="md:hidden relative">
+        <select
+          value={activeTab}
+          onChange={e => setActiveTab(e.target.value as "overview" | "analytics")}
+          className="w-full appearance-none bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+        >
+          <option value="overview">{t("tabs.overview")}</option>
+          <option value="analytics">{t("tabs.analytics")}{!canUseAnalytics ? ' 🔒' : ' ★'}</option>
+        </select>
+        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
       </div>
 
       {/* ── Tab content ── */}
