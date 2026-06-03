@@ -431,17 +431,18 @@ export default function ClientsClient({
         })}
       </div>
       {/* Mobile: select */}
-      <div className="md:hidden">
+      <div className="md:hidden relative">
         <select
           value={activeTab}
           onChange={e => setActiveTab(e.target.value as any)}
-          className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 px-4 text-sm font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full appearance-none bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
         >
           <option value="directory">{t('tabDirectory')}</option>
           <option value="loyalty">{t('tabLoyalty')}</option>
           <option value="points">{t('tabPoints')}</option>
           <option value="surveys">{t('tabSurveys')}</option>
         </select>
+        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
       </div>
 
       {/* ---- DIRECTORY TAB ---- */}

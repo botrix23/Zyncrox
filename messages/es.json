@@ -905,7 +905,8 @@
       "trialPlan": "Plan trial",
       "trialDaysLeft": "{days} días restantes",
       "trialExpiresToday": "Expira hoy",
-      "trialActive": "Trial activo"
+      "trialActive": "Trial activo",
+      "manageAdmins": "Gestión de admins"
     },
     "home": {
       "title": "Dashboard admin",
@@ -1565,8 +1566,8 @@
       "cancel": "Cancelar",
       "apply": "Aplicar",
       "changePlanTitle": "Cambiar plan",
-      "planFreeDesc": "1 sucursal · 3 staff · 5 servicios",
-      "planProDesc": "3 sucursales · 15 especialistas · 30 servicios",
+      "planFreeDesc": "1 sucursal · 2 especialistas · 20 servicios",
+      "planProDesc": "3 sucursales · 15 especialistas · 50 servicios",
       "planEnterpriseDesc": "Sin límites · Todas las funciones",
       "adminCount": "{count} admin(s) · {branches} sucursal(es)",
       "bookingsAndBranches": "{bookings} reservas · {branches} suc.",
@@ -1578,7 +1579,8 @@
       "impersonateConfirm": "Entrar",
       "impersonateCancel": "Cancelar",
       "impersonateError": "No se pudo iniciar la sesión. Inténtalo de nuevo.",
-      "impersonateRateLimit": "Límite alcanzado. Puedes iniciar máximo 10 sesiones por hora."
+      "impersonateRateLimit": "Límite alcanzado. Puedes iniciar máximo 10 sesiones por hora.",
+      "manageAdmins": "Gestionar admins"
     },
     "tenantUsersModal": {
       "title": "Usuarios de la empresa",

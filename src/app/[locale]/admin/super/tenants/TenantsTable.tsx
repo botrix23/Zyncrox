@@ -51,7 +51,7 @@ function PlanChangeModal({
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
       <div className="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-center w-12 h-12 bg-purple-500/10 rounded-2xl mb-4 mx-auto">
           <CreditCard className="w-6 h-6 text-purple-500" />
@@ -113,7 +113,7 @@ function TrialDaysModal({
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
       <div className="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-center w-12 h-12 bg-amber-500/10 rounded-2xl mb-4 mx-auto">
           <Timer className="w-6 h-6 text-amber-500" />
@@ -620,7 +620,7 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
             onClick={() => { const ten = tenants.find(ten => ten.id === openMenu); if (ten) handleManageAdmins(ten); }}
             className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
           >
-            <Users className="w-3.5 h-3.5" /> Gestionar admins
+            <Users className="w-3.5 h-3.5" /> {t('manageAdmins')}
           </button>
           <button
             onClick={() => { const ten = tenants.find(ten => ten.id === openMenu); if (ten) handlePlanChange(ten); }}
