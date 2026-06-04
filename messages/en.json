@@ -54,6 +54,8 @@
     "select_one_service": "Select a service",
     "includes": "Included:",
     "excludes": "Not included:",
+    "inclChip": "included",
+    "exclChip": "not included",
     "title_specialist": "Step 3: Specialist & Date",
     "who_attends": "Who will attend you?",
     "anyone": "Anyone",
@@ -374,7 +376,9 @@
       "seeIncludes": "See what's included",
       "hideIncludes": "Hide",
       "moreCategories": "more",
-      "fewerCategories": "Show less"
+      "fewerCategories": "Show less",
+      "includedChip": "included",
+      "excludedChip": "not included"
     },
     "bookings": {
       "title": "Appointments / bookings",
