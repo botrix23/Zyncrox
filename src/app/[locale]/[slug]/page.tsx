@@ -78,6 +78,8 @@ export default async function Home({ params }: { params: { locale: string, slug:
           whatsappNumber={tenant.whatsappNumber || ''}
           homeServiceTerms={tenant.homeServiceTerms || ''}
           homeServiceTermsEnabled={tenant.homeServiceTermsEnabled}
+          branchTerms={tenant.branchTerms || ''}
+          branchTermsEnabled={tenant.branchTermsEnabled}
           waMessageTemplate={tenant.waMessageTemplate}
           bookingSettings={tenant.bookingSettings}
           primaryColor={tenant.primaryColor}

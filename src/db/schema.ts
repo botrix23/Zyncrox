@@ -24,6 +24,8 @@ export const tenants = pgTable('tenants', {
   subscriptionExpiresAt: timestamp('subscription_expires_at', { withTimezone: true, mode: 'date' }),
   homeServiceTerms: text('home_service_terms'),
   homeServiceTermsEnabled: boolean('home_service_terms_enabled').default(false).notNull(),
+  branchTerms: text('branch_terms'),
+  branchTermsEnabled: boolean('branch_terms_enabled').default(false).notNull(),
   allowsHomeService: boolean('allows_home_service').default(true).notNull(),
   homeServiceLeadDays: integer('home_service_lead_days').notNull().default(7),
   homeServiceTravelTime: integer('home_service_travel_time').notNull().default(0),

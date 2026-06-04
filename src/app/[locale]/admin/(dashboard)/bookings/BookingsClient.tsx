@@ -1328,6 +1328,8 @@ export default function BookingsClient({
                   whatsappNumber={tenantSettings?.whatsappNumber || ''}
                   homeServiceTerms={tenantSettings?.homeServiceTerms || ''}
                   homeServiceTermsEnabled={tenantSettings?.homeServiceTermsEnabled}
+                  branchTerms={tenantSettings?.branchTerms || ''}
+                  branchTermsEnabled={tenantSettings?.branchTermsEnabled}
                   waMessageTemplate={tenantSettings?.waMessageTemplate}
                   bookingSettings={tenantSettings?.bookingSettings}
                   primaryColor={tenantSettings?.primaryColor}

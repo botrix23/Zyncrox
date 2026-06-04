@@ -24,13 +24,14 @@ import {
   Home,
   AlertCircle,
   Lock,
+  MapPin,
 } from 'lucide-react';
 import { canUseFeature } from "@/core/plans";
 import { Portal } from "@/components/Portal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createServiceAction, updateServiceAction, deleteServiceAction, reorderServicesAction, toggleServiceActiveAction } from "@/app/actions/services";
 import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from "@/app/actions/categories";
-import { updateHomeServiceTravelTimeAction, updateHomeServiceSettingsAction } from "@/app/actions/tenant";
+import { updateHomeServiceTravelTimeAction, updateHomeServiceSettingsAction, updateBranchTermsAction } from "@/app/actions/tenant";
 import { createCoverageZoneAction, deleteCoverageZoneAction, updateCoverageZoneAction } from "@/app/actions/zones";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -54,6 +55,8 @@ export default function ServicesClient({
   homeServiceTerms: initialTerms = '',
   homeServiceLeadDays: initialLeadDays = 0,
   initialZones = [],
+  branchTermsEnabled: initialBranchTermsEnabled = false,
+  branchTerms: initialBranchTerms = '',
 }: {
   initialServices: any[],
   branches: any[],
@@ -67,6 +70,8 @@ export default function ServicesClient({
   homeServiceTerms?: string,
   homeServiceLeadDays?: number,
   initialZones?: any[],
+  branchTermsEnabled?: boolean,
+  branchTerms?: string,
 }) {
   const limit = planLimit ?? 999;
 
@@ -78,7 +83,7 @@ export default function ServicesClient({
   const atLimit = activeServices.length >= limit;
   const t = useTranslations('Dashboard.services');
   const tPortal = useTranslations('Dashboard.portal');
-  const [activeTab, setActiveTab] = useState<'services' | 'categories' | 'domicilio'>('services');
+  const [activeTab, setActiveTab] = useState<'services' | 'categories' | 'domicilio' | 'sucursal'>('services');
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Card expansion state
@@ -96,6 +101,27 @@ export default function ServicesClient({
   const router = useRouter();
   const params = useParams();
   const locale = (params?.locale as string) || 'es';
+
+  // Sucursal tab state
+  const [branchTermsEnabled, setBranchTermsEnabled] = useState(initialBranchTermsEnabled);
+  const [branchTerms, setBranchTerms] = useState(initialBranchTerms);
+  const [isSavingBranch, setIsSavingBranch] = useState(false);
+  const [branchSaved, setBranchSaved] = useState(false);
+  const [branchMessage, setBranchMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const handleSaveBranchTerms = async () => {
+    setIsSavingBranch(true);
+    setBranchMessage(null);
+    const result = await updateBranchTermsAction({ tenantId, branchTermsEnabled, branchTerms });
+    if (result.success) {
+      setBranchMessage({ type: 'success', text: tPortal('successSave') });
+      setBranchSaved(true);
+      setTimeout(() => setBranchSaved(false), 2000);
+    } else {
+      setBranchMessage({ type: 'error', text: tPortal('errorSave') });
+    }
+    setIsSavingBranch(false);
+  };
 
   // Domicilio tab state
   const [domAllowsHomeService, setDomAllowsHomeService] = useState(initialAllowsHomeService);
@@ -523,6 +549,12 @@ export default function ServicesClient({
         >
           <Home className="w-4 h-4 shrink-0" /> {t('tabDomicilio')}
         </button>
+        <button
+          onClick={() => setActiveTab('sucursal')}
+          className={`flex items-center gap-2 py-2 px-5 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === 'sucursal' ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+        >
+          <MapPin className="w-4 h-4 shrink-0" /> {t('tabSucursal')}
+        </button>
       </div>
       {/* Tab switcher — mobile */}
       <div className="md:hidden relative">
@@ -534,6 +566,7 @@ export default function ServicesClient({
           <option value="services">{t('tabServices')}</option>
           <option value="categories">{t('tabCategories')}</option>
           <option value="domicilio">{t('tabDomicilio')}</option>
+          <option value="sucursal">{t('tabSucursal')}</option>
         </select>
         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
       </div>
@@ -1592,6 +1625,74 @@ export default function ServicesClient({
                   <Save className="w-4 h-4" />
                 )}
                 {tPortal('form.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---- SUCURSAL TAB ---- */}
+      {activeTab === 'sucursal' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {branchMessage && (
+            <div className={`p-4 rounded-2xl flex items-center gap-3 animate-in zoom-in-95 duration-300 ${
+              branchMessage.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border border-rose-500/20 text-rose-500'
+            }`}>
+              {branchMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+              <p className="font-bold text-sm">{branchMessage.text}</p>
+            </div>
+          )}
+
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm space-y-8">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
+              <div className="p-2 bg-purple-500/10 rounded-lg">
+                <MapPin className="w-5 h-5 text-purple-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">{tPortal('form.branchTermsTitle')}</h2>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">{tPortal('form.branchTermsSectionDesc')}</p>
+              </div>
+            </div>
+
+            {/* Toggle */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
+                <p className="text-sm font-medium text-slate-900 dark:text-white">{tPortal('form.branchTermsEnabled')}</p>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked={branchTermsEnabled} onChange={e => setBranchTermsEnabled(e.target.checked)} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+              </div>
+            </div>
+
+            {branchTermsEnabled && (
+              <div className="space-y-2 animate-in slide-in-from-top-2 duration-300 border-l-2 border-purple-500 pl-4 ml-2">
+                <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-2">
+                  {tPortal('form.branchTermsContent')} <span title={tPortal('form.branchTermsTooltip')}><Info className="w-3.5 h-3.5 text-zinc-500" /></span>
+                </label>
+                <textarea
+                  value={branchTerms}
+                  onChange={e => setBranchTerms(e.target.value)}
+                  placeholder={tPortal('form.branchTermsPlaceholder')}
+                  className="w-full min-h-[120px] p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none text-sm"
+                />
+              </div>
+            )}
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={handleSaveBranchTerms}
+                disabled={isSavingBranch}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold shadow-xl transition-all disabled:opacity-60 ${branchSaved ? 'bg-emerald-500 text-white' : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-500/20'}`}
+              >
+                {isSavingBranch ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : branchSaved ? (
+                  <CheckCircle2 className="w-4 h-4" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                {branchSaved ? tPortal('form.branchTermsSaved') : tPortal('form.branchTermsSave')}
               </button>
             </div>
           </div>

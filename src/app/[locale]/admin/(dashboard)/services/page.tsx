@@ -47,6 +47,8 @@ export default async function ServicesPage() {
       homeServiceTerms={tenant?.homeServiceTerms ?? ''}
       homeServiceLeadDays={tenant?.homeServiceLeadDays ?? 0}
       initialZones={dbZones}
+      branchTermsEnabled={tenant?.branchTermsEnabled ?? false}
+      branchTerms={tenant?.branchTerms ?? ''}
     />
   );
 }
