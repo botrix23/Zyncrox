@@ -413,7 +413,8 @@ export default function SettingsClient({
             <p className="text-xs text-zinc-500 dark:text-zinc-500">{t('whatsappHint')}</p>
           </div>
 
-          {/* Plantilla de email */}
+          {/* Plantilla de email — temporalmente oculta */}
+          {false && (
           <div className="space-y-2">
             <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
               {t('emailTemplateLabel')}
@@ -447,6 +448,7 @@ export default function SettingsClient({
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Status + Save button */}
