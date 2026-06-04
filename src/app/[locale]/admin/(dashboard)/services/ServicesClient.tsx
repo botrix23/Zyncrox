@@ -794,24 +794,47 @@ export default function ServicesClient({
                             <Users className="w-3 h-3" /> {t('form.badgeSimultaneous')}
                           </span>
                         )}
-                        {service.isExclusive ? (
+                        {service.isExclusive && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-md uppercase tracking-widest border border-amber-500/10">
                             {t('form.badgeExclusive')}
                           </span>
-                        ) : (service.branches || []).length === 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-md uppercase tracking-widest border border-blue-500/10">
-                            {t('form.badgeGlobal')}
-                          </span>
-                        ) : null}
-                        {(service.categories || []).map((sc: any) => (
-                          <span
-                            key={sc.categoryId}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md uppercase tracking-wider"
-                            style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
-                          >
-                            <Tag className="w-2.5 h-2.5" /> {sc.category?.name}
-                          </span>
-                        ))}
+                        )}
+                        {/* Categories: max 2 + overflow chip */}
+                        {!service.isExclusive && (() => {
+                          const cats: any[] = service.categories || [];
+                          const allExpanded = expandedCats.has(service.id);
+                          const visible = allExpanded ? cats : cats.slice(0, MAX_CAT);
+                          const overflow = cats.length - MAX_CAT;
+                          return (
+                            <>
+                              {visible.map((sc: any) => (
+                                <span
+                                  key={sc.categoryId}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md uppercase tracking-wider"
+                                  style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
+                                >
+                                  <Tag className="w-2.5 h-2.5" /> {sc.category?.name}
+                                </span>
+                              ))}
+                              {!allExpanded && overflow > 0 && (
+                                <button
+                                  onClick={e => { e.stopPropagation(); toggleCats(service.id); }}
+                                  className="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-md bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/15 transition-colors"
+                                >
+                                  +{overflow} {t('moreCategories')}
+                                </button>
+                              )}
+                              {allExpanded && overflow > 0 && (
+                                <button
+                                  onClick={e => { e.stopPropagation(); toggleCats(service.id); }}
+                                  className="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-md bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/15 transition-colors"
+                                >
+                                  {t('fewerCategories')}
+                                </button>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                       {!service.isExclusive && (
                         (service.branches || []).length === 0 ? (
