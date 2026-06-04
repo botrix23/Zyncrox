@@ -370,7 +370,11 @@
       "confirmToggleBtn": "Confirmar",
       "categoriesUpgradeTitle": "Categorías no disponibles",
       "categoriesUpgradeDesc": "Las categorías de servicios están disponibles desde el plan Professional.",
-      "categoriesUpgradeCta": "Ver planes"
+      "categoriesUpgradeCta": "Ver planes",
+      "seeIncludes": "Ver qué incluye",
+      "hideIncludes": "Ocultar",
+      "moreCategories": "más",
+      "fewerCategories": "Ver menos"
     },
     "bookings": {
       "title": "Citas",

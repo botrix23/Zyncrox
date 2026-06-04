@@ -370,7 +370,11 @@
       "confirmToggleBtn": "Confirm",
       "categoriesUpgradeTitle": "Categories not available",
       "categoriesUpgradeDesc": "Service categories are available from the Professional plan.",
-      "categoriesUpgradeCta": "View plans"
+      "categoriesUpgradeCta": "View plans",
+      "seeIncludes": "See what's included",
+      "hideIncludes": "Hide",
+      "moreCategories": "more",
+      "fewerCategories": "Show less"
     },
     "bookings": {
       "title": "Appointments / bookings",
