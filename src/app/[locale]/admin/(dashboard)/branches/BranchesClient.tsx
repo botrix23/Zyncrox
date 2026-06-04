@@ -343,11 +343,18 @@ export default function BranchesClient({
                           const todaySched = bh.regular?.[todayId];
                           const isOpen = todaySched?.isOpen ?? false;
 
+                          const to12h = (t24: string) => {
+                            const [h, m] = t24.split(':').map(Number);
+                            const period = h >= 12 ? 'PM' : 'AM';
+                            const h12 = h % 12 || 12;
+                            return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+                          };
+
                           let displayTime = "";
                           if (!isOpen) {
                             displayTime = t('closedToday');
                           } else if (todaySched?.slots?.length) {
-                            displayTime = todaySched.slots.map((s: any) => `${s.open} - ${s.close}`).join(', ');
+                            displayTime = todaySched.slots.map((s: any) => `${to12h(s.open)} - ${to12h(s.close)}`).join(', ');
                           } else {
                             displayTime = t('hoursNotAvailable');
                           }

@@ -199,7 +199,7 @@ export default function BookingsClient({
 
   // Hora más tardía de cierre entre todas las sucursales
   const calendarEndHour = (() => {
-    let latest = 22; // fallback
+    let latest = 0;
     for (const branch of branches) {
       try {
         const bh = JSON.parse(branch.businessHours || '{}');
@@ -208,13 +208,14 @@ export default function BookingsClient({
           const slots: any[] = (day as any).slots || [];
           if ((day as any).isOpen && slots.length > 0) {
             const lastSlot = slots[slots.length - 1];
-            const closeHour = parseInt(lastSlot.close.split(':')[0], 10);
-            if (!isNaN(closeHour) && closeHour > latest) latest = closeHour;
+            const [closeH, closeM] = lastSlot.close.split(':').map(Number);
+            const closeDecimal = closeH + (closeM > 0 ? 1 : 0); // redondear hacia arriba si hay minutos
+            if (!isNaN(closeDecimal) && closeDecimal > latest) latest = closeDecimal;
           }
         }
       } catch { /* ignore */ }
     }
-    return latest;
+    return latest > 0 ? latest + 1 : 21; // +1h buffer, fallback 21
   })();
 
   // Total de horas visibles en el calendario
