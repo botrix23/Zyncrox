@@ -54,6 +54,8 @@
     "select_one_service": "Selecciona un servicio",
     "includes": "Incluye",
     "excludes": "No incluye",
+    "inclChip": "incluidos",
+    "exclChip": "no incluidos",
     "title_specialist": "Paso 3: Especialista y fecha",
     "who_attends": "¿Con quién te atiendes?",
     "anyone": "Cualquiera",
@@ -374,7 +376,9 @@
       "seeIncludes": "Ver qué incluye",
       "hideIncludes": "Ocultar",
       "moreCategories": "más",
-      "fewerCategories": "Ver menos"
+      "fewerCategories": "Ver menos",
+      "includedChip": "incluidos",
+      "excludedChip": "no incluidos"
     },
     "bookings": {
       "title": "Citas",

@@ -675,23 +675,42 @@ export default function ServicesClient({
                     </div>
                   )
                 )}
-                {/* Inclusiones / exclusiones — colapsables */}
+                {/* Inclusiones / exclusiones — chips con acordeón separado */}
                 {((service.includes?.length > 0) || (service.excludes?.length > 0)) && (
-                  <>
-                    <button
-                      onClick={e => { e.stopPropagation(); toggleDetails(service.id); }}
-                      className="flex items-center gap-1 mt-2 text-[11px] font-semibold text-slate-400 dark:text-zinc-500 hover:text-purple-500 dark:hover:text-purple-400 transition-colors"
-                    >
-                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${expandedDetails.has(service.id) ? 'rotate-180' : ''}`} />
-                      {expandedDetails.has(service.id) ? t('hideIncludes') : t('seeIncludes')}
-                    </button>
-                    {expandedDetails.has(service.id) && (
+                  <div className="mt-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {service.includes?.length > 0 && (
+                        <button
+                          onClick={e => { e.stopPropagation(); toggleDetails(service.id + '-incl'); }}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border transition-colors ${expandedDetails.has(service.id + '-incl') ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'}`}
+                        >
+                          <CheckCircle2 className="w-2.5 h-2.5" />
+                          {service.includes.length} {t('includedChip')}
+                          <ChevronDown className={`w-2.5 h-2.5 transition-transform duration-200 ${expandedDetails.has(service.id + '-incl') ? 'rotate-180' : ''}`} />
+                        </button>
+                      )}
+                      {service.excludes?.length > 0 && (
+                        <button
+                          onClick={e => { e.stopPropagation(); toggleDetails(service.id + '-excl'); }}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border transition-colors ${expandedDetails.has(service.id + '-excl') ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 hover:bg-rose-500/20'}`}
+                        >
+                          <XCircle className="w-2.5 h-2.5" />
+                          {service.excludes.length} {t('excludedChip')}
+                          <ChevronDown className={`w-2.5 h-2.5 transition-transform duration-200 ${expandedDetails.has(service.id + '-excl') ? 'rotate-180' : ''}`} />
+                        </button>
+                      )}
+                    </div>
+                    {expandedDetails.has(service.id + '-incl') && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {(service.includes || []).map((inc: string, i: number) => (
                           <span key={i} className="text-xs font-bold bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <CheckCircle2 className="w-2.5 h-2.5" /> {inc}
                           </span>
                         ))}
+                      </div>
+                    )}
+                    {expandedDetails.has(service.id + '-excl') && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
                         {(service.excludes || []).map((exc: string, i: number) => (
                           <span key={i} className="text-xs font-bold bg-rose-500/10 text-rose-500 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <XCircle className="w-2.5 h-2.5" /> {exc}
@@ -699,7 +718,7 @@ export default function ServicesClient({
                         ))}
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
 

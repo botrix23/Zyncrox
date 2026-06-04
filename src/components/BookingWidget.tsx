@@ -197,6 +197,11 @@ export default function BookingWidget({
     return new Set(['evening']);
   });
 
+  const [expandedSrvAcc, setExpandedSrvAcc] = useState<Record<string, 'incl' | 'excl' | null>>({});
+  const toggleSrvAcc = (id: string, type: 'incl' | 'excl') => {
+    setExpandedSrvAcc(prev => ({ ...prev, [id]: prev[id] === type ? null : type }));
+  };
+
   useEffect(() => {
     if (openCalendarIdx === null) return;
     const handleClickOutside = () => setOpenCalendarIdx(null);
@@ -1258,22 +1263,26 @@ export default function BookingWidget({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto flex-1 pr-2 pl-1 pt-1 pb-10 custom-scrollbar items-start content-start w-full">
                 {displayServices.map((srv) => {
                   const isSelected = selectedServices.some(s => s.id === srv.id);
+                  const srvAcc = expandedSrvAcc[srv.id] ?? null;
+                  const hasInclExcl = (srv.includes?.length ?? 0) > 0 || (srv.excludes?.length ?? 0) > 0;
                   return (
-                    <button
+                    <div
                       key={srv.id}
-                      onClick={() => handleToggleService(srv)}
-                      className={`w-full p-6 bg-white dark:bg-white/5 border-2 rounded-3xl text-left transition-all duration-300 group shadow-lg flex flex-col relative ${isSelected
-                        ? 'border-purple-500 bg-purple-500/10 shadow-[0_15px_40px_rgba(139,92,246,0.15)] ring-1 ring-purple-500/20'
+                      className={`w-full bg-white dark:bg-white/5 border-2 rounded-3xl text-left transition-all duration-300 group shadow-lg flex flex-col relative overflow-hidden ${isSelected
+                        ? 'border-purple-500 bg-purple-500/5 shadow-[0_15px_40px_rgba(139,92,246,0.15)] ring-1 ring-purple-500/20'
                         : 'border-slate-100 dark:border-white/5 hover:border-purple-500/40 hover:shadow-xl'
                         }`}
                     >
-                      {isSelected && (
-                        <div className="absolute top-5 right-5 bg-purple-600 text-white p-1 rounded-full shadow-lg animate-in zoom-in-50 duration-300">
-                          <Check className="w-4 h-4" />
-                        </div>
-                      )}
-                      
-                      <div className="flex flex-col gap-1 mb-5">
+                      {/* Top: click to select */}
+                      <div
+                        className="p-6 cursor-pointer flex flex-col gap-1"
+                        onClick={() => handleToggleService(srv)}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-5 right-5 bg-purple-600 text-white p-1 rounded-full shadow-lg animate-in zoom-in-50 duration-300 z-10">
+                            <Check className="w-4 h-4" />
+                          </div>
+                        )}
                         <h3 className={`text-xl font-black transition-colors tracking-tight ${isSelected ? 'text-purple-600 dark:text-purple-400' : 'text-slate-900 dark:text-white group-hover:text-purple-500'}`}>
                           {srv.name}
                         </h3>
@@ -1286,46 +1295,58 @@ export default function BookingWidget({
                         </div>
                       </div>
 
-                      <div className="space-y-5 pt-5 border-t border-slate-100 dark:border-white/5 w-full">
-                        {srv.includes && srv.includes.length > 0 && (
-                          <div>
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                              </div>
-                              <span className="text-xs font-black tracking-widest uppercase text-slate-400 dark:text-zinc-500">{t("includes")}</span>
-                            </div>
-                            <ul className="grid grid-cols-1 gap-2 pl-1">
-                              {srv.includes.map((inc, i) => (
+                      {/* Footer: chips (separate click area) */}
+                      {hasInclExcl && (
+                        <div className="px-6 pb-4 pt-3 flex flex-wrap gap-2 border-t border-slate-100 dark:border-white/5">
+                          {(srv.includes?.length ?? 0) > 0 && (
+                            <button
+                              onClick={e => { e.stopPropagation(); toggleSrvAcc(srv.id, 'incl'); }}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${srvAcc === 'incl' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'}`}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {srv.includes!.length} {t("inclChip")}
+                              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${srvAcc === 'incl' ? 'rotate-180' : ''}`} />
+                            </button>
+                          )}
+                          {(srv.excludes?.length ?? 0) > 0 && (
+                            <button
+                              onClick={e => { e.stopPropagation(); toggleSrvAcc(srv.id, 'excl'); }}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${srvAcc === 'excl' ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 hover:bg-rose-500/20'}`}
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              {srv.excludes!.length} {t("exclChip")}
+                              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${srvAcc === 'excl' ? 'rotate-180' : ''}`} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Accordion */}
+                      {srvAcc && (
+                        <div className="px-6 pb-5 pt-3 border-t border-slate-100 dark:border-white/5 animate-in slide-in-from-top-1 duration-200">
+                          {srvAcc === 'incl' && (
+                            <ul className="grid grid-cols-1 gap-2">
+                              {srv.includes!.map((inc, i) => (
                                 <li key={i} className="flex items-start gap-2.5 text-sm font-semibold text-slate-600 dark:text-zinc-300 leading-tight">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0"></span>
                                   {inc}
                                 </li>
                               ))}
                             </ul>
-                          </div>
-                        )}
-                        
-                        {srv.excludes && srv.excludes.length > 0 && (
-                          <div>
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="w-6 h-6 rounded-lg bg-rose-500/10 flex items-center justify-center">
-                                <XCircle className="w-4 h-4 text-rose-500" />
-                              </div>
-                              <span className="text-xs font-black tracking-widest uppercase text-slate-400 dark:text-zinc-500">{t("excludes")}</span>
-                            </div>
-                            <ul className="grid grid-cols-1 gap-2 pl-1">
-                              {srv.excludes.map((exc, i) => (
+                          )}
+                          {srvAcc === 'excl' && (
+                            <ul className="grid grid-cols-1 gap-2">
+                              {srv.excludes!.map((exc, i) => (
                                 <li key={i} className="flex items-start gap-2.5 text-sm font-medium text-slate-500/60 dark:text-zinc-400/60 leading-tight italic">
                                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500/30 mt-1.5 shrink-0"></span>
                                   {exc}
                                 </li>
                               ))}
                             </ul>
-                          </div>
-                        )}
-                      </div>
-                    </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
