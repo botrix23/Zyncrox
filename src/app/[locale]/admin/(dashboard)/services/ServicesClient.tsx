@@ -81,6 +81,16 @@ export default function ServicesClient({
   const [activeTab, setActiveTab] = useState<'services' | 'categories' | 'domicilio'>('services');
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Card expansion state
+  const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set());
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+  const MAX_CAT = 2;
+  const toggleDetails = (id: string) => setExpandedDetails(prev => {
+    const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next;
+  });
+  const toggleCats = (id: string) => setExpandedCats(prev => {
+    const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next;
+  });
   const [editingService, setEditingService] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -609,52 +619,87 @@ export default function ServicesClient({
                       <Users className="w-2.5 h-2.5" /> {t('form.badgeSimultaneous')}
                     </span>
                   )}
-                  {service.isExclusive ? (
+                  {service.isExclusive && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-md uppercase tracking-widest border border-amber-500/10">
                       {t('form.badgeExclusive')}
                     </span>
-                  ) : (service.branches || []).length === 0 ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-md uppercase tracking-widest border border-blue-500/10">
-                      {t('form.badgeGlobal')}
-                    </span>
-                  ) : null}
-                  {(service.categories || []).map((sc: any) => (
-                    <span
-                      key={sc.categoryId}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded-md uppercase tracking-wider"
-                      style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
-                    >
-                      <Tag className="w-2 h-2" /> {sc.category?.name}
-                    </span>
-                  ))}
+                  )}
+                  {/* Categories: max 2 visible + overflow chip */}
+                  {!service.isExclusive && (() => {
+                    const cats: any[] = service.categories || [];
+                    const allExpanded = expandedCats.has(service.id);
+                    const visible = allExpanded ? cats : cats.slice(0, MAX_CAT);
+                    const overflow = cats.length - MAX_CAT;
+                    return (
+                      <>
+                        {visible.map((sc: any) => (
+                          <span
+                            key={sc.categoryId}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded-md uppercase tracking-wider"
+                            style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
+                          >
+                            <Tag className="w-2 h-2" /> {sc.category?.name}
+                          </span>
+                        ))}
+                        {!allExpanded && overflow > 0 && (
+                          <button
+                            onClick={e => { e.stopPropagation(); toggleCats(service.id); }}
+                            className="inline-flex items-center px-2 py-0.5 text-xs font-bold rounded-md bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/15 transition-colors"
+                          >
+                            +{overflow} {t('moreCategories')}
+                          </button>
+                        )}
+                        {allExpanded && overflow > 0 && (
+                          <button
+                            onClick={e => { e.stopPropagation(); toggleCats(service.id); }}
+                            className="inline-flex items-center px-2 py-0.5 text-xs font-bold rounded-md bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/15 transition-colors"
+                          >
+                            {t('fewerCategories')}
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
+                {/* Branch info — always visible, no GLOBAL badge */}
                 {!service.isExclusive && (
                   (service.branches || []).length === 0 ? (
                     <div className="flex items-center gap-1.5 mt-2">
-                      <Info className="w-3.5 h-3.5 text-slate-400 cursor-help transition-colors hover:text-purple-500 shrink-0" />
+                      <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <p className="text-xs font-bold text-blue-500 dark:text-blue-400">{t('form.globalServiceNote')}</p>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5 mt-2">
-                      <Info className="w-3.5 h-3.5 text-slate-400 cursor-help transition-colors hover:text-purple-500 shrink-0" />
+                      <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <p className="text-xs font-bold text-emerald-500 dark:text-emerald-400">{t('form.specificServiceNote')}</p>
                     </div>
                   )
                 )}
-                {/* Inclusiones / exclusiones */}
+                {/* Inclusiones / exclusiones — colapsables */}
                 {((service.includes?.length > 0) || (service.excludes?.length > 0)) && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {(service.includes || []).map((inc: string, i: number) => (
-                      <span key={i} className="text-xs font-bold bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <CheckCircle2 className="w-2.5 h-2.5" /> {inc}
-                      </span>
-                    ))}
-                    {(service.excludes || []).map((exc: string, i: number) => (
-                      <span key={i} className="text-xs font-bold bg-rose-500/10 text-rose-500 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <XCircle className="w-2.5 h-2.5" /> {exc}
-                      </span>
-                    ))}
-                  </div>
+                  <>
+                    <button
+                      onClick={e => { e.stopPropagation(); toggleDetails(service.id); }}
+                      className="flex items-center gap-1 mt-2 text-[11px] font-semibold text-slate-400 dark:text-zinc-500 hover:text-purple-500 dark:hover:text-purple-400 transition-colors"
+                    >
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${expandedDetails.has(service.id) ? 'rotate-180' : ''}`} />
+                      {expandedDetails.has(service.id) ? t('hideIncludes') : t('seeIncludes')}
+                    </button>
+                    {expandedDetails.has(service.id) && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {(service.includes || []).map((inc: string, i: number) => (
+                          <span key={i} className="text-xs font-bold bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="w-2.5 h-2.5" /> {inc}
+                          </span>
+                        ))}
+                        {(service.excludes || []).map((exc: string, i: number) => (
+                          <span key={i} className="text-xs font-bold bg-rose-500/10 text-rose-500 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <XCircle className="w-2.5 h-2.5" /> {exc}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -749,24 +794,47 @@ export default function ServicesClient({
                             <Users className="w-3 h-3" /> {t('form.badgeSimultaneous')}
                           </span>
                         )}
-                        {service.isExclusive ? (
+                        {service.isExclusive && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-md uppercase tracking-widest border border-amber-500/10">
                             {t('form.badgeExclusive')}
                           </span>
-                        ) : (service.branches || []).length === 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-md uppercase tracking-widest border border-blue-500/10">
-                            {t('form.badgeGlobal')}
-                          </span>
-                        ) : null}
-                        {(service.categories || []).map((sc: any) => (
-                          <span
-                            key={sc.categoryId}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md uppercase tracking-wider"
-                            style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
-                          >
-                            <Tag className="w-2.5 h-2.5" /> {sc.category?.name}
-                          </span>
-                        ))}
+                        )}
+                        {/* Categories: max 2 + overflow chip */}
+                        {!service.isExclusive && (() => {
+                          const cats: any[] = service.categories || [];
+                          const allExpanded = expandedCats.has(service.id);
+                          const visible = allExpanded ? cats : cats.slice(0, MAX_CAT);
+                          const overflow = cats.length - MAX_CAT;
+                          return (
+                            <>
+                              {visible.map((sc: any) => (
+                                <span
+                                  key={sc.categoryId}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md uppercase tracking-wider"
+                                  style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
+                                >
+                                  <Tag className="w-2.5 h-2.5" /> {sc.category?.name}
+                                </span>
+                              ))}
+                              {!allExpanded && overflow > 0 && (
+                                <button
+                                  onClick={e => { e.stopPropagation(); toggleCats(service.id); }}
+                                  className="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-md bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/15 transition-colors"
+                                >
+                                  +{overflow} {t('moreCategories')}
+                                </button>
+                              )}
+                              {allExpanded && overflow > 0 && (
+                                <button
+                                  onClick={e => { e.stopPropagation(); toggleCats(service.id); }}
+                                  className="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-md bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/15 transition-colors"
+                                >
+                                  {t('fewerCategories')}
+                                </button>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                       {!service.isExclusive && (
                         (service.branches || []).length === 0 ? (
