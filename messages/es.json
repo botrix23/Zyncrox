@@ -287,7 +287,8 @@
       "confirmDeactivateMsg": "\"{name}\" no estará disponible para nuevas reservas.",
       "confirmActivateTitle": "Activar sucursal",
       "confirmActivateMsg": "\"{name}\" volverá a estar disponible para reservas.",
-      "confirmToggleBtn": "Confirmar"
+      "confirmToggleBtn": "Confirmar",
+      "cancel": "Cancelar"
     },
     "services": {
       "title": "Servicios",

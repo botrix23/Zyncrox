@@ -235,7 +235,7 @@ export default function BranchesClient({
                   ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
                   : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400'
             }`}>
-              {activeBranches.length} / {limit} · {plan ?? 'BASIC'}
+              {activeBranches.length} / {limit}
             </span>
           )}
           <button

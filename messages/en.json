@@ -287,7 +287,8 @@
       "confirmDeactivateMsg": "\"{name}\" will not be available for new bookings.",
       "confirmActivateTitle": "Activate branch",
       "confirmActivateMsg": "\"{name}\" will be available for bookings again.",
-      "confirmToggleBtn": "Confirm"
+      "confirmToggleBtn": "Confirm",
+      "cancel": "Cancel"
     },
     "services": {
       "title": "Services",
