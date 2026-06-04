@@ -447,12 +447,13 @@ export default function BookingWidget({
     return filtered;
   }, [staff, modality, selectedServices, schedulingMode, currentServiceIndex, selectedBranch, branches]);
 
+  const isBranchBooking = modality === 'local' || (modality !== 'domicilio' && selectedBranch !== null);
   const isFormValid =
     guestName.trim() !== '' &&
     emailRegex.test(guestEmail) &&
     guestPhone.length >= (selectedCountry as any).minLen &&
     (modality !== 'domicilio' || (guestAddress.trim() !== '' && selectedZone !== null && (!homeServiceTermsEnabled || agreedToTerms))) &&
-    (modality !== 'local' || (!branchTermsEnabled || agreedToBranchTerms));
+    (!isBranchBooking || !branchTermsEnabled || agreedToBranchTerms);
 
   const getTransferInfo = (bks = cartBookings) => {
     if (modality !== 'domicilio' || !selectedZone || bks.length === 0) return { total: 0, blocks: 0 };
@@ -2089,7 +2090,7 @@ export default function BookingWidget({
                   </div>
                 )}
 
-                {modality === 'local' && branchTermsEnabled && (
+                {isBranchBooking && branchTermsEnabled && (
                   <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl space-y-3">
                       <button

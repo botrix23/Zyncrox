@@ -352,7 +352,7 @@
       "tabServices": "Servicios",
       "tabCategories": "Categorías",
       "tabDomicilio": "Domicilio",
-      "tabSucursal": "En Sucursal",
+      "tabSucursal": "En sucursal",
       "travelTimeTitle": "Tiempo de traslado a domicilio",
       "travelTimeDesc": "Minutos de buffer antes y después de cada cita a domicilio para cubrir el desplazamiento del especialista.",
       "travelTimeSave": "Guardar",

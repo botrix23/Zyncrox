@@ -368,7 +368,7 @@
       "deleteConfirmLabel": "Yes, delete",
       "deleteServiceMsg": "The service will be permanently deleted. This action cannot be undone.",
       "tabDomicilio": "Home Service",
-      "tabSucursal": "At Branch",
+      "tabSucursal": "At branch",
       "confirmDeactivateTitle": "Deactivate service",
       "confirmDeactivateMsg": "\"{name}\" will not appear in the widget and cannot receive new bookings.",
       "confirmActivateTitle": "Activate service",
