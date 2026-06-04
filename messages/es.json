@@ -563,7 +563,8 @@
       "categoriesUpgradeDesc": "Las categorías de especialidad están disponibles desde el plan Professional.",
       "categoriesUpgradeCta": "Ver planes",
       "filterAllBranches": "Todas las sucursales",
-      "moreCats": "más"
+      "moreCats": "más",
+      "fewerCategories": "Ver menos"
     },
     "absences": {
       "title": "Ausencias y bloqueos",

@@ -82,6 +82,15 @@ export default function StaffClient({
   const [activeMainTab, setActiveMainTab] = useState<StaffTab>(role === 'STAFF' ? 'absences' : 'team');
   const [searchTerm, setSearchTerm] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("all");
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+  const toggleCats = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedCats(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -696,7 +705,7 @@ export default function StaffClient({
               </button>
             </div>
 
-            {/* ── Badges: Home Service + máx 2 categorías + overflow ── */}
+            {/* ── Badges: Home Service + categorías (máx 2 o todas) + overflow ── */}
             <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3 pt-1">
               {member.allowsHomeService && (
                 <span className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/20">
@@ -704,21 +713,42 @@ export default function StaffClient({
                   {t('form.homeServiceOk')}
                 </span>
               )}
-              {(member.categories || []).slice(0, 2).map((sc: any) => (
-                <span
-                  key={sc.categoryId}
-                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full"
-                  style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
-                >
-                  <Tag className="w-3 h-3" />
-                  {sc.category?.name}
-                </span>
-              ))}
-              {(member.categories || []).length > 2 && (
-                <span className="flex items-center px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-white/10">
-                  +{(member.categories || []).length - 2} {t('moreCats')}
-                </span>
-              )}
+              {(() => {
+                const cats: any[] = member.categories || [];
+                const allExpanded = expandedCats.has(member.id);
+                const visible = allExpanded ? cats : cats.slice(0, 2);
+                const overflow = cats.length - 2;
+                return (
+                  <>
+                    {visible.map((sc: any) => (
+                      <span
+                        key={sc.categoryId}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full"
+                        style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
+                      >
+                        <Tag className="w-3 h-3" />
+                        {sc.category?.name}
+                      </span>
+                    ))}
+                    {!allExpanded && overflow > 0 && (
+                      <button
+                        onClick={(e) => toggleCats(member.id, e)}
+                        className="flex items-center px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
+                      >
+                        +{overflow} {t('moreCats')}
+                      </button>
+                    )}
+                    {allExpanded && overflow > 0 && (
+                      <button
+                        onClick={(e) => toggleCats(member.id, e)}
+                        className="flex items-center px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
+                      >
+                        {t('fewerCategories')}
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
               {hasFutureRotation && (
                 <span className="flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-zinc-500">
                   <Clock className="w-3 h-3" />

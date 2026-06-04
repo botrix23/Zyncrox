@@ -563,7 +563,8 @@
       "categoriesUpgradeDesc": "Specialty categories are available from the Professional plan.",
       "categoriesUpgradeCta": "View plans",
       "filterAllBranches": "All branches",
-      "moreCats": "more"
+      "moreCats": "more",
+      "fewerCategories": "Show less"
     },
     "absences": {
       "title": "Absences & Blocks",
