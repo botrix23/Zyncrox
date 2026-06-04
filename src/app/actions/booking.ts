@@ -962,7 +962,45 @@ export async function updateBookingAction(data: {
       earnPointsForBookingAction(data.id).catch(console.error);
     }
 
-    // 3. Send reschedule email if time changed
+    // 3a. Send cancellation email if status changed to CANCELLED
+    if (data.status === 'CANCELLED' && existing?.status !== 'CANCELLED' && existing?.customerEmail) {
+      try {
+        const emailCfgC = await getPlatformEmailTemplates();
+        const localeC = (existing.tenant.emailLocale as EmailLocale) || 'es';
+        const varsC = {
+          customerName: existing.customerName,
+          serviceName: existing.service.name,
+          date: formatEmailDate(existing.startTime, localeC),
+          time: formatEmailTime(existing.startTime),
+          branchName: existing.branch.name,
+          tenantName: existing.tenant.name,
+          phone: existing.tenant.whatsappNumber || '',
+          contactEmail: (existing.tenant as any).contactEmail || '',
+        };
+        const emailPayloadC = buildEmailPayload(
+          emailCfgC?.emailTplCancellation,
+          React.createElement(BookingCancellationEmail, {
+            ...varsC,
+            locale: localeC,
+            tenantLogo: existing.tenant.logoUrl || undefined,
+            phone: existing.tenant.whatsappNumber || undefined,
+            contactEmail: (existing.tenant as any).contactEmail || undefined,
+          }),
+          varsC
+        );
+        await sendWithRetry({
+          from: `${existing.tenant.name} <notificaciones@zyncrox.com>`,
+          replyTo: (existing.tenant as any).contactEmail || undefined,
+          to: existing.customerEmail,
+          subject: emailT.cancellationSubject(existing.tenant.name, localeC),
+          ...emailPayloadC,
+        });
+      } catch (e) {
+        console.error('[Email] Error sending cancellation email on status change:', e);
+      }
+    }
+
+    // 3b. Send reschedule email if time changed
     const timeChanged = data.startTime && existing &&
       new Date(existing.startTime).getTime() !== new Date(data.startTime).getTime();
 
