@@ -135,13 +135,20 @@ export default function StaffClient({
     return override?.branchId || permanent || member.branchId;
   };
 
-  const filteredStaff = staffList.filter(s => {
-    const matchesSearch = !searchTerm ||
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (s.email || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesBranch = branchFilter === 'all' || getEffectiveBranchId(s) === branchFilter;
-    return matchesSearch && matchesBranch;
-  });
+  const filteredStaff = staffList
+    .filter(s => {
+      const matchesSearch = !searchTerm ||
+        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesBranch = branchFilter === 'all' || getEffectiveBranchId(s) === branchFilter;
+      return matchesSearch && matchesBranch;
+    })
+    .sort((a, b) => {
+      // Activos primero, inactivos al final — sin tocar orden interno de cada grupo
+      const aActive = a.isActive !== false ? 0 : 1;
+      const bActive = b.isActive !== false ? 0 : 1;
+      return aActive - bActive;
+    });
 
   const handleOpenModal = (member?: any) => {
     if (member) {
