@@ -228,7 +228,7 @@ export default function BranchesClient({
         </div>
         <div className="flex items-center gap-3">
           {limit < 999 && (
-            <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${
+            <span className={`text-sm font-bold px-4 py-3 rounded-2xl border ${
               atLimit
                 ? 'bg-red-500/10 border-red-500/30 text-red-500'
                 : activeBranches.length >= limit - 1

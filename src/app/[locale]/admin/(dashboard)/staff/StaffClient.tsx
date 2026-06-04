@@ -539,14 +539,14 @@ export default function StaffClient({
         </div>
         <div className="flex items-center gap-3">
           {limit < 999 && (
-            <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${
+            <span className={`text-sm font-bold px-4 py-3 rounded-2xl border ${
               atLimit
                 ? 'bg-red-500/10 border-red-500/30 text-red-500'
                 : activeStaffCount >= limit - 1
                   ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
                   : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400'
             }`}>
-              {activeStaffCount} / {limit} empleados · {plan ?? 'BASIC'}
+              {activeStaffCount} / {limit}
             </span>
           )}
           <button
