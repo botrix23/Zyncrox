@@ -561,7 +561,9 @@
       "accessModalConfirm": "Got it",
       "categoriesUpgradeTitle": "Categories not available",
       "categoriesUpgradeDesc": "Specialty categories are available from the Professional plan.",
-      "categoriesUpgradeCta": "View plans"
+      "categoriesUpgradeCta": "View plans",
+      "filterAllBranches": "All branches",
+      "moreCats": "more"
     },
     "absences": {
       "title": "Absences & Blocks",

@@ -81,6 +81,7 @@ export default function StaffClient({
 
   const [activeMainTab, setActiveMainTab] = useState<StaffTab>(role === 'STAFF' ? 'absences' : 'team');
   const [searchTerm, setSearchTerm] = useState("");
+  const [branchFilter, setBranchFilter] = useState<string>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -114,9 +115,24 @@ export default function StaffClient({
     await updateShowStaffSelectionAction(tenantId, value);
   };
 
-  const filteredStaff = staffList.filter(s =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getEffectiveBranchId = (member: any) => {
+    const today = new Date().toISOString().split('T')[0];
+    const override = member.assignments?.find((a: any) =>
+      !a.isPermanent &&
+      a.startDate && new Date(a.startDate).toISOString().split('T')[0] <= today &&
+      (!a.endDate || new Date(a.endDate).toISOString().split('T')[0] >= today)
+    );
+    const permanent = member.assignments?.find((a: any) => a.isPermanent)?.branchId;
+    return override?.branchId || permanent || member.branchId;
+  };
+
+  const filteredStaff = staffList.filter(s => {
+    const matchesSearch = !searchTerm ||
+      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesBranch = branchFilter === 'all' || getEffectiveBranchId(s) === branchFilter;
+    return matchesSearch && matchesBranch;
+  });
 
   const handleOpenModal = (member?: any) => {
     if (member) {
@@ -565,6 +581,32 @@ export default function StaffClient({
         </div>
       </div>
 
+      {/* Search + branch filter */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder={t('searchPlaceholder')}
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-900 dark:text-white outline-none focus:border-purple-500/50 transition-all placeholder:text-slate-400 shadow-sm"
+          />
+        </div>
+        {branches.length > 1 && (
+          <select
+            value={branchFilter}
+            onChange={e => setBranchFilter(e.target.value)}
+            className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 px-4 text-sm font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:border-purple-500/50 transition-all shadow-sm cursor-pointer"
+          >
+            <option value="all">{t('filterAllBranches')}</option>
+            {branches.map((b: any) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
       <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm">
         <div>
           <p className="text-sm font-semibold text-slate-900 dark:text-white">{t('showStaffLabel')}</p>
@@ -599,45 +641,32 @@ export default function StaffClient({
             : null;
 
           return (
-          <div 
-            key={member.id} 
+          <div
+            key={member.id}
             onClick={() => handleOpenModal(member)}
-            className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-purple-500/10 transition-all group overflow-hidden relative cursor-pointer active:scale-[0.98]"
+            className={`bg-white dark:bg-zinc-900 border rounded-2xl overflow-hidden shadow-sm transition-all cursor-pointer ${
+              member.isActive === false
+                ? 'border-slate-200 dark:border-white/5 opacity-60'
+                : 'border-slate-200 dark:border-white/5 hover:border-purple-500/40 hover:shadow-md hover:shadow-purple-500/10 active:scale-[0.99]'
+            }`}
           >
-            <div className="absolute top-0 right-0 p-4 z-10">
-              <button 
-                onClick={(e) => handleOpenMenu(e, member.id)}
-                className={`p-2 rounded-xl transition-all ${openMenu === member.id ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'}`}
-              >
-                <MoreVertical className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 p-1">
-                <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center relative overflow-hidden">
-                    <User className="w-12 h-12 text-slate-300" />
-                    <div className="absolute bottom-0 left-0 w-full bg-slate-900/80 backdrop-blur-sm py-1.5 rounded-b-xl">
-                        <span className="text-xs font-bold text-white tracking-tight uppercase leading-none">{t('verified')}</span>
-                    </div>
+            {/* ── Header: nombre + menú ── */}
+            <div className="flex items-start justify-between gap-2 p-4 pb-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className={`font-bold text-[15px] tracking-tight leading-tight ${member.isActive === false ? 'text-slate-400 dark:text-zinc-500' : 'text-slate-900 dark:text-white'}`}>
+                    {member.name}
+                  </h3>
+                  {member.isActive === false && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      {t('deactivated')}
+                    </span>
+                  )}
                 </div>
-              </div>
-              
-              <div className="flex flex-col items-center">
-                <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">{member.name}</h3>
-                {member.isActive === false && (
-                  <span className="inline-block mb-1 text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                    {t('deactivated')}
-                  </span>
-                )}
                 {avgRating && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedStaffReviews(member);
-                      setIsReviewsModalOpen(true);
-                    }}
-                    className="flex items-center gap-1.5 p-1 px-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-all"
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedStaffReviews(member); setIsReviewsModalOpen(true); }}
+                    className="flex items-center gap-1 mt-1 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg px-1 transition-all"
                   >
                     <div className="flex gap-0.5">
                       {[1, 2, 3, 4, 5].map((star) => (
@@ -647,121 +676,128 @@ export default function StaffClient({
                     <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">{avgRating}</span>
                   </button>
                 )}
-              </div>
-
-              <div className="mt-1 flex flex-col items-center gap-1 w-full">
-                <p className="text-xs font-bold text-purple-600 uppercase tracking-widest leading-none mb-1">
+                {/* Sucursal */}
+                <p className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mt-1.5 leading-none">
                   {branchName || t('noBranch')}
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-1.5 mt-1">
-                  {activeOverride && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full border border-amber-500/20 animate-pulse">
-                      <CalendarDays className="w-3 h-3" />
-                      {t('form.temporaryAssignment').toUpperCase()}
-                    </span>
-                  )}
-                  {member.allowsHomeService && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/20">
-                      <Plus className="w-3 h-3" />
-                      {t('form.homeServiceOk')}
-                    </span>
-                  )}
-                  {(member.categories || []).map((sc: any) => (
-                    <span
-                      key={sc.categoryId}
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full"
-                      style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
-                    >
-                      <Tag className="w-3 h-3" />
-                      {sc.category?.name}
-                    </span>
-                  ))}
-                </div>
+                {/* Viñeta de asignación temporal */}
                 {activeOverride && (
-                  <div className="w-full flex items-start gap-2 px-3 py-2 mt-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-xl text-amber-700 dark:text-amber-400">
-                    <span className="shrink-0 mt-0.5 text-base leading-none">⚠️</span>
-                    <p className="text-xs font-medium leading-snug text-left">{t('overrideActiveNote')}</p>
-                  </div>
+                  <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20 animate-pulse">
+                    <CalendarDays className="w-2.5 h-2.5" />
+                    {t('form.temporaryAssignment').toUpperCase()}
+                  </span>
                 )}
               </div>
+              <button
+                onClick={(e) => handleOpenMenu(e, member.id)}
+                className={`p-2 rounded-xl shrink-0 transition-all ${openMenu === member.id ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'}`}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </div>
 
-              <div className="w-full pt-2 space-y-2">
-                <div className="flex items-center gap-3 text-slate-500 dark:text-zinc-500 bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-100 dark:border-white/5 text-left">
-                    <Mail className="w-4 h-4" />
-                    <span className="text-xs font-bold truncate tracking-tight">{member.email || t('noEmail')}</span>
-                </div>
-                <div className="flex items-center gap-3 text-slate-500 dark:text-zinc-500 bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-100 dark:border-white/5 text-left">
-                    <Phone className="w-4 h-4" />
-                    <span className="text-xs font-bold truncate tracking-tight">{member.phone || t('noPhone')}</span>
-                </div>
-                {hasFutureRotation && (
-                   <div className="flex items-center justify-center gap-2 pt-1 text-xs font-bold text-slate-400 animate-in fade-in slide-in-from-top-1 duration-500">
-                     <Clock className="w-3.5 h-3.5" />
-                     {t('nextRotationScheduled')}
-                   </div>
-                )}
+            {/* ── Badges: Home Service + máx 2 categorías + overflow ── */}
+            <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3 pt-1">
+              {member.allowsHomeService && (
+                <span className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/20">
+                  <Plus className="w-3 h-3" />
+                  {t('form.homeServiceOk')}
+                </span>
+              )}
+              {(member.categories || []).slice(0, 2).map((sc: any) => (
+                <span
+                  key={sc.categoryId}
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full"
+                  style={{ backgroundColor: sc.category?.color + '22', color: sc.category?.color }}
+                >
+                  <Tag className="w-3 h-3" />
+                  {sc.category?.name}
+                </span>
+              ))}
+              {(member.categories || []).length > 2 && (
+                <span className="flex items-center px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-white/10">
+                  +{(member.categories || []).length - 2} {t('moreCats')}
+                </span>
+              )}
+              {hasFutureRotation && (
+                <span className="flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-zinc-500">
+                  <Clock className="w-3 h-3" />
+                  {t('nextRotationScheduled')}
+                </span>
+              )}
+            </div>
+
+            {/* ── Contacto ── */}
+            <div className="border-t border-slate-100 dark:border-white/5 px-4 py-3 space-y-1.5">
+              <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-white/5 px-3 py-2 rounded-xl border border-slate-100 dark:border-white/5">
+                <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="text-xs font-bold text-slate-500 dark:text-zinc-400 truncate">{member.email || t('noEmail')}</span>
               </div>
+              <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-white/5 px-3 py-2 rounded-xl border border-slate-100 dark:border-white/5">
+                <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="text-xs font-bold text-slate-500 dark:text-zinc-400 truncate">{member.phone || t('noPhone')}</span>
+              </div>
+            </div>
 
-              {/* Acceso al sistema */}
-              <div className="w-full pt-3 mt-1 border-t border-slate-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
-                {canUseFeature(plan, 'staffAccess') ? (
-                  member.user ? (
-                    member.user.isActive ? (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className={`flex items-center gap-1.5 text-xs font-black ${member.user.mustChangePassword ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                            {member.user.mustChangePassword ? <Clock className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                            {member.user.mustChangePassword ? t('accessPending') : t('accessActive')}
-                          </span>
-                          <button
-                            onClick={() => handleRevokeAccess(member)}
-                            className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-rose-500 px-2.5 py-1.5 rounded-xl hover:bg-rose-500/5 transition-all"
-                          >
-                            <ShieldOff className="w-3 h-3" />
-                            {t('accessRevoke')}
-                          </button>
-                        </div>
+            {/* ── Acceso al sistema ── */}
+            <div className="border-t border-slate-100 dark:border-white/5 px-4 py-3" onClick={e => e.stopPropagation()}>
+              {canUseFeature(plan, 'staffAccess') ? (
+                member.user ? (
+                  member.user.isActive ? (
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className={`flex items-center gap-1.5 text-xs font-black ${member.user.mustChangePassword ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        {member.user.mustChangePassword ? <Clock className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                        {member.user.mustChangePassword ? t('accessPending') : t('accessActive')}
+                      </span>
+                      <div className="flex items-center gap-1.5">
                         {member.user.mustChangePassword && (
                           <button
                             onClick={() => handleResetPassword(member)}
-                            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl transition-all border border-amber-500/10"
+                            className="flex items-center gap-1 text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-500/5 hover:bg-amber-500/10 px-2.5 py-1.5 rounded-xl transition-all border border-amber-500/10"
                           >
                             <KeyRound className="w-3 h-3" />
                             {t('accessResendPassword')}
                           </button>
                         )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 text-xs font-black text-slate-400">
-                          <ShieldOff className="w-3.5 h-3.5" />
-                          {t('accessInactive')}
-                        </span>
                         <button
-                          onClick={() => handleReactivateAccess(member)}
-                          className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-emerald-500 px-2.5 py-1.5 rounded-xl hover:bg-emerald-500/5 transition-all"
+                          onClick={() => handleRevokeAccess(member)}
+                          className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-rose-500 px-2.5 py-1.5 rounded-xl hover:bg-rose-500/5 transition-all"
                         >
-                          <ShieldCheck className="w-3 h-3" />
-                          {t('accessReactivate')}
+                          <ShieldOff className="w-3 h-3" />
+                          {t('accessRevoke')}
                         </button>
                       </div>
-                    )
+                    </div>
                   ) : (
-                    <button
-                      onClick={() => handleCreateAccess(member)}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-500/5 hover:bg-purple-500/10 rounded-xl transition-all border border-purple-500/10"
-                    >
-                      <KeyRound className="w-3 h-3" />
-                      {t('accessCreate')}
-                    </button>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-xs font-black text-slate-400">
+                        <ShieldOff className="w-3.5 h-3.5" />
+                        {t('accessInactive')}
+                      </span>
+                      <button
+                        onClick={() => handleReactivateAccess(member)}
+                        className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-emerald-500 px-2.5 py-1.5 rounded-xl hover:bg-emerald-500/5 transition-all"
+                      >
+                        <ShieldCheck className="w-3 h-3" />
+                        {t('accessReactivate')}
+                      </button>
+                    </div>
                   )
                 ) : (
-                  <div className="flex items-center gap-1.5 text-xs font-black text-slate-400">
-                    <ShieldOff className="w-3.5 h-3.5" />
-                    {t('accessUnavailable')}
-                  </div>
-                )}
-              </div>
+                  <button
+                    onClick={() => handleCreateAccess(member)}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-500/5 hover:bg-purple-500/10 rounded-xl transition-all border border-purple-500/10"
+                  >
+                    <KeyRound className="w-3 h-3" />
+                    {t('accessCreate')}
+                  </button>
+                )
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs font-black text-slate-400">
+                  <ShieldOff className="w-3.5 h-3.5" />
+                  {t('accessUnavailable')}
+                </div>
+              )}
             </div>
           </div>
           );

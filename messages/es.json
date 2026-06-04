@@ -561,7 +561,9 @@
       "accessModalConfirm": "Entendido",
       "categoriesUpgradeTitle": "Categorías no disponibles",
       "categoriesUpgradeDesc": "Las categorías de especialidad están disponibles desde el plan Professional.",
-      "categoriesUpgradeCta": "Ver planes"
+      "categoriesUpgradeCta": "Ver planes",
+      "filterAllBranches": "Todas las sucursales",
+      "moreCats": "más"
     },
     "absences": {
       "title": "Ausencias y bloqueos",
