@@ -77,6 +77,8 @@ export default function BookingWidget({
   whatsappNumber,
   homeServiceTerms,
   homeServiceTermsEnabled,
+  branchTerms,
+  branchTermsEnabled,
   waMessageTemplate,
   bookingSettings,
   primaryColor,
@@ -106,6 +108,8 @@ export default function BookingWidget({
   whatsappNumber?: string,
   homeServiceTerms?: string,
   homeServiceTermsEnabled?: boolean,
+  branchTerms?: string,
+  branchTermsEnabled?: boolean,
   waMessageTemplate?: string | null,
   bookingSettings?: {
     step1Title?: string;
@@ -174,6 +178,8 @@ export default function BookingWidget({
   const [showCountryList, setShowCountryList] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [termsExpanded, setTermsExpanded] = useState(false);
+  const [agreedToBranchTerms, setAgreedToBranchTerms] = useState(false);
+  const [branchTermsExpanded, setBranchTermsExpanded] = useState(false);
   // Token único por sesión de reserva — identifica los soft locks de este visitante
   const [sessionToken] = useState(() => crypto.randomUUID());
   const [isFinishing, setIsFinishing] = useState(false);
@@ -445,7 +451,8 @@ export default function BookingWidget({
     guestName.trim() !== '' &&
     emailRegex.test(guestEmail) &&
     guestPhone.length >= (selectedCountry as any).minLen &&
-    (modality !== 'domicilio' || (guestAddress.trim() !== '' && selectedZone !== null && (!homeServiceTermsEnabled || agreedToTerms)));
+    (modality !== 'domicilio' || (guestAddress.trim() !== '' && selectedZone !== null && (!homeServiceTermsEnabled || agreedToTerms))) &&
+    (modality !== 'local' || (!branchTermsEnabled || agreedToBranchTerms));
 
   const getTransferInfo = (bks = cartBookings) => {
     if (modality !== 'domicilio' || !selectedZone || bks.length === 0) return { total: 0, blocks: 0 };
@@ -2052,7 +2059,7 @@ export default function BookingWidget({
                         onClick={() => setTermsExpanded(prev => !prev)}
                         className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
                       >
-                        Términos y condiciones del servicio a domicilio
+                        {t("home_terms_title")}
                         <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${termsExpanded ? 'rotate-180' : ''}`} />
                       </button>
                       {termsExpanded && (
@@ -2071,6 +2078,44 @@ export default function BookingWidget({
                           <div
                             className="w-6 h-6 border-2 border-slate-300 dark:border-white/20 rounded-md transition-all"
                             style={agreedToTerms ? { backgroundColor: brand, borderColor: brand } : {}}
+                          ></div>
+                          <Check className="w-4 h-4 absolute inset-1 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                        </div>
+                        <span className="text-sm font-medium text-slate-700 dark:text-zinc-200 group-hover:text-purple-400 transition-colors">
+                          {t("i_agree_to_terms")}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {modality === 'local' && branchTermsEnabled && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl space-y-3">
+                      <button
+                        type="button"
+                        onClick={() => setBranchTermsExpanded(prev => !prev)}
+                        className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+                      >
+                        {t("branch_terms_title")}
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${branchTermsExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      {branchTermsExpanded && (
+                        <p className="text-sm text-slate-600 dark:text-zinc-300 italic whitespace-pre-wrap animate-in fade-in slide-in-from-top-1 duration-200">
+                          {branchTerms || t("branch_terms_default")}
+                        </p>
+                      )}
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={agreedToBranchTerms}
+                            onChange={(e) => setAgreedToBranchTerms(e.target.checked)}
+                            className="peer sr-only"
+                          />
+                          <div
+                            className="w-6 h-6 border-2 border-slate-300 dark:border-white/20 rounded-md transition-all"
+                            style={agreedToBranchTerms ? { backgroundColor: brand, borderColor: brand } : {}}
                           ></div>
                           <Check className="w-4 h-4 absolute inset-1 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                         </div>

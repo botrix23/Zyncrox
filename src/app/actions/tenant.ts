@@ -108,6 +108,27 @@ export async function updateHomeServiceSettingsAction(data: {
   }
 }
 
+export async function updateBranchTermsAction(data: {
+  tenantId: string;
+  branchTermsEnabled: boolean;
+  branchTerms?: string;
+}) {
+  try {
+    await db.update(tenants)
+      .set({
+        branchTermsEnabled: data.branchTermsEnabled,
+        branchTerms: data.branchTerms ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(tenants.id, data.tenantId));
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating branch terms:', error);
+    return { success: false };
+  }
+}
+
 export async function updateLoyaltySettingsAction(data: {
   tenantId: string;
   loyaltyEnabled: boolean;
