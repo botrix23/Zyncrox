@@ -5,6 +5,17 @@ import { staff, staffAssignments, branches, staffToCategories, users, bookings }
 import { eq, and, ne, gt, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { checkPlanLimit } from "@/lib/plan-guard";
+import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
+
+async function assertAdmin() {
+  const session = await getSession();
+  if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.role)) {
+    throw new Error('Unauthorized');
+  }
+  const tenantId = getEffectiveTenantId(session);
+  if (!tenantId) throw new Error('No tenantId');
+  return { session, tenantId };
+}
 
 // Devuelve { startTime, endTime, daysOfWeek } a partir del JSON de businessHours de la sucursal,
 // soportando tanto el formato simple { open, close } como el complejo { regular: { day: { isOpen, slots } } }.
@@ -71,7 +82,8 @@ export async function createStaffAction(data: {
   }>;
 }) {
   try {
-    const limitCheck = await checkPlanLimit(data.tenantId, "staff");
+    const { tenantId } = await assertAdmin();
+    const limitCheck = await checkPlanLimit(tenantId, "staff");
     if (!limitCheck.allowed) {
       return {
         success: false,
@@ -177,6 +189,7 @@ export async function updateStaffAction(data: {
   }>;
 }) {
   try {
+    await assertAdmin();
     await db.transaction(async (tx) => {
       // 1. Actualizar datos básicos
       await tx.update(staff)
@@ -278,6 +291,7 @@ export async function getStaffFutureBookingCount(staffId: string, tenantId: stri
 
 export async function deleteStaffAction(id: string, tenantId: string) {
   try {
+    const { tenantId: sessionTenantId } = await assertAdmin();
     // Reassign future bookings to PENDING_ASSIGNMENT before deleting the staff member
     await db.update(bookings)
       .set({ staffId: null, status: 'PENDING_ASSIGNMENT' })
@@ -300,7 +314,8 @@ export async function deleteStaffAction(id: string, tenantId: string) {
 }
 export async function getStaffAction(tenantId: string) {
   try {
-    const results = await db.select().from(staff).where(eq(staff.tenantId, tenantId)).orderBy(staff.name);
+    const { tenantId: sessionTenantId } = await assertAdmin();
+    const results = await db.select().from(staff).where(eq(staff.tenantId, sessionTenantId)).orderBy(staff.name);
     return results;
   } catch (error) {
     console.error("Error fetching staff:", error);
@@ -310,8 +325,9 @@ export async function getStaffAction(tenantId: string) {
 
 export async function toggleStaffActiveAction(id: string, tenantId: string, isActive: boolean) {
   try {
+    const { tenantId: sessionTenantId } = await assertAdmin();
     if (isActive) {
-      const limit = await checkPlanLimit(tenantId, 'staff');
+      const limit = await checkPlanLimit(sessionTenantId, 'staff');
       if (!limit.allowed) {
         return { success: false, error: `Límite de ${limit.limit} empleado(s) alcanzado en el plan ${limit.plan}. Actualiza tu plan para reactivar más empleados.` };
       }

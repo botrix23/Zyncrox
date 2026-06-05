@@ -164,7 +164,8 @@
     "errorDisabled": "Your access has been deactivated. Contact the administrator.",
     "errorSuspended": "Your business account is suspended. Contact support.",
     "errorTrialExpired": "Your trial period has expired. Please make a payment to continue.",
-    "errorTempExpired": "The temporary password has expired. Ask the administrator to generate new access."
+    "errorTempExpired": "The temporary password has expired. Ask the administrator to generate new access.",
+    "errorRateLimit": "Too many failed attempts. Try again in 15 minutes."
   },
   "ForgotPassword": {
     "title": "Forgot your password?",

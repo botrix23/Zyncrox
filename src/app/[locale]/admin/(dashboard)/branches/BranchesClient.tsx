@@ -406,7 +406,7 @@ export default function BranchesClient({
               
               <form onSubmit={handleSave} className="p-4 sm:p-8 space-y-6 sm:space-y-8 overflow-y-auto custom-scrollbar flex-1">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 ml-1">{t('nameLabel')}</label>
+                  <label className="text-sm font-bold text-slate-500 ml-1">{t('nameLabel')}</label>
                   <input 
                     required
                     type="text" 
@@ -418,7 +418,7 @@ export default function BranchesClient({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 ml-1">{t('addressLabel')}</label>
+                  <label className="text-sm font-bold text-slate-500 ml-1">{t('addressLabel')}</label>
                   <input 
                     type="text" 
                     value={formData.address}
@@ -430,7 +430,7 @@ export default function BranchesClient({
 
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 ml-1">{t('phoneLabel')}</label>
+                    <label className="text-sm font-bold text-slate-500 ml-1">{t('phoneLabel')}</label>
                     <PhoneInput 
                       value={formData.phone}
                       onChange={val => setFormData({...formData, phone: val})}
@@ -438,7 +438,7 @@ export default function BranchesClient({
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 ml-1">{t('hoursLabel')}</label>
+                    <label className="text-sm font-bold text-slate-500 ml-1">{t('hoursLabel')}</label>
                     <BusinessHoursPicker 
                       value={formData.businessHours}
                       onChange={val => setFormData({...formData, businessHours: val})}

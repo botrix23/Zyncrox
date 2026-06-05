@@ -33,7 +33,7 @@ export function WeeklyBarChart({ thisWeek, prevWeek }: WeeklyBarChartProps) {
                 title={`Esta semana: ${thisWeek[i]}`}
               />
             </div>
-            <span className="text-[10px] sm:text-xs text-slate-500 dark:text-zinc-500 font-medium leading-none">
+            <span className="text-xs sm:text-xs text-slate-500 dark:text-zinc-500 font-medium leading-none">
               {day}
             </span>
             <span className="text-xs font-bold text-slate-900 dark:text-white leading-none">

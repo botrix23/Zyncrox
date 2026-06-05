@@ -3,12 +3,19 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { db } from "@/db";
 import { tenants, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { logAuditEvent } from "@/lib/audit";
 import { resend } from "@/lib/resend";
 import { createNotification } from "@/lib/notifications";
+import {
+  checkLoginRateLimit,
+  checkForgotPasswordRateLimit,
+  checkRegistrationRateLimit,
+  getRequestIp,
+} from "@/lib/rate-limit";
 
 /**
  * Genera un slug URL-safe a partir de un nombre de negocio.
@@ -49,6 +56,12 @@ export async function loginAction(formData: FormData, locale: string) {
   const rememberMe = formData.get("rememberMe") === 'true';
 
   try {
+    // 0. Rate limit: max 5 failed attempts per email in 15 minutes
+    const rateLimit = await checkLoginRateLimit(email);
+    if (!rateLimit.allowed) {
+      return { success: false, errorCode: 'errorRateLimit', retryAfterMinutes: rateLimit.retryAfterMinutes };
+    }
+
     // 1. Buscar usuario en la base de datos (con join al tenant para ver status)
     const user = await db.query.users.findFirst({
       where: eq(users.email, email),
@@ -98,6 +111,7 @@ export async function loginAction(formData: FormData, locale: string) {
       }), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
+        sameSite: 'lax',
         maxAge: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24,
         path: "/",
       });
@@ -121,6 +135,13 @@ export async function registerTenantAction(formData: FormData, locale: string) {
   const adminName = formData.get("adminName") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+
+  // Rate limit: max 3 registrations per IP in 60 minutes
+  const ip = getRequestIp();
+  const rateLimit = await checkRegistrationRateLimit(ip);
+  if (!rateLimit.allowed) {
+    return { success: false, error: "RATE_LIMIT", retryAfterMinutes: rateLimit.retryAfterMinutes };
+  }
 
   const passwordResult = validatePasswordComplexity(password);
   if (!passwordResult.success) {
@@ -171,10 +192,12 @@ export async function registerTenantAction(formData: FormData, locale: string) {
       isOwner: true,
     }), {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24,
       path: "/",
     });
-    await logAuditEvent({ action: 'TENANT_REGISTERED', userId: newAdmin.id, tenantId: newTenant.id, details: { businessName, slug } });
+    await logAuditEvent({ action: 'TENANT_REGISTERED', userId: newAdmin.id, tenantId: newTenant.id, details: { businessName, slug }, ipAddress: ip });
 
     // Super Admin notification: new tenant registered
     void createNotification({
@@ -205,16 +228,24 @@ export async function logoutAction(locale: string) {
  */
 export async function forgotPasswordAction(email: string, locale: string = 'es') {
   try {
+    // Rate limit: max 3 requests per email in 60 minutes (log attempt regardless of whether email exists)
+    const rateLimit = await checkForgotPasswordRateLimit(email);
+    await logAuditEvent({ action: 'FORGOT_PASSWORD_REQUESTED', details: { email: email.toLowerCase() } });
+    if (!rateLimit.allowed) {
+      // Return success to avoid revealing rate limit status (prevents email enumeration)
+      return { success: true };
+    }
+
     const user = await db.query.users.findFirst({
       where: eq(users.email, email)
     });
 
     if (!user) {
       // Por seguridad, no decimos si el email existe o no
-      return { success: true }; 
+      return { success: true };
     }
 
-    const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date();
     expires.setHours(expires.getHours() + 1); // 1 hora de validez
 

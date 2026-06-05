@@ -198,7 +198,7 @@ export default function CategoriesClient({
 
               <form onSubmit={handleSave} className="p-6 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Nombre</label>
+                  <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Nombre</label>
                   <input
                     required
                     type="text"
@@ -210,7 +210,7 @@ export default function CategoriesClient({
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Color</label>
+                  <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Color</label>
                   <div className="flex flex-wrap gap-2">
                     {PRESET_COLORS.map(color => (
                       <button

@@ -488,7 +488,7 @@ export default function PaymentsClient({
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${badgeCls}`}>
                     {label}
                   </span>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                     configured
                       ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
                       : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-500"
@@ -497,7 +497,7 @@ export default function PaymentsClient({
                   </span>
                 </div>
                 <div className="space-y-1">
-                  <label className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  <label className="flex items-center gap-1 text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
                     <Hash className="w-3 h-3" />
                     {tp("planIdLabel")}
                   </label>
@@ -509,14 +509,14 @@ export default function PaymentsClient({
                     className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/20 text-zinc-900 dark:text-white text-xs placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition font-mono"
                   />
                   {!configured && (
-                    <p className="flex items-start gap-1 text-[10px] text-amber-600 dark:text-amber-500 leading-snug">
+                    <p className="flex items-start gap-1 text-xs text-amber-600 dark:text-amber-500 leading-snug">
                       <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
                       {tp("warningNoPlanId")}
                     </p>
                   )}
                 </div>
                 <div className="space-y-1">
-                  <label className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  <label className="flex items-center gap-1 text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
                     <DollarSign className="w-3 h-3" />
                     {tp("priceLabel")}
                   </label>
@@ -531,7 +531,7 @@ export default function PaymentsClient({
                       className="w-full pl-6 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/20 text-zinc-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
                     />
                   </div>
-                  <p className="text-[10px] text-zinc-400 dark:text-zinc-600 text-right">{tp("pricePerMonth")}</p>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-600 text-right">{tp("pricePerMonth")}</p>
                 </div>
               </div>
             );
@@ -579,7 +579,7 @@ export default function PaymentsClient({
             </p>
           </div>
           {/* Active notice badge */}
-          <span className={`shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+          <span className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${
             hasActiveNotice
               ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
               : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-500"
@@ -654,9 +654,9 @@ export default function PaymentsClient({
             <div className="space-y-2">
               {/* Column headers */}
               <div className="grid grid-cols-[1fr_80px_80px_32px] gap-2 px-1">
-                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">{tn("planNameLabel")}</p>
-                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">{tn("currentPriceLabel")}</p>
-                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">{tn("newPriceLabel")}</p>
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-wide">{tn("planNameLabel")}</p>
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-wide">{tn("currentPriceLabel")}</p>
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-wide">{tn("newPriceLabel")}</p>
                 <span />
               </div>
               {noticePlans.map((row, idx) => (

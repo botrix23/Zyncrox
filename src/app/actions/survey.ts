@@ -5,12 +5,24 @@ import { surveyQuestions, tenants } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getPlanFeatures } from "@/core/plans";
+import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
+
+async function assertAdmin() {
+  const session = await getSession();
+  if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.role)) {
+    throw new Error('Unauthorized');
+  }
+  const tenantId = getEffectiveTenantId(session);
+  if (!tenantId) throw new Error('No tenantId');
+  return { session, tenantId };
+}
 
 export async function updateSurveySettingsAction(tenantId: string, reviewsEnabled: boolean) {
   try {
+    const { tenantId: sessionTenantId } = await assertAdmin();
     await db.update(tenants)
       .set({ reviewsEnabled, updatedAt: new Date() })
-      .where(eq(tenants.id, tenantId));
+      .where(eq(tenants.id, sessionTenantId));
 
     revalidatePath("/[locale]/admin/surveys", "page");
     return { success: true };
@@ -22,9 +34,10 @@ export async function updateSurveySettingsAction(tenantId: string, reviewsEnable
 
 export async function getSurveyQuestionsAction(tenantId: string, onlyActive = false) {
   try {
-    const whereClause = onlyActive 
-      ? and(eq(surveyQuestions.tenantId, tenantId), eq(surveyQuestions.isActive, true))
-      : eq(surveyQuestions.tenantId, tenantId);
+    const { tenantId: sessionTenantId } = await assertAdmin();
+    const whereClause = onlyActive
+      ? and(eq(surveyQuestions.tenantId, sessionTenantId), eq(surveyQuestions.isActive, true))
+      : eq(surveyQuestions.tenantId, sessionTenantId);
 
     return await db.query.surveyQuestions.findMany({
       where: whereClause,
@@ -47,10 +60,11 @@ export async function upsertSurveyQuestionAction(data: {
   sortOrder?: number;
 }) {
   try {
+    const { tenantId } = await assertAdmin();
     // Guard: NPS questions are exclusive to the Business (ENTERPRISE) plan
     if (data.questionType === 'NPS' && !data.id) {
       const tenant = await db.query.tenants.findFirst({
-        where: eq(tenants.id, data.tenantId),
+        where: eq(tenants.id, tenantId),
         columns: { plan: true },
       });
       if (!getPlanFeatures(tenant?.plan).nps) {
@@ -75,7 +89,7 @@ export async function upsertSurveyQuestionAction(data: {
       // Create
       // Get max sort order
       const questions = await db.query.surveyQuestions.findMany({
-        where: eq(surveyQuestions.tenantId, data.tenantId),
+        where: eq(surveyQuestions.tenantId, tenantId),
         orderBy: [asc(surveyQuestions.sortOrder)],
       });
       const nextSortOrder = questions.length > 0 
@@ -83,7 +97,7 @@ export async function upsertSurveyQuestionAction(data: {
         : 0;
 
       await db.insert(surveyQuestions).values({
-        tenantId: data.tenantId,
+        tenantId,
         questionText: data.questionText,
         questionType: data.questionType,
         category: data.category,
@@ -103,7 +117,10 @@ export async function upsertSurveyQuestionAction(data: {
 
 export async function deleteSurveyQuestionAction(id: string) {
   try {
-    await db.delete(surveyQuestions).where(eq(surveyQuestions.id, id));
+    const { tenantId } = await assertAdmin();
+    // Verify the question belongs to this tenant before deleting
+    await db.delete(surveyQuestions)
+      .where(and(eq(surveyQuestions.id, id), eq(surveyQuestions.tenantId, tenantId)));
     revalidatePath("/[locale]/admin/surveys", "page");
     return { success: true };
   } catch (error) {
@@ -114,12 +131,13 @@ export async function deleteSurveyQuestionAction(id: string) {
 
 export async function reorderSurveyQuestionsAction(tenantId: string, questionIds: string[]) {
   try {
+    const { tenantId: sessionTenantId } = await assertAdmin();
     // Perform updates in a transaction for atomicity
     await db.transaction(async (tx) => {
       for (let i = 0; i < questionIds.length; i++) {
         await tx.update(surveyQuestions)
           .set({ sortOrder: i, updatedAt: new Date() })
-          .where(and(eq(surveyQuestions.id, questionIds[i]), eq(surveyQuestions.tenantId, tenantId)));
+          .where(and(eq(surveyQuestions.id, questionIds[i]), eq(surveyQuestions.tenantId, sessionTenantId)));
       }
     });
 

@@ -567,7 +567,7 @@ export default function AbsencesClient({
                     )}
 
                     <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.reasonLabel')}</label>
+                        <label className="text-sm font-black text-slate-500 ml-1">{t('form.reasonLabel')}</label>
                         <input
                           required
                           type="text"
@@ -580,7 +580,7 @@ export default function AbsencesClient({
 
                     {!isStaffRole && (formData.type === "branch" ? (
                       <div className="space-y-2">
-                          <label className="text-xs font-black text-slate-500 ml-1">{t('form.branchSelect')}</label>
+                          <label className="text-sm font-black text-slate-500 ml-1">{t('form.branchSelect')}</label>
                           <select
                               required
                               value={formData.branchId}
@@ -594,7 +594,7 @@ export default function AbsencesClient({
                       </div>
                     ) : (
                       <div className="space-y-2">
-                          <label className="text-xs font-black text-slate-500 ml-1">{t('form.staffSelect')}</label>
+                          <label className="text-sm font-black text-slate-500 ml-1">{t('form.staffSelect')}</label>
                           <select
                               required
                               value={formData.staffId}
@@ -612,7 +612,7 @@ export default function AbsencesClient({
                 <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-white/5 pt-6">
                    <div className="col-span-2 text-xs font-black tracking-widest text-rose-500 uppercase">{t('sections.startBlock')}</div>
                    <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-widest text-slate-400">{t('form.startDate')}</label>
+                        <label className="text-sm font-black uppercase tracking-widest text-slate-400">{t('form.startDate')}</label>
                         <input 
                             required
                             type="date"
@@ -622,7 +622,7 @@ export default function AbsencesClient({
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-widest text-slate-400">{t('form.startTime')}</label>
+                        <label className="text-sm font-black uppercase tracking-widest text-slate-400">{t('form.startTime')}</label>
                         <input 
                             required
                             type="time"
@@ -636,7 +636,7 @@ export default function AbsencesClient({
                 <div className="grid grid-cols-2 gap-4 pb-4">
                    <div className="col-span-2 text-xs font-black tracking-widest text-rose-500 uppercase">{t('sections.endBlock')}</div>
                    <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-widest text-slate-400">{t('form.endDate')}</label>
+                        <label className="text-sm font-black uppercase tracking-widest text-slate-400">{t('form.endDate')}</label>
                         <input 
                             required
                             type="date"
@@ -646,7 +646,7 @@ export default function AbsencesClient({
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-widest text-slate-400">{t('form.endTime')}</label>
+                        <label className="text-sm font-black uppercase tracking-widest text-slate-400">{t('form.endTime')}</label>
                         <input 
                             required
                             type="time"

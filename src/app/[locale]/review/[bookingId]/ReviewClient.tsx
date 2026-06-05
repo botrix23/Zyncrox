@@ -126,7 +126,7 @@ export default function ReviewClient({
           <>
             {/* Default Rating (Backward Compatible / Simple Mode) */}
             <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block text-center">
+              <label className="text-sm font-black uppercase tracking-widest text-slate-400 block text-center">
                 {t('ratingLabel')}
               </label>
               <StarRating 
@@ -135,7 +135,7 @@ export default function ReviewClient({
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block ml-1">
+              <label className="text-sm font-black uppercase tracking-widest text-slate-400 block ml-1">
                 {t('commentLabel')}
               </label>
               <textarea
@@ -208,7 +208,7 @@ export default function ReviewClient({
                         </button>
                       ))}
                     </div>
-                    <div className="flex justify-between px-1 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                    <div className="flex justify-between px-1 text-xs font-black uppercase tracking-widest text-slate-400">
                       <span>{t('npsLow')}</span>
                       <span>{t('npsHigh')}</span>
                     </div>

@@ -25,14 +25,14 @@ export function LocaleSwitcher() {
       onClick={switchLocale}
       disabled={isPending}
       aria-label={locale === "es" ? "Switch to English" : "Cambiar a Español"}
-      className={`flex items-center gap-1.5 text-[13px] font-semibold px-3 py-[7px] rounded-lg border transition-all duration-150 whitespace-nowrap
+      className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-[7px] rounded-lg border transition-all duration-150 whitespace-nowrap
         border-black/[0.13] dark:border-white/[0.13]
         text-slate-500 dark:text-zinc-400
         hover:text-slate-900 dark:hover:text-white
         hover:border-purple-500/40 hover:bg-purple-500/[0.06]
         ${isPending ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
     >
-      <span className="text-[14px]">{locale === "es" ? "🇺🇸" : "🇦🇷"}</span>
+      <span className="text-sm">{locale === "es" ? "🇺🇸" : "🇦🇷"}</span>
       <span>{locale === "es" ? "EN" : "ES"}</span>
     </button>
   );

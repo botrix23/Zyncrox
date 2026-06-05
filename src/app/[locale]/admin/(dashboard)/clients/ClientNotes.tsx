@@ -165,7 +165,7 @@ export default function ClientNotes({
             rows={3}
             className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-violet-500 focus:outline-none transition-all text-sm font-medium text-slate-900 dark:text-white resize-none placeholder:text-slate-400 dark:placeholder:text-zinc-500"
           />
-          <span className="absolute bottom-2 right-3 text-[10px] text-slate-400 dark:text-zinc-500 pointer-events-none">
+          <span className="absolute bottom-2 right-3 text-xs text-slate-400 dark:text-zinc-500 pointer-events-none">
             {t('charCount', { count: newContent.length })}
           </span>
         </div>
@@ -210,7 +210,7 @@ export default function ClientNotes({
                 }`}
               >
                 {isWarning && (
-                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest mb-2">
+                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs font-black uppercase tracking-widest mb-2">
                     <AlertTriangle className="w-3 h-3" />
                     {t('warningNote')}
                   </div>
@@ -225,7 +225,7 @@ export default function ClientNotes({
                         rows={3}
                         className="w-full p-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm font-medium text-slate-900 dark:text-white resize-none"
                       />
-                      <span className="absolute bottom-2 right-3 text-[10px] text-slate-400 pointer-events-none">
+                      <span className="absolute bottom-2 right-3 text-xs text-slate-400 pointer-events-none">
                         {t('charCount', { count: editContent.length })}
                       </span>
                     </div>
@@ -240,12 +240,12 @@ export default function ClientNotes({
                 {!isEditing && (
                   <div className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-100 dark:border-white/5">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-md ${note.authorRole === 'ADMIN' || note.authorRole === 'SUPER_ADMIN' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300' : 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300'}`}>
+                      <span className={`shrink-0 text-xs font-black px-1.5 py-0.5 rounded-md ${note.authorRole === 'ADMIN' || note.authorRole === 'SUPER_ADMIN' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300' : 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300'}`}>
                         {note.authorRole === 'ADMIN' || note.authorRole === 'SUPER_ADMIN' ? t('roleAdmin') : t('roleStaff')}
                       </span>
                       <span className="text-xs text-slate-500 dark:text-zinc-400 truncate font-medium">{note.authorName}</span>
                       <span className="text-slate-300 dark:text-zinc-700 text-xs">·</span>
-                      <span title={formatFull(note.createdAt)} className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0 cursor-default">
+                      <span title={formatFull(note.createdAt)} className="text-xs text-slate-400 dark:text-zinc-500 shrink-0 cursor-default">
                         {formatRelative(note.createdAt, locale)}{isEdited && <span className="ml-1 opacity-70">({t('edited')})</span>}
                       </span>
                     </div>
@@ -264,7 +264,7 @@ export default function ClientNotes({
               className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors"
             >
               <span>{notesExpanded ? (locale === 'es' ? 'Ocultar notas' : 'Hide notes') : (locale === 'es' ? `Ver ${notes.filter(n => !isWarningNote(n.content)).length} nota(s)` : `Show ${notes.filter(n => !isWarningNote(n.content)).length} note(s)`)}</span>
-              <span className="text-[10px]">{notesExpanded ? '▲' : '▼'}</span>
+              <span className="text-xs">{notesExpanded ? '▲' : '▼'}</span>
             </button>
           )}
         </div>
@@ -304,17 +304,17 @@ function NoteActions({
   if (confirmDeleteId === noteId) {
     return (
       <div className="flex items-center gap-1.5 shrink-0">
-        <span className="text-[11px] text-slate-500 dark:text-zinc-400 hidden sm:block">{t('deleteConfirmTitle')}</span>
+        <span className="text-xs text-slate-500 dark:text-zinc-400 hidden sm:block">{t('deleteConfirmTitle')}</span>
         <button
           onClick={onDeleteConfirm}
           disabled={isDeleting}
-          className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-[11px] font-bold rounded-md transition-colors"
+          className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-md transition-colors"
         >
           {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : t('deleteConfirmBtn')}
         </button>
         <button
           onClick={onDeleteCancel}
-          className="px-2 py-1 bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-zinc-400 text-[11px] font-bold rounded-md transition-colors"
+          className="px-2 py-1 bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-zinc-400 text-xs font-bold rounded-md transition-colors"
         >
           {t('deleteCancelBtn')}
         </button>

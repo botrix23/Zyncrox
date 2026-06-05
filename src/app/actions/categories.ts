@@ -4,11 +4,23 @@ import { db } from "@/db";
 import { serviceCategories } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
+
+async function assertAdmin() {
+  const session = await getSession();
+  if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.role)) {
+    throw new Error('Unauthorized');
+  }
+  const tenantId = getEffectiveTenantId(session);
+  if (!tenantId) throw new Error('No tenantId');
+  return { session, tenantId };
+}
 
 export async function getCategoriesAction(tenantId: string) {
   try {
+    const { tenantId: sessionTenantId } = await assertAdmin();
     return await db.query.serviceCategories.findMany({
-      where: eq(serviceCategories.tenantId, tenantId),
+      where: eq(serviceCategories.tenantId, sessionTenantId),
       orderBy: (c, { asc }) => [asc(c.createdAt)],
     });
   } catch (error) {
@@ -23,8 +35,9 @@ export async function createCategoryAction(data: {
   color?: string;
 }) {
   try {
+    const { tenantId } = await assertAdmin();
     const [created] = await db.insert(serviceCategories).values({
-      tenantId: data.tenantId,
+      tenantId,
       name: data.name.trim(),
       color: data.color || '#8b5cf6',
     }).returning();
@@ -46,12 +59,13 @@ export async function updateCategoryAction(data: {
   color?: string;
 }) {
   try {
+    const { tenantId } = await assertAdmin();
     await db.update(serviceCategories)
       .set({
         name: data.name?.trim(),
         color: data.color,
       })
-      .where(and(eq(serviceCategories.id, data.id), eq(serviceCategories.tenantId, data.tenantId)));
+      .where(and(eq(serviceCategories.id, data.id), eq(serviceCategories.tenantId, tenantId)));
 
     revalidatePath("/[locale]/admin/categories", "page");
     revalidatePath("/[locale]/admin/services", "page");
@@ -66,8 +80,9 @@ export async function updateCategoryAction(data: {
 
 export async function deleteCategoryAction(id: string, tenantId: string) {
   try {
+    const { tenantId: sessionTenantId } = await assertAdmin();
     await db.delete(serviceCategories)
-      .where(and(eq(serviceCategories.id, id), eq(serviceCategories.tenantId, tenantId)));
+      .where(and(eq(serviceCategories.id, id), eq(serviceCategories.tenantId, sessionTenantId)));
 
     revalidatePath("/[locale]/admin/categories", "page");
     revalidatePath("/[locale]/admin/services", "page");

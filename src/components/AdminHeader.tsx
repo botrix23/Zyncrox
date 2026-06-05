@@ -199,11 +199,11 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
               <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/5">
                 <div>
                   <p className="text-sm font-black text-slate-900 dark:text-white">Notificaciones</p>
-                  {hasUnread && <p className="text-[10px] text-slate-400 mt-0.5">Se marcarán como leídas en 2s</p>}
+                  {hasUnread && <p className="text-xs text-slate-400 mt-0.5">Se marcarán como leídas en 2s</p>}
                 </div>
                 <div className="flex items-center gap-1">
                   {notifications.length > 0 && (
-                    <button onClick={handleClearAll} className="text-[11px] font-bold text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-all">
+                    <button onClick={handleClearAll} className="text-xs font-bold text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-all">
                       Limpiar todo
                     </button>
                   )}
@@ -239,13 +239,13 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
                             )}
                             <div className="min-w-0">
                               <p className="text-xs font-black text-slate-900 dark:text-white">{n.title}</p>
-                              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{n.body}</p>
-                              {n.date && <p className="text-[10px] text-slate-400 mt-1">{format(new Date(n.date), "dd MMM, HH:mm")}</p>}
+                              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">{n.body}</p>
+                              {n.date && <p className="text-xs text-slate-400 mt-1">{format(new Date(n.date), "dd MMM, HH:mm")}</p>}
                             </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             {n.status && (
-                              <span className={`text-[9px] font-black px-2 py-1 rounded-full ${n.status === 'APPROVED' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600' : n.status === 'REJECTED' ? 'bg-rose-100 dark:bg-rose-500/10 text-rose-600' : 'bg-amber-100 dark:bg-amber-500/10 text-amber-600'}`}>
+                              <span className={`text-xs font-black px-2 py-1 rounded-full ${n.status === 'APPROVED' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600' : n.status === 'REJECTED' ? 'bg-rose-100 dark:bg-rose-500/10 text-rose-600' : 'bg-amber-100 dark:bg-amber-500/10 text-amber-600'}`}>
                                 {n.status === 'APPROVED' ? 'Aprobada' : n.status === 'REJECTED' ? 'Rechazada' : 'Pendiente'}
                               </span>
                             )}
@@ -258,10 +258,10 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
                         </div>
                         {n.canAct && n.requestId && (
                           <div className="flex gap-2 pt-1">
-                            <button onClick={() => handleApprove(n.requestId)} className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl text-[11px] font-bold transition-all">
+                            <button onClick={() => handleApprove(n.requestId)} className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl text-xs font-bold transition-all">
                               <Check className="w-3 h-3" /> Aprobar
                             </button>
-                            <button onClick={() => handleReject(n.requestId)} className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-100 dark:bg-white/10 hover:bg-rose-500 hover:text-white text-slate-600 dark:text-zinc-300 rounded-xl text-[11px] font-bold transition-all">
+                            <button onClick={() => handleReject(n.requestId)} className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-100 dark:bg-white/10 hover:bg-rose-500 hover:text-white text-slate-600 dark:text-zinc-300 rounded-xl text-xs font-bold transition-all">
                               <Ban className="w-3 h-3" /> Rechazar
                             </button>
                           </div>
@@ -288,15 +288,15 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
               <p className="text-sm font-bold text-slate-900 dark:text-white leading-none">{displayName}</p>
               <div className="flex items-center justify-end gap-1 mt-1">
                 {isSuperAdmin ? (
-                  <span className="text-[11px] font-bold bg-purple-600 text-white px-2 py-0.5 rounded flex items-center gap-1 tracking-tighter shadow-lg shadow-purple-500/20 uppercase">
+                  <span className="text-xs font-bold bg-purple-600 text-white px-2 py-0.5 rounded flex items-center gap-1 tracking-tighter shadow-lg shadow-purple-500/20 uppercase">
                     <ShieldCheck className="w-3 h-3" />{t('superAdmin')}
                   </span>
                 ) : isStaff ? (
-                  <span className="text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded flex items-center gap-1 tracking-tighter uppercase">
+                  <span className="text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded flex items-center gap-1 tracking-tighter uppercase">
                     <UserCircle className="w-3 h-3" />{t('staff')}
                   </span>
                 ) : (
-                  <span className="text-[11px] font-bold bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 px-2 py-0.5 rounded flex items-center gap-1 tracking-tighter uppercase">
+                  <span className="text-xs font-bold bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 px-2 py-0.5 rounded flex items-center gap-1 tracking-tighter uppercase">
                     <UserCircle className="w-3 h-3" />{t('admin')}
                   </span>
                 )}
@@ -323,11 +323,11 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
                     {userEmail && <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">{userEmail}</p>}
                     <div className="mt-1">
                       {isSuperAdmin ? (
-                        <span className="text-[10px] font-bold bg-purple-600 text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">Super Admin</span>
+                        <span className="text-xs font-bold bg-purple-600 text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">Super Admin</span>
                       ) : isStaff ? (
-                        <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">Staff</span>
+                        <span className="text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">Staff</span>
                       ) : (
-                        <span className="text-[10px] font-bold bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">Admin</span>
+                        <span className="text-xs font-bold bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">Admin</span>
                       )}
                     </div>
                   </div>
@@ -348,7 +348,7 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
                         trialDaysLeft !== null && trialDaysLeft <= 7 ? 'text-amber-500' : 'text-purple-500'
                       }`} />
                       <div>
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wide">{t('trialPlan')}</p>
+                        <p className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wide">{t('trialPlan')}</p>
                         <p className={`text-xs font-bold ${
                           trialDaysLeft !== null && trialDaysLeft <= 3 ? 'text-red-600 dark:text-red-400' :
                           trialDaysLeft !== null && trialDaysLeft <= 7 ? 'text-amber-600 dark:text-amber-400' :
@@ -366,7 +366,7 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
                     <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl">
                       <Calendar className="w-3.5 h-3.5 text-purple-500 shrink-0" />
                       <div>
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wide">{t('nextBilling')}</p>
+                        <p className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wide">{t('nextBilling')}</p>
                         <p className="text-xs font-bold text-slate-700 dark:text-zinc-200">
                           {billingDateStr ?? t('noBillingDate')}
                         </p>

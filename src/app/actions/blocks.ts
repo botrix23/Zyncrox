@@ -4,6 +4,17 @@ import { db } from "@/db";
 import { blocks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
+
+async function assertAdmin() {
+  const session = await getSession();
+  if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.role)) {
+    throw new Error('Unauthorized');
+  }
+  const tenantId = getEffectiveTenantId(session);
+  if (!tenantId) throw new Error('No tenantId');
+  return { session, tenantId };
+}
 
 export async function createBlockAction(data: {
   tenantId: string;
@@ -14,8 +25,9 @@ export async function createBlockAction(data: {
   endTime: Date;
 }) {
   try {
+    const { tenantId } = await assertAdmin();
     const [newBlock] = await db.insert(blocks).values({
-      tenantId: data.tenantId,
+      tenantId,
       branchId: data.branchId,
       staffId: data.staffId || null,
       reason: data.reason,
@@ -36,13 +48,13 @@ export async function createBlockAction(data: {
 
 export async function getBlocksAction(branchId: string, tenantId: string) {
   try {
+    const { tenantId: sessionTenantId } = await assertAdmin();
     const results = await db.select().from(blocks).where(
       and(
         eq(blocks.branchId, branchId),
-        eq(blocks.tenantId, tenantId)
+        eq(blocks.tenantId, sessionTenantId)
       )
     );
-    // Filtrar cancelados en memoria: compatibilidad si la columna status aún no existe en la DB
     const active = results.filter(b => !(b as any).status || (b as any).status !== 'CANCELLED');
     return { success: true, blocks: active };
   } catch (error) {
@@ -53,12 +65,13 @@ export async function getBlocksAction(branchId: string, tenantId: string) {
 
 export async function cancelBlockAction(id: string, tenantId: string, cancelReason?: string) {
   try {
+    const { tenantId: sessionTenantId } = await assertAdmin();
     await db.update(blocks)
       .set({ status: 'CANCELLED', cancelReason: cancelReason || null })
       .where(
         and(
           eq(blocks.id, id),
-          eq(blocks.tenantId, tenantId)
+          eq(blocks.tenantId, sessionTenantId)
         )
       );
     revalidatePath("/[locale]/admin/(dashboard)/absences", "page");
@@ -80,6 +93,7 @@ export async function updateBlockAction(data: {
   endTime: Date;
 }) {
   try {
+    const { tenantId } = await assertAdmin();
     await db.update(blocks)
       .set({
         staffId: data.staffId || null,
@@ -90,7 +104,7 @@ export async function updateBlockAction(data: {
       .where(
         and(
           eq(blocks.id, data.id),
-          eq(blocks.tenantId, data.tenantId)
+          eq(blocks.tenantId, tenantId)
         )
       );
 

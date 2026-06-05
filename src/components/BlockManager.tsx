@@ -158,7 +158,7 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
                 
                 <form onSubmit={handleSubmitBlock} className="space-y-5">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">¿A quién aplica?</label>
+                    <label className="text-sm font-black uppercase tracking-widest text-slate-500 ml-1">¿A quién aplica?</label>
                     <select
                       value={formData.staffId}
                       onChange={e => setFormData({ ...formData, staffId: e.target.value })}
@@ -173,14 +173,14 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
                     <button 
                       type="button"
                       onClick={() => setFormData({...formData, isRange: false})}
-                      className={`flex-1 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!formData.isRange ? 'bg-purple-600 text-white' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
+                      className={`flex-1 py-2 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${!formData.isRange ? 'bg-purple-600 text-white' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
                     >
                       Día Único
                     </button>
                     <button 
                       type="button"
                       onClick={() => setFormData({...formData, isRange: true})}
-                      className={`flex-1 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.isRange ? 'bg-purple-600 text-white' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
+                      className={`flex-1 py-2 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${formData.isRange ? 'bg-purple-600 text-white' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5'}`}
                     >
                       Rango / Varias Días
                     </button>
@@ -188,7 +188,7 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+                      <label className="text-sm font-black uppercase tracking-widest text-slate-500 ml-1">
                         {formData.isRange ? 'Fecha Inicio' : 'Fecha'}
                       </label>
                       <input
@@ -200,7 +200,7 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
                     </div>
                     {formData.isRange && (
                       <div className="space-y-2 animate-in slide-in-from-left-2 duration-300">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Fecha Fin</label>
+                        <label className="text-sm font-black uppercase tracking-widest text-slate-500 ml-1">Fecha Fin</label>
                         <input
                           type="date"
                           value={formData.endDate}
@@ -213,7 +213,7 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Desde</label>
+                      <label className="text-sm font-black uppercase tracking-widest text-slate-500 ml-1">Desde</label>
                       <input
                         type="time"
                         value={formData.startTime}
@@ -222,7 +222,7 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Hasta</label>
+                      <label className="text-sm font-black uppercase tracking-widest text-slate-500 ml-1">Hasta</label>
                       <input
                         type="time"
                         value={formData.endTime}
@@ -233,7 +233,7 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Motivo (Opcional)</label>
+                    <label className="text-sm font-black uppercase tracking-widest text-slate-500 ml-1">Motivo (Opcional)</label>
                     <input
                       type="text"
                       value={formData.reason}
@@ -308,17 +308,17 @@ export default function BlockManager({ branchId, branchName, tenantId, staff, on
                             </p>
                             <div className="flex items-center gap-2 mt-2">
                               {block.staffId ? (
-                                <span className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase rounded-full">
+                                <span className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 text-blue-500 text-xs font-black uppercase rounded-full">
                                   <User className="w-3 h-3" />
                                   {staff.find(s => s.id === block.staffId)?.name}
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase rounded-full">
+                                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-xs font-black uppercase rounded-full">
                                   Toda la sucursal
                                 </span>
                               )}
                               {block.reason && (
-                                <span className="text-[10px] text-slate-500 font-medium italic">
+                                <span className="text-xs text-slate-500 font-medium italic">
                                   "{block.reason}"
                                 </span>
                               )}

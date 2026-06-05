@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/auth-session";
 import { db } from "@/db";
 import { bookings, services, staff, blocks, branches, tenants, staffAssignments, bookingSessions, slotLocks, reviews } from "@/db/schema";
 import { eq, and, gte, lte, or, isNull, desc, not, lt, gt, ne } from "drizzle-orm";
@@ -916,6 +917,10 @@ export async function updateBookingAction(data: {
   [key: string]: any;
 }) {
   try {
+    const session = await getSession();
+    if (!session || !['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(session.role)) {
+      return { success: false, error: 'Unauthorized' };
+    }
     // 1. Fetch booking before update to detect time changes
     const existing = await db.query.bookings.findFirst({
       where: and(eq(bookings.id, data.id), eq(bookings.tenantId, data.tenantId)),
@@ -1062,6 +1067,10 @@ export async function updateBookingAction(data: {
  */
 export async function deleteBookingAction(id: string, tenantId: string) {
   try {
+    const session = await getSession();
+    if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.role)) {
+      return { success: false, error: 'Unauthorized' };
+    }
     const existing = await db.query.bookings.findFirst({
       where: and(eq(bookings.id, id), eq(bookings.tenantId, tenantId)),
       with: { service: true, branch: true, tenant: true },
@@ -1138,6 +1147,10 @@ export async function getBookingAction(id: string) {
  */
 export async function getBookingsAction(tenantId: string) {
   try {
+    const session = await getSession();
+    if (!session || !['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(session.role)) {
+      return [];
+    }
     // 1. Auto-finalizar citas pasadas (Opcional: solo las CONFIRMED/PENDING)
     const now = new Date();
     await db.update(bookings)
@@ -1260,6 +1273,8 @@ export async function releaseServiceSlotLockAction(sessionToken: string, service
  * que aún no han recibido el email. Solo actúa si el tenant tiene reviewsEnabled=true.
  */
 export async function sendPendingSurveyEmailsAction(tenantId: string) {
+  const session = await getSession();
+  if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.role)) return;
   try {
     const tenant = await db.query.tenants.findFirst({
       where: eq(tenants.id, tenantId),

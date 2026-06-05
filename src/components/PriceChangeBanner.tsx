@@ -65,7 +65,7 @@ export default function PriceChangeBanner({ notice, locale }: PriceChangeBannerP
                 {notice.plans.map((p, i) => (
                   <span key={i} className="inline-flex items-center gap-1 text-xs font-semibold bg-white/15 px-2 py-0.5 rounded-full">
                     <span className="opacity-80">{p.plan}</span>
-                    <span className="opacity-60 line-through text-[10px]">${p.currentPrice}</span>
+                    <span className="opacity-60 line-through text-xs">${p.currentPrice}</span>
                     <ArrowRight className="w-2.5 h-2.5 opacity-70" />
                     <span className="font-black">${p.newPrice}</span>
                   </span>

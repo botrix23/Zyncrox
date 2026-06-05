@@ -1063,7 +1063,7 @@ export default function BookingWidget({
             {(modality || selectedServices.length > 0) && (
               <div className="hidden lg:block bg-white/50 dark:bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-white/10 transition-all duration-300 shadow-xl">
                 <div>
-                  <h3 className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">{t("your_appointment")}</h3>
+                  <h3 className="text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">{t("your_appointment")}</h3>
 
                   {modality && (
                     <div className="flex items-start gap-3 text-slate-900 dark:text-white animate-in fade-in slide-in-from-left-2 duration-300">
@@ -1084,7 +1084,7 @@ export default function BookingWidget({
 
                 {selectedServices.length > 0 && (
                   <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-white/5">
-                    <h3 className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">{t("selected_services")}</h3>
+                    <h3 className="text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">{t("selected_services")}</h3>
                     <div className="space-y-3">
                       {selectedServices.map((s, idx) => {
                         const booking = cartBookings[idx];
@@ -1096,11 +1096,11 @@ export default function BookingWidget({
                                 <span className="text-sm font-bold text-slate-700 dark:text-zinc-300 block truncate">{s.name}</span>
                                 {booking?.date && booking?.time && (
                                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                                    <span className="flex items-center gap-1 text-[11px] font-bold text-purple-500">
+                                    <span className="flex items-center gap-1 text-xs font-bold text-purple-500">
                                       <Calendar className="w-3 h-3" />
                                       {formatShortDate(booking.date)}
                                     </span>
-                                    <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                                    <span className="flex items-center gap-1 text-xs font-semibold text-slate-400">
                                       <Clock className="w-3 h-3" />
                                       {formatTo12h(booking.time)}
                                     </span>
@@ -1120,12 +1120,12 @@ export default function BookingWidget({
                 {selectedServices.length > 0 && (
                   <div className="pt-6 border-t border-slate-100 dark:border-white/5 mt-4">
                     <div className="p-6 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10 shadow-inner">
-                      <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 tracking-[0.2em] mb-3 text-center uppercase">{t("resume")}</p>
+                      <p className="text-xs font-black text-purple-600 dark:text-purple-400 tracking-[0.2em] mb-3 text-center uppercase">{t("resume")}</p>
                       <div className="flex flex-col items-center gap-1">
                         <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
                           ${(servicesTotal + sidebarTransferTotal).toFixed(2)}
                         </p>
-                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
                           {totalDuration} min · {selectedServices.length} {selectedServices.length === 1 ? t("service_singular") : t("service_plural")}
                         </p>
                       </div>
@@ -1220,7 +1220,7 @@ export default function BookingWidget({
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-emerald-500 text-xl font-black tracking-tighter">+${zone.fee}</p>
-                        <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest leading-none">Traslado</p>
+                        <p className="text-xs text-slate-400 uppercase font-black tracking-widest leading-none">Traslado</p>
                       </div>
                     </button>
                   ))
@@ -1526,7 +1526,7 @@ export default function BookingWidget({
               {selectedServices.length > 0 && (
                 <div className="w-full mb-6 p-1.5 bg-purple-500/5 dark:bg-white/5 border border-purple-500/10 dark:border-white/10 rounded-2xl flex items-center gap-2">
                   <div className="bg-purple-600 px-4 py-1.5 rounded-xl shadow-lg shadow-purple-500/20 flex items-center justify-center">
-                    <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] leading-none translate-y-[0.5px]">
+                    <span className="text-xs font-black text-white uppercase tracking-[0.2em] leading-none translate-y-[0.5px]">
                       {t("scheduling") || "Agendando"}:
                     </span>
                   </div>
@@ -1624,7 +1624,7 @@ export default function BookingWidget({
                           const d = new Date(2024, 0, 1 + i); // 2024-01-01 is Monday
                           return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(d).slice(0, 2).toUpperCase();
                         }).map((d, i) => (
-                          <div key={i} className="text-[10px] font-black text-slate-400 dark:text-zinc-500 text-center tracking-[0.1em]">{d}</div>
+                          <div key={i} className="text-xs font-black text-slate-400 dark:text-zinc-500 text-center tracking-[0.1em]">{d}</div>
                         ))}
                       </div>
 
@@ -1715,7 +1715,7 @@ export default function BookingWidget({
                         {isLoadingTimes ? (
                           <div className="flex flex-col items-center justify-center py-20">
                             <Loader2 className="w-10 h-10 text-purple-500 animate-spin" />
-                            <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("calculating")}</p>
+                            <p className="mt-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t("calculating")}</p>
                           </div>
                         ) : errorType || (selectedDate && availableTimes.length === 0) ? (
                           <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-rose-500/5 dark:bg-rose-500/10 border-2 border-dashed border-rose-500/20 rounded-3xl">
@@ -1725,7 +1725,7 @@ export default function BookingWidget({
                         ) : !selectedDate ? (
                           <div className="flex flex-col items-center justify-center py-20 text-slate-300 dark:text-zinc-800 border-2 border-dashed border-slate-100 dark:border-zinc-800 rounded-3xl">
                             <Calendar className="w-12 h-12 mb-4 opacity-30" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("choose_date")}</p>
+                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">{t("choose_date")}</p>
                           </div>
                         ) : (
                           <>
@@ -1757,7 +1757,7 @@ export default function BookingWidget({
                                   >
                                     <div className="flex items-center gap-2">
                                       <span className="text-sm font-black tracking-widest text-slate-900 dark:text-white uppercase">{t(section.key as any)}</span>
-                                      <span className="text-[10px] font-black text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">{availableCount} {t('slots_available')}</span>
+                                      <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">{availableCount} {t('slots_available')}</span>
                                     </div>
                                     <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
                                   </button>
@@ -1929,14 +1929,14 @@ export default function BookingWidget({
               {/* Resumen de servicios con día y hora */}
               {cartBookings.length > 0 && (
                 <div className="w-full mb-6">
-                  <p className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3">{t("selected_services")}</p>
+                  <p className="text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3">{t("selected_services")}</p>
                   <div className="space-y-2">
                     {cartBookings.map((b, idx) => (
                       b.date && b.time && (
                         <div key={idx} className="flex items-center gap-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3">
                           {cartBookings.length > 1 && (
                             <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-                              <span className="text-[11px] font-black text-purple-500">{idx + 1}</span>
+                              <span className="text-xs font-black text-purple-500">{idx + 1}</span>
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
@@ -2227,7 +2227,7 @@ export default function BookingWidget({
                                   <div className="flex items-center gap-2">
                                     <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight truncate">{b.service.name}</h3>
                                     {isInSimulGroup && (
-                                      <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full">
+                                      <span className="shrink-0 text-xs font-black uppercase tracking-widest px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full">
                                         Simultáneo
                                       </span>
                                     )}
@@ -2254,7 +2254,7 @@ export default function BookingWidget({
                                 {showsTransferInCard && (
                                   <div className="flex items-center gap-1 text-emerald-500">
                                     <Truck className="w-3.5 h-3.5" />
-                                    <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">
+                                    <span className="text-xs font-black uppercase tracking-wider hidden sm:inline">
                                       +${parsePrice(selectedZone?.fee).toFixed(2)}
                                     </span>
                                   </div>
@@ -2287,12 +2287,12 @@ export default function BookingWidget({
                                           setOpenCalendarIdx(openCalendarIdx === idx ? null : idx);
                                         }
                                       }}
-                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 dark:bg-white/10 hover:bg-purple-600 dark:hover:bg-purple-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all active:scale-95">
+                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 dark:bg-white/10 hover:bg-purple-600 dark:hover:bg-purple-600 text-white rounded-lg text-xs font-black uppercase tracking-widest transition-all active:scale-95">
                                       <Download className="w-3 h-3" />
                                       <span className="hidden sm:inline">{t("sync_calendar")}</span>
                                     </button>
                                     <div className={`absolute right-0 bottom-full mb-3 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl transition-all z-[99] p-2 ring-1 ring-black/5 ${openCalendarIdx === idx ? 'opacity-100 visible' : 'opacity-0 invisible group-hover/sync:opacity-100 group-hover/sync:visible'}`}>
-                                      <p className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-white/5 mb-1">{t("choose_platform")}</p>
+                                      <p className="px-3 py-2 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-white/5 mb-1">{t("choose_platform")}</p>
                                       <a
                                         href={getGoogleCalendarUrl({ title: calTitle, description: `Especialista: ${b.staff?.name || 'Cualquiera'}\nCliente: ${guestName}`, location: guestAddress || (selectedBranch as any)?.address || 'Servicio a domicilio', startTime: calStart, endTime: calEnd })}
                                         target="_blank"
@@ -2365,7 +2365,7 @@ export default function BookingWidget({
                             </div>
                             {transferInfo.blocks > 1 && (
                               <div className="pt-2 border-t border-emerald-500/10">
-                                <p className="text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest leading-relaxed">
+                                <p className="text-xs font-bold text-emerald-500/70 uppercase tracking-widest leading-relaxed">
                                   {t("transfer_fee_detail", { count: transferInfo.blocks, fee: parsePrice(selectedZone?.fee).toFixed(2) })}
                                 </p>
                               </div>
@@ -2376,7 +2376,7 @@ export default function BookingWidget({
                       <div className="flex items-center justify-between pt-5 border-t border-slate-200 dark:border-white/10">
                         <div>
                           <p className="text-xs font-black tracking-[0.2em] text-slate-400 uppercase mb-1">{t("total_to_pay")}</p>
-                          <p className="text-[10px] font-bold text-slate-400 opacity-60 uppercase">{t("tax_included")}</p>
+                          <p className="text-xs font-bold text-slate-400 opacity-60 uppercase">{t("tax_included")}</p>
                         </div>
                         <p className="text-4xl font-black text-purple-600 dark:text-purple-400 tracking-tighter">${totalPrice.toFixed(2)}</p>
                       </div>
@@ -2478,7 +2478,7 @@ export default function BookingWidget({
                         </div>
                         {transferInfo.blocks > 1 && (
                           <div className="pt-2 border-t border-emerald-500/10">
-                            <p className="text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest leading-relaxed">
+                            <p className="text-xs font-bold text-emerald-500/70 uppercase tracking-widest leading-relaxed">
                               {t("transfer_fee_detail", { count: transferInfo.blocks, fee: parsePrice(selectedZone?.fee).toFixed(2) })}
                             </p>
                           </div>
@@ -2489,7 +2489,7 @@ export default function BookingWidget({
                   <div className="flex items-center justify-between pt-5 border-t border-slate-200 dark:border-white/10">
                     <div>
                       <p className="text-xs font-black tracking-[0.2em] text-slate-400 uppercase mb-1">{t("total_to_pay")}</p>
-                      <p className="text-[10px] font-bold text-slate-400 opacity-60 uppercase">{t("tax_included")}</p>
+                      <p className="text-xs font-bold text-slate-400 opacity-60 uppercase">{t("tax_included")}</p>
                     </div>
                     <p className="text-4xl font-black text-purple-600 dark:text-purple-400 tracking-tighter">${totalPrice.toFixed(2)}</p>
                   </div>

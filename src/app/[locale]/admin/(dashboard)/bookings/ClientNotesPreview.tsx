@@ -115,7 +115,7 @@ export default function ClientNotesPreview({
         </div>
         <button
           onClick={() => setShowAdd(s => !s)}
-          className="text-[11px] font-bold text-violet-600 dark:text-violet-400 hover:underline"
+          className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline"
         >
           {labels.addBtn}
         </button>
@@ -133,7 +133,7 @@ export default function ClientNotesPreview({
               autoFocus
               className="w-full p-2.5 bg-white dark:bg-white/5 border border-violet-200 dark:border-violet-500/30 rounded-xl focus:ring-2 focus:ring-violet-500 focus:outline-none text-xs font-medium text-slate-900 dark:text-white resize-none placeholder:text-slate-400"
             />
-            <span className="absolute bottom-2 right-2.5 text-[10px] text-slate-400 pointer-events-none">
+            <span className="absolute bottom-2 right-2.5 text-xs text-slate-400 pointer-events-none">
               {newContent.length}/500
             </span>
           </div>
@@ -141,14 +141,14 @@ export default function ClientNotesPreview({
             <button
               onClick={handleAdd}
               disabled={!newContent.trim() || saving}
-              className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white text-[11px] font-bold rounded-lg transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
             >
               {saving && <Loader2 className="w-3 h-3 animate-spin" />}
               {labels.save}
             </button>
             <button
               onClick={() => { setShowAdd(false); setNewContent(''); }}
-              className="px-3 py-1.5 bg-white dark:bg-white/10 text-slate-500 dark:text-zinc-400 text-[11px] font-bold rounded-lg transition-colors"
+              className="px-3 py-1.5 bg-white dark:bg-white/10 text-slate-500 dark:text-zinc-400 text-xs font-bold rounded-lg transition-colors"
             >
               {labels.cancel}
             </button>
@@ -182,10 +182,10 @@ export default function ClientNotesPreview({
               >
                 {isWarning && (
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-[10px] font-black">
+                    <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs font-black">
                       <AlertTriangle className="w-3 h-3" /> {labels.warning}
                     </div>
-                    <span className="text-[10px] text-amber-500 font-black">📌 {labels.pinned}</span>
+                    <span className="text-xs text-amber-500 font-black">📌 {labels.pinned}</span>
                   </div>
                 )}
                 <p className="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap break-words">
@@ -200,7 +200,7 @@ export default function ClientNotesPreview({
                   )}
                 </p>
                 <div className="flex items-center gap-1.5 mt-1.5">
-                  <span className={`text-[10px] font-black px-1 py-0.5 rounded ${
+                  <span className={`text-xs font-black px-1 py-0.5 rounded ${
                     note.authorRole === 'ADMIN' || note.authorRole === 'SUPER_ADMIN'
                       ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300'
                       : 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300'
@@ -208,9 +208,9 @@ export default function ClientNotesPreview({
                     {note.authorRole === 'ADMIN' || note.authorRole === 'SUPER_ADMIN'
                       ? labels.roleAdmin : labels.roleStaff}
                   </span>
-                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">{note.authorName}</span>
+                  <span className="text-xs text-slate-500 dark:text-zinc-400">{note.authorName}</span>
                   <span className="text-slate-300 dark:text-zinc-700">·</span>
-                  <span className="text-[11px] text-slate-400 dark:text-zinc-500">
+                  <span className="text-xs text-slate-400 dark:text-zinc-500">
                     {formatRelative(note.createdAt, locale)}
                   </span>
                 </div>
@@ -223,7 +223,7 @@ export default function ClientNotesPreview({
       {/* "View all" link when there might be more */}
       {notes.length === 3 && (
         <div className="px-4 py-2.5 border-t border-violet-100 dark:border-violet-500/10 text-center">
-          <span className="text-[11px] text-violet-500 dark:text-violet-400 font-bold">
+          <span className="text-xs text-violet-500 dark:text-violet-400 font-bold">
             {labels.viewAll('3+')}
           </span>
         </div>

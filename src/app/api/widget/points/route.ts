@@ -6,7 +6,34 @@ import { eq, and, gt, asc } from 'drizzle-orm';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// In-memory rate limiter: max 15 lookups per IP per minute.
+// Prevents bulk email enumeration without adding DB overhead to every widget load.
+const ipWindow = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 15;
+const WINDOW_MS = 60_000;
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = ipWindow.get(ip);
+  if (!entry || now > entry.resetAt) {
+    ipWindow.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    return false;
+  }
+  if (entry.count >= RATE_LIMIT) return true;
+  entry.count++;
+  return false;
+}
+
 export async function GET(req: NextRequest) {
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    req.headers.get('x-real-ip') ??
+    'unknown';
+
+  if (isRateLimited(ip)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const { searchParams } = new URL(req.url);
   const tenantId = searchParams.get('tenantId');
   const email = searchParams.get('email');

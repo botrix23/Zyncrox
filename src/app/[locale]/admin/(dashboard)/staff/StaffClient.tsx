@@ -670,11 +670,11 @@ export default function StaffClient({
             <div className="flex items-start justify-between gap-2 p-4 pb-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className={`font-bold text-[15px] tracking-tight leading-tight ${member.isActive === false ? 'text-slate-400 dark:text-zinc-500' : 'text-slate-900 dark:text-white'}`}>
+                  <h3 className={`font-bold text-base tracking-tight leading-tight ${member.isActive === false ? 'text-slate-400 dark:text-zinc-500' : 'text-slate-900 dark:text-white'}`}>
                     {member.name}
                   </h3>
                   {member.isActive === false && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                       {t('deactivated')}
                     </span>
                   )}
@@ -693,12 +693,12 @@ export default function StaffClient({
                   </button>
                 )}
                 {/* Sucursal */}
-                <p className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mt-1.5 leading-none">
+                <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mt-1.5 leading-none">
                   {branchName || t('noBranch')}
                 </p>
                 {/* Viñeta de asignación temporal */}
                 {activeOverride && (
-                  <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20 animate-pulse">
+                  <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full border border-amber-500/20 animate-pulse">
                     <CalendarDays className="w-2.5 h-2.5" />
                     {t('form.temporaryAssignment').toUpperCase()}
                   </span>
@@ -757,7 +757,7 @@ export default function StaffClient({
                 );
               })()}
               {hasFutureRotation && (
-                <span className="flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-zinc-500">
+                <span className="flex items-center gap-1 text-xs font-bold text-slate-400 dark:text-zinc-500">
                   <Clock className="w-3 h-3" />
                   {t('nextRotationScheduled')}
                 </span>
@@ -860,7 +860,7 @@ export default function StaffClient({
               <form onSubmit={handleSave} className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.nameLabel')}</label>
+                    <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.nameLabel')}</label>
                     <input 
                       required
                       type="text" 
@@ -872,7 +872,7 @@ export default function StaffClient({
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.emailLabel')}</label>
+                    <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.emailLabel')}</label>
                     <input 
                       required
                       type="email" 
@@ -884,7 +884,7 @@ export default function StaffClient({
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.phoneLabel')}</label>
+                    <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.phoneLabel')}</label>
                     <PhoneInput 
                       value={formData.phone}
                       onChange={val => setFormData({...formData, phone: val})}
@@ -893,7 +893,7 @@ export default function StaffClient({
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.emergencyContactLabel')}</label>
+                    <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.emergencyContactLabel')}</label>
                     <input 
                       type="text" 
                       value={formData.emergencyContactName}
@@ -904,7 +904,7 @@ export default function StaffClient({
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.emergencyPhoneLabel')}</label>
+                    <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.emergencyPhoneLabel')}</label>
                     <PhoneInput 
                       value={formData.emergencyContactPhone}
                       onChange={val => setFormData({...formData, emergencyContactPhone: val})}
@@ -1003,7 +1003,7 @@ export default function StaffClient({
                       <div className="p-5 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-1.5">
-                            <label className="text-[9px] font-black text-slate-400">{t('form.branchSelect')}</label>
+                            <label className="text-sm font-black text-slate-400">{t('form.branchSelect')}</label>
                             <select 
                               required
                               value={assignment.branchId}
@@ -1014,7 +1014,7 @@ export default function StaffClient({
                             </select>
                           </div>
                           <div className={`space-y-1.5 transition-opacity duration-300 ${formData.inheritBranchHours ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-                            <label className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">{t('form.baseSchedule')}</label>
+                            <label className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">{t('form.baseSchedule')}</label>
                             <div className="grid grid-cols-2 gap-2">
                                <input type="time" value={assignment.startTime} onChange={e => handleAssignmentChange(realIdx, 'startTime', e.target.value)} className="p-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
                                <input type="time" value={assignment.endTime} onChange={e => handleAssignmentChange(realIdx, 'endTime', e.target.value)} className="p-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
@@ -1034,7 +1034,7 @@ export default function StaffClient({
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-black text-slate-500 ml-1">{t('form.rotationTitle')}</label>
+                      <label className="text-sm font-black text-slate-500 ml-1">{t('form.rotationTitle')}</label>
                       {canUseFeature(plan, 'staffRotations') && formData.assignments.length < 4 && (
                         <button type="button" onClick={handleAddAssignment} className="text-xs font-black text-purple-600 bg-purple-500/10 px-4 py-2 rounded-xl hover:bg-purple-500/20 transition-all">
                           + {t('form.addAssignment')}
@@ -1046,7 +1046,7 @@ export default function StaffClient({
                         <Lock className="w-4 h-4 text-amber-500 shrink-0" />
                         <div>
                           <p className="text-xs font-black text-amber-600 dark:text-amber-400">{t('form.rotationLocked')}</p>
-                          <p className="text-[11px] text-amber-500/80 font-medium mt-0.5">{t('form.rotationLockedDesc')}</p>
+                          <p className="text-xs text-amber-500/80 font-medium mt-0.5">{t('form.rotationLockedDesc')}</p>
                         </div>
                       </div>
                     )}
@@ -1065,7 +1065,7 @@ export default function StaffClient({
                         <div className="flex items-center justify-between px-4 py-2.5 border-b border-amber-500/10">
                           <div className="flex items-center gap-2">
                             <CalendarDays className="w-3 h-3 text-amber-500" />
-                            <span className="text-[9px] font-black text-amber-600">{t('form.temporaryAssignment')}</span>
+                            <span className="text-xs font-black text-amber-600">{t('form.temporaryAssignment')}</span>
                           </div>
                           <button type="button" onClick={() => handleRemoveAssignment(realIdx)} className="text-rose-500 hover:bg-rose-500/10 p-1 rounded-md transition-all">
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1074,18 +1074,18 @@ export default function StaffClient({
                         <div className="p-4 space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                              <div className="space-y-1">
-                               <label className="text-[8px] font-black text-slate-400">{t('form.destinationBranch')}</label>
+                               <label className="text-sm font-black text-slate-400">{t('form.destinationBranch')}</label>
                                <select value={assignment.branchId} onChange={e => handleAssignmentChange(realIdx, 'branchId', e.target.value)} className="w-full p-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none">
                                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                </select>
                              </div>
                              <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1">
-                                  <label className="text-[8px] font-black text-slate-400 uppercase">{t('form.from')}</label>
+                                  <label className="text-sm font-black text-slate-400 uppercase">{t('form.from')}</label>
                                   <input type="date" required value={assignment.startDate} onChange={e => handleAssignmentChange(realIdx, 'startDate', e.target.value)} className="w-full p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
                                 </div>
                                 <div className="space-y-1">
-                                  <label className="text-[8px] font-black text-slate-400 uppercase">{t('form.to')}</label>
+                                  <label className="text-sm font-black text-slate-400 uppercase">{t('form.to')}</label>
                                   <input type="date" value={assignment.endDate} onChange={e => handleAssignmentChange(realIdx, 'endDate', e.target.value)} className="w-full p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
                                 </div>
                              </div>
@@ -1093,17 +1093,17 @@ export default function StaffClient({
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                              <label className="text-[8px] font-black text-slate-400 uppercase">{t('form.specialSchedule')}</label>
+                              <label className="text-sm font-black text-slate-400 uppercase">{t('form.specialSchedule')}</label>
                               <div className="grid grid-cols-2 gap-2">
                                  <input type="time" value={assignment.startTime} onChange={e => handleAssignmentChange(realIdx, 'startTime', e.target.value)} className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
                                  <input type="time" value={assignment.endTime} onChange={e => handleAssignmentChange(realIdx, 'endTime', e.target.value)} className="p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
                               </div>
                             </div>
                             <div className="space-y-1.5">
-                              <label className="text-[8px] font-black text-slate-400 uppercase">{t('form.applicableDays')}</label>
+                              <label className="text-sm font-black text-slate-400 uppercase">{t('form.applicableDays')}</label>
                               <div className="flex flex-wrap gap-1">
                                 {days.map(day => (
-                                  <button key={day} type="button" onClick={() => toggleDay(realIdx, day)} className={`px-1.5 py-1 rounded-md text-[7px] font-black uppercase transition-all ${assignment.daysOfWeek.includes(day) ? 'bg-amber-500 text-white' : 'bg-white dark:bg-zinc-800 text-slate-400 border border-slate-100 dark:border-white/5'}`}>
+                                  <button key={day} type="button" onClick={() => toggleDay(realIdx, day)} className={`px-1.5 py-1 rounded-md text-xs font-black uppercase transition-all ${assignment.daysOfWeek.includes(day) ? 'bg-amber-500 text-white' : 'bg-white dark:bg-zinc-800 text-slate-400 border border-slate-100 dark:border-white/5'}`}>
                                     {t(`days.${day}`)}
                                   </button>
                                 ))}

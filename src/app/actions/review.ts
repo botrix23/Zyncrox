@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { reviews, bookings } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/auth-session";
 
 export async function createReviewAction(data: {
   tenantId: string;
@@ -63,6 +64,10 @@ export async function createReviewAction(data: {
 
 export async function getStaffReviewsAction(staffId: string) {
   try {
+    const session = await getSession();
+    if (!session || !['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(session.role)) {
+      return [];
+    }
     return await db.query.reviews.findMany({
       where: eq(reviews.staffId, staffId),
       orderBy: (reviews, { desc }) => [desc(reviews.createdAt)]

@@ -224,12 +224,12 @@ export function LoyaltyTab({ data, isLoading }: Props) {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
-                    <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">#</th>
-                    <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{isEs ? "Cliente" : "Client"}</th>
-                    <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">{isEs ? "Balance" : "Balance"}</th>
-                    <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">{isEs ? "Ganados (periodo)" : "Earned (period)"}</th>
-                    <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">{isEs ? "Canjes" : "Redeems"}</th>
-                    <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{isEs ? "Último canje" : "Last redeem"}</th>
+                    <th className="px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400">#</th>
+                    <th className="px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400">{isEs ? "Cliente" : "Client"}</th>
+                    <th className="px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400 text-right">{isEs ? "Balance" : "Balance"}</th>
+                    <th className="px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400 text-right">{isEs ? "Ganados (periodo)" : "Earned (period)"}</th>
+                    <th className="px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400 text-right">{isEs ? "Canjes" : "Redeems"}</th>
+                    <th className="px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400">{isEs ? "Último canje" : "Last redeem"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-white/[0.03]">
@@ -290,10 +290,10 @@ export function LoyaltyTab({ data, isLoading }: Props) {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
-                    <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">#</th>
-                    <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{isEs ? "Recompensa" : "Reward"}</th>
-                    <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">{isEs ? "Veces canjeada" : "Times redeemed"}</th>
-                    <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">{isEs ? "Puntos totales usados" : "Total points used"}</th>
+                    <th className="px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400">#</th>
+                    <th className="px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400">{isEs ? "Recompensa" : "Reward"}</th>
+                    <th className="px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400 text-right">{isEs ? "Veces canjeada" : "Times redeemed"}</th>
+                    <th className="px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400 text-right">{isEs ? "Puntos totales usados" : "Total points used"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-white/[0.03]">

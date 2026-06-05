@@ -115,7 +115,7 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
               <div className="flex items-start gap-2 mb-2">
                 <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                 <div className="min-w-0">
-                  <p className="text-[13px] font-black text-amber-500 uppercase tracking-wide">{t('supportMode')}</p>
+                  <p className="text-sm font-black text-amber-500 uppercase tracking-wide">{t('supportMode')}</p>
                   <p className="text-xs text-amber-400/90 truncate font-medium mt-0.5">
                     {t('viewing')}: <strong className="text-amber-300 font-bold">{user.impersonatedTenantName}</strong>
                   </p>
@@ -200,7 +200,7 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-900 dark:text-white truncate leading-tight">{tenantName}</p>
               {tenantPlan && !isStaff && (
-                <span className={`inline-block mt-0.5 text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
+                <span className={`inline-block mt-0.5 text-xs font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
                   tenantPlan === 'ENTERPRISE'
                     ? 'bg-amber-500/15 text-amber-500'
                     : tenantPlan === 'PROFESSIONAL'

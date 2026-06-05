@@ -197,7 +197,7 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
                       <button
                         type="button"
                         onClick={() => copyToAll(day.id)}
-                        className="flex items-center gap-1 px-2 py-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all hover:bg-purple-600 hover:text-white active:scale-95 shadow-sm border border-purple-100 dark:border-purple-500/20"
+                        className="flex items-center gap-1 px-2 py-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-black uppercase tracking-wider transition-all hover:bg-purple-600 hover:text-white active:scale-95 shadow-sm border border-purple-100 dark:border-purple-500/20"
                         title="Copiar horario a todos los días"
                       >
                         <Copy className="w-3 h-3 shrink-0" />
@@ -248,7 +248,7 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
                       <button
                         type="button"
                         onClick={() => addSlot(day.id)}
-                        className="w-full py-2 border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-[10px] font-bold text-slate-400 hover:text-purple-500 hover:border-purple-500/50 transition-all flex items-center justify-center gap-1.5 uppercase tracking-widest"
+                        className="w-full py-2 border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-400 hover:text-purple-500 hover:border-purple-500/50 transition-all flex items-center justify-center gap-1.5 uppercase tracking-widest"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         Añadir tramo
@@ -296,7 +296,7 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
                         <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
                           {new Date(dateKey + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' })}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{dateKey}</p>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{dateKey}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -359,7 +359,7 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
                       <button
                         type="button"
                         onClick={() => addSlot("", true, dateKey)}
-                        className="w-full py-2 border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-[10px] font-bold text-slate-400 hover:text-purple-500 hover:border-purple-500/50 transition-all flex items-center justify-center gap-1.5 uppercase tracking-widest"
+                        className="w-full py-2 border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-400 hover:text-purple-500 hover:border-purple-500/50 transition-all flex items-center justify-center gap-1.5 uppercase tracking-widest"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         Añadir tramo

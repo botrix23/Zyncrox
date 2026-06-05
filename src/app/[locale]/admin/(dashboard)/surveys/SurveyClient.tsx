@@ -641,7 +641,7 @@ export default function SurveyClient({
                       {/* Row 2: dates */}
                       <div className="flex items-center gap-4 text-xs font-bold text-slate-500 dark:text-zinc-400 border-t border-slate-100 dark:border-white/5 pt-2.5">
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('audit.table.bookingDate')}</span>
+                          <span className="text-xs font-black uppercase tracking-widest text-slate-400">{t('audit.table.bookingDate')}</span>
                           <span className="text-slate-700 dark:text-zinc-300">
                             {r.booking?.startTime
                               ? `${new Date(r.booking.startTime).toLocaleDateString(locale)} ${new Date(r.booking.startTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`
@@ -649,7 +649,7 @@ export default function SurveyClient({
                           </span>
                         </div>
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('audit.table.submittedDate')}</span>
+                          <span className="text-xs font-black uppercase tracking-widest text-slate-400">{t('audit.table.submittedDate')}</span>
                           <span>{new Date(r.createdAt).toLocaleDateString(locale)}</span>
                         </div>
                       </div>
@@ -662,7 +662,7 @@ export default function SurveyClient({
                           )}
                           {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).map((resp: any, i: number) => (
                             <div key={i} className="px-2.5 py-1.5 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{resp.questionText}</p>
+                              <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-0.5">{resp.questionText}</p>
                               <p className="text-xs text-purple-600 font-bold break-words">{resp.answer}</p>
                             </div>
                           ))}
@@ -677,12 +677,12 @@ export default function SurveyClient({
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-slate-100 dark:border-white/5">
-                        <th className="pb-3 text-[10px] font-black tracking-widest text-slate-400 px-2 text-center">{t('audit.table.rating')}</th>
-                        <th className="pb-3 text-[10px] font-black tracking-widest text-slate-400 px-3">{t('audit.table.customer')}</th>
-                        <th className="pb-3 text-[10px] font-black tracking-widest text-slate-400 px-3">{t('audit.table.staffService')}</th>
-                        <th className="pb-3 text-[10px] font-black tracking-widest text-slate-400 px-3">{t('audit.table.bookingDate')}</th>
-                        <th className="pb-3 text-[10px] font-black tracking-widest text-slate-400 px-3">{t('audit.table.comment')}</th>
-                        <th className="pb-3 text-[10px] font-black tracking-widest text-slate-400 px-3">{t('audit.table.submittedDate')}</th>
+                        <th className="pb-3 text-xs font-black tracking-widest text-slate-400 px-2 text-center">{t('audit.table.rating')}</th>
+                        <th className="pb-3 text-xs font-black tracking-widest text-slate-400 px-3">{t('audit.table.customer')}</th>
+                        <th className="pb-3 text-xs font-black tracking-widest text-slate-400 px-3">{t('audit.table.staffService')}</th>
+                        <th className="pb-3 text-xs font-black tracking-widest text-slate-400 px-3">{t('audit.table.bookingDate')}</th>
+                        <th className="pb-3 text-xs font-black tracking-widest text-slate-400 px-3">{t('audit.table.comment')}</th>
+                        <th className="pb-3 text-xs font-black tracking-widest text-slate-400 px-3">{t('audit.table.submittedDate')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-white/5">
@@ -711,7 +711,7 @@ export default function SurveyClient({
                                 {r.booking?.startTime ? new Date(r.booking.startTime).toLocaleDateString(locale) : '—'}
                               </span>
                               {r.booking?.startTime && (
-                                <span className="text-[11px] font-bold text-purple-500">
+                                <span className="text-xs font-bold text-purple-500">
                                   {new Date(r.booking.startTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               )}
@@ -725,7 +725,7 @@ export default function SurveyClient({
                               )}
                               {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).map((resp: any, i: number) => (
                                 <div key={i} className="px-2 py-1 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                                  <p className="text-[10px] font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
+                                  <p className="text-xs font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
                                   <p className="text-xs text-purple-600 font-bold break-words">{resp.answer}</p>
                                 </div>
                               ))}
@@ -771,7 +771,7 @@ export default function SurveyClient({
 
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black tracking-widest text-slate-400 ml-1">
+                    <label className="text-sm font-black tracking-widest text-slate-400 ml-1">
                       {t('questionText')}
                     </label>
                     <input
@@ -786,7 +786,7 @@ export default function SurveyClient({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-black tracking-widest text-slate-400 ml-1">
+                      <label className="text-sm font-black tracking-widest text-slate-400 ml-1">
                         {t('questionType')}
                       </label>
                       <div className="relative">
@@ -832,7 +832,7 @@ export default function SurveyClient({
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-black tracking-widest text-slate-400 ml-1">
+                      <label className="text-sm font-black tracking-widest text-slate-400 ml-1">
                         {t('category')}
                       </label>
                       <select

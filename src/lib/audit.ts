@@ -14,6 +14,7 @@ import { auditLogs } from "@/db/schema";
 export type AuditAction =
   | 'LOGIN_SUCCESS'
   | 'LOGIN_FAILED'
+  | 'FORGOT_PASSWORD_REQUESTED'
   | 'LOGOUT'
   | 'TENANT_REGISTERED'
   | 'TENANT_STATUS_CHANGED'   // Activar / Suspender

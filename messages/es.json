@@ -164,7 +164,8 @@
     "errorDisabled": "Tu acceso ha sido desactivado. Contacta al administrador.",
     "errorSuspended": "Tu cuenta de negocio está suspendida. Contacta a soporte.",
     "errorTrialExpired": "Tu período de prueba ha expirado. Por favor, realiza el pago para continuar.",
-    "errorTempExpired": "La contraseña temporal ha vencido. Pide al administrador que genere un nuevo acceso."
+    "errorTempExpired": "La contraseña temporal ha vencido. Pide al administrador que genere un nuevo acceso.",
+    "errorRateLimit": "Demasiados intentos fallidos. Intenta de nuevo en 15 minutos."
   },
   "ForgotPassword": {
     "title": "¿Olvidaste tu contraseña?",

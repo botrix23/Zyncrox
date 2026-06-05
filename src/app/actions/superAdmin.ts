@@ -1,5 +1,6 @@
 "use server";
 
+import crypto from 'crypto';
 import { db } from "@/db";
 import { tenants, users, bookings, auditLogs, staff, platformConfig, surveyQuestions, platformTransactions, impersonationTokens } from "@/db/schema";
 import { eq, desc, asc, count, and, gte, lte, sql, ne, sum, ilike } from "drizzle-orm";
@@ -447,7 +448,7 @@ export async function restoreAccessAction(tenantId: string) {
   }
 
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
-  const tempPassword = 'Tmp@' + Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const tempPassword = 'Tmp@' + Array.from({ length: 8 }, () => chars[crypto.randomInt(chars.length)]).join('');
   const hashed = await bcrypt.hash(tempPassword, 10);
   const expires = new Date();
   expires.setDate(expires.getDate() + 7);
@@ -603,7 +604,7 @@ export async function createTenantAdminAction(
   if (existing) return { success: false, error: 'EMAIL_EXISTS' };
 
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
-  const tempPassword = 'Tmp@' + Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const tempPassword = 'Tmp@' + Array.from({ length: 8 }, () => chars[crypto.randomInt(chars.length)]).join('');
   const hashed = await bcrypt.hash(tempPassword, 10);
   const expires = new Date();
   expires.setDate(expires.getDate() + 7);
@@ -730,7 +731,7 @@ export async function superAdminResetPasswordAction(userId: string) {
   const { Resend } = await import('resend');
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  const token = crypto.randomBytes(32).toString('hex');
   const expires = new Date();
   expires.setHours(expires.getHours() + 24);
 
@@ -780,7 +781,7 @@ export async function superAdminResendInvitationAction(userId: string) {
   const { Resend } = await import('resend');
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  const token = crypto.randomBytes(32).toString('hex');
   const expires = new Date();
   expires.setDate(expires.getDate() + 7);
 

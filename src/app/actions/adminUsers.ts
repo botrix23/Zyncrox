@@ -1,5 +1,6 @@
 "use server";
 
+import crypto from 'crypto';
 import { db } from "@/db";
 import { users, tenants } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -60,7 +61,7 @@ export async function createAdminAction(data: { name: string; email: string }) {
   if (existing) return { success: false, error: 'EMAIL_EXISTS' };
 
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
-  const tempPassword = 'Tmp@' + Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const tempPassword = 'Tmp@' + Array.from({ length: 8 }, () => chars[crypto.randomInt(chars.length)]).join('');
   const hashed = await bcrypt.hash(tempPassword, 10);
   const expires = new Date();
   expires.setDate(expires.getDate() + 7);

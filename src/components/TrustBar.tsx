@@ -12,7 +12,7 @@ export function TrustBar() {
         {avatars.map((avatar, i) => (
           <div 
             key={i} 
-            className={`w-8 h-8 rounded-full border-2 border-white dark:border-zinc-950 ${avatar.color} flex items-center justify-center text-[10px] font-bold text-white shadow-sm`}
+            className={`w-8 h-8 rounded-full border-2 border-white dark:border-zinc-950 ${avatar.color} flex items-center justify-center text-xs font-bold text-white shadow-sm`}
           >
             {avatar.initials}
           </div>

@@ -143,12 +143,12 @@ export function DashboardTabsClient({
           <TrendingUp className={`w-3.5 h-3.5 shrink-0 ${activeTab === "analytics" ? "text-purple-600" : "text-slate-400 dark:text-zinc-500"}`} />
           {t("tabs.analytics")}
           {!canUseAnalytics ? (
-            <span className="flex items-center gap-0.5 bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-md shrink-0">
+            <span className="flex items-center gap-0.5 bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 text-xs font-black uppercase tracking-wide px-1.5 py-0.5 rounded-md shrink-0">
               <Lock className="w-2 h-2" />
               Business
             </span>
           ) : (
-            <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-md shrink-0">
+            <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-xs font-black uppercase tracking-wide px-1.5 py-0.5 rounded-md shrink-0">
               ★
             </span>
           )}

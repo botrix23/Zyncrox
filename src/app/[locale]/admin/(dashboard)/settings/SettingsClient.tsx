@@ -443,7 +443,7 @@ export default function SettingsClient({
                 <Lock className="w-4 h-4 text-zinc-400 shrink-0" />
                 <div>
                   <p className="text-xs font-black text-zinc-600 dark:text-zinc-300">{t('emailTemplateLocked')}</p>
-                  <a href={`/${locale}/admin/billing`} className="text-[11px] text-purple-500 font-bold hover:underline">{t('emailTemplateLockedCta')}</a>
+                  <a href={`/${locale}/admin/billing`} className="text-xs text-purple-500 font-bold hover:underline">{t('emailTemplateLockedCta')}</a>
                 </div>
               </div>
             )}

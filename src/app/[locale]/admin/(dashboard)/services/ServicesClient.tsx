@@ -973,7 +973,7 @@ export default function ServicesClient({
               <form onSubmit={handleSave} className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.nameLabel')}</label>
+                      <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.nameLabel')}</label>
                       <input 
                         required
                         type="text" 
@@ -986,7 +986,7 @@ export default function ServicesClient({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.durationLabel')}</label>
+                      <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.durationLabel')}</label>
                       <input
                         required
                         type="number"
@@ -1000,7 +1000,7 @@ export default function ServicesClient({
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.priceLabel')}</label>
+                      <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.priceLabel')}</label>
                       <input 
                         required
                         type="text" 
@@ -1169,7 +1169,7 @@ export default function ServicesClient({
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.descriptionLabel')}</label>
+                  <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.descriptionLabel')}</label>
                   <textarea
                     value={formData.description}
                     onChange={e => setFormData({...formData, description: e.target.value})}
@@ -1180,7 +1180,7 @@ export default function ServicesClient({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <label className="text-xs font-bold text-emerald-600 flex items-center gap-2">
+                    <label className="text-sm font-bold text-emerald-600 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4" /> {t('form.includesLabel')}
                     </label>
                     <div className="flex gap-2">
@@ -1207,7 +1207,7 @@ export default function ServicesClient({
                   </div>
 
                   <div className="space-y-4">
-                    <label className="text-xs font-bold text-rose-600 flex items-center gap-2">
+                    <label className="text-sm font-bold text-rose-600 flex items-center gap-2">
                       <XCircle className="w-4 h-4" /> {t('form.excludesLabel')}
                     </label>
                     <div className="flex gap-2">
@@ -1343,7 +1343,7 @@ export default function ServicesClient({
                 </div>
                 <form onSubmit={handleSaveCategory} className="p-6 space-y-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Nombre</label>
+                    <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Nombre</label>
                     <input
                       required
                       type="text"
@@ -1354,7 +1354,7 @@ export default function ServicesClient({
                     />
                   </div>
                   <div className="space-y-3">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Color</label>
+                    <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">Color</label>
                     <div className="flex flex-wrap gap-2">
                       {PRESET_COLORS.map(color => (
                         <button
@@ -1540,7 +1540,7 @@ export default function ServicesClient({
                       <div className="p-5 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 border border-purple-500/20 rounded-3xl space-y-4 animate-in zoom-in-95 duration-200 shadow-sm">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="col-span-2 sm:col-span-1">
-                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 block">{tPortal('form.newZoneName')}</label>
+                            <label className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1 block">{tPortal('form.newZoneName')}</label>
                             <input
                               placeholder={tPortal('form.newZoneName')}
                               value={newZone.name}
@@ -1549,7 +1549,7 @@ export default function ServicesClient({
                             />
                           </div>
                           <div className="col-span-2 sm:col-span-1">
-                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 block">{tPortal('form.newZoneFee')}</label>
+                            <label className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1 block">{tPortal('form.newZoneFee')}</label>
                             <div className="relative">
                               <span className="absolute left-3 top-3.5 text-slate-400 text-sm font-bold">$</span>
                               <input
@@ -1581,7 +1581,7 @@ export default function ServicesClient({
                               <div>
                                 <div className="flex items-center gap-2">
                                   <p className="text-sm font-black text-slate-900 dark:text-white">{zone.name}</p>
-                                  {!isZoneActive && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">{locale === 'es' ? 'Desactivado' : 'Deactivated'}</span>}
+                                  {!isZoneActive && <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">{locale === 'es' ? 'Desactivado' : 'Deactivated'}</span>}
                                 </div>
                                 <p className="text-xs text-emerald-600 font-bold tracking-tight">+${zone.fee} {tPortal('form.feeLabel')}</p>
                               </div>

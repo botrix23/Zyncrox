@@ -1,5 +1,6 @@
 "use server";
 
+import crypto from 'crypto';
 import { db } from "@/db";
 import { staff, users, tenants } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -13,20 +14,25 @@ function generateTempPassword(): string {
   const lower = 'abcdefghjkmnpqrstuvwxyz';
   const nums = '23456789';
   const special = '@#$%!';
+  const all = upper + lower + nums + special;
+
+  // Use crypto.randomBytes for cryptographically secure randomness
+  const randomIndex = (max: number) => crypto.randomInt(max);
 
   const chars = [
-    upper[Math.floor(Math.random() * upper.length)],
-    upper[Math.floor(Math.random() * upper.length)],
-    lower[Math.floor(Math.random() * lower.length)],
-    lower[Math.floor(Math.random() * lower.length)],
-    lower[Math.floor(Math.random() * lower.length)],
-    nums[Math.floor(Math.random() * nums.length)],
-    nums[Math.floor(Math.random() * nums.length)],
-    special[Math.floor(Math.random() * special.length)],
+    upper[randomIndex(upper.length)],
+    upper[randomIndex(upper.length)],
+    lower[randomIndex(lower.length)],
+    lower[randomIndex(lower.length)],
+    lower[randomIndex(lower.length)],
+    nums[randomIndex(nums.length)],
+    nums[randomIndex(nums.length)],
+    special[randomIndex(special.length)],
   ];
 
+  // Fisher-Yates shuffle using crypto.randomInt
   for (let i = chars.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomIndex(i + 1);
     [chars[i], chars[j]] = [chars[j], chars[i]];
   }
 

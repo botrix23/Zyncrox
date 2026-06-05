@@ -5,6 +5,17 @@ import { services, serviceBranches, serviceToCategories } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { checkPlanLimit } from "@/lib/plan-guard";
+import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
+
+async function assertAdmin() {
+  const session = await getSession();
+  if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.role)) {
+    throw new Error('Unauthorized');
+  }
+  const tenantId = getEffectiveTenantId(session);
+  if (!tenantId) throw new Error('No tenantId');
+  return { session, tenantId };
+}
 
 export async function createServiceAction(data: {
   tenantId: string;
@@ -22,7 +33,8 @@ export async function createServiceAction(data: {
   categoryIds?: string[];
 }) {
   try {
-    const limitCheck = await checkPlanLimit(data.tenantId, "services");
+    const { tenantId } = await assertAdmin();
+    const limitCheck = await checkPlanLimit(tenantId, "services");
     if (!limitCheck.allowed) {
       return {
         success: false,
@@ -35,7 +47,7 @@ export async function createServiceAction(data: {
 
     const newService = await db.transaction(async (tx) => {
       const [inserted] = await tx.insert(services).values({
-        tenantId: data.tenantId,
+        tenantId,
         name: data.name,
         durationMinutes: data.durationMinutes,
         price: data.price,
@@ -51,7 +63,7 @@ export async function createServiceAction(data: {
       if (data.branchIds && data.branchIds.length > 0) {
         await tx.insert(serviceBranches).values(
           data.branchIds.map(branchId => ({
-            tenantId: data.tenantId,
+            tenantId,
             serviceId: inserted.id,
             branchId,
           }))
@@ -61,7 +73,7 @@ export async function createServiceAction(data: {
       if (data.categoryIds && data.categoryIds.length > 0) {
         await tx.insert(serviceToCategories).values(
           data.categoryIds.map(categoryId => ({
-            tenantId: data.tenantId,
+            tenantId,
             serviceId: inserted.id,
             categoryId,
           }))
@@ -97,6 +109,7 @@ export async function updateServiceAction(data: {
   categoryIds?: string[];
 }) {
   try {
+    const { tenantId } = await assertAdmin();
     await db.transaction(async (tx) => {
       await tx.update(services)
         .set({
@@ -112,14 +125,14 @@ export async function updateServiceAction(data: {
           isExclusive: data.isExclusive,
           updatedAt: new Date(),
         })
-        .where(and(eq(services.id, data.id), eq(services.tenantId, data.tenantId)));
+        .where(and(eq(services.id, data.id), eq(services.tenantId, tenantId)));
 
       if (data.branchIds !== undefined) {
         await tx.delete(serviceBranches).where(eq(serviceBranches.serviceId, data.id));
         if (data.branchIds.length > 0) {
           await tx.insert(serviceBranches).values(
             data.branchIds.map(branchId => ({
-              tenantId: data.tenantId,
+              tenantId,
               serviceId: data.id,
               branchId,
             }))
@@ -132,7 +145,7 @@ export async function updateServiceAction(data: {
         if (data.categoryIds.length > 0) {
           await tx.insert(serviceToCategories).values(
             data.categoryIds.map(categoryId => ({
-              tenantId: data.tenantId,
+              tenantId,
               serviceId: data.id,
               categoryId,
             }))
@@ -152,7 +165,8 @@ export async function updateServiceAction(data: {
 
 export async function deleteServiceAction(id: string, tenantId: string) {
   try {
-    await db.delete(services).where(and(eq(services.id, id), eq(services.tenantId, tenantId)));
+    const { tenantId: sessionTenantId } = await assertAdmin();
+    await db.delete(services).where(and(eq(services.id, id), eq(services.tenantId, sessionTenantId)));
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/[slug]", "page");
     return { success: true };
@@ -164,10 +178,11 @@ export async function deleteServiceAction(id: string, tenantId: string) {
 
 export async function reorderServicesAction(tenantId: string, orderedIds: string[]) {
   try {
+    const { tenantId: sessionTenantId } = await assertAdmin();
     for (let i = 0; i < orderedIds.length; i++) {
       await db.update(services)
         .set({ sortOrder: i })
-        .where(and(eq(services.id, orderedIds[i]), eq(services.tenantId, tenantId)));
+        .where(and(eq(services.id, orderedIds[i]), eq(services.tenantId, sessionTenantId)));
     }
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/[slug]", "page");
@@ -184,8 +199,9 @@ export async function reorderServicesAction(tenantId: string, orderedIds: string
  */
 export async function toggleServiceActiveAction(id: string, tenantId: string, currentlyActive: boolean) {
   try {
+    const { tenantId: sessionTenantId } = await assertAdmin();
     if (!currentlyActive) {
-      const limitCheck = await checkPlanLimit(tenantId, "services");
+      const limitCheck = await checkPlanLimit(sessionTenantId, "services");
       if (!limitCheck.allowed) {
         return {
           success: false,
@@ -199,7 +215,7 @@ export async function toggleServiceActiveAction(id: string, tenantId: string, cu
 
     await db.update(services)
       .set({ isActive: !currentlyActive })
-      .where(and(eq(services.id, id), eq(services.tenantId, tenantId)));
+      .where(and(eq(services.id, id), eq(services.tenantId, sessionTenantId)));
 
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/[slug]", "page");

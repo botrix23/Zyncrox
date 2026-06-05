@@ -30,7 +30,7 @@ export function FloatingToast({ title, subtitle, time, type, position }: Floatin
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-bold text-white truncate">{title}</p>
-          <span className="text-[10px] text-zinc-500 font-medium shrink-0">{time}</span>
+          <span className="text-xs text-zinc-500 font-medium shrink-0">{time}</span>
         </div>
         <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">{subtitle}</p>
       </div>

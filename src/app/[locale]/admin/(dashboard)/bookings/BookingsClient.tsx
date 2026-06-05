@@ -1114,13 +1114,13 @@ export default function BookingsClient({
                             <div className="flex flex-col h-full gap-0.5">
                               <div className="flex items-center justify-between gap-4 mb-0.5">
                                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                  <h4 className={`font-extrabold text-[14px] truncate leading-tight ${
+                                  <h4 className={`font-extrabold text-sm truncate leading-tight ${
                                     isCancelled ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'
                                   }`} title={booking.customerName}>
                                     {booking.customerName}
                                   </h4>
-                                  {bookingTier === 'VIP'      && <span title="VIP"       className="text-[10px] shrink-0">👑</span>}
-                                  {bookingTier === 'FREQUENT' && <span title={localeStr === 'es' ? 'Frecuente' : 'Frequent'} className="text-[10px] shrink-0">⭐</span>}
+                                  {bookingTier === 'VIP'      && <span title="VIP"       className="text-xs shrink-0">👑</span>}
+                                  {bookingTier === 'FREQUENT' && <span title={localeStr === 'es' ? 'Frecuente' : 'Frequent'} className="text-xs shrink-0">⭐</span>}
                                   {bookingHasClientNotes(booking) && (
                                     <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${
                                       booking.session?.zoneId
@@ -1271,8 +1271,8 @@ export default function BookingsClient({
                                       <p className={`font-black text-xs truncate leading-tight ${isCancelled ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}`}>
                                         {booking.customerName}
                                       </p>
-                                      {weekTier === 'VIP'      && <span title="VIP"       className="text-[9px] shrink-0">👑</span>}
-                                      {weekTier === 'FREQUENT' && <span title={localeStr === 'es' ? 'Frecuente' : 'Frequent'} className="text-[9px] shrink-0">⭐</span>}
+                                      {weekTier === 'VIP'      && <span title="VIP"       className="text-xs shrink-0">👑</span>}
+                                      {weekTier === 'FREQUENT' && <span title={localeStr === 'es' ? 'Frecuente' : 'Frequent'} className="text-xs shrink-0">⭐</span>}
                                       {bookingHasClientNotes(booking) && (
                                         <MessageSquare className={`w-3 h-3 shrink-0 ${booking.session?.zoneId ? 'text-purple-500 fill-purple-500/20' : 'text-orange-500 fill-orange-500/20'}`} />
                                       )}
@@ -1385,7 +1385,7 @@ export default function BookingsClient({
                 <form onSubmit={handleSaveEdit} className="flex flex-col h-full overflow-hidden">
                   <div className="p-7 space-y-6 overflow-y-auto custom-scrollbar flex-1">
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerName')}</label>
+                      <label className="text-sm font-black text-slate-500 ml-1">{t('form.customerName')}</label>
                       <input 
                         required
                         type="text" 
@@ -1398,7 +1398,7 @@ export default function BookingsClient({
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerEmail')}</label>
+                        <label className="text-sm font-black text-slate-500 ml-1">{t('form.customerEmail')}</label>
                         <input 
                           type="email" 
                           value={formData.customerEmail}
@@ -1408,7 +1408,7 @@ export default function BookingsClient({
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.status')}</label>
+                        <label className="text-sm font-black text-slate-500 ml-1">{t('form.status')}</label>
                         <select 
                           value={formData.status}
                           onChange={e => setFormData({...formData, status: e.target.value})}
@@ -1423,7 +1423,7 @@ export default function BookingsClient({
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerPhone')}</label>
+                      <label className="text-sm font-black text-slate-500 ml-1">{t('form.customerPhone')}</label>
                       <PhoneInput 
                         value={formData.customerPhone}
                         onChange={val => setFormData({...formData, customerPhone: val})}
@@ -1433,7 +1433,7 @@ export default function BookingsClient({
 
                     {formData.homeAddress && (
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-500 ml-1 flex items-center gap-1.5">
+                        <label className="text-sm font-black text-slate-500 ml-1 flex items-center gap-1.5">
                           <MapPin className="w-3.5 h-3.5 text-emerald-500" /> Dirección de atención
                         </label>
                         <div className="w-full p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl text-sm font-medium text-slate-900 dark:text-white opacity-80 select-text">
@@ -1443,7 +1443,7 @@ export default function BookingsClient({
                     )}
 
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-slate-500 ml-1">{t('form.notes')}</label>
+                      <label className="text-sm font-black text-slate-500 ml-1">{t('form.notes')}</label>
                       <textarea
                         value={formData.notes}
                         onChange={e => setFormData({...formData, notes: e.target.value})}
@@ -1501,7 +1501,7 @@ export default function BookingsClient({
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.service')}</label>
+                        <label className="text-sm font-black text-slate-500 ml-1">{t('form.service')}</label>
                         <select 
                           value={formData.serviceId}
                           onChange={e => setFormData({...formData, serviceId: e.target.value})}
@@ -1511,7 +1511,7 @@ export default function BookingsClient({
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.staff')}</label>
+                        <label className="text-sm font-black text-slate-500 ml-1">{t('form.staff')}</label>
                         <select 
                           value={formData.staffId}
                           onChange={e => {
@@ -1527,7 +1527,7 @@ export default function BookingsClient({
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.date')}</label>
+                        <label className="text-sm font-black text-slate-500 ml-1">{t('form.date')}</label>
                         <input 
                           required
                           type="date" 
@@ -1537,7 +1537,7 @@ export default function BookingsClient({
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-500 ml-1">{t('form.time')}</label>
+                        <label className="text-sm font-black text-slate-500 ml-1">{t('form.time')}</label>
                         <input 
                           required
                           type="time" 
@@ -1632,7 +1632,7 @@ export default function BookingsClient({
                           <h4 className="text-lg font-black">{t('form.customerInfo')}</h4>
                           <div className="space-y-4">
                             <div className="space-y-2">
-                              <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerName')} *</label>
+                              <label className="text-sm font-black text-slate-500 ml-1">{t('form.customerName')} *</label>
                               <input 
                                 required
                                 type="text" 
@@ -1643,7 +1643,7 @@ export default function BookingsClient({
                               />
                             </div>
                             <div className="space-y-2">
-                              <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerEmail')} *</label>
+                              <label className="text-sm font-black text-slate-500 ml-1">{t('form.customerEmail')} *</label>
                               <input 
                                 required
                                 type="email" 
@@ -1654,7 +1654,7 @@ export default function BookingsClient({
                               />
                             </div>
                             <div className="space-y-2">
-                              <label className="text-xs font-black text-slate-500 ml-1">{t('form.customerPhone')} *</label>
+                              <label className="text-sm font-black text-slate-500 ml-1">{t('form.customerPhone')} *</label>
                               <PhoneInput 
                                 value={formData.customerPhone}
                                 onChange={val => setFormData({...formData, customerPhone: val})}
@@ -1662,7 +1662,7 @@ export default function BookingsClient({
                               />
                             </div>
                             <div className="space-y-2">
-                              <label className="text-xs font-black text-slate-500 ml-1">{t('form.notes')}</label>
+                              <label className="text-sm font-black text-slate-500 ml-1">{t('form.notes')}</label>
                               <textarea 
                                 value={formData.notes}
                                 onChange={e => setFormData({...formData, notes: e.target.value})}
@@ -1782,14 +1782,14 @@ export default function BookingsClient({
                               >
                                 <Truck className={`w-8 h-8 ${modality === 'domicilio' ? 'text-emerald-500' : 'text-slate-400'}`} />
                                 <span className="font-bold text-sm">{t('modality.home')}</span>
-                                {!tenantSettings?.allowsHomeService && <span className="text-[8px] text-rose-500 font-black uppercase">NO ACTIVADO</span>}
+                                {!tenantSettings?.allowsHomeService && <span className="text-xs text-rose-500 font-black uppercase">NO ACTIVADO</span>}
                               </button>
                            </div>
 
                            {/* Selector de sucursal para modo local (regla 18: exclusivos por sucursal) */}
                            {modality === 'local' && branches.length > 1 && (
                              <div className="space-y-3 p-5 bg-purple-500/5 rounded-[24px] border border-purple-500/10 animate-in zoom-in-95">
-                               <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Sucursal</label>
+                               <label className="text-sm font-black text-slate-500 uppercase tracking-widest">Sucursal</label>
                                <div className="space-y-2">
                                  <button
                                    onClick={() => setSelectedBranch(null)}
@@ -1819,7 +1819,7 @@ export default function BookingsClient({
 
                            {modality === 'domicilio' && (
                              <div className="space-y-4 p-5 bg-emerald-500/5 rounded-[24px] border border-emerald-500/10 animate-in zoom-in-95">
-                                <label className="text-xs font-black text-slate-500">{t('form.zoneInfo')}</label>
+                                <label className="text-sm font-black text-slate-500">{t('form.zoneInfo')}</label>
                                 <div className="space-y-2">
                                   {coverageZones.map(zone => (
                                     <button
@@ -1837,7 +1837,7 @@ export default function BookingsClient({
 
                            {selectedServicesList.length > 1 && (
                              <div className="space-y-4 border-t border-slate-100 dark:border-white/5 pt-6">
-                               <label className="text-xs font-black text-slate-500">{t('form.schedulingMode')}</label>
+                               <label className="text-sm font-black text-slate-500">{t('form.schedulingMode')}</label>
                                <div className="grid grid-cols-1 gap-3">
                                   <button
                                     onClick={() => {
@@ -1952,20 +1952,20 @@ export default function BookingsClient({
                               ) : (
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                     <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.staff')}</label>
+                                     <label className="text-sm font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.staff')}</label>
                                      <select value={formData.staffId} onChange={e => setFormData({...formData, staffId: e.target.value})} className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-slate-100 dark:border-white/5 rounded-2xl font-bold text-sm appearance-none shadow-sm">
                                        {filteredStaff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                      </select>
                                   </div>
                                   <div className="space-y-2">
-                                     <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.date')}</label>
+                                     <label className="text-sm font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.date')}</label>
                                      <input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-slate-100 dark:border-white/5 rounded-2xl font-black text-sm" />
                                   </div>
                                 </div>
                               )}
                               {(schedulingMode === 'bulk' && simultaneousMode) && (
                                 <div className="space-y-2">
-                                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.date')}</label>
+                                  <label className="text-sm font-black uppercase tracking-widest text-slate-400 ml-1">{t('form.date')}</label>
                                   <input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full p-4 bg-white dark:bg-zinc-800 border-2 border-slate-100 dark:border-white/5 rounded-2xl font-black text-sm" />
                                 </div>
                               )}
@@ -1985,7 +1985,7 @@ export default function BookingsClient({
                               )}
 
                               <div className="space-y-3">
-                                <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">
+                                <label className="text-sm font-black uppercase tracking-widest text-slate-400 ml-1">
                                   {loadingSlots ? 'Cargando horarios...' : 'Selecciona un horario'}
                                 </label>
                                 

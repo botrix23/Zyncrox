@@ -204,7 +204,7 @@ function Heatmap({ data, t }: { data: number[][]; t: ReturnType<typeof useTransl
               </td>
               {row.map((count, slotIdx) => (
                 <td key={slotIdx} className="py-1 px-1">
-                  <div className={`flex items-center justify-center rounded-lg font-bold h-9 w-full text-[13px] transition-colors ${cellClass(count)}`}>
+                  <div className={`flex items-center justify-center rounded-lg font-bold h-9 w-full text-sm transition-colors ${cellClass(count)}`}>
                     {count > 0 ? count : "—"}
                   </div>
                 </td>
