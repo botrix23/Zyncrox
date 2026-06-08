@@ -529,6 +529,7 @@ export async function createBookingSessionAction(data: {
   zoneId?: string;
   notes?: string;
   isHomeService?: boolean;
+  isAdmin?: boolean; // permite agendar en horarios pasados (ej: registrar cita walk-in)
   sessionToken?: string; // para liberar soft locks al confirmar
   schedulingMode?: 'bulk' | 'separate'; // bulk = mismo especialista preferido; separate = balanceo independiente
   bookings: {
@@ -675,7 +676,8 @@ export async function createBookingSessionAction(data: {
                 bData.branchId,
                 sessionPreferredStaffId,
                 undefined,
-                !!data.zoneId
+                !!data.zoneId,
+                !!data.isAdmin // allowPast: admin puede registrar citas en horario pasado
               );
               const preferredSlot = preferredData.slots.find(s => s.time === slotTime && s.available);
               if (preferredSlot) {
@@ -693,7 +695,7 @@ export async function createBookingSessionAction(data: {
              null, // Cualquiera
              undefined,
              !!data.zoneId,
-             false,
+             !!data.isAdmin, // allowPast: admin puede registrar citas en horario pasado
              bData.allowedStaffIds
            );
 

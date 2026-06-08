@@ -819,6 +819,7 @@ export default function BookingWidget({
         zoneId: selectedZone?.id,
         notes: guestAddress ? `Dirección: ${guestAddress}\n${guestNotes}` : guestNotes,
         isHomeService: modality === 'domicilio',
+        isAdmin: !!isAdmin,
         sessionToken,
         schedulingMode: schedulingMode ?? undefined,
         bookings: sessionBookingsData
