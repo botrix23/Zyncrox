@@ -47,6 +47,11 @@ export default function BranchesClient({
 
   const activeBranches = branchList.filter(b => b.isActive !== false);
   const atLimit = activeBranches.length >= limit;
+  const overLimit = activeBranches.length > limit;
+  // Branches that would be deactivated if enforce runs (the newest active ones beyond the limit)
+  const atRiskIds = overLimit
+    ? new Set(activeBranches.slice(limit).map((b: any) => b.id))
+    : new Set<string>();
   const t = useTranslations('Dashboard.branches');
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -268,6 +273,21 @@ export default function BranchesClient({
         </div>
       </div>
 
+      {/* Over-limit warning banner */}
+      {overLimit && (
+        <div className="flex items-start gap-3 px-5 py-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-700/40 rounded-2xl text-red-700 dark:text-red-400">
+          <span className="text-lg shrink-0 mt-0.5">⚠️</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold leading-snug">
+              Tienes {activeBranches.length} sucursales activas, pero tu plan solo permite {limit}.
+            </p>
+            <p className="text-xs mt-1 opacity-80 leading-relaxed">
+              Desactiva {activeBranches.length - limit} sucursal{activeBranches.length - limit > 1 ? 'es' : ''} usando el menú <strong>⋮</strong> de cada tarjeta, o pide al administrador que aplique los límites automáticamente. Las sucursales inactivas no reciben nuevas reservas.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Branches Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredBranches.map((branch) => {
@@ -279,7 +299,9 @@ export default function BranchesClient({
               className={`border rounded-3xl p-6 shadow-sm transition-all group relative overflow-hidden ${
                 isInactive
                   ? 'bg-slate-50 dark:bg-zinc-900/50 border-slate-200 dark:border-white/5 opacity-60 cursor-default'
-                  : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer active:scale-[0.98]'
+                  : atRiskIds.has(branch.id)
+                    ? 'bg-white dark:bg-zinc-900 border-red-300 dark:border-red-700/50 hover:shadow-xl hover:shadow-red-500/10 cursor-pointer active:scale-[0.98]'
+                    : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer active:scale-[0.98]'
               }`}
             >
               {/* Inactive badge */}
@@ -287,6 +309,15 @@ export default function BranchesClient({
                 <div className="absolute top-3 left-3 z-10">
                   <span className="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                     {t('deactivated')}
+                  </span>
+                </div>
+              )}
+
+              {/* Over-limit risk badge */}
+              {!isInactive && atRiskIds.has(branch.id) && (
+                <div className="absolute top-3 left-3 z-10">
+                  <span className="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+                    Excede límite
                   </span>
                 </div>
               )}

@@ -183,6 +183,7 @@ export default function BookingWidget({
   // Token único por sesión de reserva — identifica los soft locks de este visitante
   const [sessionToken] = useState(() => crypto.randomUUID());
   const [isFinishing, setIsFinishing] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [openCalendarIdx, setOpenCalendarIdx] = useState<number | null>(null);
@@ -716,6 +717,7 @@ export default function BookingWidget({
   }, [sessionToken]);
 
   const handleSelectTime = (time: string) => {
+    setCheckoutError(null); // clear any prior checkout error when user picks a new slot
     setSelectedTime(time);
     // Soft lock: reservar este slot temporalmente para evitar doble-booking
     if (!isAdmin && selectedDate && time) {
@@ -837,19 +839,29 @@ export default function BookingWidget({
             setCartBookings([]);
             setCurrentServiceIndex(0);
           }
-          alert("❌ Ninguna cita fue confirmada.\n\nEl horario seleccionado ya no está disponible para uno o más servicios. Por favor elige un nuevo horario e intenta de nuevo.");
+          setCheckoutError(locale === 'en'
+            ? "This time slot is no longer available. Please choose a different time and try again."
+            : "El horario seleccionado ya no está disponible. Por favor elige un horario diferente e intenta de nuevo.");
           setStep(3);
         } else if (errorCode === "TENANT_SUSPENDED") {
-          alert("Este negocio no está disponible en este momento.");
+          setCheckoutError(locale === 'en'
+            ? "This business is currently unavailable."
+            : "Este negocio no está disponible en este momento.");
         } else if (errorCode === "MULTI_SERVICE_NOT_ALLOWED") {
-          alert("Tu plan actual no permite reservar múltiples servicios a la vez.");
+          setCheckoutError(locale === 'en'
+            ? "Your current plan does not allow booking multiple services at once."
+            : "Tu plan actual no permite reservar múltiples servicios a la vez.");
         } else {
-          alert("❌ No pudimos confirmar tu reserva. Por favor intenta de nuevo o contáctanos directamente.");
+          setCheckoutError(locale === 'en'
+            ? "We could not confirm your booking. Please try again or contact us directly."
+            : "No pudimos confirmar tu reserva. Por favor intenta de nuevo o contáctanos directamente.");
         }
       }
     } catch (err) {
       console.error("Critical error during session checkout:", err);
-      alert("❌ Error al procesar tu reserva. Por favor intenta de nuevo.");
+      setCheckoutError(locale === 'en'
+        ? "An error occurred while processing your booking. Please try again."
+        : "Error al procesar tu reserva. Por favor intenta de nuevo.");
     } finally {
       setIsFinishing(false);
     }
@@ -1521,6 +1533,21 @@ export default function BookingWidget({
                   }
                 </h2>
               </div>
+
+              {/* Checkout error banner — shown when a booking attempt failed */}
+              {checkoutError && (
+                <div className="w-full flex items-start gap-3 px-4 py-3 mb-5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40 rounded-2xl text-red-700 dark:text-red-400 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <p className="text-xs font-semibold leading-snug flex-1">{checkoutError}</p>
+                  <button
+                    onClick={() => setCheckoutError(null)}
+                    className="shrink-0 text-red-400 hover:text-red-600 transition-colors"
+                    aria-label="Cerrar"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
 
               {/* Service context banner — always visible so the client knows exactly what they're booking */}
               {selectedServices.length > 0 && (
