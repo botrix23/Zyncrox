@@ -216,9 +216,9 @@ export function LandingHowSection() {
           </div>
 
           {/* Mockup */}
-          <div className="lg:sticky lg:top-20">
+          <div className="lg:sticky lg:top-20 mt-2 lg:mt-0">
             <div
-              className={`bg-white rounded-[20px] shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.10),0_24px_56px_rgba(0,0,0,0.08)] p-7 transition-all duration-200 ${active === 2 ? '' : 'min-h-[340px]'} ${switching ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+              className={`bg-white rounded-[20px] shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_8px_32px_rgba(0,0,0,0.10),0_24px_56px_rgba(0,0,0,0.08)] p-5 sm:p-7 overflow-hidden transition-all duration-200 ${active === 2 ? '' : 'min-h-[280px] sm:min-h-[340px]'} ${switching ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
             >
               <MockScreen />
             </div>

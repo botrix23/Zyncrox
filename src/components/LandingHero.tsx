@@ -10,8 +10,8 @@ export function LandingHero() {
   const locale = useLocale();
 
   return (
-    <section className="relative z-10 min-h-screen pt-16 flex items-center px-5 lg:px-16">
-      <div className="max-w-[1280px] mx-auto w-full grid grid-cols-1 lg:grid-cols-[1fr_1.15fr] gap-9 lg:gap-[72px] items-center py-16">
+    <section className="relative z-10 min-h-[calc(100dvh-0px)] pt-16 flex items-center px-5 lg:px-16">
+      <div className="max-w-[1280px] mx-auto w-full grid grid-cols-1 lg:grid-cols-[1fr_1.15fr] gap-9 lg:gap-[72px] items-center py-16 lg:py-16">
 
         {/* ── Left: Copy ── */}
         <div>
@@ -54,8 +54,8 @@ export function LandingHero() {
           </p>
         </div>
 
-        {/* ── Right: Widget mockup with 3D tilt ── */}
-        <div className="animate-in fade-in slide-in-from-right-8 duration-500 delay-150">
+        {/* ── Right: Widget mockup with 3D tilt (desktop only) ── */}
+        <div className="hidden lg:block animate-in fade-in slide-in-from-right-8 duration-500 delay-150">
           <WidgetTiltWrapper>
             {/* Floating notification 1 */}
             <div className="hidden lg:flex absolute -top-5 -right-5 z-20 w-[218px] items-center gap-[9px] bg-[#18181b] border border-white/10 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] px-3 py-2.5 animate-notif-1 pointer-events-none">

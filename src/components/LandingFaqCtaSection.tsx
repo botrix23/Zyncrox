@@ -30,7 +30,7 @@ export function LandingFaqCtaSection() {
       {/* ── FAQ ── */}
       <section className="relative z-10 bg-transparent py-[clamp(72px,9vw,120px)] px-5 lg:px-16">
         <div className="max-w-[1120px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-[clamp(40px,5vw,80px)] items-start">
-          <h2 className="font-serif text-[clamp(34px,4vw,54px)] leading-[1.12] tracking-[-0.4px] text-slate-900 dark:text-white lg:sticky lg:top-20 transition-colors duration-300">
+          <h2 className="font-serif text-[clamp(34px,4vw,54px)] leading-[1.12] tracking-[-0.4px] text-slate-900 dark:text-white lg:sticky lg:top-20 mb-6 lg:mb-0 transition-colors duration-300">
             {t("faq.title1")}<br />
             <em className="italic text-purple-600">{t("faq.titleItalic")}</em>
           </h2>
@@ -117,7 +117,7 @@ export function LandingFaqCtaSection() {
       {/* ── Footer ── */}
       <footer className="bg-[#09090b] border-t border-white/[0.08] px-5 lg:px-16 pt-[60px] pb-8">
         <div className="max-w-[1120px] mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr] gap-[clamp(24px,4vw,56px)] mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr] gap-8 lg:gap-[clamp(24px,4vw,56px)] mb-12">
             {/* Brand */}
             <div>
               <Link href={`/${locale}`} className="flex items-center gap-2 no-underline mb-3">

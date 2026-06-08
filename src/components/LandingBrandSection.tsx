@@ -174,10 +174,10 @@ export function LandingBrandSection() {
         </p>
 
         {/* Mockups */}
-        <div className="flex gap-6 justify-center items-start mb-[clamp(40px,5vw,64px)] overflow-x-auto pb-3 lg:overflow-x-visible">
+        <div className="flex gap-6 items-start mb-[clamp(40px,5vw,64px)] overflow-x-auto pb-4 lg:justify-center lg:overflow-x-visible snap-x snap-mandatory scroll-smooth px-5 lg:px-0 -mx-5 lg:mx-0">
           {BRAND_MOCKS.map((m, i) => (
             <ScrollReveal key={i} variant="fade-up" delay={i * 100} threshold={0.06}>
-              <div className="flex flex-col items-center gap-4 flex-shrink-0">
+              <div className="flex flex-col items-center gap-4 flex-shrink-0 snap-center first:pl-5 last:pr-5 lg:first:pl-0 lg:last:pr-0">
                 <BrandMockup data={m} />
                 <div>
                   <span className="block text-[14px] font-bold text-slate-500 dark:text-zinc-400 mb-[3px] transition-colors duration-300">
