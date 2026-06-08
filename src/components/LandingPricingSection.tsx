@@ -118,7 +118,7 @@ export function LandingPricingSection() {
           {/* Basic */}
           <ScrollReveal variant="fade-up" delay={0} threshold={0.06}>
           <div className="group h-full bg-white dark:bg-zinc-900 border border-black/[0.13] dark:border-white/[0.13] rounded-[20px] p-[32px_26px] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_12px_40px_-12px_rgba(139,92,246,0.15)] hover:border-purple-500/30 flex flex-col">
-            <div className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 tracking-[1px] uppercase mb-[10px]">Basic</div>
+            <div className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 tracking-[1px] uppercase mb-[10px]">Inicial</div>
             <div className="flex items-baseline gap-0.5 mb-1">
               <span className="text-[20px] font-semibold text-slate-900 dark:text-white">$</span>
               <span className="text-[46px] font-black text-slate-900 dark:text-white tracking-[-2px] leading-none">
@@ -159,7 +159,7 @@ export function LandingPricingSection() {
               {t("mostPopular")}
             </div>
             <div className="relative p-[32px_26px] flex flex-col flex-grow">
-              <div className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 tracking-[1px] uppercase mb-[10px]">Professional</div>
+              <div className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 tracking-[1px] uppercase mb-[10px]">Profesional</div>
               <div className="flex items-baseline gap-0.5 mb-1">
                 <span className="text-[20px] font-semibold text-slate-900 dark:text-white">$</span>
                 <span className="text-[46px] font-black text-slate-900 dark:text-white tracking-[-2px] leading-none">
@@ -194,7 +194,7 @@ export function LandingPricingSection() {
           {/* Business */}
           <ScrollReveal variant="fade-up" delay={240} threshold={0.06}>
           <div className="group h-full bg-white dark:bg-zinc-900 border border-black/[0.13] dark:border-white/[0.13] rounded-[20px] p-[32px_26px] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_12px_40px_-12px_rgba(139,92,246,0.15)] hover:border-purple-500/30 flex flex-col">
-            <div className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 tracking-[1px] uppercase mb-[10px]">Business</div>
+            <div className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 tracking-[1px] uppercase mb-[10px]">Negocio</div>
             <div className="flex items-baseline gap-0.5 mb-1">
               <span className="text-[20px] font-semibold text-slate-900 dark:text-white">$</span>
               <span className="text-[46px] font-black text-slate-900 dark:text-white tracking-[-2px] leading-none">
@@ -239,9 +239,9 @@ export function LandingPricingSection() {
                 <th className="text-[12.5px] font-bold text-slate-500 dark:text-zinc-400 px-[14px] py-3 text-left border-b border-black/[0.13] dark:border-white/[0.13] w-[40%]">
                   {t("featureCol")}
                 </th>
-                <th className="text-[12.5px] font-bold text-slate-500 dark:text-zinc-400 px-[14px] py-3 text-center border-b border-black/[0.13] dark:border-white/[0.13]">Basic</th>
-                <th className="text-[12.5px] font-bold text-purple-500 px-[14px] py-3 text-center border-b border-black/[0.13] dark:border-white/[0.13]">Professional</th>
-                <th className="text-[12.5px] font-bold text-slate-500 dark:text-zinc-400 px-[14px] py-3 text-center border-b border-black/[0.13] dark:border-white/[0.13]">Business</th>
+                <th className="text-[12.5px] font-bold text-slate-500 dark:text-zinc-400 px-[14px] py-3 text-center border-b border-black/[0.13] dark:border-white/[0.13]">Inicial</th>
+                <th className="text-[12.5px] font-bold text-purple-500 px-[14px] py-3 text-center border-b border-black/[0.13] dark:border-white/[0.13]">Profesional</th>
+                <th className="text-[12.5px] font-bold text-slate-500 dark:text-zinc-400 px-[14px] py-3 text-center border-b border-black/[0.13] dark:border-white/[0.13]">Negocio</th>
               </tr>
             </thead>
             <tbody>

@@ -23,9 +23,9 @@ const planConfig = {
 };
 
 const PLAN_DISPLAY: Record<string, string> = {
-  BASIC: 'Basic',
-  PROFESSIONAL: 'Professional',
-  ENTERPRISE: 'Business',
+  BASIC: 'Inicial',
+  PROFESSIONAL: 'Profesional',
+  ENTERPRISE: 'Negocio',
 };
 
 type PlanType = 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
@@ -44,9 +44,9 @@ function PlanChangeModal({
   const t = useTranslations('SuperAdmin.tenantsPage');
   const [selected, setSelected] = useState<PlanType>(tenant.plan as PlanType);
   const plans: { value: PlanType; label: string; desc: string }[] = [
-    { value: 'BASIC',        label: 'Basic',        desc: t('planFreeDesc') },
-    { value: 'PROFESSIONAL', label: 'Professional', desc: t('planProDesc') },
-    { value: 'ENTERPRISE', label: 'Business',  desc: t('planEnterpriseDesc') },
+    { value: 'BASIC',        label: 'Inicial',     desc: t('planFreeDesc') },
+    { value: 'PROFESSIONAL', label: 'Profesional', desc: t('planProDesc') },
+    { value: 'ENTERPRISE',   label: 'Negocio',     desc: t('planEnterpriseDesc') },
   ];
 
   return (

@@ -1882,8 +1882,8 @@
         "desc": "Ideal for small businesses just getting started.",
         "features": [
           "1 branch",
-          "1 staff",
-          "Up to 10 services",
+          "3 specialists",
+          "Up to 20 services",
           "Booking widget",
           "Automatic reminders"
         ]
@@ -1892,9 +1892,9 @@
         "name": "Professional",
         "desc": "For growing businesses that need more control.",
         "features": [
-          "3 branches",
-          "15 staff",
-          "Up to 30 services",
+          "2 branches",
+          "10 specialists",
+          "Up to 50 services",
           "Custom theme",
           "Surveys & analytics",
           "Priority support"

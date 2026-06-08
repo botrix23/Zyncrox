@@ -49,7 +49,7 @@ export interface PlanFeatures {
 export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   BASIC: {
     maxBranches: 1,
-    maxStaff: 2,
+    maxStaff: 3,
     maxServices: 20,
 
     multiServiceBooking: false,
@@ -80,8 +80,8 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     auditLogsAdmin: false,
   },
   PROFESSIONAL: {
-    maxBranches: 3,
-    maxStaff: 15,
+    maxBranches: 2,
+    maxStaff: 10,
     maxServices: 50,
 
     multiServiceBooking: true,
@@ -106,7 +106,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     weeklyMonthlyStats: true,
     advancedAnalytics: false,
 
-    maxAdmins: 3,
+    maxAdmins: 2,
 
     prioritySupport: true,
     auditLogsAdmin: false,
@@ -226,9 +226,9 @@ export function canUseFeature(plan: string | null | undefined, feature: keyof Pl
 export function getPlanDisplayName(plan?: string | null): string {
   const normalized = plan === 'FREE' ? 'BASIC' : plan === 'PRO' ? 'PROFESSIONAL' : plan;
   const names: Record<string, string> = {
-    BASIC: 'Basic',
-    PROFESSIONAL: 'Professional',
-    ENTERPRISE: 'Business',
+    BASIC: 'Inicial',
+    PROFESSIONAL: 'Profesional',
+    ENTERPRISE: 'Negocio',
   };
-  return names[normalized || 'BASIC'] || 'Basic';
+  return names[normalized || 'BASIC'] || 'Inicial';
 }

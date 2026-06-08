@@ -1878,30 +1878,30 @@
     "contactUs": "Contactar soporte",
     "plans": {
       "BASIC": {
-        "name": "Basic",
+        "name": "Inicial",
         "desc": "Ideal para negocios pequeños que están comenzando.",
         "features": [
           "1 sucursal",
-          "1 staff",
-          "Hasta 10 servicios",
+          "3 especialistas",
+          "Hasta 20 servicios",
           "Widget de reservas",
           "Recordatorios automáticos"
         ]
       },
       "PROFESSIONAL": {
-        "name": "Professional",
+        "name": "Profesional",
         "desc": "Para negocios en crecimiento que necesitan más control.",
         "features": [
-          "3 sucursales",
-          "15 staff",
-          "Hasta 30 servicios",
+          "2 sucursales",
+          "10 especialistas",
+          "Hasta 50 servicios",
           "Tema personalizado",
           "Encuestas y estadísticas",
           "Soporte prioritario"
         ]
       },
       "ENTERPRISE": {
-        "name": "Business",
+        "name": "Negocio",
         "desc": "Sin límites para negocios de alto volumen.",
         "features": [
           "Sucursales ilimitadas",

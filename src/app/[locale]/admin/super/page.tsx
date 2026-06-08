@@ -27,9 +27,9 @@ const planColor: Record<string, string> = {
 };
 
 const PLAN_DISPLAY_NAMES: Record<string, string> = {
-  BASIC: 'Basic',
-  PROFESSIONAL: 'Professional',
-  ENTERPRISE: 'Business',
+  BASIC: 'Inicial',
+  PROFESSIONAL: 'Profesional',
+  ENTERPRISE: 'Negocio',
 };
 
 const auditActionConfig: Record<string, { color: string; label: string }> = {

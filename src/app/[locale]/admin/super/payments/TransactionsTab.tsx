@@ -60,9 +60,9 @@ function StatusBadge({ status, t }: { status: string; t: ReturnType<typeof useTr
 
 // ─── Plan badge ───────────────────────────────────────────────────────────────
 const PLAN_DISPLAY_NAMES: Record<string, string> = {
-  BASIC: 'Basic',
-  PROFESSIONAL: 'Professional',
-  ENTERPRISE: 'Business',
+  BASIC: 'Inicial',
+  PROFESSIONAL: 'Profesional',
+  ENTERPRISE: 'Negocio',
 };
 
 function PlanBadge({ plan }: { plan: string }) {

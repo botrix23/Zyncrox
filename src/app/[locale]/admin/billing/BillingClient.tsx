@@ -43,9 +43,9 @@ type Props = {
 
 const PLANS: PlanType[] = ['BASIC', 'PROFESSIONAL', 'ENTERPRISE']
 const PLAN_NAMES: Record<PlanType, string> = {
-  BASIC: 'Basic',
-  PROFESSIONAL: 'Professional',
-  ENTERPRISE: 'Business',
+  BASIC: 'Inicial',
+  PROFESSIONAL: 'Profesional',
+  ENTERPRISE: 'Negocio',
 }
 const PLAN_ORDER: Record<string, number> = { BASIC: 0, PROFESSIONAL: 1, ENTERPRISE: 2 }
 
