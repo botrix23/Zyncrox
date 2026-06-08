@@ -2219,7 +2219,9 @@
       "cmpPrioritySupport": "Priority support (24h)",
       "cmpDedicatedSupport": "Dedicated support (4h)",
       "cmpOnboarding": "Custom onboarding",
-      "cmpTraining": "Team training"
+      "cmpTraining": "Team training",
+      "showAllFeatures": "View full comparison",
+      "hideFeatures": "Hide features"
     },
     "widget": {
       "tagline": "Book your appointment instantly. We only fill in the key details.",

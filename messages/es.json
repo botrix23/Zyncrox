@@ -2219,7 +2219,9 @@
       "cmpPrioritySupport": "Soporte prioritario (24h)",
       "cmpDedicatedSupport": "Soporte dedicado (4h)",
       "cmpOnboarding": "Onboarding personalizado",
-      "cmpTraining": "Capacitación del equipo"
+      "cmpTraining": "Capacitación del equipo",
+      "showAllFeatures": "Ver comparativa completa",
+      "hideFeatures": "Ocultar funciones"
     },
     "widget": {
       "tagline": "Reserva tu cita al instante. Solo completamos los detalles clave.",
