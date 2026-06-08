@@ -1,4 +1,5 @@
 import { getSuperAdminDashboardDataAction } from '@/app/actions/superAdmin';
+import { EnforceAllLimitsButton } from './EnforceAllLimitsButton';
 import {
   Building2, Users, Calendar, TrendingUp, ShieldAlert,
   CheckCircle, Clock, XCircle, AlertTriangle, Activity,
@@ -606,6 +607,8 @@ export default async function SuperAdminDashboard({ params }: { params: { locale
                   </Link>
                 ))}
               </div>
+
+              <EnforceAllLimitsButton />
             </div>
           </div>
 

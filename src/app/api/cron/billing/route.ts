@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { subscriptions, tenants, platformConfig } from '@/db/schema'
-import { and, eq, isNotNull, lte } from 'drizzle-orm'
+import { and, eq, isNotNull, lte, ne } from 'drizzle-orm'
 import { cancelN1coSubscription, createN1coSubscription } from '@/lib/n1co'
 import { enforceDowngradeLimits } from '@/lib/billing'
 import { getPlanPrice, parsePlanIds, PlanType } from '@/core/plans'
@@ -147,7 +147,25 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, suspended, downgrades })
+    // 4. Re-enforce plan limits on all active tenants (idempotent).
+    // Catches cases where code-level limits changed without a plan change event.
+    const allActiveTenants = await db
+      .select({ id: tenants.id, plan: tenants.plan })
+      .from(tenants)
+      .where(ne(tenants.status, 'SUSPENDED'))
+
+    let reEnforced = 0
+    for (const tenant of allActiveTenants) {
+      try {
+        await enforceDowngradeLimits(tenant.id, tenant.plan)
+        reEnforced++
+      } catch (err) {
+        console.warn(`[Billing Cron] enforceDowngradeLimits failed for ${tenant.id}:`, err)
+      }
+    }
+    console.log(`[Billing Cron] Re-enforced limits for ${reEnforced} tenants`)
+
+    return NextResponse.json({ ok: true, suspended, downgrades, reEnforced })
   } catch (error) {
     console.error('[Billing Cron] Fatal error:', error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })

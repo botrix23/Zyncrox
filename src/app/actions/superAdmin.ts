@@ -95,6 +95,42 @@ export async function updateTenantPlanAction(
   return { success: true };
 }
 
+// ─── Aplicar límites de plan a TODOS los tenants activos ─────────────────────
+/**
+ * Re-enforces plan resource limits (branches, staff, services, admins) for every
+ * non-suspended tenant against their current plan definition.
+ * Safe to run multiple times — only deactivates records that exceed the current limit.
+ */
+export async function enforceAllTenantsLimitsAction() {
+  await assertSuperAdmin();
+
+  const allTenants = await db
+    .select({ id: tenants.id, plan: tenants.plan, name: tenants.name })
+    .from(tenants)
+    .where(ne(tenants.status, 'SUSPENDED'));
+
+  let processed = 0;
+  const errors: string[] = [];
+
+  for (const tenant of allTenants) {
+    try {
+      await enforceDowngradeLimits(tenant.id, tenant.plan);
+      processed++;
+    } catch (err) {
+      console.error(`[EnforceAllLimits] Error for tenant ${tenant.id} (${tenant.name}):`, err);
+      errors.push(tenant.id);
+    }
+  }
+
+  await logAuditEvent({
+    action: 'SETTINGS_UPDATED',
+    details: { operation: 'enforce_all_plan_limits', processed, errors: errors.length },
+  });
+
+  revalidatePath('/[locale]/admin/super', 'page');
+  return { success: true, processed, errors: errors.length };
+}
+
 // ─── Cambiar estado de un tenant ─────────────────────────────────────────────
 export async function updateTenantStatusAction(
   tenantId: string,
