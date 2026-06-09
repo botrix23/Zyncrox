@@ -228,9 +228,20 @@ export async function getAvailableSlots(
         .map(s => s.id);
     }
 
-    // 5b. Filtrar por categorías de servicio si se especificaron IDs permitidos
+    // 5b. Filtrar por categorías de servicio si se especificaron IDs permitidos.
+    // IMPORTANTE: solo aplicar el filtro con los IDs que realmente están activos en ESTA sucursal.
+    // Si allowedStaffIds contiene staff de otras sucursales (inconsistencia cliente/servidor),
+    // ignorar esos IDs en vez de fallar con BRANCH_CLOSED.
     if (allowedStaffIds && allowedStaffIds.length > 0) {
-      finalActiveStaffIds = finalActiveStaffIds.filter(id => allowedStaffIds.includes(id));
+      const relevantAllowed = allowedStaffIds.filter(id => activeStaffIds.includes(id));
+      if (relevantAllowed.length > 0) {
+        // Hay staff permitido Y activo en esta sucursal → filtrar solo a ellos
+        finalActiveStaffIds = finalActiveStaffIds.filter(id => relevantAllowed.includes(id));
+      }
+      // Si relevantAllowed.length === 0: ninguno de los "permitidos" está en esta sucursal.
+      // Esto puede pasar cuando el cliente envía IDs de otra sucursal.
+      // En ese caso NO aplicamos el filtro → usamos todos los activos de la sucursal.
+      console.log(`[getAvailableSlots] ALLOWED_FILTER relevantAllowed=${JSON.stringify(relevantAllowed)} finalActive=${JSON.stringify(finalActiveStaffIds)}`);
     }
 
     if (finalActiveStaffIds.length === 0) {
