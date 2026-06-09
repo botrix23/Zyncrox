@@ -65,7 +65,6 @@ export default function AppearanceClient({
   const [footerText, setFooterText] = useState(tenant.bookingSettings?.footerText || "");
 
   // ── Widget config ──────────────────────────────────────────────────────────
-  const [showStaffSelection, setShowStaffSelection] = useState(tenant.showStaffSelection ?? true);
   const [step1Title, setStep1Title] = useState(tenant.bookingSettings?.step1Title || "");
   const [step2Title, setStep2Title] = useState(tenant.bookingSettings?.step2Title || "");
   const [step3Title, setStep3Title] = useState(tenant.bookingSettings?.step3Title || "");
@@ -107,7 +106,7 @@ export default function AppearanceClient({
       heroTitle: heroTitle || null,
       heroSubtitle: heroSubtitle || null,
       contactEmail: contactEmail || null,
-      showStaffSelection,
+      showStaffSelection: tenant.showStaffSelection ?? true,
       bookingSettings: {
         ...tenant.bookingSettings,
         footerText,
@@ -468,21 +467,6 @@ export default function AppearanceClient({
               <LayoutTemplate className="w-5 h-5 text-purple-500" />
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">{tPortal('sections.widgetConfig')}</h2>
-          </div>
-
-          {/* Show staff selection toggle */}
-          <div className="flex items-center justify-between gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
-            <div>
-              <p className="text-sm font-bold text-slate-800 dark:text-white">{tPortal('form.showStaffLabel')}</p>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">{tPortal('form.showStaffHint')}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowStaffSelection(prev => !prev)}
-              className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${showStaffSelection ? 'bg-purple-600' : 'bg-slate-300 dark:bg-white/20'}`}
-            >
-              <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${showStaffSelection ? 'left-7' : 'left-1'}`} />
-            </button>
           </div>
 
           {/* Widget Step Titles — Business plan */}

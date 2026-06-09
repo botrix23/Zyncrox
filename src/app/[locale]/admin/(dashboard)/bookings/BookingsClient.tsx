@@ -952,7 +952,7 @@ export default function BookingsClient({
           ))}
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden flex flex-col min-h-[700px] shadow-sm animate-in fade-in zoom-in-95 duration-500">
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden flex flex-col h-[calc(100vh-260px)] lg:h-[calc(100vh-220px)] shadow-sm animate-in fade-in zoom-in-95 duration-500">
           {/* Calendar Header */}
           <div className="px-4 lg:px-6 py-3 lg:py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             {/* Fecha */}
@@ -1024,7 +1024,7 @@ export default function BookingsClient({
           </div>
 
           {/* Calendar Body */}
-          <div className="flex-1 overflow-y-auto relative min-h-[800px] custom-scrollbar">
+          <div className="flex-1 overflow-y-auto relative custom-scrollbar">
             {calendarView === 'day' ? (
               /* ── VISTA DÍA ── */
               <div className="absolute inset-0 grid grid-cols-[80px_1fr] divide-x divide-slate-100 dark:divide-white/5">
