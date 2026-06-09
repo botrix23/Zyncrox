@@ -32,7 +32,6 @@ export function LocaleSwitcher() {
         hover:border-purple-500/40 hover:bg-purple-500/[0.06]
         ${isPending ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
     >
-      <span className="text-sm">{locale === "es" ? "🇺🇸" : "🇦🇷"}</span>
       <span>{locale === "es" ? "EN" : "ES"}</span>
     </button>
   );
