@@ -320,15 +320,10 @@ export default function BookingsClient({
     return categoryFiltered.length > 0 ? categoryFiltered : byModality;
   }, [staff, modality, selectedBranch, selectedServicesList, schedulingMode, currentServiceIndex]);
 
-  // Filtrar servicios según modalidad + regla isExclusive (reglas 18/19)
+  // Filtrar servicios según modalidad y sucursal seleccionada
   const filteredServices = services.filter(s => {
-    if (modality === 'domicilio') return s.allowsHomeService !== false && !s.isExclusive;
+    if (modality === 'domicilio') return s.allowsHomeService !== false;
     if (modality === 'local' && selectedBranch) {
-      if (s.isExclusive) {
-        // Regla 18: exclusivos solo en su sucursal asignada
-        return (s.branches || []).some((b: any) => b.branchId === selectedBranch.id);
-      }
-      // No-exclusivos: sin restricción = aparecen en todas; con restricción = filtrar por sucursal
       if (!s.branches || s.branches.length === 0) return true;
       return s.branches.some((b: any) => b.branchId === selectedBranch.id);
     }
@@ -1757,11 +1752,7 @@ export default function BookingsClient({
                                   setSelectedZone(null);
                                   setSelectedBranch(null);
                                   // Re-evaluar servicios al volver a local (pueden volver servicios que se ocultaron)
-                                  setSelectedServicesList(prev => prev.filter(s => {
-                                    if (!s.isExclusive) return true;
-                                    // Exclusivos sin sucursal seleccionada: mantener, se filtrará al elegir sucursal
-                                    return true;
-                                  }));
+                                  setSelectedServicesList(prev => prev);
                                 }}
                                 className={`p-6 rounded-[24px] border-2 transition-all flex flex-col items-center gap-3 ${modality === 'local' ? 'bg-purple-500/10 border-purple-500' : 'bg-slate-50 dark:bg-white/5 border-transparent opacity-60'}`}
                               >
@@ -1774,7 +1765,7 @@ export default function BookingsClient({
                                   setSelectedBranch(null);
                                   // Quitar servicios exclusivos o sin domicilio que ya no aplican
                                   setSelectedServicesList(prev =>
-                                    prev.filter(s => s.allowsHomeService !== false && !s.isExclusive)
+                                    prev.filter(s => s.allowsHomeService !== false)
                                   );
                                 }}
                                 disabled={!tenantSettings?.allowsHomeService}
@@ -1804,7 +1795,7 @@ export default function BookingsClient({
                                        setSelectedBranch(branch);
                                        // Quitar servicios exclusivos que no pertenecen a esta sucursal
                                        setSelectedServicesList(prev => prev.filter(s => {
-                                         if (!s.isExclusive) return true;
+                                         if (!s.branches || s.branches.length === 0) return true;
                                          return (s.branches || []).some((b: any) => b.branchId === branch.id);
                                        }));
                                      }}

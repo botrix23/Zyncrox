@@ -12,7 +12,7 @@ import { canUseFeature, getPlanFeatures } from "@/core/plans";
 import { getGoogleCalendarUrl, getOutlookCalendarUrl, generateICSFile } from "@/lib/calendar";
 
 type Branch = { id: string; name: string; businessHours?: string | null; address?: string | null };
-type Service = { id: string; name: string; durationMinutes: number; price: string; includes: string[]; excludes: string[]; allowsHomeService?: boolean; allowSimultaneous?: boolean; isExclusive?: boolean; branches?: { id: string; branchId: string }[]; categoryIds?: string[] };
+type Service = { id: string; name: string; durationMinutes: number; price: string; includes: string[]; excludes: string[]; allowsHomeService?: boolean; allowSimultaneous?: boolean; branches?: { id: string; branchId: string }[]; categoryIds?: string[] };
 type StaffAssignment = { branchId: string; isPermanent: boolean };
 type Staff = { id: string; name: string; allowsHomeService?: boolean; categoryIds?: string[]; assignments?: StaffAssignment[] };
 type CoverageZone = { id: string; name: string; fee: string; description?: string | null };
@@ -356,17 +356,12 @@ export default function BookingWidget({
 
   const displayServices = useMemo(() => {
     if (modality === 'domicilio') {
-      // Regla 15: solo servicios con allowsHomeService
-      // Regla 19: servicios exclusivos de sucursal nunca en domicilio
-      return services.filter(s => s.allowsHomeService !== false && !s.isExclusive);
+      // Solo servicios marcados como disponibles a domicilio
+      return services.filter(s => s.allowsHomeService !== false);
     }
     if (modality === 'local' && selectedBranch) {
       return services.filter(s => {
-        if (s.isExclusive) {
-          // Regla 18: exclusivos solo en su sucursal asignada (debe tener match explícito)
-          return (s.branches || []).some(b => b.branchId === selectedBranch.id);
-        }
-        // No-exclusivos: sin restricción de sucursal = mostrar en todas
+        // Sin restricción de sucursal = disponible en todas
         if (!s.branches || s.branches.length === 0) return true;
         return s.branches.some(b => b.branchId === selectedBranch.id);
       });
