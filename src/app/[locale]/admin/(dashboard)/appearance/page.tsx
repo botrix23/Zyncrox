@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth-session";
+import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
 import { db } from "@/db";
 import { tenants } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -7,12 +7,13 @@ import AppearanceClient from "./AppearanceClient";
 
 export default async function AppearancePage({ params }: { params: { locale: string } }) {
   const session = await getSession();
-  if (!session || !session.tenantId) {
+  const tenantId = getEffectiveTenantId(session);
+  if (!session || !tenantId) {
     redirect(`/${params.locale}/admin/login`);
   }
 
   const tenantData = await db.query.tenants.findFirst({
-    where: eq(tenants.id, session.tenantId),
+    where: eq(tenants.id, tenantId),
     columns: {
       id: true,
       name: true,
