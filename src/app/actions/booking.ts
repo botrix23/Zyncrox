@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth-session";
 import { db } from "@/db";
 import { bookings, services, staff, blocks, branches, tenants, staffAssignments, bookingSessions, slotLocks, reviews } from "@/db/schema";
-import { eq, and, gte, lte, or, isNull, desc, not, lt, gt, ne } from "drizzle-orm";
+import { eq, and, gte, lte, or, isNull, desc, not, lt, gt, ne, inArray } from "drizzle-orm";
 import { addMinutes, format, parseISO, startOfDay, endOfDay, isBefore, isAfter, max, min } from "date-fns";
 import { resend } from "@/lib/resend";
 import { BookingConfirmationEmail } from "@/components/emails/BookingConfirmationEmail";
@@ -211,21 +211,36 @@ export async function getAvailableSlots(
         }
       }
     });
-    console.log(`[getAvailableSlots] STAFF_CHECK branchId=${branchId} dateStr=${dateStr} dayOfWeek=${dayOfWeek} totalAssignments=${allRellevantAssignments.length} activeStaffIds=${JSON.stringify(activeStaffIds)} assignmentSample=${JSON.stringify(allRellevantAssignments.slice(0,3).map(a=>({staffId:a.staffId,branchId:a.branchId,isPermanent:a.isPermanent,daysOfWeek:a.daysOfWeek})))}`);
-    if (activeStaffIds.length === 0) {
-      console.log(`[getAvailableSlots] BRANCH_CLOSED_STAFF branchId=${branchId} dateStr=${dateStr} dayOfWeek=${dayOfWeek} noActiveStaff`);
-      return { slots: [], errorType: 'BRANCH_CLOSED' };
+    if (activeStaffIds.length === 0) return { slots: [], errorType: 'BRANCH_CLOSED' };
+
+    // 4b. Descartar staff desactivado (isActive = false).
+    // staffAssignments no guarda el estado activo/inactivo del empleado,
+    // así que hay que consultarlo ahora para no ofrecer slots con staff desactivado.
+    const activeStaffRecords = await db.query.staff.findMany({
+      where: and(
+        inArray(staff.id, activeStaffIds),
+        eq(staff.isActive, true)
+      ),
+      columns: { id: true, allowsHomeService: true }
+    });
+    const enabledStaffIdSet = new Set(activeStaffRecords.map(s => s.id));
+
+    // Limpiar activeStaffIds y staffToAssignmentMap para excluir desactivados
+    const prunedActiveStaffIds = activeStaffIds.filter(id => enabledStaffIdSet.has(id));
+    // Eliminar del mapa los que quedaron excluidos
+    for (const id of activeStaffIds) {
+      if (!enabledStaffIdSet.has(id)) staffToAssignmentMap.delete(id);
     }
 
+    if (prunedActiveStaffIds.length === 0) return { slots: [], errorType: 'BRANCH_CLOSED' };
+
     // 5. Filtrar por disponibilidad domiciliaria si es necesario
-    let finalActiveStaffIds = activeStaffIds;
+    let finalActiveStaffIds = prunedActiveStaffIds;
     if (isHomeService) {
-      const staffDetails = await db.query.staff.findMany({
-        where: or(...activeStaffIds.map(id => eq(staff.id, id)))
+      finalActiveStaffIds = finalActiveStaffIds.filter(id => {
+        const rec = activeStaffRecords.find(s => s.id === id);
+        return rec?.allowsHomeService !== false;
       });
-      finalActiveStaffIds = staffDetails
-        .filter(s => s.allowsHomeService !== false)
-        .map(s => s.id);
     }
 
     // 5b. Filtrar por categorías de servicio si se especificaron IDs permitidos.
