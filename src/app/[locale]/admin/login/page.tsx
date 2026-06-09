@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Mail, Lock, ChevronRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LangToggle } from '@/components/LangToggle';
 import { useTranslations } from 'next-intl';
@@ -13,16 +13,11 @@ export default function LoginPage() {
   const [password, setPassword]   = useState('');
   const [showPass, setShowPass]   = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError]         = useState('');
 
   React.useEffect(() => {
-    const savedEmail = localStorage.getItem('login-remembered-email');
-    if (savedEmail) {
-      setEmail(savedEmail);
-      setRememberMe(true);
-    }
-    // Limpiar contraseñas guardadas incorrectamente en versiones anteriores
+    // Limpiar datos guardados de versiones anteriores
+    localStorage.removeItem('login-remembered-email');
     localStorage.removeItem('login-remembered-password');
   }, []);
 
@@ -34,7 +29,7 @@ export default function LoginPage() {
     const formData = new FormData();
     formData.append('email', email);
     formData.append('password', password);
-    formData.append('rememberMe', rememberMe.toString());
+    formData.append('rememberMe', 'false');
 
     const locale = window.location.pathname.split('/')[1] || 'es';
 
@@ -42,11 +37,6 @@ export default function LoginPage() {
       const result = await loginAction(formData, locale);
 
       if (result.success) {
-        if (rememberMe) {
-          localStorage.setItem('login-remembered-email', email);
-        } else {
-          localStorage.removeItem('login-remembered-email');
-        }
         if (result.mustChangePassword) {
           window.location.href = `/${locale}/admin/change-password`;
         } else if (result.role === 'SUPER_ADMIN') {
@@ -134,18 +124,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between px-1">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={e => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 bg-slate-100 dark:bg-white/5 border-transparent"
-                />
-                <span className="text-xs font-bold text-slate-500 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300 transition-colors">
-                  {t('rememberMe')}
-                </span>
-              </label>
+            <div className="flex items-center justify-end px-1">
               <a href={`/${locale}/admin/forgot-password`} className="text-xs font-bold text-purple-600 hover:text-purple-500 transition-colors">
                 {t('forgotPassword')}
               </a>
@@ -166,10 +145,7 @@ export default function LoginPage() {
               {isLoading ? (
                 <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <>
-                  {t('submit')}
-                  <ChevronRight className="w-5 h-5" />
-                </>
+                t('submit')
               )}
             </button>
           </form>

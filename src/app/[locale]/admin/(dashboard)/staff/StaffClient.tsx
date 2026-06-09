@@ -478,13 +478,13 @@ export default function StaffClient({
     <>
       <ConfirmDialog
         open={!!deleteStaffTarget}
-        title={`¿Eliminar a ${deleteStaffTarget?.name}?`}
+        title={t('confirmDeleteTitle', { name: deleteStaffTarget?.name ?? '' })}
         message={
           deleteStaffTarget && deleteStaffTarget.bookingCount > 0
-            ? `Hay ${deleteStaffTarget.bookingCount} cita${deleteStaffTarget.bookingCount !== 1 ? 's' : ''} futuras asignadas a este profesional. Se marcarán como "Sin asignar" hasta que asignes un nuevo miembro o las canceles manualmente.`
-            : "Se eliminará permanentemente del equipo. Esta acción no se puede deshacer."
+            ? t('confirmDeleteMsgBookings', { count: deleteStaffTarget.bookingCount })
+            : t('confirmDeleteMsg')
         }
-        confirmLabel="Sí, eliminar"
+        confirmLabel={t('confirmDeleteBtn')}
         variant="danger"
         onConfirm={confirmDeleteStaff}
         onCancel={() => setDeleteStaffTarget(null)}
