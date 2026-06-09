@@ -365,7 +365,14 @@ export default function StaffClient({
     setPendingToggleStaff(null);
     const result = await toggleStaffActiveAction(id, tenantId, !currentlyActive);
     if (!result.success && result.error) {
-      alert(result.error);
+      if (result.error === 'PLAN_LIMIT_EXCEEDED') {
+        setInfoModal({
+          title: t('planLimitTitle'),
+          message: t('planLimitMsg', { plan: (result as any).plan ?? 'BASIC', limit: (result as any).limit ?? limit }),
+        });
+      } else {
+        alert(result.error);
+      }
       return;
     }
     setStaffList(prev => prev.map(m =>

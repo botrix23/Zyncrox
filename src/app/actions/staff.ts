@@ -329,7 +329,7 @@ export async function toggleStaffActiveAction(id: string, tenantId: string, isAc
     if (isActive) {
       const limit = await checkPlanLimit(sessionTenantId, 'staff');
       if (!limit.allowed) {
-        return { success: false, error: `Límite de ${limit.limit} empleado(s) alcanzado en el plan ${limit.plan}. Actualiza tu plan para reactivar más empleados.` };
+        return { success: false, error: 'PLAN_LIMIT_EXCEEDED', limit: limit.limit, plan: limit.plan };
       }
     }
     await db.update(staff).set({ isActive }).where(and(eq(staff.id, id), eq(staff.tenantId, tenantId)));
