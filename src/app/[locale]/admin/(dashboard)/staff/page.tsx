@@ -5,6 +5,7 @@ import { eq, desc, and, ne } from 'drizzle-orm';
 import { getSession, getEffectiveTenantId } from '@/lib/auth-session';
 import { redirect } from 'next/navigation';
 import { checkPlanLimit } from '@/lib/plan-guard';
+import { enforceDowngradeLimits } from '@/lib/billing';
 import StaffClient from './StaffClient';
 
 export default async function StaffPage() {
@@ -19,7 +20,7 @@ export default async function StaffPage() {
   const isStaffRole = session?.role === 'STAFF';
   const currentStaffId = session?.staffId ?? undefined;
 
-  const [dbStaff, dbBranches, dbCategories, planLimit, tenant, initialBlocks, pendingRequests] = await Promise.all([
+  const [dbStaffRaw, dbBranches, dbCategories, planLimit, tenant, initialBlocks, pendingRequests] = await Promise.all([
     db.query.staff.findMany({
       where: eq(staffTable.tenantId, tenantId),
       with: {
@@ -52,6 +53,23 @@ export default async function StaffPage() {
           and(eq(absenceRequests.tenantId, tenantId), eq(absenceRequests.status, 'PENDING'))
         ).orderBy(desc(absenceRequests.createdAt)),
   ]);
+
+  // Aplicar límites de plan antes de renderizar
+  const activeStaffCount = dbStaffRaw.filter((s: any) => s.isActive).length;
+  let dbStaff = dbStaffRaw;
+  if (planLimit.limit > 0 && activeStaffCount > planLimit.limit) {
+    await enforceDowngradeLimits(tenantId, planLimit.plan);
+    dbStaff = await db.query.staff.findMany({
+      where: eq(staffTable.tenantId, tenantId),
+      with: {
+        assignments: true,
+        reviews: true,
+        categories: { with: { category: true } },
+        user: { columns: { id: true, isActive: true, mustChangePassword: true } },
+      },
+      orderBy: desc(staffTable.createdAt),
+    });
+  }
 
   return (
     <StaffClient
