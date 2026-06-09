@@ -317,7 +317,7 @@ export default function BranchesClient({
               {!isInactive && atRiskIds.has(branch.id) && (
                 <div className="absolute top-3 left-3 z-10">
                   <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
-                    {t('deactivated')}
+                    {t('overLimitBadge')}
                   </span>
                 </div>
               )}

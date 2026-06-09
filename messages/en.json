@@ -295,6 +295,7 @@
       "confirmActivateMsg": "\"{name}\" will be available for bookings again.",
       "confirmToggleBtn": "Confirm",
       "cancel": "Cancel",
+      "overLimitBadge": "Over limit",
       "overLimitTitle": "You have {active} active branches, but your plan only allows {limit}.",
       "overLimitDesc": "Deactivate {count} branch(es) using the ⋮ menu on each card. Inactive branches will not receive new bookings."
     },

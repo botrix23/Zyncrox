@@ -295,6 +295,7 @@
       "confirmActivateMsg": "\"{name}\" volverá a estar disponible para reservas.",
       "confirmToggleBtn": "Confirmar",
       "cancel": "Cancelar",
+      "overLimitBadge": "Excede límite",
       "overLimitTitle": "Tienes {active} sucursales activas, pero tu plan solo permite {limit}.",
       "overLimitDesc": "Desactiva {count} sucursal(es) usando el menú ⋮ de cada tarjeta. Las sucursales inactivas no reciben nuevas reservas."
     },
