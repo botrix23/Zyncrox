@@ -53,6 +53,7 @@ export default function BranchesClient({
     ? new Set(activeBranches.slice(limit).map((b: any) => b.id))
     : new Set<string>();
   const t = useTranslations('Dashboard.branches');
+  const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -126,7 +127,10 @@ export default function BranchesClient({
         router.refresh(); // Need DB-generated ID for new branch
       }
     } else if (result.error === 'PLAN_LIMIT_EXCEEDED') {
-      alert(`${plan ?? 'BASIC'}: ${result.current}/${result.limit}. ${t('planLimitReactivate')}`);
+      setInfoModal({
+        title: t('planLimitTitle'),
+        message: t('planLimitMsg', { plan: (result as any).plan ?? plan ?? 'BASIC', limit: (result as any).limit ?? limit }),
+      });
     } else {
       alert(t('errorSave'));
     }
@@ -164,7 +168,10 @@ export default function BranchesClient({
     const result = await toggleBranchActiveAction(branch.id, tenantId, branch.isActive !== false);
     if (!result.success) {
       if (result.error === 'PLAN_LIMIT_EXCEEDED') {
-        alert(t('planLimitReactivate'));
+        setInfoModal({
+          title: t('planLimitTitle'),
+          message: t('planLimitMsg', { plan: (result as any).plan ?? plan ?? 'BASIC', limit: (result as any).limit ?? limit }),
+        });
       } else {
         alert(t('toggleError'));
       }
@@ -205,6 +212,16 @@ export default function BranchesClient({
 
   return (
     <>
+    <ConfirmDialog
+      open={!!infoModal}
+      title={infoModal?.title ?? ''}
+      message={infoModal?.message ?? ''}
+      confirmLabel="OK"
+      cancelLabel=""
+      variant="info"
+      onConfirm={() => setInfoModal(null)}
+      onCancel={() => setInfoModal(null)}
+    />
     <ConfirmDialog
       open={!!deleteBranchTarget}
       title={`¿Eliminar "${deleteBranchTarget?.name}"?`}

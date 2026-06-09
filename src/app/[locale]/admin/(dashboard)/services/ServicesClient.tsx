@@ -83,6 +83,7 @@ export default function ServicesClient({
   const atLimit = activeServices.length >= limit;
   const t = useTranslations('Dashboard.services');
   const tPortal = useTranslations('Dashboard.portal');
+  const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'services' | 'categories' | 'domicilio' | 'sucursal'>('services');
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -280,7 +281,10 @@ export default function ServicesClient({
     const result = await toggleServiceActiveAction(service.id, tenantId, service.isActive !== false);
     if (!result.success) {
       if (result.error === 'PLAN_LIMIT_EXCEEDED') {
-        alert(t('planLimitReactivate'));
+        setInfoModal({
+          title: t('planLimitTitle'),
+          message: t('planLimitMsg', { plan: (result as any).plan ?? plan ?? 'BASIC', limit: (result as any).limit ?? limit }),
+        });
       } else {
         alert(t('toggleError'));
       }
@@ -372,7 +376,10 @@ export default function ServicesClient({
       setIsModalOpen(false);
       router.refresh();
     } else if ((result as any).error === 'PLAN_LIMIT_EXCEEDED') {
-      alert(t('planLimitReactivate'));
+      setInfoModal({
+        title: t('planLimitTitle'),
+        message: t('planLimitMsg', { plan: (result as any).plan ?? plan ?? 'BASIC', limit: (result as any).limit ?? limit }),
+      });
     } else {
       alert(t('errorSave'));
     }
@@ -443,6 +450,16 @@ export default function ServicesClient({
 
   return (
     <>
+    <ConfirmDialog
+      open={!!infoModal}
+      title={infoModal?.title ?? ''}
+      message={infoModal?.message ?? ''}
+      confirmLabel="OK"
+      cancelLabel=""
+      variant="info"
+      onConfirm={() => setInfoModal(null)}
+      onCancel={() => setInfoModal(null)}
+    />
     <ConfirmDialog
       open={!!deleteServiceId}
       title={t('confirmDelete')}
