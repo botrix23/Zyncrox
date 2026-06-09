@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { AlertTriangle, Info, HelpCircle } from "lucide-react";
 
 interface ConfirmDialogProps {
@@ -29,6 +30,14 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  // Bloquear scroll del body mientras el modal está abierto
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
   if (!open) return null;
 
   const cfg = variantConfig[variant];
@@ -44,12 +53,14 @@ export function ConfirmDialog({
         <h3 className="text-lg font-black text-slate-900 dark:text-white text-center">{title}</h3>
         <p className="text-sm text-slate-500 dark:text-zinc-400 text-center mt-2 leading-relaxed">{message}</p>
         <div className="flex gap-3 mt-6">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-zinc-300 font-bold text-sm transition-colors"
-          >
-            {cancelLabel}
-          </button>
+          {cancelLabel && (
+            <button
+              onClick={onCancel}
+              className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-zinc-300 font-bold text-sm transition-colors"
+            >
+              {cancelLabel}
+            </button>
+          )}
           <button
             onClick={onConfirm}
             className={`flex-1 py-2.5 rounded-xl ${cfg.btn} text-white font-bold text-sm transition-colors`}

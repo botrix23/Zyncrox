@@ -523,7 +523,7 @@ export default function BranchesClient({
                   }`}
                 >
                   {isInactive ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
-                  {isInactive ? t('reactivate') : t('inactive')}
+                  {isInactive ? t('reactivate') : t('deactivate')}
                 </button>
               );
             })()}

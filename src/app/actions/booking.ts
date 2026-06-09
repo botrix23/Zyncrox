@@ -139,16 +139,12 @@ export async function getAvailableSlots(
           isOpen = schedule.isOpen;
           activeSlots = schedule.slots || [];
         }
-        console.log(`[getAvailableSlots] BH_CHECK branchId=${branchId} dateStr=${dateStr} dayOfWeek=${dayOfWeek} regularKeys=${Object.keys(bh.regular||{}).join(',')} isOpen=${isOpen} activeSlots=${JSON.stringify(activeSlots)} hasSpecial=${!!special} hasRegular=${!!regular}`);
       } catch (e) {
         console.error("Error parsing business hours:", e);
       }
-    } else {
-      console.log(`[getAvailableSlots] BH_CHECK branchId=${branchId} dateStr=${dateStr} NO_BUSINESS_HOURS`);
     }
 
     if (!isOpen || activeSlots.length === 0) {
-      console.log(`[getAvailableSlots] BRANCH_CLOSED_BH branchId=${branchId} dateStr=${dateStr} isOpen=${isOpen} activeSlots=${activeSlots.length}`);
       return { slots: [], errorType: 'BRANCH_CLOSED' };
     }
 
@@ -256,11 +252,9 @@ export async function getAvailableSlots(
       // Si relevantAllowed.length === 0: ninguno de los "permitidos" está en esta sucursal.
       // Esto puede pasar cuando el cliente envía IDs de otra sucursal.
       // En ese caso NO aplicamos el filtro → usamos todos los activos de la sucursal.
-      console.log(`[getAvailableSlots] ALLOWED_FILTER relevantAllowed=${JSON.stringify(relevantAllowed)} finalActive=${JSON.stringify(finalActiveStaffIds)}`);
     }
 
     if (finalActiveStaffIds.length === 0) {
-      console.log(`[getAvailableSlots] BRANCH_CLOSED_FILTER branchId=${branchId} dateStr=${dateStr} activeStaffIds=${JSON.stringify(activeStaffIds)} allowedStaffIds=${JSON.stringify(allowedStaffIds)} isHomeService=${isHomeService}`);
       return { slots: [], errorType: 'BRANCH_CLOSED' };
     }
 

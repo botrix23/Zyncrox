@@ -101,6 +101,7 @@ export default function StaffClient({
   const [selectedStaffReviews, setSelectedStaffReviews] = useState<any | null>(null);
   const [tempPasswordModal, setTempPasswordModal] = useState<{ name: string; email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
   const router = useRouter();
 
   // Form State
@@ -319,7 +320,10 @@ export default function StaffClient({
         router.refresh();
       }
     } else if (result.error === 'PLAN_LIMIT_EXCEEDED') {
-      alert(`Límite del plan ${plan ?? 'BASIC'} alcanzado (${result.current}/${result.limit} empleados). Actualiza tu plan para agregar más.`);
+      setInfoModal({
+        title: t('planLimitTitle'),
+        message: t('planLimitMsg', { plan: plan ?? 'BASIC', limit: result.limit ?? limit }),
+      });
     } else {
       alert(t('errorSave'));
     }
@@ -327,7 +331,7 @@ export default function StaffClient({
   };
 
   const [deleteStaffTarget, setDeleteStaffTarget] = useState<{ id: string; name: string; bookingCount: number } | null>(null);
-  const [pendingToggleStaff, setPendingToggleStaff] = useState<{ id: string; name: string; currentlyActive: boolean } | null>(null);
+  const [pendingToggleStaff, setPendingToggleStaff] = useState<{ id: string; name: string; currentlyActive: boolean; inactiveBranchName?: string | null } | null>(null);
 
   const handleDelete = async (id: string, name: string) => {
     setOpenMenu(null);
@@ -338,7 +342,21 @@ export default function StaffClient({
   const handleToggleActive = (id: string, currentlyActive: boolean) => {
     setOpenMenu(null);
     const member = staffList.find(m => m.id === id);
-    if (member) setPendingToggleStaff({ id, name: member.name, currentlyActive });
+    if (!member) return;
+
+    // Si se está REactivando, detectar si la sucursal principal está desactivada
+    let inactiveBranchName: string | null = null;
+    if (!currentlyActive) {
+      const primaryBranchId = member.assignments?.[0]?.branchId ?? member.branchId;
+      if (primaryBranchId) {
+        const branch = branches.find((b: any) => b.id === primaryBranchId);
+        if (branch && branch.isActive === false) {
+          inactiveBranchName = branch.name;
+        }
+      }
+    }
+
+    setPendingToggleStaff({ id, name: member.name, currentlyActive, inactiveBranchName });
   };
 
   const confirmToggleStaff = async () => {
@@ -466,11 +484,27 @@ export default function StaffClient({
       <ConfirmDialog
         open={!!pendingToggleStaff}
         title={pendingToggleStaff?.currentlyActive ? t('confirmDeactivateTitle') : t('confirmActivateTitle')}
-        message={(pendingToggleStaff?.currentlyActive ? t('confirmDeactivateMsg') : t('confirmActivateMsg')).replace('{name}', pendingToggleStaff?.name ?? '')}
+        message={
+          pendingToggleStaff?.currentlyActive
+            ? t('confirmDeactivateMsg').replace('{name}', pendingToggleStaff?.name ?? '')
+            : pendingToggleStaff?.inactiveBranchName
+              ? t('confirmActivateMsgInactiveBranch').replace('{name}', pendingToggleStaff?.name ?? '').replace('{branch}', pendingToggleStaff?.inactiveBranchName ?? '')
+              : t('confirmActivateMsg').replace('{name}', pendingToggleStaff?.name ?? '')
+        }
         confirmLabel={t('confirmToggleBtn')}
         variant="warning"
         onConfirm={confirmToggleStaff}
         onCancel={() => setPendingToggleStaff(null)}
+      />
+      <ConfirmDialog
+        open={!!infoModal}
+        title={infoModal?.title ?? ''}
+        message={infoModal?.message ?? ''}
+        confirmLabel="OK"
+        cancelLabel=""
+        variant="info"
+        onConfirm={() => setInfoModal(null)}
+        onCancel={() => setInfoModal(null)}
       />
       <ConfirmDialog
         open={!!revokeTarget}
