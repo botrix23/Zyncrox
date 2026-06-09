@@ -760,18 +760,38 @@ export default function BookingWidget({
 
         // Calcular allowedStaffIds por las categorías específicas de ESTE servicio.
         // El staff debe cubrir TODAS las categorías requeridas (every), no solo una (some).
+        // IMPORTANTE: filtrar primero por sucursal para que el conjunto sea consistente
+        // con el que getAvailableSlots usa al generar slots (activeStaffIds = staff de esa sucursal).
+        // Sin este filtro, staff de otras sucursales pueden quedar en allowedStaffIds y hacer
+        // que getAvailableSlots devuelva BRANCH_CLOSED porque ninguno está activo en la sucursal pedida.
         let allowedStaffIds: string[] | undefined;
         if (!item.staff?.id) {
           const svcCats: string[] = item.service.categoryIds || [];
+          const bookingBranchId = selectedBranch?.id || branches[0]?.id || '';
+
+          // Base: staff asignado a la sucursal de esta reserva (igual que displayStaff hace)
+          const branchStaff = bookingBranchId
+            ? staff.filter(s => {
+                if (!s.assignments) return true; // legacy: no hay datos de asignación
+                if (s.assignments.length === 0) return false;
+                return s.assignments.some((a: { branchId: string }) => a.branchId === bookingBranchId);
+              })
+            : staff;
+
+          // Luego filtrar por categorías del servicio dentro de ese subconjunto
+          const baseForFilter = branchStaff.length > 0 ? branchStaff : staff;
           const eligibleForService = svcCats.length === 0
-            ? staff
-            : staff.filter(s => {
+            ? baseForFilter
+            : baseForFilter.filter(s => {
                 const sCats: string[] = s.categoryIds || [];
                 return svcCats.every(cat => sCats.includes(cat));
               });
+
+          // Si ninguno de la sucursal tiene las categorías, aceptar cualquiera de la sucursal.
+          // (El widget ya mostró slots disponibles en esa sucursal, así que hay staff activo.)
           allowedStaffIds = eligibleForService.length > 0
             ? eligibleForService.map(s => s.id)
-            : staff.map(s => s.id);
+            : baseForFilter.map(s => s.id);
         }
 
         return {
