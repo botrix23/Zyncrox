@@ -699,6 +699,9 @@ export async function createBookingSessionAction(data: {
              bData.allowedStaffIds
            );
 
+           // DIAGNÓSTICO: log para detectar por qué no hay slots elegibles
+           console.log(`[createBookingSession] DIAG slotDate=${slotDate} slotTime=${slotTime} branchId=${bData.branchId} serviceId=${bData.serviceId} allowedStaffIds=${JSON.stringify(bData.allowedStaffIds)} errorType=${availableData.errorType} totalSlots=${availableData.slots.length} availableSlots=${availableData.slots.filter(s => s.available).length} slotsAtTime=${JSON.stringify(availableData.slots.filter(s => s.time === slotTime))}`);
+
            // IMPORTANTE: Filtrar staff que YA fue asignado en esta misma sesión para este mismo horario
             const eligibleSlots = availableData.slots.filter(s => {
               const isTimeMatch = s.time === slotTime && s.available;
@@ -714,6 +717,7 @@ export async function createBookingSessionAction(data: {
             });
 
             if (eligibleSlots.length === 0) {
+              console.error(`[createBookingSession] STAFF_UNAVAILABLE — no eligible slots. slotTime=${slotTime} slotDate=${slotDate} utcStart=${utcStart.toISOString()} errorType=${availableData.errorType}`);
               throw new Error("STAFF_UNAVAILABLE");
             }
 

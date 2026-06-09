@@ -275,14 +275,14 @@ export default function BranchesClient({
 
       {/* Over-limit warning banner */}
       {overLimit && (
-        <div className="flex items-start gap-3 px-5 py-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-700/40 rounded-2xl text-red-700 dark:text-red-400">
-          <span className="text-lg shrink-0 mt-0.5">⚠️</span>
+        <div className="flex items-start gap-3 px-4 sm:px-5 py-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-700/40 rounded-2xl text-red-700 dark:text-red-400">
+          <span className="text-base shrink-0 mt-0.5">⚠️</span>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold leading-snug">
-              Tienes {activeBranches.length} sucursales activas, pero tu plan solo permite {limit}.
+              {t('overLimitTitle', { active: activeBranches.length, limit })}
             </p>
             <p className="text-xs mt-1 opacity-80 leading-relaxed">
-              Desactiva {activeBranches.length - limit} sucursal{activeBranches.length - limit > 1 ? 'es' : ''} usando el menú <strong>⋮</strong> de cada tarjeta, o pide al administrador que aplique los límites automáticamente. Las sucursales inactivas no reciben nuevas reservas.
+              {t('overLimitDesc', { count: activeBranches.length - limit })}
             </p>
           </div>
         </div>
@@ -316,8 +316,8 @@ export default function BranchesClient({
               {/* Over-limit risk badge */}
               {!isInactive && atRiskIds.has(branch.id) && (
                 <div className="absolute top-3 left-3 z-10">
-                  <span className="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
-                    Excede límite
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+                    {t('deactivated')}
                   </span>
                 </div>
               )}
@@ -331,7 +331,7 @@ export default function BranchesClient({
                 </button>
               </div>
 
-              <div className={`flex items-center gap-4 mb-6 ${isInactive ? 'mt-5' : ''}`}>
+              <div className={`flex items-center gap-4 mb-6 ${(isInactive || atRiskIds.has(branch.id)) ? 'mt-5' : ''}`}>
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isInactive ? 'bg-slate-200 dark:bg-zinc-700 text-slate-400' : 'bg-purple-500/10 text-purple-600'}`}>
                   <MapPin className="w-6 h-6" />
                 </div>

@@ -294,7 +294,9 @@
       "confirmActivateTitle": "Activar sucursal",
       "confirmActivateMsg": "\"{name}\" volverá a estar disponible para reservas.",
       "confirmToggleBtn": "Confirmar",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "overLimitTitle": "Tienes {active} sucursales activas, pero tu plan solo permite {limit}.",
+      "overLimitDesc": "Desactiva {count} sucursal(es) usando el menú ⋮ de cada tarjeta. Las sucursales inactivas no reciben nuevas reservas."
     },
     "services": {
       "title": "Servicios",
