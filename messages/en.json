@@ -2369,7 +2369,7 @@
     "alreadyFinished": "Appointment already completed",
     "alreadyFinishedDesc": "This appointment has been completed and cannot be cancelled.",
     "cancelledTitle": "Appointment cancelled",
-    "cancelledDesc": "Your appointment has been successfully cancelled. If you'd like to reschedule, please contact {tenantName} directly.",
+    "cancelledDesc": "Your appointment has been successfully cancelled. If you'd like to reschedule, please contact us directly.",
     "keptTitle": "Great, see you soon!",
     "keptDesc": "Your appointment is confirmed. If you need to make any changes, contact us directly.",
     "question": "Will you attend your appointment?",
@@ -2384,7 +2384,7 @@
     "contactNote": "If you have any questions, contact {tenantName} directly.",
     "deadline": "⏰ You can cancel online until {deadline}.",
     "tooLateTitle": "Cancellation window has passed",
-    "tooLateDesc": "Online cancellations are only allowed up to {hours} hours before the appointment. To cancel or reschedule, please contact {tenantName} directly.",
+    "tooLateDesc": "Online cancellations are only allowed up to {hours} hours before the appointment. To cancel or reschedule, please contact us directly.",
     "tooLateInline": "The online cancellation window has passed. Please contact {tenantName} directly."
   }
 }

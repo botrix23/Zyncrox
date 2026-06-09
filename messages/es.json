@@ -2369,7 +2369,7 @@
     "alreadyFinished": "Cita ya finalizada",
     "alreadyFinishedDesc": "Esta cita ya fue completada y no puede cancelarse.",
     "cancelledTitle": "Cita cancelada",
-    "cancelledDesc": "Tu cita ha sido cancelada exitosamente. Si deseas reagendarla, comunícate directamente con {tenantName}.",
+    "cancelledDesc": "Tu cita ha sido cancelada exitosamente. Si deseas reagendarla, comunícate directamente con nosotros.",
     "keptTitle": "¡Perfecto, te esperamos!",
     "keptDesc": "Tu cita está confirmada. Si necesitas hacer algún cambio, contáctanos directamente.",
     "question": "¿Asistirás a tu cita?",
@@ -2384,7 +2384,7 @@
     "contactNote": "Si tienes dudas, contáctanos directamente con {tenantName}.",
     "deadline": "⏰ Puedes cancelar en línea hasta el {deadline}.",
     "tooLateTitle": "Plazo de cancelación expirado",
-    "tooLateDesc": "Solo se puede cancelar en línea hasta {hours} horas antes de la cita. Para cancelar o reprogramar, comunícate directamente con {tenantName}.",
+    "tooLateDesc": "Solo se puede cancelar en línea hasta {hours} horas antes de la cita. Para cancelar o reprogramar, comunícate con nosotros directamente.",
     "tooLateInline": "El plazo para cancelar en línea ha vencido. Contacta directamente a {tenantName}."
   }
 }

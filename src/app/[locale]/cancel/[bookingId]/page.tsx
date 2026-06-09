@@ -7,10 +7,30 @@ import { getTranslations } from "next-intl/server";
 import { resend } from "@/lib/resend";
 import { BookingCancellationEmail } from "@/components/emails/BookingCancellationEmail";
 import { getPlatformEmailTemplates, buildEmailPayload } from "@/lib/emailTemplates";
+import {
+  AlertCircle,
+  HelpCircle,
+  CheckCircle2,
+  Clock,
+  CalendarX2,
+  CalendarDays,
+  Phone,
+} from "lucide-react";
 import React from "react";
 
 /** Horas mínimas de anticipación para cancelar online */
 const CANCEL_WINDOW_HOURS = 2;
+
+// ─── Icon variants ────────────────────────────────────────────────────────────
+type InfoVariant = 'error' | 'search' | 'success' | 'clock' | 'cancelled';
+
+const infoVariantConfig: Record<InfoVariant, { Icon: React.ElementType; iconBg: string; iconColor: string }> = {
+  error:     { Icon: AlertCircle,  iconBg: 'bg-rose-500/10',   iconColor: 'text-rose-400' },
+  search:    { Icon: HelpCircle,   iconBg: 'bg-slate-500/10',  iconColor: 'text-slate-400' },
+  success:   { Icon: CheckCircle2, iconBg: 'bg-green-500/10',  iconColor: 'text-green-500' },
+  clock:     { Icon: Clock,        iconBg: 'bg-amber-500/10',  iconColor: 'text-amber-400' },
+  cancelled: { Icon: CalendarX2,   iconBg: 'bg-slate-500/10',  iconColor: 'text-slate-400' },
+};
 
 interface CancelPageProps {
   params: { locale: string; bookingId: string };
@@ -25,7 +45,7 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
 
   // Verify the HMAC token
   if (!token || !verifyCancelToken(bookingId, token)) {
-    return <InfoPage emoji="⚠️" title={t('invalidToken')} desc={t('invalidTokenDesc')} />;
+    return <InfoPage variant="error" title={t('invalidToken')} desc={t('invalidTokenDesc')} />;
   }
 
   // Fetch the booking
@@ -35,26 +55,26 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
   });
 
   if (!booking) {
-    return <InfoPage emoji="🔍" title={t('notFound')} desc={t('notFoundDesc')} />;
+    return <InfoPage variant="search" title={t('notFound')} desc={t('notFoundDesc')} />;
   }
 
   if (booking.status === 'CANCELLED') {
-    return <InfoPage emoji="✅" title={t('alreadyCancelled')} desc={t('alreadyCancelledDesc')} />;
+    return <InfoPage variant="success" title={t('alreadyCancelled')} desc={t('alreadyCancelledDesc')} />;
   }
 
   if (booking.status === 'FINALIZADA') {
-    return <InfoPage emoji="✅" title={t('alreadyFinished')} desc={t('alreadyFinishedDesc')} />;
+    return <InfoPage variant="success" title={t('alreadyFinished')} desc={t('alreadyFinishedDesc')} />;
   }
 
   const tenant = booking.tenant as any;
   const tenantName = tenant?.name || '';
+  const tenantPhone: string = tenant?.whatsappNumber || tenant?.phone || '';
   const localeKey = (locale === 'en' ? 'en' : 'es') as EmailLocale;
 
-  // ── Ventana de cancelación: 24h de anticipación mínima ──────────────────────
+  // ── Ventana de cancelación ──────────────────────────────────────────────────
   const deadlineDate = new Date(booking.startTime.getTime() - CANCEL_WINDOW_HOURS * 60 * 60 * 1000);
   const isPastDeadline = new Date() > deadlineDate;
 
-  // Format the deadline for display (e.g. "lunes 26 de mayo, 10:00 AM")
   const deadlineStr = deadlineDate.toLocaleString(locale === 'en' ? 'en-US' : 'es-SV', {
     weekday: 'long',
     day: 'numeric',
@@ -65,18 +85,19 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
 
   // User chose to keep the appointment
   if (action === 'keep') {
-    return <InfoPage emoji="🎉" title={t('keptTitle')} desc={t('keptDesc')} />;
+    return <InfoPage variant="success" title={t('keptTitle')} desc={t('keptDesc')} />;
   }
 
   // User chose to cancel
   if (action === 'cancel') {
-    // Block cancellation past the 24h window
     if (isPastDeadline) {
       return (
         <InfoPage
-          emoji="⏰"
+          variant="clock"
           title={t('tooLateTitle')}
-          desc={t('tooLateDesc', { tenantName, hours: CANCEL_WINDOW_HOURS })}
+          desc={t('tooLateDesc', { hours: CANCEL_WINDOW_HOURS })}
+          tenantName={tenantName}
+          tenantPhone={tenantPhone}
         />
       );
     }
@@ -92,7 +113,7 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
     const serviceName = (booking.service as any)?.name || '';
     const staffName = (booking.staff as any)?.name || '';
 
-    // ── Email 1: Confirmación de cancelación al CLIENTE ──────────────────────
+    // ── Email 1: Confirmación de cancelación al CLIENTE ─────────────────────
     if (booking.customerEmail) {
       try {
         const emailCfg = await getPlatformEmailTemplates();
@@ -103,7 +124,7 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
           time: timeStr,
           branchName,
           tenantName,
-          phone: tenant?.whatsappNumber || '',
+          phone: tenantPhone,
           contactEmail: tenant?.contactEmail || '',
         };
         const emailPayload = buildEmailPayload(
@@ -112,7 +133,7 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
             ...vars,
             locale: localeKey,
             tenantLogo: tenant?.logoUrl || undefined,
-            phone: tenant?.whatsappNumber || undefined,
+            phone: tenantPhone || undefined,
             contactEmail: tenant?.contactEmail || undefined,
           }),
           vars
@@ -129,7 +150,7 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
       }
     }
 
-    // ── Email 2: Notificación al ADMIN/TENANT ────────────────────────────────
+    // ── Email 2: Notificación al ADMIN/TENANT ───────────────────────────────
     const adminEmail = tenant?.contactEmail;
     if (adminEmail) {
       try {
@@ -140,7 +161,7 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
 
         const html = isEn ? `
           <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;background:#fff;border-radius:12px;border:1px solid #e5e7eb;">
-            <h2 style="color:#dc2626;margin:0 0 16px">⚠️ Appointment Cancelled</h2>
+            <h2 style="color:#dc2626;margin:0 0 16px">Appointment Cancelled</h2>
             <p style="color:#374151;margin:0 0 20px">A client has cancelled their appointment online:</p>
             <table style="width:100%;border-collapse:collapse;background:#fef2f2;border-radius:8px;padding:16px;">
               <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Client</td><td style="padding:8px 12px;color:#111827;">${booking.customerName}</td></tr>
@@ -154,7 +175,7 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
             <p style="color:#6b7280;font-size:13px;margin:20px 0 0">That time slot is now available for new bookings.</p>
           </div>` : `
           <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;background:#fff;border-radius:12px;border:1px solid #e5e7eb;">
-            <h2 style="color:#dc2626;margin:0 0 16px">⚠️ Cita cancelada</h2>
+            <h2 style="color:#dc2626;margin:0 0 16px">Cita cancelada</h2>
             <p style="color:#374151;margin:0 0 20px">Un cliente ha cancelado su cita en línea:</p>
             <table style="width:100%;border-collapse:collapse;background:#fef2f2;border-radius:8px;padding:16px;">
               <tr><td style="padding:8px 12px;color:#6b7280;font-weight:600;">Cliente</td><td style="padding:8px 12px;color:#111827;">${booking.customerName}</td></tr>
@@ -181,14 +202,16 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
 
     return (
       <InfoPage
-        emoji="🗑️"
+        variant="cancelled"
         title={t('cancelledTitle')}
-        desc={t('cancelledDesc', { tenantName })}
+        desc={t('cancelledDesc')}
+        tenantName={tenantName}
+        tenantPhone={tenantPhone}
       />
     );
   }
 
-  // ── Default: show confirmation page ──────────────────────────────────────
+  // ── Default: show confirmation page ────────────────────────────────────────
   const dateStr = formatEmailDate(booking.startTime, localeKey);
   const timeStr = formatEmailTime(booking.startTime);
   const tenantLogo = tenant?.logoUrl || null;
@@ -209,8 +232,10 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
         )}
 
         <div className="text-center space-y-1">
-          <div className="text-4xl">📅</div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white mt-2">
+          <div className="flex items-center justify-center w-14 h-14 bg-violet-500/10 rounded-2xl mx-auto">
+            <CalendarDays className="w-7 h-7 text-violet-500" />
+          </div>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white mt-3">
             {t('question')}
           </h1>
           <p className="text-slate-500 dark:text-zinc-400 text-sm">
@@ -256,23 +281,69 @@ export default async function CancelBookingPage({ params, searchParams }: Cancel
           )}
         </div>
 
-        {tenantName && (
-          <p className="text-center text-xs text-slate-400 dark:text-zinc-600">
-            {t('contactNote', { tenantName })}
-          </p>
+        {/* Contact footer */}
+        {(tenantName || tenantPhone) && (
+          <div className="text-center border-t border-slate-100 dark:border-white/5 pt-4 space-y-1">
+            <p className="text-xs text-slate-400 dark:text-zinc-600">
+              {t('contactNote', { tenantName })}
+            </p>
+            {tenantPhone && (
+              <a
+                href={`tel:${tenantPhone}`}
+                className="inline-flex items-center gap-1.5 text-xs text-violet-600 dark:text-violet-400 font-medium"
+              >
+                <Phone className="w-3 h-3" />
+                {tenantPhone}
+              </a>
+            )}
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function InfoPage({ emoji, title, desc }: { emoji: string; title: string; desc: string }) {
+// ─── Shared info/result page ──────────────────────────────────────────────────
+function InfoPage({
+  variant,
+  title,
+  desc,
+  tenantName,
+  tenantPhone,
+}: {
+  variant: InfoVariant;
+  title: string;
+  desc: string;
+  tenantName?: string;
+  tenantPhone?: string;
+}) {
+  const cfg = infoVariantConfig[variant];
+  const Icon = cfg.Icon;
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-black">
       <div className="max-w-md w-full bg-white dark:bg-zinc-900 rounded-[32px] p-8 shadow-2xl text-center space-y-4 border border-slate-200 dark:border-white/5">
-        <div className="text-4xl">{emoji}</div>
+        <div className={`flex items-center justify-center w-14 h-14 ${cfg.iconBg} rounded-2xl mx-auto`}>
+          <Icon className={`w-7 h-7 ${cfg.iconColor}`} />
+        </div>
         <h1 className="text-2xl font-black text-slate-900 dark:text-white">{title}</h1>
-        <p className="text-slate-500 dark:text-zinc-400">{desc}</p>
+        <p className="text-slate-500 dark:text-zinc-400 leading-relaxed">{desc}</p>
+        {(tenantName || tenantPhone) && (
+          <div className="pt-3 border-t border-slate-100 dark:border-white/5 space-y-1.5">
+            {tenantName && (
+              <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300">{tenantName}</p>
+            )}
+            {tenantPhone && (
+              <a
+                href={`tel:${tenantPhone}`}
+                className="inline-flex items-center gap-1.5 text-sm text-violet-600 dark:text-violet-400 font-medium"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                {tenantPhone}
+              </a>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
