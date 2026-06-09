@@ -86,6 +86,8 @@ export default function ServicesClient({
   const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'services' | 'categories' | 'domicilio' | 'sucursal'>('services');
   const [searchTerm, setSearchTerm] = useState("");
+  const [srvVisible, setSrvVisible] = useState(20);
+  useEffect(() => setSrvVisible(20), [searchTerm]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Card expansion state
   const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set());
@@ -611,7 +613,7 @@ export default function ServicesClient({
 
       {/* Mobile cards — solo en pantallas pequeñas */}
       <div className="md:hidden space-y-3">
-        {filteredServices.map((service, idx) => {
+        {filteredServices.slice(0, srvVisible).map((service, idx) => {
           const isInactive = service.isActive === false;
           return (
           <div
@@ -793,6 +795,17 @@ export default function ServicesClient({
           </div>
           );
         })}
+        {filteredServices.length > srvVisible && (
+          <div className="flex flex-col items-center gap-1 pt-2 pb-4">
+            <p className="text-xs text-slate-400 dark:text-zinc-500">{t('showing', { shown: srvVisible, total: filteredServices.length })}</p>
+            <button
+              onClick={() => setSrvVisible(v => v + 20)}
+              className="px-6 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 hover:border-purple-500/40 text-slate-600 dark:text-zinc-300 hover:text-purple-600 dark:hover:text-purple-400 font-bold text-sm rounded-xl shadow-sm transition-all"
+            >
+              {t('loadMore', { count: Math.min(20, filteredServices.length - srvVisible) })}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Desktop table — oculta en móvil */}
@@ -809,7 +822,7 @@ export default function ServicesClient({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-white/5 text-slate-600 dark:text-zinc-300">
-            {filteredServices.map((service, idx) => {
+            {filteredServices.slice(0, srvVisible).map((service, idx) => {
               const isInactiveSvc = service.isActive === false;
               return (
               <tr
@@ -973,6 +986,17 @@ export default function ServicesClient({
           </tbody>
         </table>
         </div>
+        {filteredServices.length > srvVisible && (
+          <div className="flex flex-col items-center gap-1 py-4 border-t border-slate-100 dark:border-white/5">
+            <p className="text-xs text-slate-400 dark:text-zinc-500">{t('showing', { shown: srvVisible, total: filteredServices.length })}</p>
+            <button
+              onClick={() => setSrvVisible(v => v + 20)}
+              className="px-6 py-2.5 bg-slate-50 dark:bg-white/5 hover:bg-purple-500/5 border border-slate-200 dark:border-white/10 hover:border-purple-500/30 text-slate-600 dark:text-zinc-300 hover:text-purple-600 dark:hover:text-purple-400 font-bold text-sm rounded-xl transition-all"
+            >
+              {t('loadMore', { count: Math.min(20, filteredServices.length - srvVisible) })}
+            </button>
+          </div>
+        )}
       </div>
 
       {isModalOpen && (

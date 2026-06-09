@@ -197,6 +197,8 @@ export default function BookingWidget({
   const businessTimezone = tenantTimezone || (branches[0] as any)?.tenant?.timezone || 'America/El_Salvador';
   const [hasTzDifference, setHasTzDifference] = useState(false);
   const [businessOffsetLabel, setBusinessOffsetLabel] = useState("");
+  const [visibleSrvCount, setVisibleSrvCount] = useState(12);
+  const [visibleStaffCount, setVisibleStaffCount] = useState(12);
   const [openTimeSections, setOpenTimeSections] = useState<Set<string>>(() => {
     const hour = new Date().getHours();
     if (hour < 12) return new Set(['morning']);
@@ -1302,7 +1304,7 @@ export default function BookingWidget({
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto flex-1 pr-2 pl-1 pt-1 pb-10 custom-scrollbar items-start content-start w-full">
-                {displayServices.map((srv) => {
+                {displayServices.slice(0, visibleSrvCount).map((srv) => {
                   const isSelected = selectedServices.some(s => s.id === srv.id);
                   const srvAcc = expandedSrvAcc[srv.id] ?? null;
                   const hasInclExcl = (srv.includes?.length ?? 0) > 0 || (srv.excludes?.length ?? 0) > 0;
@@ -1390,6 +1392,19 @@ export default function BookingWidget({
                     </div>
                   );
                 })}
+                {displayServices.length > visibleSrvCount && (
+                  <div className="col-span-full flex flex-col items-center gap-1 pt-2 pb-2">
+                    <button
+                      onClick={() => setVisibleSrvCount(c => c + 12)}
+                      className="px-6 py-2.5 bg-slate-100 dark:bg-white/5 hover:bg-purple-500/10 dark:hover:bg-purple-500/10 border border-slate-200 dark:border-white/10 hover:border-purple-500/30 text-slate-600 dark:text-zinc-300 hover:text-purple-600 dark:hover:text-purple-400 font-bold text-sm rounded-xl transition-all"
+                    >
+                      {t("show_more_services", { count: displayServices.length - visibleSrvCount })}
+                    </button>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500">
+                      {visibleSrvCount} / {displayServices.length}
+                    </p>
+                  </div>
+                )}
               </div>
 
 
@@ -1618,7 +1633,7 @@ export default function BookingWidget({
                       </span>
                     </button>
 
-                    {displayStaff.map((member) => {
+                    {displayStaff.slice(0, visibleStaffCount).map((member) => {
                       const isSelected = selectedStaff?.id === member.id;
                       return (
                         <button
@@ -1641,6 +1656,21 @@ export default function BookingWidget({
                         </button>
                       );
                     })}
+                    {displayStaff.length > visibleStaffCount && (
+                      <div className="flex flex-col items-center gap-1 self-center ml-1">
+                        <button
+                          onClick={() => setVisibleStaffCount(c => c + 12)}
+                          className="flex flex-col items-center gap-2 group"
+                        >
+                          <div className="w-14 h-14 rounded-full flex items-center justify-center bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-400 hover:border-purple-500/40 hover:text-purple-500 transition-all text-xs font-black leading-tight text-center">
+                            +{displayStaff.length - visibleStaffCount}
+                          </div>
+                          <span className="text-xs font-black tracking-tight text-slate-400 group-hover:text-purple-500 transition-colors">
+                            {t("show_more_staff", { count: displayStaff.length - visibleStaffCount })}
+                          </span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 )}

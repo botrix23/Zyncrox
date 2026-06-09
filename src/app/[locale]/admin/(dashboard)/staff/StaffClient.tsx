@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -82,6 +82,8 @@ export default function StaffClient({
   const [activeMainTab, setActiveMainTab] = useState<StaffTab>(role === 'STAFF' ? 'absences' : 'team');
   const [searchTerm, setSearchTerm] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("all");
+  const [staffVisible, setStaffVisible] = useState(20);
+  useEffect(() => setStaffVisible(20), [searchTerm, branchFilter]);
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
   const toggleCats = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -676,7 +678,7 @@ export default function StaffClient({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {filteredStaff.map((member) => {
+        {filteredStaff.slice(0, staffVisible).map((member) => {
           const today = new Date().toISOString().split('T')[0];
           const activeOverride = member.assignments?.find((a: any) => 
             !a.isPermanent && 
@@ -881,6 +883,17 @@ export default function StaffClient({
           );
         })}
       </div>
+      {filteredStaff.length > staffVisible && (
+        <div className="flex flex-col items-center gap-1 pt-4 pb-2">
+          <p className="text-xs text-slate-400 dark:text-zinc-500">{t('showing', { shown: staffVisible, total: filteredStaff.length })}</p>
+          <button
+            onClick={() => setStaffVisible(v => v + 20)}
+            className="px-6 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 hover:border-purple-500/40 text-slate-600 dark:text-zinc-300 hover:text-purple-600 dark:hover:text-purple-400 font-bold text-sm rounded-xl shadow-sm transition-all"
+          >
+            {t('loadMore', { count: Math.min(20, filteredStaff.length - staffVisible) })}
+          </button>
+        </div>
+      )}
 
       {/* Modals */}
       {isModalOpen && (
