@@ -139,12 +139,18 @@ export async function getAvailableSlots(
           isOpen = schedule.isOpen;
           activeSlots = schedule.slots || [];
         }
+        console.log(`[getAvailableSlots] BH_CHECK branchId=${branchId} dateStr=${dateStr} dayOfWeek=${dayOfWeek} regularKeys=${Object.keys(bh.regular||{}).join(',')} isOpen=${isOpen} activeSlots=${JSON.stringify(activeSlots)} hasSpecial=${!!special} hasRegular=${!!regular}`);
       } catch (e) {
         console.error("Error parsing business hours:", e);
       }
+    } else {
+      console.log(`[getAvailableSlots] BH_CHECK branchId=${branchId} dateStr=${dateStr} NO_BUSINESS_HOURS`);
     }
 
-    if (!isOpen || activeSlots.length === 0) return { slots: [], errorType: 'BRANCH_CLOSED' };
+    if (!isOpen || activeSlots.length === 0) {
+      console.log(`[getAvailableSlots] BRANCH_CLOSED_BH branchId=${branchId} dateStr=${dateStr} isOpen=${isOpen} activeSlots=${activeSlots.length}`);
+      return { slots: [], errorType: 'BRANCH_CLOSED' };
+    }
 
     // 3. Obtener rangos ocupados (bookings y bloqueos)
     const localTargetDate = parseISO(dateStr);
@@ -205,7 +211,11 @@ export async function getAvailableSlots(
         }
       }
     });
-    if (activeStaffIds.length === 0) return { slots: [], errorType: 'BRANCH_CLOSED' };
+    console.log(`[getAvailableSlots] STAFF_CHECK branchId=${branchId} dateStr=${dateStr} dayOfWeek=${dayOfWeek} totalAssignments=${allRellevantAssignments.length} activeStaffIds=${JSON.stringify(activeStaffIds)} assignmentSample=${JSON.stringify(allRellevantAssignments.slice(0,3).map(a=>({staffId:a.staffId,branchId:a.branchId,isPermanent:a.isPermanent,daysOfWeek:a.daysOfWeek})))}`);
+    if (activeStaffIds.length === 0) {
+      console.log(`[getAvailableSlots] BRANCH_CLOSED_STAFF branchId=${branchId} dateStr=${dateStr} dayOfWeek=${dayOfWeek} noActiveStaff`);
+      return { slots: [], errorType: 'BRANCH_CLOSED' };
+    }
 
     // 5. Filtrar por disponibilidad domiciliaria si es necesario
     let finalActiveStaffIds = activeStaffIds;
@@ -223,7 +233,10 @@ export async function getAvailableSlots(
       finalActiveStaffIds = finalActiveStaffIds.filter(id => allowedStaffIds.includes(id));
     }
 
-    if (finalActiveStaffIds.length === 0) return { slots: [], errorType: 'BRANCH_CLOSED' };
+    if (finalActiveStaffIds.length === 0) {
+      console.log(`[getAvailableSlots] BRANCH_CLOSED_FILTER branchId=${branchId} dateStr=${dateStr} activeStaffIds=${JSON.stringify(activeStaffIds)} allowedStaffIds=${JSON.stringify(allowedStaffIds)} isHomeService=${isHomeService}`);
+      return { slots: [], errorType: 'BRANCH_CLOSED' };
+    }
 
     // Si se pidió un staff específico, verificar si quedó en la lista de activos resolviendo prioridad y domicilio
     if (staffId && !finalActiveStaffIds.includes(staffId)) {
