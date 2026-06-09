@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -36,7 +36,6 @@ import { updateShowStaffSelectionAction } from "@/app/actions/tenant";
 import { createStaffAccessAction, revokeStaffAccessAction, reactivateStaffAccessAction, resetStaffPasswordAction } from "@/app/actions/staffAccess";
 import { Tag } from 'lucide-react';
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Portal } from "@/components/Portal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
