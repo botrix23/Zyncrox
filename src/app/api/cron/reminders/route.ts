@@ -21,9 +21,9 @@ export async function GET(req: NextRequest) {
 
   try {
     const now = new Date();
-    // Window: bookings starting between 23h and 25h from now
-    const windowStart = addHours(now, 23);
-    const windowEnd = addHours(now, 25);
+    // Window: bookings starting between 20h and 28h from now (8h window for single daily run)
+    const windowStart = addHours(now, 20);
+    const windowEnd = addHours(now, 28);
 
     const upcoming = await db.query.bookings.findMany({
       where: and(

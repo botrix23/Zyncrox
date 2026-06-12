@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/reminders?secret=749ef1fe0f6e7b0b351f0b59ac8d4437d46a222a0104e3cb5839648bfed660c8",
-      "schedule": "0 */2 * * *"
+      "schedule": "0 10 * * *"
     },
     {
       "path": "/api/cron/surveys?secret=749ef1fe0f6e7b0b351f0b59ac8d4437d46a222a0104e3cb5839648bfed660c8",
