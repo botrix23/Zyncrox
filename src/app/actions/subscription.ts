@@ -73,7 +73,11 @@ export async function activateSubscriptionAction(
     if (!tenant) return { success: false, error: 'Tenant no encontrado' }
 
     // 1. Tokenize card → payment method
-    const pm = await createPaymentMethod(cardData)
+    const pm = await createPaymentMethod(cardData, {
+      id:    tenantId,
+      name:  tenant.name,
+      email: tenant.contactEmail ?? '',
+    })
 
     // 2. Create N1CO subscription (N1CO handles recurring billing)
     const n1coSub = await createN1coSubscription({
@@ -284,7 +288,11 @@ export async function updateCardAction(tenantId: string, cardData: N1coCardData)
 
     // Create new payment method with new card
     const [pm, n1co] = await Promise.all([
-      createPaymentMethod(cardData),
+      createPaymentMethod(cardData, {
+        id:    tenantId,
+        name:  tenant.name,
+        email: tenant.contactEmail ?? '',
+      }),
       getN1coConfig(),
     ])
 
@@ -354,7 +362,11 @@ export async function reactivateSubscriptionAction(
 
     // Use new card if provided
     if (cardData) {
-      const pm = await createPaymentMethod(cardData)
+      const pm = await createPaymentMethod(cardData, {
+        id:    tenantId,
+        name:  tenant.name,
+        email: tenant.contactEmail ?? '',
+      })
       paymentMethodId = pm.paymentMethodId
       last4    = pm.last4
       brand    = pm.brand
