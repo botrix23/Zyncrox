@@ -132,7 +132,7 @@ export default function NotificationsDropdown({ initialNotifications, initialUnr
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-[360px] max-w-[calc(100vw-1rem)] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-2xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-top-2 duration-150 overflow-hidden">
+        <div className="absolute left-0 top-full mt-2 w-[360px] max-w-[calc(100vw-1rem)] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-2xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-top-2 duration-150 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-white/5">
             <div className="flex items-center gap-2">
