@@ -1062,7 +1062,9 @@ export default function ClientsClient({
                         const balance = clientPointsData?.balance ?? 0;
                         const rewards = clientPointsData?.rewards ?? [];
                         const txns = clientPointsData?.transactions ?? [];
-                        const nextReward = rewards.find(r => r.isActive && r.pointsCost > balance) ?? rewards.find(r => r.isActive);
+                        const activeRewards = rewards.filter(r => r.isActive);
+                        const nextReward = activeRewards.find(r => r.pointsCost > balance)
+                          ?? activeRewards.sort((a, b) => b.pointsCost - a.pointsCost)[0];
                         const progress = nextReward && nextReward.pointsCost > 0 ? Math.min(100, Math.round((balance / nextReward.pointsCost) * 100)) : 0;
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/5 space-y-2">
