@@ -118,6 +118,10 @@ export default function BookingWidget({
     step4Title?: string;
     showSummaryOnLeft?: boolean;
     footerText?: string;
+    bulkModeTitle?: string;
+    bulkModeDesc?: string;
+    separateModeTitle?: string;
+    separateModeDesc?: string;
   },
   primaryColor?: string;
   coverUrl?: string | null;
@@ -1477,8 +1481,8 @@ export default function BookingWidget({
                 >
                   <div className="bg-purple-500/20 p-4 rounded-full text-purple-400 group-hover:scale-110 transition-transform shrink-0"><Layers className="w-8 h-8" /></div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-purple-400">{t("all_together_title")}</h3>
-                    <p className="text-slate-400 dark:text-zinc-500 text-sm mt-1">{t("all_together_desc")}</p>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-purple-400">{bookingSettings?.bulkModeTitle || t("all_together_title")}</h3>
+                    <p className="text-slate-400 dark:text-zinc-500 text-sm mt-1">{bookingSettings?.bulkModeDesc || t("all_together_desc")}</p>
                   </div>
                 </button>
 
@@ -1530,8 +1534,8 @@ export default function BookingWidget({
                 >
                   <div className="bg-blue-500/20 p-4 rounded-full text-blue-400 group-hover:scale-110 transition-transform shrink-0"><CalendarRange className="w-8 h-8" /></div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-400">{t("separate_days_title")}</h3>
-                    <p className="text-slate-400 dark:text-zinc-500 text-sm mt-1">{t("separate_days_desc")}</p>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-400">{bookingSettings?.separateModeTitle || t("separate_days_title")}</h3>
+                    <p className="text-slate-400 dark:text-zinc-500 text-sm mt-1">{bookingSettings?.separateModeDesc || t("separate_days_desc")}</p>
                   </div>
                 </button>
 

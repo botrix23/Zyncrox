@@ -69,6 +69,10 @@ export default function AppearanceClient({
   const [step2Title, setStep2Title] = useState(tenant.bookingSettings?.step2Title || "");
   const [step3Title, setStep3Title] = useState(tenant.bookingSettings?.step3Title || "");
   const [step4Title, setStep4Title] = useState(tenant.bookingSettings?.step4Title || "");
+  const [bulkModeTitle, setBulkModeTitle] = useState(tenant.bookingSettings?.bulkModeTitle || "");
+  const [bulkModeDesc, setBulkModeDesc] = useState(tenant.bookingSettings?.bulkModeDesc || "");
+  const [separateModeTitle, setSeparateModeTitle] = useState(tenant.bookingSettings?.separateModeTitle || "");
+  const [separateModeDesc, setSeparateModeDesc] = useState(tenant.bookingSettings?.separateModeDesc || "");
 
   const PRESET_COLORS = [
     { name: tPortal('colors.purple'), value: '#9333ea' },
@@ -114,6 +118,10 @@ export default function AppearanceClient({
         step2Title: step2Title || undefined,
         step3Title: step3Title || undefined,
         step4Title: step4Title || undefined,
+        bulkModeTitle: bulkModeTitle || undefined,
+        bulkModeDesc: bulkModeDesc || undefined,
+        separateModeTitle: separateModeTitle || undefined,
+        separateModeDesc: separateModeDesc || undefined,
       },
     });
 
@@ -493,6 +501,50 @@ export default function AppearanceClient({
                   />
                 </div>
               ))}
+            </div>
+          </PlanGateSection>
+
+          {/* Scheduling mode labels — Professional+ */}
+          <PlanGateSection plan={plan} feature="customSchedulingModeLabels" upgradeMessage="La personalización de los textos de modo de agendamiento está disponible desde el plan Profesional.">
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-1">Textos de modos de agendamiento</label>
+                <p className="text-xs text-slate-400 dark:text-zinc-500">Personaliza los títulos y descripciones que ve el cliente al elegir entre "Todo seguido" y "En días distintos".</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Todo seguido</p>
+                <input
+                  type="text"
+                  value={bulkModeTitle}
+                  onChange={e => setBulkModeTitle(e.target.value)}
+                  placeholder="Todo seguido (Recomendado)"
+                  className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
+                />
+                <input
+                  type="text"
+                  value={bulkModeDesc}
+                  onChange={e => setBulkModeDesc(e.target.value)}
+                  placeholder="Reserva todo en una sola sesión continua, uno tras otro."
+                  className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">En días u horas distintas</p>
+                <input
+                  type="text"
+                  value={separateModeTitle}
+                  onChange={e => setSeparateModeTitle(e.target.value)}
+                  placeholder="En días u horas distintas"
+                  className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
+                />
+                <input
+                  type="text"
+                  value={separateModeDesc}
+                  onChange={e => setSeparateModeDesc(e.target.value)}
+                  placeholder="Elige una fecha y horario diferente para cada reserva por separado."
+                  className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
+                />
+              </div>
             </div>
           </PlanGateSection>
         </div>

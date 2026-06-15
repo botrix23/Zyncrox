@@ -16,6 +16,7 @@ export interface PlanFeatures {
   customTheme: boolean;                // Tema claro / oscuro
   customHero: boolean;                 // Hero personalizable (título y subtítulo)
   customWidgetSteps: boolean;          // Configuración de pasos del widget
+  customSchedulingModeLabels: boolean; // Títulos y descripciones de modos de agendamiento
   customEmailTemplate: boolean;        // Template de email personalizado
 
   // Servicios
@@ -58,6 +59,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     customTheme: false,
     customHero: false,
     customWidgetSteps: false,
+    customSchedulingModeLabels: false,
     customEmailTemplate: false,
 
     simultaneousServices: false,
@@ -90,6 +92,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     customTheme: true,
     customHero: true,
     customWidgetSteps: false, // Solo Business (ENTERPRISE)
+    customSchedulingModeLabels: true,
     customEmailTemplate: true,
 
     simultaneousServices: true,
@@ -122,6 +125,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     customTheme: true,
     customHero: true,
     customWidgetSteps: true,
+    customSchedulingModeLabels: true,
     customEmailTemplate: true,
 
     simultaneousServices: true,
