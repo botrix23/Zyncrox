@@ -505,46 +505,42 @@ export default function AppearanceClient({
           </PlanGateSection>
 
           {/* Scheduling mode labels — Professional+ */}
-          <PlanGateSection plan={plan} feature="customSchedulingModeLabels" upgradeMessage="La personalización de los textos de modo de agendamiento está disponible desde el plan Profesional.">
+          <PlanGateSection plan={plan} feature="customSchedulingModeLabels" upgradeMessage={tPortal('form.schedulingLabelsUpgrade')}>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-1">Textos de modos de agendamiento</label>
-                <p className="text-xs text-slate-400 dark:text-zinc-500">Personaliza los títulos y descripciones que ve el cliente al elegir entre "Todo seguido" y "En días distintos".</p>
+                <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-1">{tPortal('form.schedulingLabelsLabel')}</label>
+                <p className="text-xs text-slate-400 dark:text-zinc-500">{tPortal('form.schedulingLabelsHint')}</p>
               </div>
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Todo seguido</p>
-                <input
-                  type="text"
-                  value={bulkModeTitle}
-                  onChange={e => setBulkModeTitle(e.target.value)}
-                  placeholder="Todo seguido (Recomendado)"
-                  className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
-                />
-                <input
-                  type="text"
-                  value={bulkModeDesc}
-                  onChange={e => setBulkModeDesc(e.target.value)}
-                  placeholder="Reserva todo en una sola sesión continua, uno tras otro."
-                  className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">En días u horas distintas</p>
-                <input
-                  type="text"
-                  value={separateModeTitle}
-                  onChange={e => setSeparateModeTitle(e.target.value)}
-                  placeholder="En días u horas distintas"
-                  className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
-                />
-                <input
-                  type="text"
-                  value={separateModeDesc}
-                  onChange={e => setSeparateModeDesc(e.target.value)}
-                  placeholder="Elige una fecha y horario diferente para cada reserva por separado."
-                  className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
-                />
-              </div>
+              {[
+                {
+                  label: tPortal('form.schedulingLabelsBulk'),
+                  titleVal: bulkModeTitle, setTitle: setBulkModeTitle,
+                  descVal: bulkModeDesc, setDesc: setBulkModeDesc,
+                },
+                {
+                  label: tPortal('form.schedulingLabelsSeparate'),
+                  titleVal: separateModeTitle, setTitle: setSeparateModeTitle,
+                  descVal: separateModeDesc, setDesc: setSeparateModeDesc,
+                },
+              ].map(({ label, titleVal, setTitle, descVal, setDesc }) => (
+                <div key={label} className="space-y-2">
+                  <p className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">{label}</p>
+                  <input
+                    type="text"
+                    value={titleVal}
+                    onChange={e => setTitle(e.target.value)}
+                    placeholder={tPortal('form.schedulingLabelsTitlePlaceholder')}
+                    className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
+                  />
+                  <input
+                    type="text"
+                    value={descVal}
+                    onChange={e => setDesc(e.target.value)}
+                    placeholder={tPortal('form.schedulingLabelsDescPlaceholder')}
+                    className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
+                  />
+                </div>
+              ))}
             </div>
           </PlanGateSection>
         </div>
