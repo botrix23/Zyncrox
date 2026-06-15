@@ -138,13 +138,13 @@ export function SuperAdminLayoutClient({
             <span className="font-bold text-sm">Super Admin</span>
           </div>
           <div className="flex items-center gap-1.5">
+            <ThemeToggle />
+            <LangToggle />
             <NotificationsDropdown
               initialNotifications={initialNotifications}
               initialUnreadCount={initialUnreadCount}
               align="right"
             />
-            <ThemeToggle />
-            <LangToggle />
           </div>
         </div>
 
