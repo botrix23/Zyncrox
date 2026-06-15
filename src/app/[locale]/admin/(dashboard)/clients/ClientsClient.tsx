@@ -1063,9 +1063,10 @@ export default function ClientsClient({
                         const rewards = clientPointsData?.rewards ?? [];
                         const txns = clientPointsData?.transactions ?? [];
                         const activeRewards = rewards.filter(r => r.isActive);
-                        const nextReward = activeRewards.find(r => r.pointsCost > balance)
-                          ?? activeRewards.sort((a, b) => b.pointsCost - a.pointsCost)[0];
+                        const affordableRewards = activeRewards.filter(r => r.pointsCost <= balance);
+                        const nextReward = activeRewards.find(r => r.pointsCost > balance);
                         const progress = nextReward && nextReward.pointsCost > 0 ? Math.min(100, Math.round((balance / nextReward.pointsCost) * 100)) : 0;
+                        const hasRedeemable = affordableRewards.length > 0;
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/5 space-y-2">
                             <div className="flex items-center justify-between gap-2">
@@ -1073,13 +1074,22 @@ export default function ClientsClient({
                                 <p className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500">{locale === 'es' ? 'Puntos' : 'Points'}</p>
                                 <p className="text-lg font-black text-purple-600 dark:text-purple-400 leading-none">{balance.toLocaleString()} <span className="text-xs font-bold text-slate-400">pts</span></p>
                               </div>
-                              {rewards.filter(r => r.isActive).length > 0 && (
+                              {activeRewards.length > 0 && (
                                 <button onClick={() => setShowRedeemModal(true)} className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all">
                                   <Gift className="w-3 h-3" />{locale === 'es' ? 'Canjear' : 'Redeem'}
                                 </button>
                               )}
                             </div>
-                            {nextReward && (
+                            {hasRedeemable ? (
+                              <div className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-500/30">
+                                <Gift className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                                <p className="text-xs font-bold text-purple-600 dark:text-purple-400">
+                                  {locale === 'es'
+                                    ? `${affordableRewards.length === 1 ? '1 recompensa disponible' : `${affordableRewards.length} recompensas disponibles`} para canjear`
+                                    : `${affordableRewards.length === 1 ? '1 reward' : `${affordableRewards.length} rewards`} available to redeem`}
+                                </p>
+                              </div>
+                            ) : nextReward ? (
                               <div>
                                 <div className="flex items-center justify-between text-xs font-bold text-slate-400 mb-0.5">
                                   <span>{nextReward.name}</span><span>{balance} / {nextReward.pointsCost} pts</span>
@@ -1088,7 +1098,7 @@ export default function ClientsClient({
                                   <div className="h-full bg-purple-500 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
                                 </div>
                               </div>
-                            )}
+                            ) : null}
                             {balance === 0 && txns.length === 0 && <p className="text-xs text-slate-400 italic">{locale === 'es' ? 'Sin puntos acumulados todavía.' : 'No points yet.'}</p>}
                           </div>
                         );
