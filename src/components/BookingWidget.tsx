@@ -1118,13 +1118,21 @@ export default function BookingWidget({
                     <div className="space-y-3">
                       {selectedServices.map((s, idx) => {
                         const booking = cartBookings[idx];
+                        // In bulk mode all cartBookings share the same base time;
+                        // calculate the real sequential start for each service.
+                        let displayTime = booking?.time ?? null;
+                        if (schedulingMode === 'bulk' && booking?.time && idx > 0) {
+                          const base = new Date(`${cartBookings[0].date}T${formatTimeToMilitary(cartBookings[0].time!)}`);
+                          const offsetMs = selectedServices.slice(0, idx).reduce((acc, prev) => acc + prev.durationMinutes * 60000, 0);
+                          displayTime = format(new Date(base.getTime() + offsetMs), 'HH:mm:ss');
+                        }
                         return (
                           <div key={`${s.id}-${idx}`} className="flex items-start justify-between group gap-2">
                             <div className="flex items-start gap-3 min-w-0">
                               <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                               <div className="min-w-0">
                                 <span className="text-sm font-bold text-slate-700 dark:text-zinc-300 block truncate">{s.name}</span>
-                                {booking?.date && booking?.time && (
+                                {booking?.date && displayTime && (
                                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                                     <span className="flex items-center gap-1 text-xs font-bold text-purple-500">
                                       <Calendar className="w-3 h-3" />
@@ -1132,7 +1140,7 @@ export default function BookingWidget({
                                     </span>
                                     <span className="flex items-center gap-1 text-xs font-semibold text-slate-400">
                                       <Clock className="w-3 h-3" />
-                                      {formatTo12h(booking.time)}
+                                      {formatTo12h(displayTime)}
                                     </span>
                                   </div>
                                 )}
