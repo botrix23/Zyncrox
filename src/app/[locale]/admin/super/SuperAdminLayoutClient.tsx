@@ -48,7 +48,7 @@ export function SuperAdminLayoutClient({
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
-  const SidebarContent = () => (
+  const SidebarContent = ({ showBell = true }: { showBell?: boolean }) => (
     <>
       <div className="mb-8">
         <div className="flex items-center justify-between mb-1">
@@ -56,11 +56,12 @@ export function SuperAdminLayoutClient({
             <ShieldCheck className="w-6 h-6 text-purple-400 shrink-0" />
             <span className="font-black text-lg tracking-tight truncate">Zyncrox</span>
           </div>
-          {/* Notifications bell only — toggles are in the footer */}
-          <NotificationsDropdown
-            initialNotifications={initialNotifications}
-            initialUnreadCount={initialUnreadCount}
-          />
+          {showBell && (
+            <NotificationsDropdown
+              initialNotifications={initialNotifications}
+              initialUnreadCount={initialUnreadCount}
+            />
+          )}
         </div>
         <p className="text-xs text-zinc-600 dark:text-zinc-500 font-semibold uppercase tracking-widest">{t('superAdmin')}</p>
       </div>
@@ -114,7 +115,7 @@ export function SuperAdminLayoutClient({
       <div className={`fixed top-0 left-0 h-full w-64 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-white/5 flex flex-col p-6 z-40 shadow-2xl transition-transform duration-300 ease-in-out lg:hidden ${
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <SidebarContent />
+        <SidebarContent showBell={false} />
       </div>
 
       {/* Desktop sidebar */}
