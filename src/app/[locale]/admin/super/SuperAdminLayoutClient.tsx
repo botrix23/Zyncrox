@@ -118,7 +118,7 @@ export function SuperAdminLayoutClient({
       </div>
 
       {/* Desktop sidebar */}
-      <aside className="w-64 bg-white dark:bg-black/40 border-r border-zinc-200 dark:border-white/5 hidden lg:flex flex-col p-6 sticky top-0 h-screen">
+      <aside className="w-64 bg-white dark:bg-black/40 border-r border-zinc-200 dark:border-white/5 hidden lg:flex flex-col p-6 sticky top-0 h-screen z-10">
         <SidebarContent />
       </aside>
 
@@ -141,6 +141,7 @@ export function SuperAdminLayoutClient({
             <NotificationsDropdown
               initialNotifications={initialNotifications}
               initialUnreadCount={initialUnreadCount}
+              align="right"
             />
             <ThemeToggle />
             <LangToggle />
