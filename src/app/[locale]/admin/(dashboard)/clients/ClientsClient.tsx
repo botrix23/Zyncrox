@@ -1114,8 +1114,8 @@ export default function ClientsClient({
                                {format(h.startTime, "dd MMM yyyy", { locale: locale === 'es' ? es : enUS })} · {format(h.startTime, "HH:mm")}
                             </p>
                             <div className="flex items-center gap-3 text-xs text-slate-400">
-                               <span className="flex items-center gap-1"><User className="w-2.5 h-2.5" />{h.staff.name}</span>
-                               <span className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" />{h.branch.name}</span>
+                               {h.staff && <span className="flex items-center gap-1"><User className="w-2.5 h-2.5" />{h.staff.name}</span>}
+                               <span className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" />{h.branch?.name ?? '—'}</span>
                             </div>
                          </div>
                       ))}
@@ -1146,11 +1146,11 @@ export default function ClientsClient({
                                   </td>
                                   <td className="p-3">
                                      <div className="flex flex-col">
-                                        <span className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+                                        {h.staff && <span className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1">
                                            <User className="w-2.5 h-2.5 opacity-50" /> {h.staff.name}
-                                        </span>
+                                        </span>}
                                         <span className="text-xs text-slate-400 flex items-center gap-1">
-                                           <MapPin className="w-2.5 h-2.5 opacity-50" /> {h.branch.name}
+                                           <MapPin className="w-2.5 h-2.5 opacity-50" /> {h.branch?.name ?? '—'}
                                         </span>
                                      </div>
                                   </td>
