@@ -1013,7 +1013,7 @@ export default function BookingsClient({
                       value={hasBranchScope ? branchFilter || assignedBranchIds[0] : branchFilter}
                       onChange={e => setBranchFilter(e.target.value)}
                       disabled={hasBranchScope && assignedBranchIds.length === 1}
-                      className="text-xs font-bold text-slate-700 dark:text-zinc-300 bg-transparent outline-none cursor-pointer disabled:opacity-60 max-w-[140px]"
+                      className="text-xs font-bold text-slate-700 dark:text-zinc-300 bg-transparent outline-none cursor-pointer disabled:opacity-60 max-w-[160px] pr-5"
                     >
                       {!hasBranchScope && <option value="">{t('allBranches')}</option>}
                       {(hasBranchScope ? branches.filter((b: any) => assignedBranchIds.includes(b.id)) : branches).map((b: any) => (
