@@ -421,6 +421,8 @@
       },
       "searchPlaceholder": "Search client...",
       "noBookings": "No appointments found.",
+      "allBranches": "All branches",
+      "filterBranch": "Branch",
       "status": {
         "CONFIRMED": "Scheduled",
         "PENDING": "Pending",
@@ -794,7 +796,15 @@
       "whatsappLabel": "WhatsApp number",
       "whatsappHint": "Displayed in confirmation emails so the client can contact you.",
       "savedSuccess": "Changes saved successfully!",
-      "savedError": "Error saving. Please try again."
+      "savedError": "Error saving. Please try again.",
+      "branchAccessTitle": "Branch access",
+      "branchAccessDesc": "Define which branches this admin can view and manage. No restriction = sees all.",
+      "branchAccessAll": "No restriction (sees all)",
+      "branchAccessSave": "Save access",
+      "branchAccessSaved": "Access saved",
+      "branchAccessError": "Error saving access.",
+      "branchAccessNoBranches": "No branches configured.",
+      "branchAccessEdit": "Edit access"
     },
     "portal": {
       "title": "My web portal",

@@ -12,6 +12,7 @@ export type SessionUser = {
   userId?: string;
   staffId?: string | null;
   isOwner?: boolean;
+  assignedBranchIds?: string[];
   mustChangePassword?: boolean;
   impersonatedBy?: string;
   impersonatedTenantId?: string;

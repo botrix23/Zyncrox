@@ -107,6 +107,7 @@ export async function loginAction(formData: FormData, locale: string) {
         tenantId: user.tenantId,
         staffId: user.staffId ?? null,
         isOwner: user.isOwner ?? false,
+        assignedBranchIds: user.assignedBranchIds ?? [],
         mustChangePassword: user.mustChangePassword ?? false,
       }), {
         httpOnly: true,

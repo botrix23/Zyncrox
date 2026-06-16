@@ -25,9 +25,40 @@ export async function getAdminsAction() {
   const { tenantId } = await assertAdmin();
   return db.query.users.findMany({
     where: and(eq(users.tenantId, tenantId), eq(users.role, 'ADMIN')),
-    columns: { id: true, name: true, email: true, isActive: true, isOwner: true, createdAt: true },
+    columns: { id: true, name: true, email: true, isActive: true, isOwner: true, assignedBranchIds: true, createdAt: true },
     orderBy: (u, { asc }) => [asc(u.createdAt)],
   });
+}
+
+/** Actualiza las sucursales asignadas a un admin. Solo el owner puede hacerlo. */
+export async function updateAdminBranchesAction(targetUserId: string, branchIds: string[]) {
+  const { session, tenantId } = await assertAdmin();
+
+  if (!session.isOwner) {
+    return { success: false, error: 'OWNER_ONLY' };
+  }
+
+  const target = await db.query.users.findFirst({
+    where: and(eq(users.id, targetUserId), eq(users.tenantId, tenantId)),
+    columns: { id: true, isOwner: true, name: true },
+  });
+
+  if (!target) return { success: false, error: 'NOT_FOUND' };
+  if (target.isOwner) return { success: false, error: 'CANNOT_RESTRICT_OWNER' };
+
+  await db.update(users)
+    .set({ assignedBranchIds: branchIds })
+    .where(and(eq(users.id, targetUserId), eq(users.tenantId, tenantId)));
+
+  await logAuditEvent({
+    action: 'SETTINGS_UPDATED',
+    userId: session.userId,
+    tenantId,
+    details: { field: 'adminBranchAccess', targetUserId, branchIds },
+  });
+
+  revalidatePath('/[locale]/admin/settings', 'page');
+  return { success: true };
 }
 
 /** Crea un nuevo admin adicional. Solo el owner puede hacerlo. */

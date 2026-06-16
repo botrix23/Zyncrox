@@ -71,6 +71,8 @@ export default function BookingsClient({
   tenantSettings,
   loyaltyMap = {},
   userRole = 'ADMIN',
+  isOwner = true,
+  assignedBranchIds = [],
 }: {
   initialBookings: any[],
   services: any[],
@@ -81,8 +83,11 @@ export default function BookingsClient({
   tenantSettings: any,
   loyaltyMap?: Record<string, string>,
   userRole?: string,
+  isOwner?: boolean,
+  assignedBranchIds?: string[],
 }) {
   const isStaffRole = userRole === 'STAFF';
+  const hasBranchScope = !isOwner && assignedBranchIds.length > 0;
   const t = useTranslations('Dashboard.bookings');
   const localeStr = useLocale();
   const dateLocale = localeStr === 'es' ? es : enUS;
@@ -111,6 +116,7 @@ export default function BookingsClient({
   
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("Todas");
+  const [branchFilter, setBranchFilter] = useState<string>("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<any | null>(null);
@@ -548,13 +554,19 @@ export default function BookingsClient({
 
   const filteredBookings = bookingsList.filter(b => {
     const matchesSearch = b.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTab = activeTab === "Todas" || 
+    const matchesTab = activeTab === "Todas" ||
       (activeTab === "Confirmadas" && b.status === "CONFIRMED") ||
       (activeTab === "Pendientes" && b.status === "PENDING") ||
       (activeTab === "Finalizadas" && b.status === "FINALIZADA") ||
       (activeTab === "Canceladas" && b.status === "CANCELLED");
-    return matchesSearch && matchesTab;
+    const matchesBranch = !branchFilter || b.branchId === branchFilter;
+    return matchesSearch && matchesTab && matchesBranch;
   });
+
+  // Calendar respects branch filter too (no search/tab filters there)
+  const calendarBookings = branchFilter
+    ? bookingsList.filter(b => b.branchId === branchFilter)
+    : bookingsList;
 
   const handleOpenEdit = (booking: any) => {
     setEditingBooking(booking);
@@ -789,6 +801,7 @@ export default function BookingsClient({
 
       {/* Filters & Search - Only in List Mode */}
       {viewMode === 'list' && (
+        <>
         <div className="flex flex-col gap-3 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-center">
           {/* Mobile: dropdown selector */}
           <div className="lg:hidden">
@@ -828,6 +841,25 @@ export default function BookingsClient({
               />
           </div>
         </div>
+
+        {/* Branch filter row - list view */}
+        {branches.length > 1 && (
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+            <select
+              value={hasBranchScope ? branchFilter || assignedBranchIds[0] : branchFilter}
+              onChange={e => setBranchFilter(e.target.value)}
+              disabled={hasBranchScope && assignedBranchIds.length === 1}
+              className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 px-4 text-sm font-semibold text-slate-700 dark:text-zinc-300 outline-none focus:border-purple-500/50 transition-all shadow-sm disabled:opacity-60"
+            >
+              {!hasBranchScope && <option value="">{t('allBranches')}</option>}
+              {(hasBranchScope ? branches.filter(b => assignedBranchIds.includes(b.id)) : branches).map((b: any) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        </>
       )}
 
        {/* Bookings View */}
@@ -963,7 +995,24 @@ export default function BookingsClient({
             </h2>
 
             {/* Controles */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Filtro de sucursal */}
+              {branches.length > 1 && (
+                <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl px-2 py-1">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <select
+                    value={hasBranchScope ? branchFilter || assignedBranchIds[0] : branchFilter}
+                    onChange={e => setBranchFilter(e.target.value)}
+                    disabled={hasBranchScope && assignedBranchIds.length === 1}
+                    className="text-xs font-semibold text-slate-700 dark:text-zinc-300 bg-transparent outline-none cursor-pointer disabled:opacity-60 max-w-[140px]"
+                  >
+                    {!hasBranchScope && <option value="">{t('allBranches')}</option>}
+                    {(hasBranchScope ? branches.filter((b: any) => assignedBranchIds.includes(b.id)) : branches).map((b: any) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {/* Toggle Día / Semana */}
               <div className="flex bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl p-1">
                 <button
@@ -1043,7 +1092,7 @@ export default function BookingsClient({
                   ))}
                   <div className="absolute inset-0 p-4">
                     {(() => {
-                      const dayEvents = bookingsList.filter(b => isSameDay(new Date(b.startTime), calendarDate));
+                      const dayEvents = calendarBookings.filter(b => isSameDay(new Date(b.startTime), calendarDate));
                       const layoutEvents = getEventLayout(dayEvents);
                       
                       return layoutEvents.flatMap((booking: any) => {
@@ -1207,7 +1256,7 @@ export default function BookingsClient({
 
                         {/* Booking blocks */}
                         {weekDays.map((day, di) => {
-                          const dayBookings = bookingsList.filter(b => isSameDay(new Date(b.startTime), day));
+                          const dayBookings = calendarBookings.filter(b => isSameDay(new Date(b.startTime), day));
                           const layoutEvents = getEventLayout(dayBookings);
                           
                           return layoutEvents.flatMap((booking: any) => {

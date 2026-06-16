@@ -6,11 +6,11 @@ import { useTranslations } from 'next-intl';
 import {
   Users, Plus, Trash2, ToggleLeft, ToggleRight, Copy, Check, AlertCircle,
   ShieldCheck, UserCog, LifeBuoy, Save, Crown, X, AlertTriangle, Globe,
-  Mail, MessageSquare, CheckCircle2, Info, Lock,
+  Mail, MessageSquare, CheckCircle2, Info, Lock, MapPin, ChevronDown,
 } from 'lucide-react';
 import {
   getAdminsAction, createAdminAction, toggleAdminAction, deleteAdminAction,
-  updateRecoveryEmailAction, transferOwnershipAction,
+  updateRecoveryEmailAction, transferOwnershipAction, updateAdminBranchesAction,
 } from '@/app/actions/adminUsers';
 import { updateConfiguracionAction } from '@/app/actions/tenant';
 import { canUseFeature } from '@/core/plans';
@@ -158,6 +158,7 @@ export default function SettingsClient({
   initialEmailBodyTemplate,
   initialWhatsappNumber,
   initialWaMessageTemplate,
+  tenantBranches = [],
 }: {
   initialAdmins: Admin[];
   plan: string;
@@ -169,6 +170,7 @@ export default function SettingsClient({
   initialEmailBodyTemplate: string;
   initialWhatsappNumber: string;
   initialWaMessageTemplate: string;
+  tenantBranches?: { id: string; name: string }[];
 }) {
   const t = useTranslations('Dashboard.settings');
   const params = useParams();
@@ -197,6 +199,13 @@ export default function SettingsClient({
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
+  const [expandedBranchAdmin, setExpandedBranchAdmin] = useState<string | null>(null);
+  const [branchSaving, setBranchSaving] = useState<string | null>(null);
+  const [branchMessage, setBranchMessage] = useState<{ adminId: string; type: 'success' | 'error' } | null>(null);
+  // Local copy of assignedBranchIds per admin for immediate UI updates
+  const [adminBranches, setAdminBranches] = useState<Record<string, string[]>>(
+    () => Object.fromEntries(initialAdmins.map(a => [a.id, (a as any).assignedBranchIds ?? []]))
+  );
   const [confirmLoading, setConfirmLoading] = useState(false);
 
   const limit = ADMIN_LIMITS[plan] ?? 1;
@@ -296,6 +305,32 @@ export default function SettingsClient({
       setError(t('errorCreate'));
     }
     setCreating(false);
+  };
+
+  const handleToggleBranch = (adminId: string, branchId: string) => {
+    setAdminBranches(prev => {
+      const current = prev[adminId] ?? [];
+      return {
+        ...prev,
+        [adminId]: current.includes(branchId)
+          ? current.filter(id => id !== branchId)
+          : [...current, branchId],
+      };
+    });
+  };
+
+  const handleSaveBranchAccess = async (adminId: string) => {
+    setBranchSaving(adminId);
+    setBranchMessage(null);
+    const res = await updateAdminBranchesAction(adminId, adminBranches[adminId] ?? []);
+    setBranchSaving(null);
+    if (res.success) {
+      setBranchMessage({ adminId, type: 'success' });
+      setTimeout(() => setBranchMessage(null), 2500);
+      setExpandedBranchAdmin(null);
+    } else {
+      setBranchMessage({ adminId, type: 'error' });
+    }
   };
 
   const handleCopy = () => {
@@ -518,57 +553,138 @@ export default function SettingsClient({
 
             <div className="space-y-2">
               {admins.map(admin => (
-                <div key={admin.id} className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-white/5 rounded-2xl">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black shrink-0 ${admin.isActive ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' : 'bg-zinc-200 dark:bg-white/10 text-zinc-400'}`}>
-                    {admin.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`font-bold text-sm truncate ${admin.isActive ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 line-through'}`}>
-                        {admin.name}
-                      </p>
-                      {admin.id === currentUserId && (
-                        <span className="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold px-1.5 py-0.5 rounded-md shrink-0">{t('you')}</span>
-                      )}
-                      {admin.isOwner && (
-                        <span className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded-md shrink-0 flex items-center gap-1">
-                          <Crown className="w-3 h-3" />{t('owner')}
-                        </span>
-                      )}
+                <div key={admin.id} className="bg-zinc-50 dark:bg-white/5 rounded-2xl overflow-hidden">
+                  {/* Admin row */}
+                  <div className="flex items-center gap-3 p-3">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black shrink-0 ${admin.isActive ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' : 'bg-zinc-200 dark:bg-white/10 text-zinc-400'}`}>
+                      {admin.name.charAt(0).toUpperCase()}
                     </div>
-                    <p className="text-xs text-zinc-500 truncate">{admin.email}</p>
-                  </div>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${admin.isActive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-white/10 text-zinc-400'}`}>
-                    {admin.isActive ? t('active') : t('inactive')}
-                  </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className={`font-bold text-sm truncate ${admin.isActive ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 line-through'}`}>
+                          {admin.name}
+                        </p>
+                        {admin.id === currentUserId && (
+                          <span className="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold px-1.5 py-0.5 rounded-md shrink-0">{t('you')}</span>
+                        )}
+                        {admin.isOwner && (
+                          <span className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded-md shrink-0 flex items-center gap-1">
+                            <Crown className="w-3 h-3" />{t('owner')}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-zinc-500 truncate">{admin.email}</p>
+                    </div>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${admin.isActive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-white/10 text-zinc-400'}`}>
+                      {admin.isActive ? t('active') : t('inactive')}
+                    </span>
 
-                  {!admin.isOwner && currentUserIsOwner && (
-                    <>
-                      <button
-                        onClick={() => setConfirmState({ type: 'transfer', admin })}
-                        disabled={actionId === admin.id}
-                        title={t('transferOwnership')}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all disabled:opacity-40"
-                      >
-                        <Crown className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => setConfirmState({ type: 'toggle', admin, newActive: !admin.isActive })}
-                        disabled={actionId === admin.id}
-                        title={admin.isActive ? t('deactivate') : t('activate')}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all disabled:opacity-40"
-                      >
-                        {admin.isActive ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-                      </button>
-                      <button
-                        onClick={() => setConfirmState({ type: 'delete', admin })}
-                        disabled={actionId === admin.id}
-                        title={t('delete')}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all disabled:opacity-40"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </>
+                    {!admin.isOwner && currentUserIsOwner && (
+                      <>
+                        {tenantBranches.length > 1 && (
+                          <button
+                            onClick={() => setExpandedBranchAdmin(prev => prev === admin.id ? null : admin.id)}
+                            title={t('branchAccessEdit')}
+                            className={`p-1.5 rounded-lg transition-all ${expandedBranchAdmin === admin.id ? 'bg-blue-500/10 text-blue-500' : 'text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10'}`}
+                          >
+                            <MapPin className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setConfirmState({ type: 'transfer', admin })}
+                          disabled={actionId === admin.id}
+                          title={t('transferOwnership')}
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all disabled:opacity-40"
+                        >
+                          <Crown className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => setConfirmState({ type: 'toggle', admin, newActive: !admin.isActive })}
+                          disabled={actionId === admin.id}
+                          title={admin.isActive ? t('deactivate') : t('activate')}
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all disabled:opacity-40"
+                        >
+                          {admin.isActive ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                        </button>
+                        <button
+                          onClick={() => setConfirmState({ type: 'delete', admin })}
+                          disabled={actionId === admin.id}
+                          title={t('delete')}
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all disabled:opacity-40"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Branch access panel — owner only, non-owner admins, multiple branches */}
+                  {!admin.isOwner && currentUserIsOwner && tenantBranches.length > 1 && expandedBranchAdmin === admin.id && (
+                    <div className="border-t border-zinc-200 dark:border-white/10 px-4 py-3 space-y-3">
+                      <div>
+                        <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                          {t('branchAccessTitle')}
+                        </p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('branchAccessDesc')}</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        {/* "All branches" option */}
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={(adminBranches[admin.id] ?? []).length === 0}
+                            onChange={() => setAdminBranches(prev => ({ ...prev, [admin.id]: [] }))}
+                            className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
+                          />
+                          <span className="text-sm text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
+                            {t('branchAccessAll')}
+                          </span>
+                        </label>
+
+                        {/* Individual branches */}
+                        {tenantBranches.map(branch => (
+                          <label key={branch.id} className="flex items-center gap-2.5 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={(adminBranches[admin.id] ?? []).includes(branch.id)}
+                              onChange={() => handleToggleBranch(admin.id, branch.id)}
+                              className="w-4 h-4 rounded accent-purple-600 cursor-pointer"
+                            />
+                            <span className="text-sm text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
+                              {branch.name}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+
+                      {branchMessage?.adminId === admin.id && (
+                        <p className={`text-xs font-bold flex items-center gap-1.5 ${branchMessage.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
+                          {branchMessage.type === 'success' ? <Check className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                          {branchMessage.type === 'success' ? t('branchAccessSaved') : t('branchAccessError')}
+                        </p>
+                      )}
+
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => setExpandedBranchAdmin(null)}
+                          className="flex-1 py-2 text-xs font-semibold border border-zinc-200 dark:border-white/10 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all"
+                        >
+                          {t('cancel')}
+                        </button>
+                        <button
+                          onClick={() => handleSaveBranchAccess(admin.id)}
+                          disabled={branchSaving === admin.id}
+                          className="flex-1 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white rounded-xl transition-all flex items-center justify-center gap-1.5"
+                        >
+                          {branchSaving === admin.id
+                            ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            : <Save className="w-3.5 h-3.5" />}
+                          {t('branchAccessSave')}
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}

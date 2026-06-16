@@ -421,6 +421,8 @@
       },
       "searchPlaceholder": "Buscar cliente...",
       "noBookings": "No se encontraron citas.",
+      "allBranches": "Todas las sucursales",
+      "filterBranch": "Sucursal",
       "status": {
         "CONFIRMED": "Agendada",
         "PENDING": "Pendiente",
@@ -794,7 +796,15 @@
       "whatsappLabel": "Número de WhatsApp",
       "whatsappHint": "Se muestra en los correos de confirmación para que el cliente pueda contactarte.",
       "savedSuccess": "¡Cambios guardados correctamente!",
-      "savedError": "Error al guardar. Intenta de nuevo."
+      "savedError": "Error al guardar. Intenta de nuevo.",
+      "branchAccessTitle": "Acceso a sucursales",
+      "branchAccessDesc": "Define qué sucursales puede ver y gestionar este administrador. Sin restricción = ve todas.",
+      "branchAccessAll": "Sin restricción (ve todas)",
+      "branchAccessSave": "Guardar acceso",
+      "branchAccessSaved": "Acceso guardado",
+      "branchAccessError": "Error al guardar el acceso.",
+      "branchAccessNoBranches": "No hay sucursales configuradas.",
+      "branchAccessEdit": "Editar acceso"
     },
     "portal": {
       "title": "Mi portal web",

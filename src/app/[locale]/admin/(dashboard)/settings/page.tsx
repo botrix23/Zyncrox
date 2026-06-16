@@ -1,8 +1,8 @@
 import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { tenants } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { tenants, branches } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { getAdminsAction } from "@/app/actions/adminUsers";
 import SettingsClient from "./SettingsClient";
 
@@ -17,7 +17,7 @@ export default async function SettingsPage({ params }: { params: { locale: strin
   const tenantId = getEffectiveTenantId(session);
   if (!tenantId) redirect(`/${locale}/admin`);
 
-  const [tenant, admins] = await Promise.all([
+  const [tenant, admins, tenantBranches] = await Promise.all([
     db.query.tenants.findFirst({
       where: eq(tenants.id, tenantId),
       columns: {
@@ -32,6 +32,9 @@ export default async function SettingsPage({ params }: { params: { locale: strin
       },
     }),
     getAdminsAction(),
+    db.select({ id: branches.id, name: branches.name })
+      .from(branches)
+      .where(and(eq(branches.tenantId, tenantId!), eq(branches.isActive, true))),
   ]);
 
   return (
@@ -46,6 +49,7 @@ export default async function SettingsPage({ params }: { params: { locale: strin
       initialEmailBodyTemplate={tenant?.emailBodyTemplate ?? ''}
       initialWhatsappNumber={tenant?.whatsappNumber ?? ''}
       initialWaMessageTemplate={tenant?.waMessageTemplate ?? ''}
+      tenantBranches={tenantBranches}
     />
   );
 }

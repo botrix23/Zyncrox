@@ -253,6 +253,7 @@ export const users = pgTable('users', {
   role: varchar('role', { length: 50 }).notNull().default('ADMIN'), // 'ADMIN' | 'SUPER_ADMIN' | 'STAFF'
   isActive: boolean('is_active').notNull().default(true),
   isOwner: boolean('is_owner').notNull().default(false),
+  assignedBranchIds: uuid('assigned_branch_ids').array().notNull().default([]),
   mustChangePassword: boolean('must_change_password').notNull().default(false),
   tempPasswordExpiresAt: timestamp('temp_password_expires_at', { withTimezone: true, mode: 'date' }),
   resetPasswordToken: text('reset_password_token'),

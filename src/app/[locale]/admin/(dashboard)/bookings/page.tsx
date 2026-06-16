@@ -2,7 +2,7 @@ import React from 'react';
 import { db } from '@/db';
 import { getSession, getEffectiveTenantId } from '@/lib/auth-session';
 import { redirect } from 'next/navigation';
-import { eq, desc, and, lt, not } from 'drizzle-orm';
+import { eq, desc, and, lt, not, inArray } from 'drizzle-orm';
 import { bookings as bookingsTable, branches, coverageZones, tenants, clientLoyalty } from '@/db/schema';
 import BookingsClient from './BookingsClient';
 import { sendPendingSurveyEmailsAction } from '@/app/actions/booking';
@@ -36,11 +36,18 @@ export default async function BookingsPage() {
   // Si el rol es STAFF, filtrar solo sus citas
   const staffId = session?.role === 'STAFF' ? session.staffId : null;
 
+  // Scoping por sucursal para admins no-owner con sucursales asignadas
+  const isOwnerAdmin = session?.isOwner || session?.role === 'SUPER_ADMIN';
+  const assignedBranchIds = session?.assignedBranchIds ?? [];
+  const hasBranchScope = !isOwnerAdmin && assignedBranchIds.length > 0;
+
   const [dbBookings, dbServices, dbStaff, dbBranches, dbZones, tenant, loyaltyRows] = await Promise.all([
     db.query.bookings.findMany({
-      where: staffId
-        ? and(eq(bookingsTable.tenantId, tenantId), eq(bookingsTable.staffId, staffId))
-        : eq(bookingsTable.tenantId, tenantId),
+      where: and(
+        staffId ? eq(bookingsTable.staffId, staffId) : undefined,
+        hasBranchScope ? inArray(bookingsTable.branchId, assignedBranchIds) : undefined,
+        eq(bookingsTable.tenantId, tenantId),
+      ),
       with: {
         service: true,
         staff: true,
@@ -119,6 +126,8 @@ export default async function BookingsPage() {
       tenantSettings={tenant}
       loyaltyMap={loyaltyMap}
       userRole={session?.role ?? 'ADMIN'}
+      isOwner={isOwnerAdmin}
+      assignedBranchIds={assignedBranchIds}
     />
   );
 }
