@@ -18,6 +18,7 @@ import { es } from "date-fns/locale";
 import { getPlanFeatures } from "@/core/plans";
 import { v4 as uuidv4 } from "uuid";
 import { earnPointsForBookingAction } from "@/app/actions/loyalty";
+import { logAuditEvent } from "@/lib/audit";
 
 /**
  * Envía un email con hasta `maxRetries` reintentos con backoff exponencial.
@@ -932,10 +933,13 @@ export async function createBookingSessionAction(data: {
     revalidatePath('/en/admin/bookings');
 
     console.log(`[createBookingSessionAction] SUCCESS tenantId=${data.tenantId} sessionId=${result.session.id} bookingIds=[${result.bookings.map((b: any) => b.id).join(',')}]`);
+    logAuditEvent({ action: 'BOOKING_CREATED', tenantId: data.tenantId, details: { sessionId: result.session.id, count: result.bookings.length, customerEmail: data.customerEmail, customerName: data.customerName } });
     return { success: true, session: result.session, bookings: result.bookings };
   } catch (error) {
+    const msg = error instanceof Error ? error.message : "Failed to create booking session";
     console.error("Error creating booking session:", error);
-    return { success: false, error: error instanceof Error ? error.message : "Failed to create booking session" };
+    logAuditEvent({ action: 'BOOKING_ERROR', tenantId: data.tenantId, details: { op: 'create', customerEmail: data.customerEmail, error: msg, level: 'error' } });
+    return { success: false, error: msg };
   }
 }
 
@@ -1094,9 +1098,12 @@ export async function updateBookingAction(data: {
       }
     }
 
+    logAuditEvent({ action: 'BOOKING_STATUS_CHANGED', tenantId: data.tenantId, details: { bookingId: data.id, status: data.status, prevStatus: existing?.status } });
     return { success: true };
   } catch (error) {
-    console.error("Error updating booking:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error updating booking:", msg);
+    logAuditEvent({ action: 'BOOKING_ERROR', tenantId: data.tenantId, details: { op: 'update', bookingId: data.id, error: msg, level: 'error' } });
     return { success: false, error: "Failed to update booking" };
   }
 }
@@ -1154,9 +1161,12 @@ export async function deleteBookingAction(id: string, tenantId: string) {
       }
     }
 
+    logAuditEvent({ action: 'BOOKING_DELETED', tenantId, details: { bookingId: id, customerEmail: existing?.customerEmail, serviceName: existing?.service?.name } });
     return { success: true };
   } catch (error) {
-    console.error("Error deleting booking:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error deleting booking:", msg);
+    logAuditEvent({ action: 'BOOKING_ERROR', tenantId, details: { op: 'delete', bookingId: id, error: msg, level: 'error' } });
     return { success: false, error: "Failed to delete booking" };
   }
 }

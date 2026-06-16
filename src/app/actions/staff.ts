@@ -6,6 +6,7 @@ import { eq, and, ne, gt, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { checkPlanLimit } from "@/lib/plan-guard";
 import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
+import { logAuditEvent } from "@/lib/audit";
 
 async function assertAdmin() {
   const session = await getSession();
@@ -62,7 +63,7 @@ function parseBranchHoursForInheritance(businessHours: string): { startTime: str
 
 export async function createStaffAction(data: {
   tenantId: string;
-  branchId: string; // Legacy/Primary branch
+  branchId: string;
   name: string;
   email?: string;
   phone?: string;
@@ -81,8 +82,10 @@ export async function createStaffAction(data: {
     isPermanent?: boolean;
   }>;
 }) {
+  let ctx: Awaited<ReturnType<typeof assertAdmin>> | null = null;
   try {
-    const { tenantId } = await assertAdmin();
+    ctx = await assertAdmin();
+    const { tenantId, session } = ctx;
     const limitCheck = await checkPlanLimit(tenantId, "staff");
     if (!limitCheck.allowed) {
       return {
@@ -156,12 +159,16 @@ export async function createStaffAction(data: {
       );
     }
 
+    logAuditEvent({ action: 'STAFF_CREATED', userId: session.userId, tenantId, details: { name: data.name, email: data.email } });
+
     revalidatePath("/[locale]/admin/staff", "page");
     revalidatePath("/[locale]/admin/bookings", "page");
     revalidatePath("/[locale]/[slug]", "page");
     return { success: true, staff: newStaff };
   } catch (error) {
-    console.error("Error creating staff:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error creating staff:", msg);
+    logAuditEvent({ action: 'STAFF_ERROR', userId: ctx?.session.userId ?? null, tenantId: ctx?.tenantId ?? null, details: { op: 'create', name: data.name, error: msg, level: 'error' } });
     return { success: false, error: "Failed to create staff member" };
   }
 }
@@ -188,8 +195,10 @@ export async function updateStaffAction(data: {
     isPermanent?: boolean;
   }>;
 }) {
+  let ctx: Awaited<ReturnType<typeof assertAdmin>> | null = null;
   try {
-    await assertAdmin();
+    ctx = await assertAdmin();
+    const { tenantId, session } = ctx;
     await db.transaction(async (tx) => {
       // 1. Actualizar datos básicos
       await tx.update(staff)
@@ -263,12 +272,16 @@ export async function updateStaffAction(data: {
       }
     }
 
+    logAuditEvent({ action: 'STAFF_UPDATED', userId: session.userId, tenantId, details: { staffId: data.id, name: data.name } });
+
     revalidatePath("/[locale]/admin/staff", "page");
     revalidatePath("/[locale]/admin/bookings", "page");
     revalidatePath("/[locale]/[slug]", "page");
     return { success: true };
   } catch (error) {
-    console.error("Error updating staff:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error updating staff:", msg);
+    logAuditEvent({ action: 'STAFF_ERROR', userId: ctx?.session.userId ?? null, tenantId: ctx?.tenantId ?? null, details: { op: 'update', staffId: data.id, error: msg, level: 'error' } });
     return { success: false, error: "Failed to update staff member" };
   }
 }
@@ -290,8 +303,10 @@ export async function getStaffFutureBookingCount(staffId: string, tenantId: stri
 }
 
 export async function deleteStaffAction(id: string, tenantId: string) {
+  let ctx: Awaited<ReturnType<typeof assertAdmin>> | null = null;
   try {
-    const { tenantId: sessionTenantId } = await assertAdmin();
+    ctx = await assertAdmin();
+    const { tenantId: sessionTenantId, session } = ctx;
     // Reassign future bookings to PENDING_ASSIGNMENT before deleting the staff member
     await db.update(bookings)
       .set({ staffId: null, status: 'PENDING_ASSIGNMENT' })
@@ -303,12 +318,17 @@ export async function deleteStaffAction(id: string, tenantId: string) {
       ));
 
     await db.delete(staff).where(and(eq(staff.id, id), eq(staff.tenantId, tenantId)));
+
+    logAuditEvent({ action: 'STAFF_DELETED', userId: session.userId, tenantId: sessionTenantId, details: { staffId: id } });
+
     revalidatePath("/[locale]/admin/staff", "page");
     revalidatePath("/[locale]/[slug]", "page");
     revalidatePath("/[locale]/admin", "page");
     return { success: true };
   } catch (error) {
-    console.error("Error deleting staff:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error deleting staff:", msg);
+    logAuditEvent({ action: 'STAFF_ERROR', userId: ctx?.session.userId ?? null, tenantId: ctx?.tenantId ?? null, details: { op: 'delete', staffId: id, error: msg, level: 'error' } });
     return { success: false, error: "Failed to delete staff member" };
   }
 }

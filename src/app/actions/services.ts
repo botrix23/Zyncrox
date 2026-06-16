@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { checkPlanLimit } from "@/lib/plan-guard";
 import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
+import { logAuditEvent } from "@/lib/audit";
 
 async function assertAdmin() {
   const session = await getSession();
@@ -32,8 +33,10 @@ export async function createServiceAction(data: {
   branchIds?: string[];
   categoryIds?: string[];
 }) {
+  let ctx: Awaited<ReturnType<typeof assertAdmin>> | null = null;
   try {
-    const { tenantId } = await assertAdmin();
+    ctx = await assertAdmin();
+    const { tenantId, session } = ctx;
     const limitCheck = await checkPlanLimit(tenantId, "services");
     if (!limitCheck.allowed) {
       return {
@@ -64,26 +67,20 @@ export async function createServiceAction(data: {
 
       if (data.branchIds && data.branchIds.length > 0) {
         await tx.insert(serviceBranches).values(
-          data.branchIds.map(branchId => ({
-            tenantId,
-            serviceId: inserted.id,
-            branchId,
-          }))
+          data.branchIds.map(branchId => ({ tenantId, serviceId: inserted.id, branchId }))
         );
       }
 
       if (data.categoryIds && data.categoryIds.length > 0) {
         await tx.insert(serviceToCategories).values(
-          data.categoryIds.map(categoryId => ({
-            tenantId,
-            serviceId: inserted.id,
-            categoryId,
-          }))
+          data.categoryIds.map(categoryId => ({ tenantId, serviceId: inserted.id, categoryId }))
         );
       }
 
       return inserted;
     });
+
+    logAuditEvent({ action: 'SERVICE_CREATED', userId: session.userId, tenantId, details: { name: data.name, price: normalizedPrice, durationMinutes: data.durationMinutes } });
 
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/[slug]", "page");
@@ -91,6 +88,7 @@ export async function createServiceAction(data: {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("Error creating service:", msg);
+    logAuditEvent({ action: 'SERVICE_ERROR', userId: ctx?.session.userId ?? null, tenantId: ctx?.tenantId ?? null, details: { op: 'create', name: data.name, error: msg, level: 'error' } });
     return { success: false, error: msg };
   }
 }
@@ -111,8 +109,10 @@ export async function updateServiceAction(data: {
   branchIds?: string[];
   categoryIds?: string[];
 }) {
+  let ctx: Awaited<ReturnType<typeof assertAdmin>> | null = null;
   try {
-    const { tenantId } = await assertAdmin();
+    ctx = await assertAdmin();
+    const { tenantId, session } = ctx;
     const normalizedPrice = data.price ? data.price.replace(/[$\s]/g, '').replace(',', '.') : data.price;
     await db.transaction(async (tx) => {
       await tx.update(services)
@@ -135,11 +135,7 @@ export async function updateServiceAction(data: {
         await tx.delete(serviceBranches).where(eq(serviceBranches.serviceId, data.id));
         if (data.branchIds.length > 0) {
           await tx.insert(serviceBranches).values(
-            data.branchIds.map(branchId => ({
-              tenantId,
-              serviceId: data.id,
-              branchId,
-            }))
+            data.branchIds.map(branchId => ({ tenantId, serviceId: data.id, branchId }))
           );
         }
       }
@@ -148,35 +144,42 @@ export async function updateServiceAction(data: {
         await tx.delete(serviceToCategories).where(eq(serviceToCategories.serviceId, data.id));
         if (data.categoryIds.length > 0) {
           await tx.insert(serviceToCategories).values(
-            data.categoryIds.map(categoryId => ({
-              tenantId,
-              serviceId: data.id,
-              categoryId,
-            }))
+            data.categoryIds.map(categoryId => ({ tenantId, serviceId: data.id, categoryId }))
           );
         }
       }
     });
 
+    logAuditEvent({ action: 'SERVICE_UPDATED', userId: session.userId, tenantId, details: { serviceId: data.id, name: data.name } });
+
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/[slug]", "page");
     return { success: true };
   } catch (error) {
-    console.error("Error updating service:", error);
-    return { success: false, error: "Failed to update service" };
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error updating service:", msg);
+    logAuditEvent({ action: 'SERVICE_ERROR', userId: ctx?.session.userId ?? null, tenantId: ctx?.tenantId ?? null, details: { op: 'update', serviceId: data.id, name: data.name, error: msg, level: 'error' } });
+    return { success: false, error: msg };
   }
 }
 
 export async function deleteServiceAction(id: string, tenantId: string) {
+  let ctx: Awaited<ReturnType<typeof assertAdmin>> | null = null;
   try {
-    const { tenantId: sessionTenantId } = await assertAdmin();
+    ctx = await assertAdmin();
+    const { tenantId: sessionTenantId, session } = ctx;
     await db.delete(services).where(and(eq(services.id, id), eq(services.tenantId, sessionTenantId)));
+
+    logAuditEvent({ action: 'SERVICE_DELETED', userId: session.userId, tenantId: sessionTenantId, details: { serviceId: id } });
+
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/[slug]", "page");
     return { success: true };
   } catch (error) {
-    console.error("Error deleting service:", error);
-    return { success: false, error: "Failed to delete service" };
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error deleting service:", msg);
+    logAuditEvent({ action: 'SERVICE_ERROR', userId: ctx?.session.userId ?? null, tenantId: ctx?.tenantId ?? null, details: { op: 'delete', serviceId: id, error: msg, level: 'error' } });
+    return { success: false, error: msg };
   }
 }
 
@@ -197,13 +200,11 @@ export async function reorderServicesAction(tenantId: string, orderedIds: string
   }
 }
 
-/**
- * Activar / desactivar un servicio
- * Al reactivar, verifica que no se exceda el límite del plan
- */
 export async function toggleServiceActiveAction(id: string, tenantId: string, currentlyActive: boolean) {
+  let ctx: Awaited<ReturnType<typeof assertAdmin>> | null = null;
   try {
-    const { tenantId: sessionTenantId } = await assertAdmin();
+    ctx = await assertAdmin();
+    const { tenantId: sessionTenantId, session } = ctx;
     if (!currentlyActive) {
       const limitCheck = await checkPlanLimit(sessionTenantId, "services");
       if (!limitCheck.allowed) {
@@ -221,11 +222,15 @@ export async function toggleServiceActiveAction(id: string, tenantId: string, cu
       .set({ isActive: !currentlyActive })
       .where(and(eq(services.id, id), eq(services.tenantId, sessionTenantId)));
 
+    logAuditEvent({ action: 'SERVICE_UPDATED', userId: session.userId, tenantId: sessionTenantId, details: { serviceId: id, isActive: !currentlyActive } });
+
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/[slug]", "page");
     return { success: true };
   } catch (error) {
-    console.error("Error toggling service:", error);
-    return { success: false, error: "Failed to toggle service" };
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error toggling service:", msg);
+    logAuditEvent({ action: 'SERVICE_ERROR', userId: ctx?.session.userId ?? null, tenantId: ctx?.tenantId ?? null, details: { op: 'toggle', serviceId: id, error: msg, level: 'error' } });
+    return { success: false, error: msg };
   }
 }

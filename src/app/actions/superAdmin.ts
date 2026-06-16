@@ -3,7 +3,7 @@
 import crypto from 'crypto';
 import { db } from "@/db";
 import { tenants, users, bookings, auditLogs, staff, platformConfig, surveyQuestions, platformTransactions, impersonationTokens } from "@/db/schema";
-import { eq, desc, asc, count, and, gte, lte, sql, ne, sum, ilike } from "drizzle-orm";
+import { eq, desc, asc, count, and, gte, lte, sql, ne, sum, ilike, inArray } from "drizzle-orm";
 import bcrypt from 'bcryptjs';
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth-session";
@@ -245,7 +245,7 @@ export async function getAuditLogsAction(filters?: {
 }) {
   await assertSuperAdmin();
 
-  const limit = filters?.limit ?? 50;
+  const limit = filters?.limit ?? 300;
 
   const logs = await db.query.auditLogs.findMany({
     orderBy: [desc(auditLogs.createdAt)],
@@ -253,7 +253,29 @@ export async function getAuditLogsAction(filters?: {
     ...(filters?.tenantId ? { where: eq(auditLogs.tenantId, filters.tenantId) } : {}),
   });
 
-  return logs;
+  // Enrich with tenant and user names in bulk
+  const tenantIds = [...new Set(logs.map(l => l.tenantId).filter(Boolean))] as string[];
+  const userIds   = [...new Set(logs.map(l => l.userId).filter(Boolean))]   as string[];
+
+  const [tenantsData, usersData] = await Promise.all([
+    tenantIds.length > 0
+      ? db.select({ id: tenants.id, name: tenants.name, slug: tenants.slug }).from(tenants).where(inArray(tenants.id, tenantIds))
+      : Promise.resolve([]),
+    userIds.length > 0
+      ? db.select({ id: users.id, email: users.email, name: users.name }).from(users).where(inArray(users.id, userIds))
+      : Promise.resolve([]),
+  ]);
+
+  const tenantMap = Object.fromEntries(tenantsData.map(t => [t.id, t]));
+  const userMap   = Object.fromEntries(usersData.map(u => [u.id, u]));
+
+  return logs.map(log => ({
+    ...log,
+    tenantName: log.tenantId ? (tenantMap[log.tenantId]?.name ?? null) : null,
+    tenantSlug: log.tenantId ? (tenantMap[log.tenantId]?.slug ?? null) : null,
+    userEmail:  log.userId   ? (userMap[log.userId]?.email ?? null)    : null,
+    userName:   log.userId   ? (userMap[log.userId]?.name  ?? null)    : null,
+  }));
 }
 
 // ─── Dashboard completo del Super Admin ──────────────────────────────────────
