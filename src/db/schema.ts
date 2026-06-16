@@ -148,6 +148,8 @@ export const bookings = pgTable('bookings', {
   sessionId: uuid('session_id').references(() => bookingSessions.id, { onDelete: 'set null' }),
   surveyEmailSent: boolean('survey_email_sent').notNull().default(false),
   reminderSent: boolean('reminder_sent').notNull().default(false),
+  finalizedBy: uuid('finalized_by').references(() => users.id, { onDelete: 'set null' }),
+  finalizedAt: timestamp('finalized_at', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 

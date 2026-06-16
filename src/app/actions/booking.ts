@@ -961,7 +961,7 @@ export async function updateBookingAction(data: {
 }) {
   try {
     const session = await getSession();
-    if (!session || !['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(session.role)) {
+    if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.role)) {
       return { success: false, error: 'Unauthorized' };
     }
     // 1. Fetch booking before update to detect time changes
@@ -990,6 +990,8 @@ export async function updateBookingAction(data: {
       }
     }
 
+    const isFinalizingNow = data.status === 'FINALIZADA' && existing?.status !== 'FINALIZADA';
+
     await db.update(bookings)
       .set({
         customerName: data.customerName,
@@ -999,6 +1001,7 @@ export async function updateBookingAction(data: {
         endTime: data.endTime,
         status: data.status as any,
         notes: data.notes,
+        ...(isFinalizingNow ? { finalizedBy: session.userId, finalizedAt: new Date() } : {}),
       })
       .where(and(eq(bookings.id, data.id), eq(bookings.tenantId, data.tenantId)));
 
