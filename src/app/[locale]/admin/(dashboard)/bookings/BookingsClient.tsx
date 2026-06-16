@@ -1008,8 +1008,7 @@ export default function BookingsClient({
               {/* Filtro de sucursal */}
               {branches.length > 1 && (
                 <div className="flex items-center bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl p-1">
-                  <div className="flex items-center gap-1.5 px-2 py-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <div className="flex items-center px-3 py-1.5">
                     <select
                       value={hasBranchScope ? branchFilter || assignedBranchIds[0] : branchFilter}
                       onChange={e => setBranchFilter(e.target.value)}
