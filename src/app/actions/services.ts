@@ -45,12 +45,14 @@ export async function createServiceAction(data: {
       };
     }
 
+    const normalizedPrice = data.price.replace(',', '.');
+
     const newService = await db.transaction(async (tx) => {
       const [inserted] = await tx.insert(services).values({
         tenantId,
         name: data.name,
         durationMinutes: data.durationMinutes,
-        price: data.price,
+        price: normalizedPrice,
         description: data.description,
         includes: data.includes || [],
         excludes: data.excludes || [],
@@ -110,12 +112,13 @@ export async function updateServiceAction(data: {
 }) {
   try {
     const { tenantId } = await assertAdmin();
+    const normalizedPrice = data.price ? data.price.replace(',', '.') : data.price;
     await db.transaction(async (tx) => {
       await tx.update(services)
         .set({
           name: data.name,
           durationMinutes: data.durationMinutes,
-          price: data.price,
+          price: normalizedPrice,
           description: data.description,
           includes: data.includes,
           excludes: data.excludes,

@@ -1027,7 +1027,8 @@ export default function ServicesClient({
                       <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.priceLabel')}</label>
                       <input 
                         required
-                        type="text" 
+                        type="text"
+                        inputMode="decimal"
                         value={formData.price}
                         onChange={e => setFormData({...formData, price: e.target.value})}
                         className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium"
