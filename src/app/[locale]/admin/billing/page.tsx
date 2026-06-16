@@ -39,6 +39,7 @@ export default async function BillingPage({ params }: { params: { locale: string
       tenantStatus={tenant?.status ?? 'ACTIVE'}
       locale={locale}
       planPrices={planPrices}
+      isOwner={session?.isOwner ?? session?.role === 'SUPER_ADMIN'}
       subscription={subscription ? {
         id: subscription.id,
         plan: subscription.plan,

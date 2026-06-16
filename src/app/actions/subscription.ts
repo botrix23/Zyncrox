@@ -64,6 +64,7 @@ export async function activateSubscriptionAction(
 ) {
   const session = await getSession()
   if (!session) return { success: false, error: 'Unauthorized' }
+  if (!session.isOwner && session.role !== 'SUPER_ADMIN') return { success: false, error: 'OWNER_ONLY' }
 
   try {
     const [tenant, n1co] = await Promise.all([
@@ -152,6 +153,7 @@ export async function changePlanAction(
 ): Promise<{ success: boolean; error?: string; deferred?: boolean }> {
   const session = await getSession()
   if (!session) return { success: false, error: 'Unauthorized' }
+  if (!session.isOwner && session.role !== 'SUPER_ADMIN') return { success: false, error: 'OWNER_ONLY' }
 
   try {
     const [sub, tenant] = await Promise.all([
@@ -241,6 +243,7 @@ export async function changePlanAction(
 export async function cancelSubscriptionAction(tenantId: string) {
   const session = await getSession()
   if (!session) return { success: false, error: 'Unauthorized' }
+  if (!session.isOwner && session.role !== 'SUPER_ADMIN') return { success: false, error: 'OWNER_ONLY' }
 
   try {
     const sub = await db.query.subscriptions.findFirst({
@@ -276,6 +279,7 @@ export async function cancelSubscriptionAction(tenantId: string) {
 export async function updateCardAction(tenantId: string, cardData: N1coCardData) {
   const session = await getSession()
   if (!session) return { success: false, error: 'Unauthorized' }
+  if (!session.isOwner && session.role !== 'SUPER_ADMIN') return { success: false, error: 'OWNER_ONLY' }
 
   try {
     const [sub, tenant] = await Promise.all([
@@ -346,6 +350,7 @@ export async function reactivateSubscriptionAction(
 ) {
   const session = await getSession()
   if (!session) return { success: false, error: 'Unauthorized' }
+  if (!session.isOwner && session.role !== 'SUPER_ADMIN') return { success: false, error: 'OWNER_ONLY' }
 
   try {
     const [sub, tenant] = await Promise.all([

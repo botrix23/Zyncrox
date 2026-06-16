@@ -1953,6 +1953,7 @@
   },
   "Billing": {
     "title": "Billing",
+    "ownerOnlyNotice": "Only the account owner can modify the plan or payment information.",
     "processing": "Processing...",
     "perMonth": "/mo",
     "card": {

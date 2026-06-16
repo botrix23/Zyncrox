@@ -1953,6 +1953,7 @@
   },
   "Billing": {
     "title": "Facturación",
+    "ownerOnlyNotice": "Solo el dueño de la cuenta puede modificar el plan o la información de pago.",
     "processing": "Procesando...",
     "perMonth": "/mes",
     "card": {

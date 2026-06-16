@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { CreditCard, AlertTriangle, CheckCircle, XCircle, X } from 'lucide-react'
+import { CreditCard, AlertTriangle, CheckCircle, XCircle, X, Lock } from 'lucide-react'
 import { PLAN_FEATURES, PLAN_PRICES, PlanType } from '@/core/plans'
 
 type DynamicPrices = Record<PlanType, number>
@@ -39,6 +39,7 @@ type Props = {
   subscription: SubscriptionData | null
   locale: string
   planPrices?: DynamicPrices
+  isOwner?: boolean
 }
 
 const PLANS: PlanType[] = ['BASIC', 'PROFESSIONAL', 'ENTERPRISE']
@@ -157,7 +158,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   )
 }
 
-export default function BillingClient({ tenantId, plan, tenantStatus, subscription, locale, planPrices: dynamicPrices }: Props) {
+export default function BillingClient({ tenantId, plan, tenantStatus, subscription, locale, planPrices: dynamicPrices, isOwner = true }: Props) {
   // Use dynamic prices from platform_config if provided, fallback to hardcoded
   const prices: DynamicPrices = dynamicPrices ?? PLAN_PRICES
   const t = useTranslations('Billing')
@@ -275,6 +276,11 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
     return (
       <div className="max-w-5xl mx-auto space-y-6">
         <h1 className="text-2xl font-bold">{t('title')}</h1>
+        {!isOwner && (
+          <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl text-amber-700 dark:text-amber-400 text-sm">
+            <Lock className="w-4 h-4 shrink-0" />{t('ownerOnlyNotice')}
+          </div>
+        )}
         <Alerts />
         <div className={`${cardCls} border-red-200 dark:border-red-800`}>
           <div className="flex items-center gap-3 mb-4">
@@ -289,10 +295,12 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">{PLAN_SUBTITLES[p][locale as 'en' | 'es'] ?? PLAN_SUBTITLES[p].en}</p>
                 <div className="text-2xl font-black mb-1">${prices[p]}<span className="text-sm font-normal text-zinc-500">{t('perMonth')}</span></div>
                 <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-3">{PLAN_HIGHLIGHTS[p][locale as 'en' | 'es'] ?? PLAN_HIGHLIGHTS[p].en}</p>
-                <button onClick={() => { setTargetPlan(p); setModal('reactivate') }}
-                  className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">
-                  {t('suspended.reactivateWith', { plan: PLAN_NAMES[p] })}
-                </button>
+                {isOwner && (
+                  <button onClick={() => { setTargetPlan(p); setModal('reactivate') }}
+                    className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">
+                    {t('suspended.reactivateWith', { plan: PLAN_NAMES[p] })}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -311,6 +319,11 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
     return (
       <div className="max-w-5xl mx-auto space-y-6">
         <h1 className="text-2xl font-bold">{t('title')}</h1>
+        {!isOwner && (
+          <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl text-amber-700 dark:text-amber-400 text-sm">
+            <Lock className="w-4 h-4 shrink-0" />{t('ownerOnlyNotice')}
+          </div>
+        )}
         <Alerts />
         <div className={cardCls}>
           <h2 className="text-lg font-bold mb-2">{t('noSub.title')}</h2>
@@ -330,10 +343,12 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                     </li>
                   ))}
                 </ul>
-                <button onClick={() => openPlanModal(p)}
-                  className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">
-                  {t('noSub.activate', { plan: PLAN_NAMES[p] })}
-                </button>
+                {isOwner && (
+                  <button onClick={() => openPlanModal(p)}
+                    className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">
+                    {t('noSub.activate', { plan: PLAN_NAMES[p] })}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -351,6 +366,11 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold">{t('title')}</h1>
+      {!isOwner && (
+        <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl text-amber-700 dark:text-amber-400 text-sm">
+          <Lock className="w-4 h-4 shrink-0" />{t('ownerOnlyNotice')}
+        </div>
+      )}
       <Alerts />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -390,8 +410,8 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
               </div>
             )}
 
-            {/* Cancel button — visible inside the card */}
-            {(isActive || isPastDue) && (
+            {/* Cancel button — visible inside the card, owner only */}
+            {isOwner && (isActive || isPastDue) && (
               <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-white/10">
                 <button
                   onClick={() => setModal('cancel')}
@@ -419,12 +439,12 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                     )}
                   </div>
                 </div>
-                <button onClick={() => setModal('card')} className="text-xs font-semibold text-purple-600 hover:text-purple-700 transition-colors">{t('payment.update')}</button>
+                {isOwner && <button onClick={() => setModal('card')} className="text-xs font-semibold text-purple-600 hover:text-purple-700 transition-colors">{t('payment.update')}</button>}
               </div>
             </div>
           )}
 
-          {isCancelled && (
+          {isCancelled && isOwner && (
             <button onClick={() => { setTargetPlan(currentPlan); setModal('reactivate') }}
               className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">
               {t('reactivateBtn')}
@@ -457,7 +477,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                       </li>
                     ))}
                   </ul>
-                  {!isCurrent && (
+                  {!isCurrent && isOwner && (
                     <button onClick={() => openPlanModal(p)}
                       className={`w-full py-1.5 text-xs font-semibold rounded-xl transition-colors ${isUpgrade ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-zinc-100 dark:bg-white/10 hover:bg-zinc-200 dark:hover:bg-white/20 text-zinc-700 dark:text-zinc-300'}`}>
                       {isUpgrade ? t('changePlan.upgrade', { plan: PLAN_NAMES[p] }) : t('changePlan.downgrade', { plan: PLAN_NAMES[p] })}
