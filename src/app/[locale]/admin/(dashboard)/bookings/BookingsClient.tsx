@@ -998,19 +998,21 @@ export default function BookingsClient({
             <div className="flex flex-wrap items-center gap-2">
               {/* Filtro de sucursal */}
               {branches.length > 1 && (
-                <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl px-2 py-1">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <select
-                    value={hasBranchScope ? branchFilter || assignedBranchIds[0] : branchFilter}
-                    onChange={e => setBranchFilter(e.target.value)}
-                    disabled={hasBranchScope && assignedBranchIds.length === 1}
-                    className="text-xs font-semibold text-slate-700 dark:text-zinc-300 bg-transparent outline-none cursor-pointer disabled:opacity-60 max-w-[140px]"
-                  >
-                    {!hasBranchScope && <option value="">{t('allBranches')}</option>}
-                    {(hasBranchScope ? branches.filter((b: any) => assignedBranchIds.includes(b.id)) : branches).map((b: any) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
+                <div className="flex items-center bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl p-1">
+                  <div className="flex items-center gap-1.5 px-2 py-1">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <select
+                      value={hasBranchScope ? branchFilter || assignedBranchIds[0] : branchFilter}
+                      onChange={e => setBranchFilter(e.target.value)}
+                      disabled={hasBranchScope && assignedBranchIds.length === 1}
+                      className="text-xs font-bold text-slate-700 dark:text-zinc-300 bg-transparent outline-none cursor-pointer disabled:opacity-60 max-w-[140px]"
+                    >
+                      {!hasBranchScope && <option value="">{t('allBranches')}</option>}
+                      {(hasBranchScope ? branches.filter((b: any) => assignedBranchIds.includes(b.id)) : branches).map((b: any) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
               {/* Toggle Día / Semana */}
