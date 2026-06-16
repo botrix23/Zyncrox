@@ -269,6 +269,7 @@ export default function ServicesClient({
   });
 
   const [availabilityType, setAvailabilityType] = useState<"all" | "specific">("all");
+  const [durationStr, setDurationStr] = useState("45");
   const [newInclude, setNewInclude] = useState("");
   const [newExclude, setNewExclude] = useState("");
 
@@ -306,6 +307,7 @@ export default function ServicesClient({
       const serviceBranchIds = (service.branches || []).map((b: any) => b.branchId);
       const serviceCategoryIds = (service.categories || []).map((c: any) => c.categoryId);
 
+      setDurationStr(String(service.durationMinutes));
       setFormData({
         name: service.name,
         durationMinutes: service.durationMinutes,
@@ -321,6 +323,7 @@ export default function ServicesClient({
       setAvailabilityType(serviceBranchIds.length > 0 ? "specific" : "all");
     } else {
       setEditingService(null);
+      setDurationStr("45");
       setFormData({
         name: "",
         durationMinutes: 45,
@@ -1013,12 +1016,14 @@ export default function ServicesClient({
                       <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.durationLabel')}</label>
                       <input
                         required
-                        type="number"
-                        value={formData.durationMinutes}
-                        min={15}
+                        type="text"
+                        inputMode="numeric"
+                        value={durationStr}
                         onChange={e => {
-                          const n = parseInt(e.target.value, 10);
-                          if (!isNaN(n) && n > 0) setFormData({...formData, durationMinutes: n});
+                          const raw = e.target.value.replace(/[^0-9]/g, '');
+                          setDurationStr(raw);
+                          const n = parseInt(raw, 10);
+                          if (!isNaN(n)) setFormData({...formData, durationMinutes: n});
                         }}
                         className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium"
                       />
@@ -1030,7 +1035,10 @@ export default function ServicesClient({
                         type="text"
                         inputMode="decimal"
                         value={formData.price}
-                        onChange={e => setFormData({...formData, price: e.target.value})}
+                        onChange={e => {
+                          const raw = e.target.value.replace(/[^0-9.]/g, '');
+                          setFormData({...formData, price: raw});
+                        }}
                         className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium"
                       />
                     </div>
