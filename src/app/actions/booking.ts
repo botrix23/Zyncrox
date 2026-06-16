@@ -1203,18 +1203,37 @@ export async function getBookingsAction(tenantId: string) {
     if (!session || !['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(session.role)) {
       return [];
     }
-    // 1. Auto-finalizar citas pasadas (Opcional: solo las CONFIRMED/PENDING)
+    // 1. Auto-finalizar citas pasadas
     const now = new Date();
-    await db.update(bookings)
-      .set({ status: 'FINALIZADA' as any })
-      .where(
-        and(
-          eq(bookings.tenantId, tenantId),
-          not(eq(bookings.status, 'CANCELLED')),
-          not(eq(bookings.status, 'FINALIZADA')),
-          lte(bookings.endTime, now)
-        )
-      );
+    const toFinalize = await db.query.bookings.findMany({
+      where: and(
+        eq(bookings.tenantId, tenantId),
+        not(eq(bookings.status, 'CANCELLED')),
+        not(eq(bookings.status, 'FINALIZADA')),
+        lte(bookings.endTime, now)
+      ),
+      columns: { id: true },
+    });
+
+    if (toFinalize.length > 0) {
+      const ids = toFinalize.map(b => b.id);
+      await db.update(bookings)
+        .set({ status: 'FINALIZADA' as any, finalizedAt: now })
+        .where(and(eq(bookings.tenantId, tenantId), inArray(bookings.id, ids)));
+
+      // Fire-and-forget: puntos y auditoría por cada cita auto-finalizada
+      Promise.resolve().then(async () => {
+        for (const b of toFinalize) {
+          earnPointsForBookingAction(b.id).catch(console.error);
+        }
+        logAuditEvent({
+          action: 'BOOKING_STATUS_CHANGED',
+          tenantId,
+          details: { op: 'auto_finalize', count: ids.length, bookingIds: ids, auto: true },
+        });
+        sendPendingSurveyEmailsAction(tenantId).catch(console.error);
+      });
+    }
 
     return await db.query.bookings.findMany({
       where: eq(bookings.tenantId, tenantId),

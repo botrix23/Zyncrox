@@ -15,6 +15,13 @@
       "when": 1775841614255,
       "tag": "0001_steady_pepper_potts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781583861315,
+      "tag": "0002_same_carmella_unuscione",
+      "breakpoints": true
     }
   ]
 }
