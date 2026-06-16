@@ -18,6 +18,9 @@ import {
   ChevronRight,
   X,
   Settings,
+  ExternalLink,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { getPlanDisplayName } from '@/core/plans';
 import Link from 'next/link';
@@ -30,7 +33,7 @@ import { useTranslations } from 'next-intl';
 
 const COLLAPSED_KEY = 'sidebar-collapsed';
 
-export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: SessionUser | null, locale: string, tenantName?: string, tenantPlan?: string | null }) {
+export function AdminSidebar({ user, locale, tenantName, tenantPlan, tenantSlug }: { user: SessionUser | null, locale: string, tenantName?: string, tenantPlan?: string | null, tenantSlug?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations('Dashboard.sidebar');
@@ -38,6 +41,7 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(COLLAPSED_KEY);
@@ -77,6 +81,21 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
 
   const isImpersonating = user?.role === 'SUPER_ADMIN' && !!user?.impersonatedTenantId;
   const isStaff = user?.role === 'STAFF';
+
+  const portalUrl = tenantSlug
+    ? (typeof window !== 'undefined' ? `${window.location.origin}/${tenantSlug}` : `/${tenantSlug}`)
+    : null;
+
+  const handleCopy = () => {
+    if (!portalUrl) return;
+    const fullUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/${tenantSlug}`
+      : `/${tenantSlug}`;
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const allItems = [
     { name: t('dashboard'), icon: LayoutDashboard, href: `/${locale}/admin`, active: pathname === `/${locale}/admin`, staffVisible: false },
@@ -195,6 +214,52 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan }: { user: S
 
       {/* Footer */}
       <div className={`${collapsed && !forMobile ? 'px-2' : 'px-4'} py-3 border-t border-slate-200 dark:border-white/5 space-y-2`}>
+        {/* Portal link row */}
+        {tenantSlug && (
+          collapsed && !forMobile ? (
+            <div className="flex flex-col items-center gap-1">
+              <a
+                href={`/${tenantSlug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Abrir portal"
+                className="w-8 h-8 flex items-center justify-center rounded-xl text-purple-500 hover:bg-purple-500/10 transition-all"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+              <button
+                onClick={handleCopy}
+                title={copied ? 'Copiado' : 'Copiar enlace'}
+                className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-700 dark:hover:text-white transition-all"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl">
+              <span className="flex-1 text-xs text-slate-400 dark:text-zinc-500 truncate min-w-0 font-mono">
+                {typeof window !== 'undefined' ? `${window.location.host}/${tenantSlug}` : `/${tenantSlug}`}
+              </span>
+              <a
+                href={`/${tenantSlug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Abrir portal"
+                className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-purple-500 hover:bg-purple-500/10 transition-all"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              <button
+                onClick={handleCopy}
+                title={copied ? 'Copiado' : 'Copiar enlace'}
+                className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-700 dark:hover:text-white transition-all"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          )
+        )}
+
         {tenantName && (!collapsed || forMobile) && (
           <div className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl">
             <div className="min-w-0">

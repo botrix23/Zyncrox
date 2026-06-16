@@ -37,6 +37,7 @@ export default async function AdminLayout({
 
   // Tenant + subscription data
   let tenantName = "";
+  let tenantSlug = "";
   let tenantPlan: string | null = null;
   let nextBillingDate: Date | null = null;
   let tenantStatus: string = 'ACTIVE';
@@ -68,6 +69,7 @@ export default async function AdminLayout({
         ]);
 
         tenantName = tenant?.name || "";
+        tenantSlug = tenant?.slug ?? "";
         tenantPlan = tenant?.plan ?? null;
         tenantStatus = tenant?.status ?? 'ACTIVE';
         trialEndsAt = tenant?.subscriptionExpiresAt ?? null;
@@ -98,7 +100,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white flex overflow-hidden">
-      <AdminSidebar user={session} locale={locale} tenantName={tenantName} tenantPlan={tenantPlan} />
+      <AdminSidebar user={session} locale={locale} tenantName={tenantName} tenantPlan={tenantPlan} tenantSlug={tenantSlug} />
 
       <main className="flex-1 flex flex-col min-h-screen max-h-screen overflow-hidden">
         {/* Impersonation warning banner — shown when Super Admin is viewing a tenant panel */}
