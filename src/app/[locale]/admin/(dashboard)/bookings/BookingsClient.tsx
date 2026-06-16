@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-const BookingWidget = lazy(() => import('@/components/BookingWidget'));
+import { useState, useEffect, useMemo } from "react";
+const BookingWidget = dynamic(() => import('@/components/BookingWidget'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>,
+});
 import { 
   Calendar,
   Search,
@@ -122,7 +125,8 @@ export default function BookingsClient({
   const [editingBooking, setEditingBooking] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("calendar");
-  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [calendarDate, setCalendarDate] = useState<Date | null>(null);
+  useEffect(() => { setCalendarDate(d => d ?? new Date()); }, []);
   const [calendarView, setCalendarView] = useState<'day' | 'week'>('day');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const router = useRouter();
@@ -980,6 +984,11 @@ export default function BookingsClient({
         </div>
       ) : (
         <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden flex flex-col h-[calc(100vh-260px)] lg:h-[calc(100vh-220px)] shadow-sm animate-in fade-in zoom-in-95 duration-500">
+          {!calendarDate ? (
+            <div className="flex items-center justify-center flex-1">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            </div>
+          ) : <>
           {/* Calendar Header */}
           <div className="px-4 lg:px-6 py-3 lg:py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             {/* Fecha */}
@@ -999,7 +1008,7 @@ export default function BookingsClient({
               {/* Filtro de sucursal */}
               {branches.length > 1 && (
                 <div className="flex items-center bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl p-1">
-                  <div className="flex items-center gap-1.5 px-2 py-1">
+                  <div className="flex items-center gap-1.5 px-2 py-1.5">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <select
                       value={hasBranchScope ? branchFilter || assignedBranchIds[0] : branchFilter}
@@ -1347,6 +1356,7 @@ export default function BookingsClient({
               })()
             )}
           </div>
+          </>}
         </div>
       )}
 
@@ -1362,30 +1372,28 @@ export default function BookingsClient({
               >
                 <X className="w-5 h-5" />
               </button>
-              <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>}>
-                <BookingWidget
-                  isAdmin
-                  onBookingCreated={() => { setIsWidgetModalOpen(false); router.refresh(); }}
-                  branches={branches}
-                  services={services}
-                  staff={staff}
-                  tenantId={tenantId}
-                  tenantName={tenantSettings?.name || ''}
-                  tenantLogo={tenantSettings?.logoUrl || undefined}
-                  whatsappNumber={tenantSettings?.whatsappNumber || ''}
-                  homeServiceTerms={tenantSettings?.homeServiceTerms || ''}
-                  homeServiceTermsEnabled={tenantSettings?.homeServiceTermsEnabled}
-                  branchTerms={tenantSettings?.branchTerms || ''}
-                  branchTermsEnabled={tenantSettings?.branchTermsEnabled}
-                  waMessageTemplate={tenantSettings?.waMessageTemplate}
-                  bookingSettings={tenantSettings?.bookingSettings}
-                  primaryColor={tenantSettings?.primaryColor}
-                  allowsHomeService={tenantSettings?.allowsHomeService}
-                  homeServiceLeadDays={tenantSettings?.homeServiceLeadDays}
-                  coverageZones={coverageZones}
-                  tenantPlan={tenantSettings?.plan}
-                />
-              </Suspense>
+              <BookingWidget
+                isAdmin
+                onBookingCreated={() => { setIsWidgetModalOpen(false); router.refresh(); }}
+                branches={branches}
+                services={services}
+                staff={staff}
+                tenantId={tenantId}
+                tenantName={tenantSettings?.name || ''}
+                tenantLogo={tenantSettings?.logoUrl || undefined}
+                whatsappNumber={tenantSettings?.whatsappNumber || ''}
+                homeServiceTerms={tenantSettings?.homeServiceTerms || ''}
+                homeServiceTermsEnabled={tenantSettings?.homeServiceTermsEnabled}
+                branchTerms={tenantSettings?.branchTerms || ''}
+                branchTermsEnabled={tenantSettings?.branchTermsEnabled}
+                waMessageTemplate={tenantSettings?.waMessageTemplate}
+                bookingSettings={tenantSettings?.bookingSettings}
+                primaryColor={tenantSettings?.primaryColor}
+                allowsHomeService={tenantSettings?.allowsHomeService}
+                homeServiceLeadDays={tenantSettings?.homeServiceLeadDays}
+                coverageZones={coverageZones}
+                tenantPlan={tenantSettings?.plan}
+              />
             </div>
           </div>
         </Portal>
