@@ -380,7 +380,7 @@ export default function ServicesClient({
         message: t('planLimitMsg', { plan: (result as any).plan ?? plan ?? 'BASIC', limit: (result as any).limit ?? limit }),
       });
     } else {
-      alert(t('errorSave'));
+      alert(`${t('errorSave')}: ${(result as any).error ?? 'unknown'}`);
     }
     setIsLoading(false);
   };

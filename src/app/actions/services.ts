@@ -89,8 +89,9 @@ export async function createServiceAction(data: {
     revalidatePath("/[locale]/[slug]", "page");
     return { success: true, service: newService };
   } catch (error) {
-    console.error("Error creating service:", error);
-    return { success: false, error: "Failed to create service" };
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error creating service:", msg);
+    return { success: false, error: msg };
   }
 }
 
