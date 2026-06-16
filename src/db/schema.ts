@@ -46,7 +46,7 @@ export const tenants = pgTable('tenants', {
   heroTitle: text('hero_title'),
   heroSubtitle: text('hero_subtitle'),
   emailBodyTemplate: text('email_body_template'),
-  showStaffSelection: boolean('show_staff_selection').default(true).notNull(),
+  showStaffSelection: boolean('show_staff_selection').default(false).notNull(),
   reviewsEnabled: boolean('reviews_enabled').default(false).notNull(),
   vipThreshold: integer('vip_threshold').notNull().default(5), // legacy — kept for backward compat
   // ── Loyalty / Fidelización ───────────────────────────────────────────────
