@@ -1994,12 +1994,12 @@
       "title": "Change plan",
       "current": "Current plan",
       "upgrade": "Upgrade to {plan}",
-      "downgrade": "Downgrade to {plan}"
+      "downgrade": "Change to {plan}"
     },
     "modal": {
       "cancel": "Cancel",
       "confirm": "Confirm — ${amount}",
-      "confirmDowngrade": "Schedule plan downgrade",
+      "confirmDowngrade": "Schedule plan change",
       "confirmReactivate": "Reactivate — ${amount}",
       "confirmActivate": "Activate — ${amount}",
       "cancelling": "Cancelling...",
@@ -2009,7 +2009,7 @@
         "charge": "You'll be charged <strong>${amount}</strong> today. Your new billing date will be <strong>today</strong>."
       },
       "downgrade": {
-        "title": "Downgrade to {plan}",
+        "title": "Change to {plan}",
         "willLose": "What you'll lose",
         "basicWarning": "Downgrading to Basic applies limits on branches, services, and staff. The oldest records in each category will be kept; the rest will be automatically deactivated.",
         "limitWarning": "Downgrading will apply the new limits on branches, services, and staff. The oldest records in each category will be kept; the rest will be automatically deactivated.",
@@ -2035,11 +2035,15 @@
         "charge": "You'll be charged <strong>${amount}</strong> today. Your new billing date will be <strong>today</strong>."
       }
     },
+    "redirect": {
+      "notice": "You'll be securely redirected to N1CO's payment processor to complete your subscription. Your payment information never touches our servers.",
+      "cta": "Continue to checkout"
+    },
     "success": {
       "activated": "Subscription activated successfully",
       "reactivated": "Account reactivated successfully",
       "planUpgraded": "Upgraded to {plan}. Your new billing cycle starts today.",
-      "planDowngradeScheduled": "Downgrade scheduled: you'll move to {plan} on {date}.",
+      "planDowngradeScheduled": "Change scheduled: you'll move to {plan} on {date}.",
       "cancelled": "Subscription cancelled",
       "cardUpdated": "Card updated successfully"
     },

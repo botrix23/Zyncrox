@@ -6,6 +6,14 @@
  *
  * Header: x-n1co-secret  (compared against N1CO_WEBHOOK_SECRET env var)
  *
+ * Tenant lookup strategy (redirect/hosted-checkout model):
+ *   SubscriptionConfirmation:
+ *     1. Try matching by n1coSubscriptionId (recurring payments already stored it)
+ *     2. Fall back to matching by subscriber email + PENDING_PAYMENT status
+ *        (first-time subscription — tenant initiated the redirect and we pre-filled email)
+ *   All other events:
+ *     Match by n1coSubscriptionId (stored during SubscriptionConfirmation)
+ *
  * Supported event types:
  *   SubscriptionConfirmation  — subscription was created/activated
  *   SubscriptionPayment       — recurring payment succeeded
@@ -16,8 +24,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { subscriptions, tenants } from '@/db/schema'
-import { eq } from 'drizzle-orm'
-import { validateWebhookSecret, N1coWebhookPayload } from '@/lib/n1co'
+import { and, eq, ilike } from 'drizzle-orm'
+import { validateWebhookSecret, extractWebhookEmail, N1coWebhookPayload } from '@/lib/n1co'
 import { getPlanPrice } from '@/core/plans'
 import { createNotification } from '@/lib/notifications'
 
@@ -53,19 +61,48 @@ export async function POST(req: NextRequest) {
   console.log(`[N1CO Webhook] ${type} — subscriptionId: ${subscriptionId}`)
 
   try {
-    const sub = await db.query.subscriptions.findFirst({
+    // Primary lookup: find subscription row by N1CO subscription ID
+    let sub = await db.query.subscriptions.findFirst({
       where: eq(subscriptions.n1coSubscriptionId, subscriptionId),
     })
 
+    const now = new Date()
+
+    // --------------------------------------------------------------------------
+    // SubscriptionConfirmation: if no row matched by subscriptionId,
+    // this is likely a brand-new subscriber — try email-based matching
+    // --------------------------------------------------------------------------
+    if (type === 'SubscriptionConfirmation' && !sub) {
+      const email = extractWebhookEmail(event)
+      if (email) {
+        // Find tenant by contact email (case-insensitive)
+        const matchedTenant = await db.query.tenants.findFirst({
+          where: ilike(tenants.contactEmail, email),
+        })
+        if (matchedTenant) {
+          sub = await db.query.subscriptions.findFirst({
+            where: and(
+              eq(subscriptions.tenantId, matchedTenant.id),
+              eq(subscriptions.status, 'PENDING_PAYMENT'),
+            ),
+          })
+          if (sub) {
+            console.log(`[N1CO Webhook] SubscriptionConfirmation — matched tenant ${matchedTenant.id} by email: ${email}`)
+          }
+        }
+      }
+      if (!sub) {
+        console.warn(`[N1CO Webhook] SubscriptionConfirmation — no match for subscriptionId: ${subscriptionId} or email`)
+        return NextResponse.json({ received: true })
+      }
+    }
+
     if (!sub) {
       console.warn(`[N1CO Webhook] No local subscription found for n1coSubscriptionId: ${subscriptionId}`)
-      // Still return 200 to prevent N1CO retries for unknown subscriptions
       return NextResponse.json({ received: true })
     }
 
-    const now = new Date()
-
-    // Fetch tenant name for notification messages
+    // Fetch tenant for notification messages
     const tenant = await db.query.tenants.findFirst({
       where: eq(tenants.id, sub.tenantId),
       columns: { id: true, name: true },
@@ -74,10 +111,15 @@ export async function POST(req: NextRequest) {
 
     switch (type) {
       case 'SubscriptionConfirmation': {
-        // Subscription activated — ensure DB reflects ACTIVE state
+        // Determine plan: use pendingPlan if upgrading, otherwise current plan
+        const activePlan = sub.pendingPlan ?? sub.plan
+
         await db.update(subscriptions)
           .set({
+            plan:               activePlan,
+            n1coSubscriptionId: subscriptionId,   // store for all future webhook matching
             status:             'ACTIVE',
+            pendingPlan:        null,
             cancelledAt:        null,
             gracePeriodEndsAt:  null,
             currentPeriodStart: now,
@@ -87,15 +129,14 @@ export async function POST(req: NextRequest) {
           .where(eq(subscriptions.id, sub.id))
 
         await db.update(tenants)
-          .set({ status: 'ACTIVE', updatedAt: now })
+          .set({ plan: activePlan, status: 'ACTIVE', updatedAt: now })
           .where(eq(tenants.id, sub.tenantId))
 
-        console.log(`[N1CO Webhook] SubscriptionConfirmation — tenant ${sub.tenantId} activated`)
+        console.log(`[N1CO Webhook] SubscriptionConfirmation — tenant ${sub.tenantId} activated, plan: ${activePlan}`)
         break
       }
 
       case 'SubscriptionPayment': {
-        // Recurring payment succeeded — extend period
         const amount = event.amount ?? getPlanPrice(sub.plan)
 
         await db.update(subscriptions)
@@ -150,13 +191,8 @@ export async function POST(req: NextRequest) {
       }
 
       case 'SubscriptionCancelled': {
-        // N1CO cancelled (could be by us or by N1CO side)
         await db.update(subscriptions)
-          .set({
-            status:     'CANCELLED',
-            cancelledAt: now,
-            updatedAt:  now,
-          })
+          .set({ status: 'CANCELLED', cancelledAt: now, updatedAt: now })
           .where(eq(subscriptions.id, sub.id))
 
         console.log(`[N1CO Webhook] SubscriptionCancelled — tenant ${sub.tenantId}`)
@@ -168,7 +204,6 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error('[N1CO Webhook] DB error:', err)
-    // Return 500 so N1CO retries (except unknown subscriptions handled above)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 

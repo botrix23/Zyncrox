@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
-import { CreditCard, AlertTriangle, CheckCircle, XCircle, X, Lock } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { AlertTriangle, CheckCircle, ExternalLink, XCircle, X, Lock, ShieldCheck } from 'lucide-react'
 import { PLAN_FEATURES, PLAN_PRICES, PlanType } from '@/core/plans'
 
 type DynamicPrices = Record<PlanType, number>
@@ -10,9 +10,7 @@ import {
   cancelSubscriptionAction,
   changePlanAction,
   reactivateSubscriptionAction,
-  updateCardAction,
 } from '@/app/actions/subscription'
-import { N1coCardData } from '@/lib/n1co'
 import { useTranslations } from 'next-intl'
 
 type SubscriptionData = {
@@ -83,62 +81,44 @@ function featureValue(plan: PlanType, key: keyof typeof PLAN_FEATURES.BASIC): st
   return String(val)
 }
 
-function CardForm({
-  onSubmit, loading, submitLabel,
-}: {
-  onSubmit: (data: N1coCardData) => void
+/**
+ * Shown in activation/upgrade/reactivation modals instead of a card form.
+ * Informs the user they'll be redirected to N1CO's secure checkout.
+ */
+function RedirectNotice({ planName, amount, onConfirm, onCancel, loading }: {
+  planName: string
+  amount: number
+  onConfirm: () => void
+  onCancel: () => void
   loading: boolean
-  submitLabel: string
 }) {
   const t = useTranslations('Billing')
-  const [number, setNumber] = useState('')
-  const [holderName, setHolderName] = useState('')
-  const [expMonth, setExpMonth] = useState('')
-  const [expYear, setExpYear] = useState('')
-  const [cvv, setCvv] = useState('')
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit({ number, holderName, expMonth, expYear, cvv })
-  }
-
-  const inputCls =
-    'w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500'
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div>
-        <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">{t('card.number')}</label>
-        <input className={inputCls} placeholder="4242 4242 4242 4242" value={number}
-          onChange={e => setNumber(e.target.value)} maxLength={19} required />
+    <div className="space-y-4">
+      <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+        <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+        <p className="text-sm text-blue-700 dark:text-blue-300">
+          {t('redirect.notice')}
+        </p>
       </div>
-      <div>
-        <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">{t('card.holder')}</label>
-        <input className={inputCls} placeholder="Juan García" value={holderName}
-          onChange={e => setHolderName(e.target.value)} required />
+      <div className="flex justify-between items-center p-3 bg-zinc-50 dark:bg-white/5 rounded-xl">
+        <span className="text-sm text-zinc-600 dark:text-zinc-400">{planName}</span>
+        <span className="text-sm font-bold">${amount}/mes</span>
       </div>
-      <div className="flex gap-3">
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">{t('card.expiry')}</label>
-          <input className={inputCls} placeholder="12/27"
-            value={`${expMonth}${expMonth.length === 2 ? '/' : ''}${expYear}`}
-            onChange={e => {
-              const raw = e.target.value.replace(/\D/g, '')
-              setExpMonth(raw.slice(0, 2))
-              setExpYear(raw.slice(2, 4))
-            }} maxLength={5} required />
-        </div>
-        <div className="w-24">
-          <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">{t('card.cvv')}</label>
-          <input className={inputCls} placeholder="123" value={cvv}
-            onChange={e => setCvv(e.target.value.replace(/\D/g, ''))} maxLength={4} required />
-        </div>
+      <div className="flex gap-3 pt-1">
+        <button onClick={onCancel}
+          className="flex-1 py-2.5 text-sm font-semibold rounded-xl border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors">
+          {t('modal.cancel')}
+        </button>
+        <button onClick={onConfirm} disabled={loading}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
+          {loading
+            ? <span>{t('processing')}</span>
+            : <><ExternalLink className="w-4 h-4" />{t('redirect.cta')}</>
+          }
+        </button>
       </div>
-      <button type="submit" disabled={loading}
-        className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
-        {loading ? <span>...</span> : submitLabel}
-      </button>
-    </form>
+    </div>
   )
 }
 
@@ -159,14 +139,23 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 }
 
 export default function BillingClient({ tenantId, plan, tenantStatus, subscription, locale, planPrices: dynamicPrices, isOwner = true }: Props) {
-  // Use dynamic prices from platform_config if provided, fallback to hardcoded
   const prices: DynamicPrices = dynamicPrices ?? PLAN_PRICES
   const t = useTranslations('Billing')
-  const [modal, setModal] = useState<'upgrade' | 'downgrade' | 'cancel' | 'card' | 'activate' | 'reactivate' | null>(null)
+  const [modal, setModal] = useState<'upgrade' | 'downgrade' | 'cancel' | 'activate' | 'reactivate' | null>(null)
   const [targetPlan, setTargetPlan] = useState<PlanType>('PROFESSIONAL')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (modal) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [modal])
 
   const currentPlan = (plan || 'BASIC') as PlanType
   const isSuspended = tenantStatus === 'SUSPENDED'
@@ -188,20 +177,27 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
     else setModal('downgrade')
   }
 
-  const handleActivate = async (cardData: N1coCardData) => {
+  // All activation / upgrade / reactivation flows redirect to N1CO checkout
+  const handleActivate = async () => {
     setLoading(true)
-    const res = await activateSubscriptionAction(tenantId, targetPlan, cardData)
+    const res = await activateSubscriptionAction(tenantId, targetPlan)
     setLoading(false)
-    if (res.success) { setModal(null); showSuccess(t('success.activated')) }
-    else showError(res.error ?? t('error.activate'))
+    if (res.success && res.redirectUrl) {
+      window.location.href = res.redirectUrl
+    } else {
+      showError(res.error ?? t('error.activate'))
+    }
   }
 
-  const handleReactivate = async (cardData?: N1coCardData) => {
+  const handleReactivate = async () => {
     setLoading(true)
-    const res = await reactivateSubscriptionAction(tenantId, targetPlan, cardData)
+    const res = await reactivateSubscriptionAction(tenantId, targetPlan)
     setLoading(false)
-    if (res.success) { setModal(null); showSuccess(t('success.reactivated')) }
-    else showError(res.error ?? t('error.reactivate'))
+    if (res.success && res.redirectUrl) {
+      window.location.href = res.redirectUrl
+    } else {
+      showError(res.error ?? t('error.reactivate'))
+    }
   }
 
   const handleChangePlan = async () => {
@@ -209,10 +205,14 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
     const res = await changePlanAction(tenantId, targetPlan)
     setLoading(false)
     if (res.success) {
-      setModal(null)
       if (res.deferred) {
+        setModal(null)
         showSuccess(t('success.planDowngradeScheduled', { plan: PLAN_NAMES[targetPlan], date: formatDate(subscription?.currentPeriodEnd ?? null, locale) }))
+      } else if (res.redirectUrl) {
+        // Upgrade → redirect to new plan checkout
+        window.location.href = res.redirectUrl
       } else {
+        setModal(null)
         showSuccess(t('success.planUpgraded', { plan: PLAN_NAMES[targetPlan] }))
       }
     } else {
@@ -226,14 +226,6 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
     setLoading(false)
     if (res.success) { setModal(null); showSuccess(t('success.cancelled')) }
     else showError(res.error ?? t('error.cancel'))
-  }
-
-  const handleUpdateCard = async (cardData: N1coCardData) => {
-    setLoading(true)
-    const res = await updateCardAction(tenantId, cardData)
-    setLoading(false)
-    if (res.success) { setModal(null); showSuccess(t('success.cardUpdated')) }
-    else showError(res.error ?? t('error.updateCard'))
   }
 
   const currentFeatures = PLAN_FEATURES[currentPlan]
@@ -307,8 +299,13 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
         </div>
         {modal === 'reactivate' && (
           <Modal title={t('modal.reactivate.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">{t.rich('modal.reactivate.charge', { amount: PLAN_PRICES[targetPlan], strong: richStrong })}</p>
-            <CardForm onSubmit={data => handleReactivate(data)} loading={loading} submitLabel={t('modal.confirmReactivate', { amount: PLAN_PRICES[targetPlan] })} />
+            <RedirectNotice
+              planName={PLAN_NAMES[targetPlan]}
+              amount={prices[targetPlan]}
+              onConfirm={handleReactivate}
+              onCancel={() => setModal(null)}
+              loading={loading}
+            />
           </Modal>
         )}
       </div>
@@ -355,8 +352,13 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
         </div>
         {modal === 'activate' && (
           <Modal title={t('modal.activate.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">{t.rich('modal.activate.charge', { amount: PLAN_PRICES[targetPlan], strong: richStrong })}</p>
-            <CardForm onSubmit={handleActivate} loading={loading} submitLabel={t('modal.confirmActivate', { amount: PLAN_PRICES[targetPlan] })} />
+            <RedirectNotice
+              planName={PLAN_NAMES[targetPlan]}
+              amount={prices[targetPlan]}
+              onConfirm={handleActivate}
+              onCancel={() => setModal(null)}
+              loading={loading}
+            />
           </Modal>
         )}
       </div>
@@ -410,7 +412,6 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
               </div>
             )}
 
-            {/* Cancel button — visible inside the card, owner only */}
             {isOwner && (isActive || isPastDue) && (
               <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-white/10">
                 <button
@@ -423,26 +424,6 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
               </div>
             )}
           </div>
-
-          {(isActive || isPastDue) && subscription?.cardLast4 && (
-            <div className={cardCls}>
-              <h2 className="text-base font-bold mb-4">{t('payment.title')}</h2>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-8 bg-zinc-100 dark:bg-white/10 rounded-lg flex items-center justify-center">
-                    <CreditCard className="w-5 h-5 text-zinc-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{subscription.cardBrand ?? t('payment.card')} •••• {subscription.cardLast4}</p>
-                    {subscription.cardExpMonth && subscription.cardExpYear && (
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">{t('payment.expires', { month: subscription.cardExpMonth, year: subscription.cardExpYear })}</p>
-                    )}
-                  </div>
-                </div>
-                {isOwner && <button onClick={() => setModal('card')} className="text-xs font-semibold text-purple-600 hover:text-purple-700 transition-colors">{t('payment.update')}</button>}
-              </div>
-            </div>
-          )}
 
           {isCancelled && isOwner && (
             <button onClick={() => { setTargetPlan(currentPlan); setModal('reactivate') }}
@@ -508,12 +489,14 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
               </ul>
             </div>
           )}
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-5 py-3 border-t border-zinc-100 dark:border-white/10">{t.rich('modal.upgrade.charge', { amount: PLAN_PRICES[targetPlan], strong: richStrong })}</p>
-          <div className="flex gap-3">
-            <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm font-semibold rounded-xl border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors">{t('modal.cancel')}</button>
-            <button onClick={handleChangePlan} disabled={loading} className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
-              {loading ? t('processing') : t('modal.confirm', { amount: PLAN_PRICES[targetPlan] })}
-            </button>
+          <div className="border-t border-zinc-100 dark:border-white/10 pt-4">
+            <RedirectNotice
+              planName={PLAN_NAMES[targetPlan]}
+              amount={prices[targetPlan]}
+              onConfirm={handleChangePlan}
+              onCancel={() => setModal(null)}
+              loading={loading}
+            />
           </div>
         </Modal>
       )}
@@ -569,38 +552,27 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
         </Modal>
       )}
 
-      {modal === 'card' && (
-        <Modal title={t('modal.updateCard.title')} onClose={() => setModal(null)}>
-          <CardForm onSubmit={handleUpdateCard} loading={loading} submitLabel={t('modal.updateCard.save')} />
-        </Modal>
-      )}
-
       {modal === 'activate' && (
         <Modal title={t('modal.activate.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4" dangerouslySetInnerHTML={{ __html: t('modal.activate.charge', { amount: PLAN_PRICES[targetPlan] }) }} />
-          <CardForm onSubmit={handleActivate} loading={loading} submitLabel={t('modal.confirmActivate', { amount: PLAN_PRICES[targetPlan] })} />
+          <RedirectNotice
+            planName={PLAN_NAMES[targetPlan]}
+            amount={prices[targetPlan]}
+            onConfirm={handleActivate}
+            onCancel={() => setModal(null)}
+            loading={loading}
+          />
         </Modal>
       )}
 
       {modal === 'reactivate' && (
         <Modal title={t('modal.reactivate.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">{t.rich('modal.reactivate.charge', { amount: PLAN_PRICES[targetPlan], strong: richStrong })}</p>
-          {subscription?.cardLast4 ? (
-            <>
-              <div className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-white/5 rounded-xl mb-4">
-                <CreditCard className="w-4 h-4 text-zinc-500" />
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">{subscription.cardBrand ?? t('payment.card')} •••• {subscription.cardLast4}</span>
-              </div>
-              <div className="flex gap-3">
-                <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm font-semibold rounded-xl border border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors">{t('modal.cancel')}</button>
-                <button onClick={() => handleReactivate()} disabled={loading} className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
-                  {loading ? t('processing') : t('modal.confirmReactivate', { amount: PLAN_PRICES[targetPlan] })}
-                </button>
-              </div>
-            </>
-          ) : (
-            <CardForm onSubmit={data => handleReactivate(data)} loading={loading} submitLabel={t('modal.confirmReactivate', { amount: PLAN_PRICES[targetPlan] })} />
-          )}
+          <RedirectNotice
+            planName={PLAN_NAMES[targetPlan]}
+            amount={prices[targetPlan]}
+            onConfirm={handleReactivate}
+            onCancel={() => setModal(null)}
+            loading={loading}
+          />
         </Modal>
       )}
     </div>

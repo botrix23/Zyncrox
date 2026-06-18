@@ -1980,7 +1980,7 @@
       "nextInvoice": "Próxima factura: <strong>${amount}</strong> el <strong>{date}</strong>",
       "accessUntil": "Acceso hasta: <strong>{date}</strong>. Después tu cuenta quedará suspendida.",
       "paymentFailed": "Tu pago falló. Tienes hasta el <strong>{date}</strong> para actualizar tu tarjeta antes de que tu cuenta sea suspendida.",
-      "pendingDowngrade": "Bajada de plan programada: cambiarás a <strong>{plan}</strong> el <strong>{date}</strong>. Hasta entonces seguirás con tu plan actual."
+      "pendingDowngrade": "Cambio de plan programado: cambiarás a <strong>{plan}</strong> el <strong>{date}</strong>. Hasta entonces seguirás con tu plan actual."
     },
     "payment": {
       "title": "Método de pago",
@@ -1994,12 +1994,12 @@
       "title": "Cambiar plan",
       "current": "Plan actual",
       "upgrade": "Subir a {plan}",
-      "downgrade": "Bajar a {plan}"
+      "downgrade": "Cambiar a {plan}"
     },
     "modal": {
       "cancel": "Cancelar",
       "confirm": "Confirmar — ${amount}",
-      "confirmDowngrade": "Programar bajada de plan",
+      "confirmDowngrade": "Programar cambio de plan",
       "confirmReactivate": "Reactivar — ${amount}",
       "confirmActivate": "Activar — ${amount}",
       "cancelling": "Cancelando...",
@@ -2009,7 +2009,7 @@
         "charge": "Se te cobrará <strong>${amount}</strong> hoy. Tu nueva fecha de facturación será <strong>hoy</strong>."
       },
       "downgrade": {
-        "title": "Bajar a {plan}",
+        "title": "Cambiar a {plan}",
         "willLose": "Lo que perderás",
         "basicWarning": "Al bajar al plan Basic se aplicarán los límites de sucursales, servicios y staff. Se conservarán los registros más antiguos de cada categoría; el resto quedará desactivado automáticamente.",
         "limitWarning": "Al bajar de plan se aplicarán los nuevos límites de sucursales, servicios y staff. Se conservarán los registros más antiguos de cada categoría; el resto quedará desactivado automáticamente.",
@@ -2035,11 +2035,15 @@
         "charge": "Se te cobrará <strong>${amount}</strong> hoy. Tu nueva fecha de facturación será <strong>hoy</strong>."
       }
     },
+    "redirect": {
+      "notice": "Serás redirigido de forma segura al procesador de pagos de N1CO para completar tu suscripción. Tu información bancaria nunca toca nuestros servidores.",
+      "cta": "Continuar al checkout"
+    },
     "success": {
       "activated": "Suscripción activada correctamente",
       "reactivated": "Cuenta reactivada correctamente",
       "planUpgraded": "Subiste al plan {plan}. Tu nuevo ciclo comienza hoy.",
-      "planDowngradeScheduled": "Bajada programada: pasarás al plan {plan} el {date}.",
+      "planDowngradeScheduled": "Cambio programado: pasarás al plan {plan} el {date}.",
       "cancelled": "Suscripción cancelada",
       "cardUpdated": "Tarjeta actualizada correctamente"
     },

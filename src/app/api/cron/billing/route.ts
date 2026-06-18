@@ -1,21 +1,23 @@
 /**
  * Billing Cron — runs daily via Vercel Cron or external scheduler.
  *
- * NOTE: With N1CO subscriptions, recurring charges are handled entirely
+ * NOTE: With N1CO subscription links, recurring charges are handled entirely
  * by N1CO and reported back via webhooks (/api/webhooks/n1co).
  * This cron enforces local state transitions:
  *   1. PAST_DUE (grace expired)      → suspend tenant
  *   2. CANCELLED (period ended)      → suspend tenant
- *   3. pendingPlan (period ended)    → apply scheduled downgrade
+ *   3. pendingPlan (period ended)    → apply scheduled downgrade (DB only)
+ *
+ * Downgrades do NOT create new N1CO subscriptions — the customer was already
+ * on a lower plan link and N1CO manages the recurring charge independently.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { subscriptions, tenants, platformConfig } from '@/db/schema'
+import { subscriptions, tenants } from '@/db/schema'
 import { and, eq, isNotNull, lte, ne } from 'drizzle-orm'
-import { cancelN1coSubscription, createN1coSubscription } from '@/lib/n1co'
 import { enforceDowngradeLimits } from '@/lib/billing'
-import { getPlanPrice, parsePlanIds, PlanType } from '@/core/plans'
+import { getPlanPrice } from '@/core/plans'
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date)
@@ -28,10 +30,6 @@ export async function GET(req: NextRequest) {
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-
-  // Fetch N1co plan config from DB
-  const cfg = await db.select().from(platformConfig).limit(1).then(r => r[0] ?? null)
-  const { ids: n1coPlanIds, locationCode: LOCATION_CODE } = parsePlanIds(cfg)
 
   const now = new Date()
   let suspended = 0
@@ -70,7 +68,9 @@ export async function GET(req: NextRequest) {
       console.log(`[Billing Cron] Suspended tenant ${sub.tenantId} (cancelled, period ended)`)
     }
 
-    // 3. Scheduled downgrades whose period has ended → apply now
+    // 3. Scheduled downgrades whose period has ended → apply now (DB only)
+    // N1CO charges are managed by the customer's existing subscription link —
+    // no new N1CO subscription needs to be created.
     const pendingDowngrades = await db.query.subscriptions.findMany({
       where: and(
         eq(subscriptions.status, 'ACTIVE'),
@@ -81,44 +81,14 @@ export async function GET(req: NextRequest) {
 
     for (const sub of pendingDowngrades) {
       const newPlan = sub.pendingPlan!
-      const currentPlanName = sub.plan
-      console.log(`[Billing Cron] Applying pending downgrade: tenant ${sub.tenantId} ${currentPlanName} → ${newPlan}`)
+      console.log(`[Billing Cron] Applying pending downgrade: tenant ${sub.tenantId} ${sub.plan} → ${newPlan}`)
 
       try {
-        const tenant = await db.query.tenants.findFirst({
-          where: eq(tenants.id, sub.tenantId),
-        })
-
-        if (!tenant || !sub.n1coPaymentMethodId) {
-          console.error(`[Billing Cron] Missing tenant or payment method for ${sub.tenantId}`)
-          continue
-        }
-
-        // Cancel current N1CO subscription
-        if (sub.n1coSubscriptionId) {
-          try {
-            await cancelN1coSubscription(sub.n1coSubscriptionId, `Scheduled downgrade to ${newPlan}`)
-          } catch (err) {
-            console.warn(`[Billing Cron] Could not cancel N1CO sub for ${sub.tenantId}:`, err)
-          }
-        }
-
-        // Create new N1CO subscription with the downgraded plan
-        const n1coSub = await createN1coSubscription({
-          planId:          n1coPlanIds[newPlan as PlanType] ?? '',
-          locationCode:    LOCATION_CODE,
-          paymentMethodId: sub.n1coPaymentMethodId,
-          customerId:      sub.tenantId,
-          customerName:    tenant.name,
-          customerEmail:   tenant.contactEmail ?? '',
-        })
-
         const newPeriodEnd = addDays(now, 30)
 
         await db.update(subscriptions)
           .set({
             plan:               newPlan,
-            n1coSubscriptionId: n1coSub.subscriptionId,
             currentPeriodStart: now,
             currentPeriodEnd:   newPeriodEnd,
             pendingPlan:        null,
@@ -132,12 +102,7 @@ export async function GET(req: NextRequest) {
           .set({ plan: newPlan, updatedAt: now })
           .where(eq(tenants.id, sub.tenantId))
 
-        // Apply plan limits (deactivate excess records)
-        if (newPlan === 'BASIC') {
-          await db.update(tenants)
-            .set({ heroSubtitle: null, theme: 'light', emailBodyTemplate: null, updatedAt: now })
-            .where(eq(tenants.id, sub.tenantId))
-        }
+        // Enforce plan limits (deactivate excess records)
         await enforceDowngradeLimits(sub.tenantId, newPlan)
 
         downgrades++
