@@ -12,7 +12,7 @@ import { canUseFeature, getPlanFeatures } from "@/core/plans";
 import { getGoogleCalendarUrl, getOutlookCalendarUrl, generateICSFile } from "@/lib/calendar";
 
 type Branch = { id: string; name: string; businessHours?: string | null; address?: string | null };
-type Service = { id: string; name: string; durationMinutes: number; price: string; includes: string[]; excludes: string[]; allowsHomeService?: boolean; allowSimultaneous?: boolean; branches?: { id: string; branchId: string }[]; categoryIds?: string[] };
+type Service = { id: string; name: string; description?: string | null; durationMinutes: number; price: string; includes: string[]; excludes: string[]; allowsHomeService?: boolean; allowSimultaneous?: boolean; branches?: { id: string; branchId: string }[]; categoryIds?: string[] };
 type StaffAssignment = { branchId: string; isPermanent: boolean };
 type Staff = { id: string; name: string; allowsHomeService?: boolean; categoryIds?: string[]; assignments?: StaffAssignment[] };
 type CoverageZone = { id: string; name: string; fee: string; description?: string | null };
@@ -1336,6 +1336,11 @@ export default function BookingWidget({
                         <h3 className={`text-xl font-black transition-colors tracking-tight ${isSelected ? 'text-purple-600 dark:text-purple-400' : 'text-slate-900 dark:text-white group-hover:text-purple-500'}`}>
                           {srv.name}
                         </h3>
+                        {srv.description && (
+                          <p className="text-sm text-slate-500 dark:text-zinc-400 leading-snug line-clamp-2 mt-0.5">
+                            {srv.description}
+                          </p>
+                        )}
                         <div className="flex items-center gap-3">
                           <span className="text-purple-500 dark:text-purple-400 font-black text-xl">${parsePrice(srv.price).toFixed(2)}</span>
                           <span className="w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-zinc-800"></span>
