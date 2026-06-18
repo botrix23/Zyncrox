@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { AlertTriangle, CheckCircle, ExternalLink, XCircle, X, Lock, ShieldCheck } from 'lucide-react'
 import { PLAN_FEATURES, PLAN_PRICES, PlanType } from '@/core/plans'
 
@@ -123,8 +124,8 @@ function RedirectNotice({ planName, amount, onConfirm, onCancel, loading }: {
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+  const content = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 px-4">
       <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-zinc-100 dark:border-white/10">
           <h2 className="text-lg font-bold">{title}</h2>
@@ -136,6 +137,8 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
       </div>
     </div>
   )
+  if (typeof document === 'undefined') return content
+  return createPortal(content, document.body)
 }
 
 export default function BillingClient({ tenantId, plan, tenantStatus, subscription, locale, planPrices: dynamicPrices, isOwner = true }: Props) {

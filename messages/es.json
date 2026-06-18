@@ -2036,7 +2036,7 @@
       }
     },
     "redirect": {
-      "notice": "Serás redirigido de forma segura al procesador de pagos de N1CO para completar tu suscripción. Tu información bancaria nunca toca nuestros servidores.",
+      "notice": "Serás redirigido de forma segura al procesador de pagos de N1CO para completar tu suscripción.",
       "cta": "Continuar al checkout"
     },
     "success": {

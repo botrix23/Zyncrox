@@ -2036,7 +2036,7 @@
       }
     },
     "redirect": {
-      "notice": "You'll be securely redirected to N1CO's payment processor to complete your subscription. Your payment information never touches our servers.",
+      "notice": "You'll be securely redirected to N1CO's payment processor to complete your subscription.",
       "cta": "Continue to checkout"
     },
     "success": {
