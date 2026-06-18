@@ -211,6 +211,7 @@ export default function BookingWidget({
   });
 
   const [expandedSrvAcc, setExpandedSrvAcc] = useState<Record<string, 'incl' | 'excl' | null>>({});
+  const [expandedDesc, setExpandedDesc] = useState<Record<string, boolean>>({});
   const toggleSrvAcc = (id: string, type: 'incl' | 'excl') => {
     setExpandedSrvAcc(prev => ({ ...prev, [id]: prev[id] === type ? null : type }));
   };
@@ -1337,9 +1338,17 @@ export default function BookingWidget({
                           {srv.name}
                         </h3>
                         {srv.description && (
-                          <p className="text-sm text-slate-500 dark:text-zinc-400 leading-snug line-clamp-2 mt-0.5">
-                            {srv.description}
-                          </p>
+                          <div className="mt-0.5" onClick={e => e.stopPropagation()}>
+                            <p className={`text-sm text-slate-600 dark:text-zinc-300 leading-snug ${expandedDesc[srv.id] ? '' : 'line-clamp-2'}`}>
+                              {srv.description}
+                            </p>
+                            <button
+                              onClick={() => setExpandedDesc(prev => ({ ...prev, [srv.id]: !prev[srv.id] }))}
+                              className="text-xs font-bold text-purple-500 hover:text-purple-600 dark:text-purple-400 mt-1"
+                            >
+                              {expandedDesc[srv.id] ? t('descShowLess') : t('descShowMore')}
+                            </button>
+                          </div>
                         )}
                         <div className="flex items-center gap-3">
                           <span className="text-purple-500 dark:text-purple-400 font-black text-xl">${parsePrice(srv.price).toFixed(2)}</span>

@@ -56,6 +56,8 @@
     "excludes": "No incluye",
     "inclChip": "incluidos",
     "exclChip": "no incluidos",
+    "descShowMore": "Ver más",
+    "descShowLess": "Ver menos",
     "show_more_services": "Ver {count} servicios más",
     "show_more_staff": "Ver {count} especialistas más",
     "title_specialist": "Paso 3: Especialista y fecha",
