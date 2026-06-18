@@ -1387,7 +1387,7 @@ export default function BookingWidget({
                           {srvAcc === 'excl' && (
                             <ul className="grid grid-cols-1 gap-2">
                               {srv.excludes!.map((exc, i) => (
-                                <li key={i} className="flex items-start gap-2.5 text-sm font-medium text-slate-500/60 dark:text-zinc-400/60 leading-tight italic">
+                                <li key={i} className="flex items-start gap-2.5 text-sm font-semibold text-slate-600 dark:text-zinc-300 leading-tight">
                                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500/30 mt-1.5 shrink-0"></span>
                                   {exc}
                                 </li>
