@@ -61,6 +61,16 @@ export default async function AdminLayout({
   if (session) {
     if (session.role === 'SUPER_ADMIN' && session.impersonatedTenantName) {
       tenantName = session.impersonatedTenantName;
+      if (session.impersonatedTenantId) {
+        try {
+          const impTenant = await db.query.tenants.findFirst({
+            where: eq(tenants.id, session.impersonatedTenantId),
+            columns: { slug: true, plan: true },
+          });
+          tenantSlug = impTenant?.slug ?? "";
+          tenantPlan = impTenant?.plan ?? null;
+        } catch { /* non-critical */ }
+      }
     } else if (session.tenantId) {
       try {
         const [tenant, sub] = await Promise.all([
