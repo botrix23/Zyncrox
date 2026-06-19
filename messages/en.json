@@ -411,6 +411,7 @@
       "filterTypeLabel": "Service type",
       "filterTypeBranch": "At branch",
       "filterTypeHome": "Home service",
+      "homeServiceLabel": "Home service",
       "filterClear": "Clear",
       "pastBookingWarning": "Past Booking",
       "pastBookingDetail": "You are creating an appointment for a date or time that has already passed. This will be saved as a historical record.",

@@ -30,7 +30,7 @@ import {
   Minus,
   Briefcase,
   FileText,
-  Truck,
+  Car,
   Layers,
   CalendarRange,
   MessageSquare,
@@ -1204,7 +1204,7 @@ export default function BookingsClient({
                                 className="absolute z-[9] rounded-t-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center"
                                 title={`Traslado: ${booking.travelTimeOverride ?? travelTime} min antes`}
                               >
-                                <Truck className="w-5 h-5 text-amber-500" />
+                                <Car className="w-5 h-5 text-amber-500" />
                               </div>
                             );
                           }
@@ -1216,7 +1216,7 @@ export default function BookingsClient({
                                 className="absolute z-[9] rounded-b-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center"
                                 title={`Traslado: ${booking.travelTimeOverride ?? travelTime} min después`}
                               >
-                                <Truck className="w-5 h-5 text-amber-500" />
+                                <Car className="w-5 h-5 text-amber-500" />
                               </div>
                             );
                           }
@@ -1270,7 +1270,12 @@ export default function BookingsClient({
                                   <span className="text-purple-600 dark:text-purple-400 font-black">{booking.service?.name}</span>
                                 </p>
                               </div>
-                              {booking.branch?.name && (
+                              {booking.isHomeService ? (
+                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                  <Home className="w-3 h-3 text-emerald-500 shrink-0" />
+                                  <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 truncate">{t('homeServiceLabel')}</p>
+                                </div>
+                              ) : booking.branch?.name && (
                                 <div className="flex items-center gap-1.5 overflow-hidden">
                                   <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                                   <p className="text-xs font-bold text-slate-400 dark:text-zinc-500 truncate">
@@ -1366,14 +1371,14 @@ export default function BookingsClient({
                               if (bufCtx?.showPre) {
                                 items.push(
                                   <div key={`${booking.id}-wbuf-pre`} style={{ position: 'absolute', top: `${top - bufferPx}px`, height: `${bufferPx}px`, left: colLeft, width: finalWidth }} className="z-[9] rounded-t-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center" title={`Traslado: ${booking.travelTimeOverride ?? travelTime} min antes`}>
-                                    <Truck className="w-4 h-4 text-amber-500" />
+                                    <Car className="w-4 h-4 text-amber-500" />
                                   </div>
                                 );
                               }
                               if (bufCtx?.showPost) {
                                 items.push(
                                   <div key={`${booking.id}-wbuf-post`} style={{ position: 'absolute', top: `${top + height}px`, height: `${bufferPx}px`, left: colLeft, width: finalWidth }} className="z-[9] rounded-b-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center" title={`Traslado: ${booking.travelTimeOverride ?? travelTime} min después`}>
-                                    <Truck className="w-4 h-4 text-amber-500" />
+                                    <Car className="w-4 h-4 text-amber-500" />
                                   </div>
                                 );
                               }
@@ -1415,7 +1420,11 @@ export default function BookingsClient({
                                   <p className="text-xs text-slate-500 font-bold truncate">
                                     {booking.staff?.name} - <span className="text-purple-500">{booking.service?.name}</span>
                                   </p>
-                                  {booking.branch?.name && (
+                                  {booking.isHomeService ? (
+                                    <p className="text-xs font-bold truncate flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
+                                      <Home className="w-2.5 h-2.5 shrink-0" /> {t('homeServiceLabel')}
+                                    </p>
+                                  ) : booking.branch?.name && (
                                     <p className="text-xs text-slate-400 font-bold truncate flex items-center gap-0.5">
                                       <MapPin className="w-2.5 h-2.5 shrink-0" /> {booking.branch.name}
                                     </p>
@@ -1923,7 +1932,7 @@ export default function BookingsClient({
                                 disabled={!tenantSettings?.allowsHomeService}
                                 className={`p-6 rounded-[24px] border-2 transition-all flex flex-col items-center gap-3 ${modality === 'domicilio' ? 'bg-emerald-500/10 border-emerald-500' : 'bg-slate-50 dark:bg-white/5 border-transparent opacity-60'} ${!tenantSettings?.allowsHomeService ? 'cursor-not-allowed grayscale' : ''}`}
                               >
-                                <Truck className={`w-8 h-8 ${modality === 'domicilio' ? 'text-emerald-500' : 'text-slate-400'}`} />
+                                <Car className={`w-8 h-8 ${modality === 'domicilio' ? 'text-emerald-500' : 'text-slate-400'}`} />
                                 <span className="font-bold text-sm">{t('modality.home')}</span>
                                 {!tenantSettings?.allowsHomeService && <span className="text-xs text-rose-500 font-black uppercase">NO ACTIVADO</span>}
                               </button>
@@ -2247,7 +2256,7 @@ export default function BookingsClient({
                               {modality === 'domicilio' && selectedZone && (
                                 <div className="flex justify-between items-center text-sm font-bold text-emerald-500">
                                   <div className="flex items-center gap-2">
-                                    <Truck className="w-4 h-4" />
+                                    <Car className="w-4 h-4" />
                                     <span>Tarifa de traslado ({selectedZone.name})</span>
                                   </div>
                                   <span>+${Number(selectedZone.fee).toFixed(2)}</span>

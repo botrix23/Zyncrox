@@ -413,6 +413,7 @@
       "filterTypeLabel": "Tipo de servicio",
       "filterTypeBranch": "En sucursal",
       "filterTypeHome": "A domicilio",
+      "homeServiceLabel": "A domicilio",
       "filterClear": "Limpiar",
       "noTags": "Sin etiquetas",
       "overlapWarning": "Atención: Ya existe una cita para {staff} en este horario.",
