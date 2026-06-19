@@ -260,16 +260,17 @@ export async function forgotPasswordAction(email: string, locale: string = 'es')
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://zyncrox.com';
     const resetLink = `${appUrl}/${locale}/admin/reset-password?token=${token}`;
 
+    const isEs = locale !== 'en';
     await resend.emails.send({
       from: 'Zyncrox <noreply@zyncrox.com>',
       to: email,
-      subject: 'Recupera tu contraseña - Zyncrox',
+      subject: isEs ? 'Recupera tu contraseña - Zyncrox' : 'Reset your password - Zyncrox',
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0a0a;color:#fff;border-radius:16px;">
-          <h1 style="font-size:24px;font-weight:900;margin-bottom:8px;">Recupera tu contraseña</h1>
-          <p style="color:#a1a1aa;margin-bottom:24px;">Haz clic en el botón para restablecer tu contraseña. Este enlace expira en 1 hora.</p>
-          <a href="${resetLink}" style="display:inline-block;background:#fff;color:#000;font-weight:700;padding:14px 28px;border-radius:12px;text-decoration:none;font-size:14px;">Restablecer contraseña</a>
-          <p style="color:#52525b;font-size:12px;margin-top:24px;">Si no solicitaste esto, ignora este correo.</p>
+          <h1 style="font-size:24px;font-weight:900;margin-bottom:8px;">${isEs ? 'Recupera tu contraseña' : 'Reset your password'}</h1>
+          <p style="color:#a1a1aa;margin-bottom:24px;">${isEs ? 'Haz clic en el botón para restablecer tu contraseña. Este enlace expira en 1 hora.' : 'Click the button below to reset your password. This link expires in 1 hour.'}</p>
+          <a href="${resetLink}" style="display:inline-block;background:#fff;color:#000;font-weight:700;padding:14px 28px;border-radius:12px;text-decoration:none;font-size:14px;">${isEs ? 'Restablecer contraseña' : 'Reset password'}</a>
+          <p style="color:#52525b;font-size:12px;margin-top:24px;">${isEs ? 'Si no solicitaste esto, ignora este correo.' : 'If you did not request this, you can safely ignore this email.'}</p>
         </div>
       `,
     });

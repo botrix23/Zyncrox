@@ -278,16 +278,6 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan, tenantSlug 
             </div>
           </div>
         )}
-        {!isImpersonating && (
-          <button
-            onClick={() => logoutAction(locale)}
-            title={collapsed && !forMobile ? t('logout') : undefined}
-            className={`flex items-center ${collapsed && !forMobile ? 'justify-center w-full py-2.5 px-0' : 'gap-3 px-3 py-2.5 w-full'} text-rose-500 font-semibold hover:bg-rose-500/5 rounded-xl transition-all group text-sm`}
-          >
-            <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform shrink-0" />
-            {(!collapsed || forMobile) && t('logout')}
-          </button>
-        )}
       </div>
     </>
   );
