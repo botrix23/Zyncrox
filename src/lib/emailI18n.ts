@@ -1,18 +1,21 @@
-import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export type EmailLocale = 'es' | 'en';
 
-export function formatEmailDate(date: Date, locale: EmailLocale): string {
-  return format(
+const DEFAULT_TZ = 'America/El_Salvador';
+
+export function formatEmailDate(date: Date, locale: EmailLocale, tz: string = DEFAULT_TZ): string {
+  return formatInTimeZone(
     date,
+    tz,
     locale === 'en' ? "EEEE, MMMM d" : "EEEE, d 'de' MMMM",
     { locale: locale === 'en' ? enUS : es }
   );
 }
 
-export function formatEmailTime(date: Date): string {
-  return format(date, 'hh:mm a');
+export function formatEmailTime(date: Date, tz: string = DEFAULT_TZ): string {
+  return formatInTimeZone(date, tz, 'hh:mm a');
 }
 
 // ── Common labels ─────────────────────────────────────────────────────────────

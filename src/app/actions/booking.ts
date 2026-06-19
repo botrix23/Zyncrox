@@ -505,11 +505,12 @@ export async function createBookingAction(data: {
         try {
           const emailCfg = await getPlatformEmailTemplates();
           const locale = (tenant.emailLocale as EmailLocale) || 'es';
+          const emailTz = tenant.timezone || 'America/El_Salvador';
           const vars = {
             customerName: data.customerName,
             serviceName: service.name,
-            date: formatEmailDate(data.startTime, locale),
-            time: formatEmailTime(data.startTime),
+            date: formatEmailDate(data.startTime, locale, emailTz),
+            time: formatEmailTime(data.startTime, emailTz),
             branchName: branch.name,
             staffName: tenant.plan !== 'BASIC' && staffMember ? staffMember.name : '',
             tenantName: tenant.name,
@@ -879,8 +880,8 @@ export async function createBookingSessionAction(data: {
             const startDate = parseISO(bData.startTime);
             return {
               name: svc?.name ?? '',
-              date: formatEmailDate(startDate, locale2),
-              time: formatEmailTime(startDate),
+              date: formatEmailDate(startDate, locale2, tenantTz),
+              time: formatEmailTime(startDate, tenantTz),
               staffName: svcStaff?.name ?? '',
             };
           })
@@ -1018,11 +1019,12 @@ export async function updateBookingAction(data: {
       try {
         const emailCfgC = await getPlatformEmailTemplates();
         const localeC = (existing.tenant.emailLocale as EmailLocale) || 'es';
+        const tzC = (existing.tenant as any).timezone || 'America/El_Salvador';
         const varsC = {
           customerName: existing.customerName,
           serviceName: existing.service.name,
-          date: formatEmailDate(existing.startTime, localeC),
-          time: formatEmailTime(existing.startTime),
+          date: formatEmailDate(existing.startTime, localeC, tzC),
+          time: formatEmailTime(existing.startTime, tzC),
           branchName: existing.branch.name,
           tenantName: existing.tenant.name,
           phone: existing.tenant.whatsappNumber || '',
@@ -1065,13 +1067,14 @@ export async function updateBookingAction(data: {
       try {
         const emailCfgR = await getPlatformEmailTemplates();
         const localeR = (existing.tenant.emailLocale as EmailLocale) || 'es';
+        const tzR = (existing.tenant as any).timezone || 'America/El_Salvador';
         const varsR = {
           customerName: name,
           serviceName: existing.service.name,
-          oldDate: formatEmailDate(existing.startTime, localeR),
-          oldTime: formatEmailTime(existing.startTime),
-          newDate: formatEmailDate(data.startTime!, localeR),
-          newTime: formatEmailTime(data.startTime!),
+          oldDate: formatEmailDate(existing.startTime, localeR, tzR),
+          oldTime: formatEmailTime(existing.startTime, tzR),
+          newDate: formatEmailDate(data.startTime!, localeR, tzR),
+          newTime: formatEmailTime(data.startTime!, tzR),
           branchName: existing.branch.name,
           staffName: newStaff?.name ?? '',
           tenantName: existing.tenant.name,
@@ -1131,11 +1134,12 @@ export async function deleteBookingAction(id: string, tenantId: string) {
       try {
         const emailCfgC = await getPlatformEmailTemplates();
         const localeC = (existing.tenant.emailLocale as EmailLocale) || 'es';
+        const tzC2 = (existing.tenant as any).timezone || 'America/El_Salvador';
         const varsC = {
           customerName: existing.customerName,
           serviceName: existing.service.name,
-          date: formatEmailDate(existing.startTime, localeC),
-          time: formatEmailTime(existing.startTime),
+          date: formatEmailDate(existing.startTime, localeC, tzC2),
+          time: formatEmailTime(existing.startTime, tzC2),
           branchName: existing.branch.name,
           tenantName: existing.tenant.name,
           phone: existing.tenant.whatsappNumber || '',
