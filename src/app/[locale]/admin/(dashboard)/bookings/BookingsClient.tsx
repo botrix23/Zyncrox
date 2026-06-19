@@ -1197,7 +1197,7 @@ export default function BookingsClient({
                                 className="absolute z-[9] rounded-t-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center"
                                 title={`Traslado: ${travelTime} min antes`}
                               >
-                                <Truck className="w-3 h-3 text-amber-400/60" />
+                                <Truck className="w-5 h-5 text-amber-500" />
                               </div>
                             );
                           }
@@ -1209,7 +1209,7 @@ export default function BookingsClient({
                                 className="absolute z-[9] rounded-b-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center"
                                 title={`Traslado: ${travelTime} min después`}
                               >
-                                <Truck className="w-3 h-3 text-amber-400/60" />
+                                <Truck className="w-5 h-5 text-amber-500" />
                               </div>
                             );
                           }
@@ -1358,14 +1358,14 @@ export default function BookingsClient({
                               if (bufCtx?.showPre) {
                                 items.push(
                                   <div key={`${booking.id}-wbuf-pre`} style={{ position: 'absolute', top: `${top - bufferPx}px`, height: `${bufferPx}px`, left: colLeft, width: finalWidth }} className="z-[9] rounded-t-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center" title={`Traslado: ${travelTime} min antes`}>
-                                    <Truck className="w-2.5 h-2.5 text-amber-400/60" />
+                                    <Truck className="w-4 h-4 text-amber-500" />
                                   </div>
                                 );
                               }
                               if (bufCtx?.showPost) {
                                 items.push(
                                   <div key={`${booking.id}-wbuf-post`} style={{ position: 'absolute', top: `${top + height}px`, height: `${bufferPx}px`, left: colLeft, width: finalWidth }} className="z-[9] rounded-b-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center" title={`Traslado: ${travelTime} min después`}>
-                                    <Truck className="w-2.5 h-2.5 text-amber-400/60" />
+                                    <Truck className="w-4 h-4 text-amber-500" />
                                   </div>
                                 );
                               }
