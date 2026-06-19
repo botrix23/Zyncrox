@@ -5,6 +5,7 @@ import { clientLoyalty, loyaltyPointsTransactions, loyaltyRewards, tenants } fro
 import { eq, and, gte, lte, gt, sql, desc, asc } from 'drizzle-orm';
 import { getSession } from '@/lib/auth-session';
 import { startOfMonth, endOfMonth, addDays, subMonths, format, startOfDay, endOfDay } from 'date-fns';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 export interface LoyaltyTopClient {
   clientEmail: string;
@@ -52,17 +53,19 @@ export async function getLoyaltyAnalyticsData(from: string, to: string): Promise
 
     const tenant = await db.query.tenants.findFirst({
       where: eq(tenants.id, tenantId),
-      columns: { plan: true, pointsEnabled: true, pointsExpireEnabled: true, pointsExpireMonths: true },
+      columns: { plan: true, pointsEnabled: true, pointsExpireEnabled: true, pointsExpireMonths: true, timezone: true },
     });
     if (!tenant || tenant.plan !== 'ENTERPRISE' || !tenant.pointsEnabled) {
       return { ok: false, error: 'Not available for this plan' };
     }
 
-    const fromDate = startOfDay(new Date(from));
-    const toDate = endOfDay(new Date(to));
+    const tz = tenant.timezone ?? 'America/El_Salvador';
     const now = new Date();
-    const monthStart = startOfMonth(now);
-    const monthEnd = endOfMonth(now);
+    const nowInTz = toZonedTime(now, tz);
+    const fromDate = fromZonedTime(startOfDay(toZonedTime(new Date(from), tz)), tz);
+    const toDate = fromZonedTime(endOfDay(toZonedTime(new Date(to), tz)), tz);
+    const monthStart = fromZonedTime(startOfMonth(nowInTz), tz);
+    const monthEnd = fromZonedTime(endOfMonth(nowInTz), tz);
 
     // 1. Active clients with points
     const activeClientsRows = await db.select({ count: sql<number>`count(*)` })

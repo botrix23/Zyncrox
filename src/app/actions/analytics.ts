@@ -6,6 +6,8 @@ import { eq, and, gte, lte, lt, inArray } from 'drizzle-orm';
 import { getSession } from '@/lib/auth-session';
 import { canUseFeature } from '@/core/plans';
 import { tenants } from '@/db/schema';
+import { startOfDay, endOfDay } from 'date-fns';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 export interface StaffPerformanceRow {
   staffId: string;
@@ -50,14 +52,18 @@ export async function getStaffPerformanceData(
   let tenantId: string | null = null;
   let tenantPlan: string | null = null;
 
+  let tenantTz = 'America/El_Salvador';
+
   if (session?.role === 'SUPER_ADMIN' && session.impersonatedTenantId) {
     tenantId = session.impersonatedTenantId;
-    const t = await db.query.tenants.findFirst({ where: eq(tenants.id, tenantId), columns: { plan: true } });
+    const t = await db.query.tenants.findFirst({ where: eq(tenants.id, tenantId), columns: { plan: true, timezone: true } });
     tenantPlan = t?.plan ?? null;
+    tenantTz = t?.timezone ?? tenantTz;
   } else if (session?.tenantId) {
     tenantId = session.tenantId;
-    const t = await db.query.tenants.findFirst({ where: eq(tenants.id, tenantId), columns: { plan: true } });
+    const t = await db.query.tenants.findFirst({ where: eq(tenants.id, tenantId), columns: { plan: true, timezone: true } });
     tenantPlan = t?.plan ?? null;
+    tenantTz = t?.timezone ?? tenantTz;
   }
 
   if (!tenantId) return { ok: false, error: 'No autorizado' };
@@ -65,9 +71,8 @@ export async function getStaffPerformanceData(
     return { ok: false, error: 'Tu plan no incluye analítica avanzada' };
   }
 
-  const from = new Date(dateFrom);
-  const to = new Date(dateTo);
-  to.setHours(23, 59, 59, 999);
+  const from = fromZonedTime(startOfDay(toZonedTime(new Date(dateFrom), tenantTz)), tenantTz);
+  const to = fromZonedTime(endOfDay(toZonedTime(new Date(dateTo), tenantTz)), tenantTz);
   const now = new Date();
 
   // ── 1. Fetch all branches for this tenant ─────────────────────────────

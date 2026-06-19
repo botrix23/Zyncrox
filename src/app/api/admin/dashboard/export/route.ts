@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth-session';
 import { db } from '@/db';
-import { bookings, absenceRequests, reviews } from '@/db/schema';
+import { bookings, absenceRequests, reviews, tenants } from '@/db/schema';
 import { eq, and, gte, lte, desc } from 'drizzle-orm';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 export async function GET() {
   const session = await getSession();
@@ -20,9 +21,15 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const tenantTz = await db.query.tenants.findFirst({
+    where: eq(tenants.id, tenantId),
+    columns: { timezone: true },
+  }).then(t => t?.timezone ?? 'America/El_Salvador');
+
   const now = new Date();
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
+  const nowInTz = toZonedTime(now, tenantTz);
+  const monthStart = fromZonedTime(startOfMonth(nowInTz), tenantTz);
+  const monthEnd = fromZonedTime(endOfMonth(nowInTz), tenantTz);
   const monthLabel = format(now, "MMMM yyyy", { locale: es }).toUpperCase();
 
   const [bookingsThisMonth, absencesThisMonth, reviewsThisMonth] = await Promise.all([
