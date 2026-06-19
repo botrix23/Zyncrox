@@ -14,6 +14,7 @@ import {
   startOfMonth, endOfMonth, subWeeks, subDays, addHours, addDays,
   isSameDay, format
 } from 'date-fns';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { es as esLocale, enUS } from 'date-fns/locale';
 import Link from 'next/link';
 import { WeeklyBarChart } from '@/components/dashboard/WeeklyBarChart';
@@ -43,15 +44,23 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
   }
 
   const dateLocale = locale === 'es' ? esLocale : enUS;
+
+  // Fetch tenant timezone before computing date ranges
+  const tenantTz = await db.query.tenants.findFirst({
+    where: eq(tenants.id, tenantId),
+    columns: { timezone: true },
+  }).then(t => t?.timezone ?? 'America/El_Salvador');
+
   const now = new Date();
-  const todayStart = startOfDay(now);
-  const todayEnd = endOfDay(now);
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-  const prevWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
-  const prevWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
+  const nowInTz = toZonedTime(now, tenantTz);
+  const todayStart = fromZonedTime(startOfDay(nowInTz), tenantTz);
+  const todayEnd = fromZonedTime(endOfDay(nowInTz), tenantTz);
+  const weekStart = fromZonedTime(startOfWeek(nowInTz, { weekStartsOn: 1 }), tenantTz);
+  const weekEnd = fromZonedTime(endOfWeek(nowInTz, { weekStartsOn: 1 }), tenantTz);
+  const prevWeekStart = fromZonedTime(startOfWeek(toZonedTime(subWeeks(now, 1), tenantTz), { weekStartsOn: 1 }), tenantTz);
+  const prevWeekEnd = fromZonedTime(endOfWeek(toZonedTime(subWeeks(now, 1), tenantTz), { weekStartsOn: 1 }), tenantTz);
+  const monthStart = fromZonedTime(startOfMonth(nowInTz), tenantTz);
+  const monthEnd = fromZonedTime(endOfMonth(nowInTz), tenantTz);
   const days60Ago = subDays(now, 60);
   const twoHoursLater = addHours(now, 2);
 
