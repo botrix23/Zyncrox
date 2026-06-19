@@ -1080,16 +1080,18 @@ export default function ServicesClient({
                       </div>
                       <button
                         type="button"
-                        onClick={() => setFormData({...formData, allowSimultaneous: !formData.allowSimultaneous})}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 ${formData.allowSimultaneous ? 'bg-purple-600' : 'bg-slate-300 dark:bg-white/20'}`}
+                        disabled={!canUseFeature(plan, 'simultaneousServices')}
+                        onClick={() => canUseFeature(plan, 'simultaneousServices') && setFormData({...formData, allowSimultaneous: !formData.allowSimultaneous})}
+                        title={!canUseFeature(plan, 'simultaneousServices') ? 'Disponible desde el plan Profesional' : undefined}
+                        className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 ${!canUseFeature(plan, 'simultaneousServices') ? 'cursor-not-allowed opacity-40 bg-slate-300 dark:bg-white/20' : `cursor-pointer ${formData.allowSimultaneous ? 'bg-purple-600' : 'bg-slate-300 dark:bg-white/20'}`}`}
                       >
-                        <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.allowSimultaneous ? 'translate-x-4' : 'translate-x-0'}`} />
+                        <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.allowSimultaneous && canUseFeature(plan, 'simultaneousServices') ? 'translate-x-4' : 'translate-x-0'}`} />
                       </button>
                     </div>
 
                   </div>
 
-                  <div className="space-y-4 p-5 bg-slate-50 dark:bg-white/5 rounded-[24px] border border-slate-200 dark:border-white/10">
+                  {canUseFeature(plan, 'servicesPerBranch') && <div className="space-y-4 p-5 bg-slate-50 dark:bg-white/5 rounded-[24px] border border-slate-200 dark:border-white/10">
                     <div className="space-y-0.5">
                       <p className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{t('form.availabilityTypeLabel')}</p>
                     </div>
@@ -1140,7 +1142,7 @@ export default function ServicesClient({
                         </div>
                       </div>
                     )}
-                  </div>
+                  </div>}
                 </div>
 
                 {categories.length > 0 && (

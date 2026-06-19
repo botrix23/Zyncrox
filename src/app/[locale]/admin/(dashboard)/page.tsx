@@ -290,6 +290,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
   const tenantPlan = tenantData?.plan ?? null;
   const canUseAnalytics = canUseFeature(tenantPlan, 'advancedAnalytics');
   const canUseWeeklyMonthlyStats = canUseFeature(tenantPlan, 'weeklyMonthlyStats');
+  const canUseSurveys = canUseFeature(tenantPlan, 'surveys');
 
   // Default date range for analytics (last 30 days)
   const analyticsDefaultFrom = format(startOfDay(subDays(now, 29)), 'yyyy-MM-dd');
@@ -327,7 +328,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <CopyLinkButton url={portalUrl} />
-          <DashboardExport />
+          {canUseWeeklyMonthlyStats && <DashboardExport />}
         </div>
       </div>
 
@@ -658,7 +659,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
       )}
 
       {/* ═══ SECCIÓN 6: RENDIMIENTO POR SUCURSAL ═══ */}
-      {showBranchSection && (
+      {showBranchSection && canUseWeeklyMonthlyStats && (
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Building className="w-5 h-5 text-purple-600 shrink-0" />
@@ -710,7 +711,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
       )}
 
       {/* ═══ SECCIÓN 7: ENCUESTAS / SATISFACCIÓN ═══ */}
-      <section>
+      {canUseSurveys && <section>
         <div className="flex items-center gap-2 mb-4">
           <Star className="w-5 h-5 text-purple-600 shrink-0" />
           <h2 className="text-base font-bold text-slate-900 dark:text-white">{t('surveyTitle')}</h2>
@@ -768,7 +769,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
             )}
           </div>
         </div>
-      </section>
+      </section>}
     </div>
     </DashboardTabsClient>
   );

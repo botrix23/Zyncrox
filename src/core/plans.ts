@@ -56,10 +56,10 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     multiServiceBooking: false,
     separateServiceScheduling: false,
 
-    customTheme: false,
-    customHero: false,
-    customWidgetSteps: false,
-    customSchedulingModeLabels: false,
+    customTheme: true,
+    customHero: true,
+    customWidgetSteps: true,
+    customSchedulingModeLabels: true,
     customEmailTemplate: false,
 
     simultaneousServices: false,
@@ -91,7 +91,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
 
     customTheme: true,
     customHero: true,
-    customWidgetSteps: false, // Solo Business (ENTERPRISE)
+    customWidgetSteps: true,
     customSchedulingModeLabels: true,
     customEmailTemplate: true,
 

@@ -721,7 +721,7 @@ export default function StaffClient({
                     </span>
                   )}
                 </div>
-                {avgRating && (
+                {canUseFeature(plan, 'surveys') && avgRating && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setSelectedStaffReviews(member); setIsReviewsModalOpen(true); }}
                     className="flex items-center gap-1 mt-1 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg px-1 transition-all"
