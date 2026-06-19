@@ -8,7 +8,6 @@ const BookingWidget = dynamic(() => import('@/components/BookingWidget'), {
 import { 
   Calendar,
   Search,
-  Filter,
   User,
   Clock,
   Sparkles,
@@ -771,12 +770,6 @@ export default function BookingsClient({
           <p className="text-slate-500 dark:text-zinc-400 mt-1">{t('subtitle')}</p>
         </div>
         <div className="flex gap-3">
-          {viewMode === 'list' && (
-             <button className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-zinc-300 rounded-2xl text-sm font-bold shadow-sm transition-all active:scale-95">
-                <Filter className="w-4 h-4" />
-                {t('filter')}
-            </button>
-          )}
             <div className="flex bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl p-1 shadow-sm">
                 <button 
                   onClick={() => setViewMode('calendar')}
