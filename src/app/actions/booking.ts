@@ -879,7 +879,7 @@ export async function createBookingSessionAction(data: {
                 : Promise.resolve(null),
             ]);
 
-            const startDate = parseISO(bData.startTime);
+            const startDate = assignedBooking?.startTime ? new Date(assignedBooking.startTime) : parseISO(bData.startTime);
             return {
               name: svc?.name ?? '',
               date: formatEmailDate(startDate, locale2, tenantTz),
