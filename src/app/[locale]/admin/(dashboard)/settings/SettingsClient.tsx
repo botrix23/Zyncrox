@@ -486,30 +486,6 @@ export default function SettingsClient({
           )}
         </div>
 
-        {/* Status + Save button */}
-        {configMessage && (
-          <div className={`p-3 rounded-2xl flex items-center gap-3 text-sm font-bold ${
-            configMessage.type === 'success'
-              ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-              : 'bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400'
-          }`}>
-            {configMessage.type === 'success'
-              ? <CheckCircle2 className="w-4 h-4 shrink-0" />
-              : <AlertCircle className="w-4 h-4 shrink-0" />}
-            {configMessage.text}
-          </div>
-        )}
-
-        <button
-          onClick={handleSaveConfig}
-          disabled={savingConfig}
-          className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20 text-sm"
-        >
-          {savingConfig
-            ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            : <Save className="w-4 h-4" />}
-          {t('save')}
-        </button>
       </div>
 
       {/* ── Sección: Administradores ──────────────────────────────────────── */}
@@ -776,13 +752,38 @@ export default function SettingsClient({
                 ) : recoverySaved ? (
                   <><Check className="w-4 h-4" /> {t('saved')}</>
                 ) : (
-                  <><Save className="w-4 h-4" /> {t('save')}</>
+                  <><Save className="w-4 h-4" /> {t('addRecovery')}</>
                 )}
               </button>
             </div>
           </form>
         </div>
       </div>
+
+      {/* Status + Save button — configuración general */}
+      {configMessage && (
+        <div className={`p-3 rounded-2xl flex items-center gap-3 text-sm font-bold ${
+          configMessage.type === 'success'
+            ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+            : 'bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400'
+        }`}>
+          {configMessage.type === 'success'
+            ? <CheckCircle2 className="w-4 h-4 shrink-0" />
+            : <AlertCircle className="w-4 h-4 shrink-0" />}
+          {configMessage.text}
+        </div>
+      )}
+
+      <button
+        onClick={handleSaveConfig}
+        disabled={savingConfig}
+        className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20 text-sm"
+      >
+        {savingConfig
+          ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          : <Save className="w-4 h-4" />}
+        {t('save')}
+      </button>
     </div>
   );
 }

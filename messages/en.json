@@ -772,6 +772,7 @@
       "recoveryPlaceholder": "email@example.com",
       "saved": "Saved",
       "save": "Save",
+      "addRecovery": "Add",
       "owner": "Owner",
       "transferOwnership": "Transfer ownership",
       "confirm": "Confirm",
