@@ -1224,7 +1224,7 @@ export default function BookingsClient({
                               isCancelled
                                 ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-60 grayscale-[0.5]'
                                 : booking.isHomeService
-                                ? 'bg-teal-500/10 border-teal-500/25 hover:bg-teal-500/20'
+                                ? 'bg-teal-500/20 border-teal-500/40 hover:bg-teal-500/30'
                                 : booking.status === 'CONFIRMED'
                                   ? 'bg-purple-500/10 border-purple-500/25 hover:bg-purple-500/20'
                                   : booking.status === 'PENDING'
