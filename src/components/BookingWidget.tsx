@@ -1338,12 +1338,12 @@ export default function BookingWidget({
                           {srv.name}
                         </h3>
                         {srv.description && (
-                          <div className="mt-0.5" onClick={e => e.stopPropagation()}>
+                          <div className="mt-0.5">
                             <p className={`text-sm text-slate-600 dark:text-zinc-300 leading-snug ${expandedDesc[srv.id] ? '' : 'line-clamp-2'}`}>
                               {srv.description}
                             </p>
                             <button
-                              onClick={() => setExpandedDesc(prev => ({ ...prev, [srv.id]: !prev[srv.id] }))}
+                              onClick={e => { e.stopPropagation(); setExpandedDesc(prev => ({ ...prev, [srv.id]: !prev[srv.id] })); }}
                               className="text-xs font-bold text-purple-500 hover:text-purple-600 dark:text-purple-400 mt-1"
                             >
                               {expandedDesc[srv.id] ? t('descShowLess') : t('descShowMore')}

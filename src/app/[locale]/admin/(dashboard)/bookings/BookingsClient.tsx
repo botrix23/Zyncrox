@@ -33,7 +33,10 @@ import {
   Truck,
   Layers,
   CalendarRange,
-  MessageSquare
+  MessageSquare,
+  Filter,
+  Home,
+  Building2
 } from 'lucide-react';
 import { updateBookingAction, deleteBookingAction, createBookingAction, createBookingSessionAction, getAvailableSlots } from "@/app/actions/booking";
 import { useRouter } from "next/navigation";
@@ -118,6 +121,8 @@ export default function BookingsClient({
   
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("Todas");
+  const [serviceTypeFilter, setServiceTypeFilter] = useState<'' | 'branch' | 'home'>('');
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [branchFilter, setBranchFilter] = useState<string>("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
@@ -563,13 +568,18 @@ export default function BookingsClient({
       (activeTab === "Finalizadas" && b.status === "FINALIZADA") ||
       (activeTab === "Canceladas" && b.status === "CANCELLED");
     const matchesBranch = !branchFilter || b.branchId === branchFilter;
-    return matchesSearch && matchesTab && matchesBranch;
+    const matchesType = !serviceTypeFilter ||
+      (serviceTypeFilter === 'home' ? b.isHomeService : !b.isHomeService);
+    return matchesSearch && matchesTab && matchesBranch && matchesType;
   });
 
-  // Calendar respects branch filter too (no search/tab filters there)
-  const calendarBookings = branchFilter
-    ? bookingsList.filter(b => b.branchId === branchFilter)
-    : bookingsList;
+  // Calendar respects branch + type filters
+  const calendarBookings = bookingsList.filter(b => {
+    const matchesBranch = !branchFilter || b.branchId === branchFilter;
+    const matchesType = !serviceTypeFilter ||
+      (serviceTypeFilter === 'home' ? b.isHomeService : !b.isHomeService);
+    return matchesBranch && matchesType;
+  });
 
   const handleOpenEdit = (booking: any) => {
     setEditingBooking(booking);
@@ -799,45 +809,88 @@ export default function BookingsClient({
       {/* Filters & Search - Only in List Mode */}
       {viewMode === 'list' && (
         <>
-        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-center">
-          {/* Mobile: dropdown selector */}
-          <div className="lg:hidden">
-            <select
-              value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value)}
-              className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 px-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500/50 transition-all shadow-sm"
-            >
-              {['Todas', 'Pendientes', 'Confirmadas', 'Finalizadas', 'Canceladas'].map((tab) => (
-                <option key={tab} value={tab}>{t(`tabs.${tab}`)}</option>
-              ))}
-            </select>
+        <div className="flex gap-3 items-center">
+          {/* Filtrar button */}
+          <button
+            onClick={() => setShowFilterPanel(p => !p)}
+            className={`flex items-center gap-2 px-4 py-3 rounded-2xl border text-sm font-bold transition-all shrink-0 ${
+              showFilterPanel || activeTab !== 'Todas' || serviceTypeFilter
+                ? 'bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-500/20'
+                : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 text-slate-700 dark:text-zinc-300 shadow-sm'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            {t('filter')}
+            {(activeTab !== 'Todas' || serviceTypeFilter) && (
+              <span className="bg-white/30 text-white text-xs font-black px-1.5 py-0.5 rounded-full leading-none">
+                {(activeTab !== 'Todas' ? 1 : 0) + (serviceTypeFilter ? 1 : 0)}
+              </span>
+            )}
+          </button>
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t('searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 pl-12 pr-4 text-sm text-slate-900 dark:text-white outline-none focus:border-purple-500/50 transition-all placeholder:text-slate-400 shadow-sm"
+            />
           </div>
-          {/* Desktop: pill tabs */}
-          <div className="hidden lg:flex lg:col-span-8 items-center gap-4 overflow-x-auto no-scrollbar py-4 -my-4 px-4 -mx-4">
-              {['Todas', 'Pendientes', 'Confirmadas', 'Finalizadas', 'Canceladas'].map((tab) => (
+        </div>
+
+        {/* Filter panel */}
+        {showFilterPanel && (
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl p-4 space-y-4 shadow-sm">
+            <div className="space-y-2">
+              <p className="text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{t('filterStatus')}</p>
+              <div className="flex flex-wrap gap-2">
+                {(['Todas', 'Pendientes', 'Confirmadas', 'Finalizadas', 'Canceladas'] as const).map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`text-sm font-bold whitespace-nowrap px-6 py-3 rounded-2xl transition-all ${
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                       activeTab === tab
-                      ? 'bg-purple-600 text-white shadow-xl shadow-purple-500/20 scale-105'
-                      : 'bg-white dark:bg-zinc-900 text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/5'
-                  }`}>
-                      {t(`tabs.${tab}`)}
+                        ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                        : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-white/10'
+                    }`}
+                  >
+                    {t(`tabs.${tab}`)}
                   </button>
-              ))}
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{t('filterTypeLabel')}</p>
+              <div className="flex flex-wrap gap-2">
+                {([['', t('tabs.Todas')], ['branch', t('filterTypeBranch')], ['home', t('filterTypeHome')]] as const).map(([val, label]) => (
+                  <button
+                    key={val}
+                    onClick={() => setServiceTypeFilter(val)}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                      serviceTypeFilter === val
+                        ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
+                        : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-white/10'
+                    }`}
+                  >
+                    {val === 'home' ? <Home className="w-3.5 h-3.5" /> : val === 'branch' ? <Building2 className="w-3.5 h-3.5" /> : null}
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {(activeTab !== 'Todas' || serviceTypeFilter) && (
+              <button
+                onClick={() => { setActiveTab('Todas'); setServiceTypeFilter(''); }}
+                className="text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors"
+              >
+                {t('filterClear')}
+              </button>
+            )}
           </div>
-          <div className="lg:col-span-4 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                  type="text"
-                  placeholder={t('searchPlaceholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm text-slate-900 dark:text-white outline-none focus:border-purple-500/50 transition-all placeholder:text-slate-400 shadow-sm"
-              />
-          </div>
-        </div>
+        )}
+
 
         {/* Branch filter row - list view */}
         {branches.length > 1 && (
@@ -1070,6 +1123,27 @@ export default function BookingsClient({
             </div>
           </div>
 
+          {/* Calendar service-type filter */}
+          <div className="flex items-center gap-2 px-4 pb-2">
+            {([['', t('tabs.Todas')], ['branch', t('filterTypeBranch')], ['home', t('filterTypeHome')]] as const).map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setServiceTypeFilter(val)}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  serviceTypeFilter === val
+                    ? val === 'home'
+                      ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
+                      : 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                    : 'bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400 hover:border-slate-300 dark:hover:border-white/20'
+                }`}
+              >
+                {val === 'home' && <Home className="w-3 h-3" />}
+                {val === 'branch' && <Building2 className="w-3 h-3" />}
+                {label}
+              </button>
+            ))}
+          </div>
+
           {/* Calendar Body */}
           <div className="flex-1 overflow-y-auto relative custom-scrollbar">
             {calendarView === 'day' ? (
@@ -1149,6 +1223,8 @@ export default function BookingsClient({
                             className={`absolute z-10 p-3 rounded-2xl border transition-all text-left group overflow-hidden ${
                               isCancelled
                                 ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-60 grayscale-[0.5]'
+                                : booking.isHomeService
+                                ? 'bg-teal-500/10 border-teal-500/25 hover:bg-teal-500/20'
                                 : booking.status === 'CONFIRMED'
                                   ? 'bg-purple-500/10 border-purple-500/25 hover:bg-purple-500/20'
                                   : booking.status === 'PENDING'
@@ -1303,6 +1379,8 @@ export default function BookingsClient({
                                 className={`z-10 p-1.5 rounded-xl border transition-all text-left overflow-hidden ${
                                   isCancelled
                                     ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-60 grayscale-[0.5]'
+                                    : booking.isHomeService
+                                    ? 'bg-teal-500/10 border-teal-500/25 hover:bg-teal-500/20'
                                     : booking.status === 'CONFIRMED'
                                       ? 'bg-purple-500/10 border-purple-500/25 hover:bg-purple-500/20'
                                       : booking.status === 'PENDING'
