@@ -180,10 +180,11 @@ export default function BookingsClient({
         const next = i < sorted.length - 1 ? sorted[i + 1] : null;
         const sameDay = (a: any, b: any) =>
           new Date(a.startTime).toISOString().slice(0, 10) === new Date(b.startTime).toISOString().slice(0, 10);
-        const isConsecutiveWith = (a: any, b: any) =>
-          sameDay(a, b) &&
-          a.staffId === b.staffId &&
-          new Date(a.endTime).getTime() >= new Date(b.startTime).getTime() - travelTime * 60000;
+        const isConsecutiveWith = (a: any, b: any) => {
+          const gap = Math.max(a.travelTimeOverride ?? travelTime, b.travelTimeOverride ?? travelTime) * 60000;
+          return sameDay(a, b) && a.staffId === b.staffId &&
+            new Date(a.endTime).getTime() >= new Date(b.startTime).getTime() - gap;
+        };
         map.set(b.id, {
           showPre:  !prev || !isConsecutiveWith(prev, b),
           showPost: !next || !isConsecutiveWith(b, next),
@@ -248,7 +249,8 @@ export default function BookingsClient({
     time: "09:00",
     durationMinutes: services[0]?.durationMinutes || 30,
     notes: "",
-    homeAddress: "" // Dirección de atención (solo para servicio a domicilio, read-only)
+    homeAddress: "", // Dirección de atención (solo para servicio a domicilio, read-only)
+    travelTimeOverride: null as number | null
   });
 
   const isPastBooking = (() => {
@@ -552,7 +554,8 @@ export default function BookingsClient({
       time: "09:00",
       durationMinutes: services[0]?.durationMinutes || 30,
       notes: "",
-      homeAddress: ""
+      homeAddress: "",
+      travelTimeOverride: null
     });
     setDurationInput((services[0]?.durationMinutes || 30).toString());
     setIsEditModalOpen(true);
@@ -596,7 +599,8 @@ export default function BookingsClient({
       time: format(new Date(booking.startTime), "HH:mm"),
       durationMinutes: Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000),
       notes: clientNotes,
-      homeAddress: address
+      homeAddress: address,
+      travelTimeOverride: booking.travelTimeOverride ?? null
     });
     setDurationInput(Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 60000).toString());
     setIsEditModalOpen(true);
@@ -710,6 +714,8 @@ export default function BookingsClient({
           zoneId: selectedZone?.id,
           notes: formData.notes,
           schedulingMode,
+          isHomeService: modality === 'domicilio',
+          travelTimeOverride: modality === 'domicilio' ? (formData.travelTimeOverride ?? null) : null,
           bookings: sessionBookings
         });
       }
@@ -1182,7 +1188,8 @@ export default function BookingsClient({
                         const width = 100 / booking.totalCols;
                         const left = booking.colIndex * width;
                         const isCancelled = booking.status === 'CANCELLED';
-                        const bufferPx = travelTime > 0 && booking.isHomeService ? (travelTime * 96) / 60 : 0;
+                        const effectiveTravelTime = booking.isHomeService ? (booking.travelTimeOverride ?? travelTime) : 0;
+                        const bufferPx = effectiveTravelTime > 0 ? (effectiveTravelTime * 96) / 60 : 0;
                         const bufCtx = homeServiceBufferCtx.get(booking.id);
 
                         const bookingTier = getBookingTier(booking);
@@ -1195,7 +1202,7 @@ export default function BookingsClient({
                                 key={`${booking.id}-buf-pre`}
                                 style={{ top: `${top - bufferPx}px`, height: `${bufferPx}px`, left: `calc(${left}% + 4px)`, width: `calc(${width}% - 8px)` }}
                                 className="absolute z-[9] rounded-t-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center"
-                                title={`Traslado: ${travelTime} min antes`}
+                                title={`Traslado: ${booking.travelTimeOverride ?? travelTime} min antes`}
                               >
                                 <Truck className="w-5 h-5 text-amber-500" />
                               </div>
@@ -1207,7 +1214,7 @@ export default function BookingsClient({
                                 key={`${booking.id}-buf-post`}
                                 style={{ top: `${top + height}px`, height: `${bufferPx}px`, left: `calc(${left}% + 4px)`, width: `calc(${width}% - 8px)` }}
                                 className="absolute z-[9] rounded-b-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center"
-                                title={`Traslado: ${travelTime} min después`}
+                                title={`Traslado: ${booking.travelTimeOverride ?? travelTime} min después`}
                               >
                                 <Truck className="w-5 h-5 text-amber-500" />
                               </div>
@@ -1348,7 +1355,8 @@ export default function BookingsClient({
                             const colLeft = `calc(64px + ${di} * (100% - 64px) / 7 + (${booking.colIndex} * (100% - 64px) / 7 / ${booking.totalCols}) + 2px)`;
                             const finalWidth = `calc((100% - 64px) / 7 / ${booking.totalCols} - 4px)`;
                             const isCancelled = booking.status === 'CANCELLED';
-                            const bufferPx = travelTime > 0 && booking.isHomeService ? (travelTime * 96) / 60 : 0;
+                            const effectiveTravelTime = booking.isHomeService ? (booking.travelTimeOverride ?? travelTime) : 0;
+                        const bufferPx = effectiveTravelTime > 0 ? (effectiveTravelTime * 96) / 60 : 0;
                             const bufCtx = homeServiceBufferCtx.get(booking.id);
                             const weekTier = getBookingTier(booking);
 
@@ -1357,14 +1365,14 @@ export default function BookingsClient({
                             if (bufferPx > 0 && !isCancelled) {
                               if (bufCtx?.showPre) {
                                 items.push(
-                                  <div key={`${booking.id}-wbuf-pre`} style={{ position: 'absolute', top: `${top - bufferPx}px`, height: `${bufferPx}px`, left: colLeft, width: finalWidth }} className="z-[9] rounded-t-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center" title={`Traslado: ${travelTime} min antes`}>
+                                  <div key={`${booking.id}-wbuf-pre`} style={{ position: 'absolute', top: `${top - bufferPx}px`, height: `${bufferPx}px`, left: colLeft, width: finalWidth }} className="z-[9] rounded-t-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center" title={`Traslado: ${booking.travelTimeOverride ?? travelTime} min antes`}>
                                     <Truck className="w-4 h-4 text-amber-500" />
                                   </div>
                                 );
                               }
                               if (bufCtx?.showPost) {
                                 items.push(
-                                  <div key={`${booking.id}-wbuf-post`} style={{ position: 'absolute', top: `${top + height}px`, height: `${bufferPx}px`, left: colLeft, width: finalWidth }} className="z-[9] rounded-b-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center" title={`Traslado: ${travelTime} min después`}>
+                                  <div key={`${booking.id}-wbuf-post`} style={{ position: 'absolute', top: `${top + height}px`, height: `${bufferPx}px`, left: colLeft, width: finalWidth }} className="z-[9] rounded-b-xl bg-amber-400/10 border border-dashed border-amber-400/30 flex items-center justify-center" title={`Traslado: ${booking.travelTimeOverride ?? travelTime} min después`}>
                                     <Truck className="w-4 h-4 text-amber-500" />
                                   </div>
                                 );
@@ -1563,6 +1571,21 @@ export default function BookingsClient({
                         <div className="w-full p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl text-sm font-medium text-slate-900 dark:text-white opacity-80 select-text">
                           {formData.homeAddress}
                         </div>
+                      </div>
+                    )}
+
+                    {editingBooking?.isHomeService && (
+                      <div className="space-y-1">
+                        <label className="text-sm font-black text-slate-500 ml-1">{t('form.travelTimeOverrideLabel')}</label>
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder={t('form.travelTimeOverridePlaceholder')}
+                          value={formData.travelTimeOverride ?? ''}
+                          onChange={e => setFormData(prev => ({ ...prev, travelTimeOverride: e.target.value ? Number(e.target.value) : null }))}
+                          className="w-full px-4 py-3 rounded-xl border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        />
+                        <p className="text-xs text-slate-400 ml-1">{t('form.travelTimeOverrideHint', { default: travelTime })}</p>
                       </div>
                     )}
 
@@ -1951,6 +1974,18 @@ export default function BookingsClient({
                                       <p className="font-black">+${zone.fee}</p>
                                     </button>
                                   ))}
+                                </div>
+                                <div className="pt-2 space-y-1">
+                                  <label className="text-sm font-black text-slate-500">{t('form.travelTimeOverrideLabel')}</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    placeholder={t('form.travelTimeOverridePlaceholder')}
+                                    value={formData.travelTimeOverride ?? ''}
+                                    onChange={e => setFormData(prev => ({ ...prev, travelTimeOverride: e.target.value ? Number(e.target.value) : null }))}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-100 dark:border-white/10 bg-white dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                  />
+                                  <p className="text-xs text-slate-400">{t('form.travelTimeOverrideHint', { default: travelTime })}</p>
                                 </div>
                              </div>
                            )}

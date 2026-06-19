@@ -564,6 +564,7 @@ export async function createBookingSessionAction(data: {
   zoneId?: string;
   notes?: string;
   isHomeService?: boolean;
+  travelTimeOverride?: number | null;
   isAdmin?: boolean; // permite agendar en horarios pasados (ej: registrar cita walk-in)
   sessionToken?: string; // para liberar soft locks al confirmar
   schedulingMode?: 'bulk' | 'separate'; // bulk = mismo especialista preferido; separate = balanceo independiente
@@ -840,6 +841,7 @@ export async function createBookingSessionAction(data: {
           endTime: utcEnd,
           notes: data.notes,
           isHomeService: data.isHomeService ?? false,
+          travelTimeOverride: data.travelTimeOverride ?? null,
           sessionId: session.id,
           status: data.zoneId ? 'PENDING' : 'CONFIRMED'
         }).returning();
@@ -1002,6 +1004,7 @@ export async function updateBookingAction(data: {
         endTime: data.endTime,
         status: data.status as any,
         notes: data.notes,
+        ...(data.travelTimeOverride !== undefined ? { travelTimeOverride: data.travelTimeOverride ?? null } : {}),
         ...(isFinalizingNow ? { finalizedBy: session.userId, finalizedAt: new Date() } : {}),
       })
       .where(and(eq(bookings.id, data.id), eq(bookings.tenantId, data.tenantId)));

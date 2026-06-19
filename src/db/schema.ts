@@ -145,6 +145,7 @@ export const bookings = pgTable('bookings', {
   status: varchar('status', { length: 50 }).notNull().default('CONFIRMED'), 
   notes: text('notes'),
   isHomeService: boolean('is_home_service').notNull().default(false),
+  travelTimeOverride: integer('travel_time_override'),
   sessionId: uuid('session_id').references(() => bookingSessions.id, { onDelete: 'set null' }),
   surveyEmailSent: boolean('survey_email_sent').notNull().default(false),
   reminderSent: boolean('reminder_sent').notNull().default(false),
