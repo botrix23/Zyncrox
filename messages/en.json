@@ -928,7 +928,9 @@
         "save": "Save changes",
         "saving": "Saving...",
         "contactEmailLabel": "Contact email",
-        "contactEmailHint": "Displayed in client emails so they can reach you. Leave empty to hide it."
+        "contactEmailHint": "Displayed in client emails so they can reach you. Leave empty to hide it.",
+        "contactPhoneLabel": "Contact phone",
+        "contactPhoneHint": "Displayed in client emails so they can call or message you. Leave empty to hide it."
       },
       "colors": {
         "purple": "Purple",

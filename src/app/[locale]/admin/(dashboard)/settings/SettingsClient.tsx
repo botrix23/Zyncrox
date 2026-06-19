@@ -180,7 +180,6 @@ export default function SettingsClient({
   const [timezone, setTimezone] = useState(initialTimezone);
   const [emailLocale, setEmailLocale] = useState(initialEmailLocale);
   const [emailBodyTemplate, setEmailBodyTemplate] = useState(initialEmailBodyTemplate);
-  const [whatsappNumber, setWhatsappNumber] = useState(initialWhatsappNumber);
   const [waMessageTemplate, setWaMessageTemplate] = useState(initialWaMessageTemplate);
   const [savingConfig, setSavingConfig] = useState(false);
   const [configMessage, setConfigMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -222,7 +221,6 @@ export default function SettingsClient({
       timezone,
       emailLocale,
       emailBodyTemplate: emailBodyTemplate || null,
-      whatsappNumber: whatsappNumber || null,
       waMessageTemplate: waMessageTemplate || null,
     });
     if (res.success) {
@@ -428,25 +426,6 @@ export default function SettingsClient({
             </p>
           </div>
 
-          {/* WhatsApp de contacto */}
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
-              {t('whatsappLabel')}
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
-                <MessageSquare className="w-4 h-4" />
-              </div>
-              <input
-                type="tel"
-                value={whatsappNumber}
-                onChange={e => setWhatsappNumber(e.target.value)}
-                placeholder="Ej: 50370000000"
-                className="w-full pl-10 p-3 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-zinc-900 dark:text-white"
-              />
-            </div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500">{t('whatsappHint')}</p>
-          </div>
 
           {/* Plantilla de email — temporalmente oculta */}
           {false && (

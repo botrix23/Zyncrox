@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   Palette, CheckCircle2, AlertCircle, Save, Eye, Monitor, Moon, Sun,
   MonitorSmartphone, ExternalLink, Instagram, Facebook, Music, Building2,
-  ImageIcon, Share2, Copy, Trash2, Mail, LayoutTemplate,
+  ImageIcon, Share2, Copy, Trash2, Mail, Phone, LayoutTemplate,
 } from "lucide-react";
 import { updateAppearanceAction } from "@/app/actions/tenant";
 import { useRouter, useParams } from "next/navigation";
@@ -32,6 +32,7 @@ export default function AppearanceClient({
     heroTitle?: string | null;
     heroSubtitle?: string | null;
     contactEmail?: string | null;
+    whatsappNumber?: string | null;
     showStaffSelection?: boolean;
     bookingSettings?: {
       footerText?: string;
@@ -62,6 +63,7 @@ export default function AppearanceClient({
   const [heroTitle, setHeroTitle] = useState(tenant.heroTitle || "");
   const [heroSubtitle, setHeroSubtitle] = useState(tenant.heroSubtitle || "");
   const [contactEmail, setContactEmail] = useState(tenant.contactEmail || "");
+  const [contactPhone, setContactPhone] = useState(tenant.whatsappNumber || "");
   const [footerText, setFooterText] = useState(tenant.bookingSettings?.footerText || "");
 
   // ── Widget config ──────────────────────────────────────────────────────────
@@ -110,6 +112,7 @@ export default function AppearanceClient({
       heroTitle: heroTitle || null,
       heroSubtitle: heroSubtitle || null,
       contactEmail: contactEmail || null,
+      whatsappNumber: contactPhone || null,
       showStaffSelection: tenant.showStaffSelection ?? true,
       bookingSettings: {
         ...tenant.bookingSettings,
@@ -321,6 +324,24 @@ export default function AppearanceClient({
                   />
                 </div>
                 <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">{tPortal('form.contactEmailHint')}</p>
+              </div>
+
+              {/* Contact phone */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">{tPortal('form.contactPhoneLabel')}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="tel"
+                    value={contactPhone}
+                    onChange={e => setContactPhone(e.target.value)}
+                    placeholder="Ej: +503 7000 0000"
+                    className="w-full pl-10 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm text-slate-900 dark:text-white"
+                  />
+                </div>
+                <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">{tPortal('form.contactPhoneHint')}</p>
               </div>
 
               {/* Widget Footer */}

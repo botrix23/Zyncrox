@@ -29,6 +29,7 @@ export default async function AppearancePage({ params }: { params: { locale: str
       heroTitle: true,
       heroSubtitle: true,
       contactEmail: true,
+      whatsappNumber: true,
       showStaffSelection: true,
       bookingSettings: true,
     },
@@ -55,6 +56,7 @@ export default async function AppearancePage({ params }: { params: { locale: str
         heroTitle: tenantData.heroTitle,
         heroSubtitle: tenantData.heroSubtitle,
         contactEmail: tenantData.contactEmail,
+        whatsappNumber: tenantData.whatsappNumber,
         showStaffSelection: tenantData.showStaffSelection,
         bookingSettings: tenantData.bookingSettings as any,
       }}

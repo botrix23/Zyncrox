@@ -928,7 +928,9 @@
         "save": "Guardar cambios",
         "saving": "Guardando...",
         "contactEmailLabel": "Correo de contacto",
-        "contactEmailHint": "Se mostrará en los correos al cliente para que pueda contactarte. Déjalo vacío para ocultarlo."
+        "contactEmailHint": "Se mostrará en los correos al cliente para que pueda contactarte. Déjalo vacío para ocultarlo.",
+        "contactPhoneLabel": "Teléfono de contacto",
+        "contactPhoneHint": "Se mostrará en los correos al cliente para que pueda llamarte o escribirte. Déjalo vacío para ocultarlo."
       },
       "colors": {
         "purple": "Púrpura",

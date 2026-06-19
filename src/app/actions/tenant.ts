@@ -286,6 +286,7 @@ export async function updateAppearanceAction(data: {
   heroTitle?: string | null;
   heroSubtitle?: string | null;
   contactEmail?: string | null;
+  whatsappNumber?: string | null;
   showStaffSelection?: boolean;
   bookingSettings?: any;
 }) {
@@ -304,6 +305,7 @@ export async function updateAppearanceAction(data: {
         heroTitle: data.heroTitle ?? null,
         heroSubtitle: data.heroSubtitle ?? null,
         contactEmail: data.contactEmail ?? null,
+        whatsappNumber: data.whatsappNumber ?? null,
         showStaffSelection: data.showStaffSelection ?? true,
         bookingSettings: data.bookingSettings,
         updatedAt: new Date(),
@@ -330,7 +332,6 @@ export async function updateConfiguracionAction(data: {
   timezone: string;
   emailLocale: string;
   emailBodyTemplate?: string | null;
-  whatsappNumber?: string | null;
   waMessageTemplate?: string | null;
 }) {
   try {
@@ -340,7 +341,6 @@ export async function updateConfiguracionAction(data: {
         timezone: data.timezone,
         emailLocale: data.emailLocale,
         emailBodyTemplate: data.emailBodyTemplate ?? null,
-        whatsappNumber: data.whatsappNumber ?? null,
         waMessageTemplate: data.waMessageTemplate ?? null,
         updatedAt: new Date(),
       })
