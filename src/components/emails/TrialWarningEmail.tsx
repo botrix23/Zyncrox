@@ -34,7 +34,6 @@ export const TrialWarningEmail = ({ businessName, daysLeft, adminName, locale = 
             </div>
             <Text style={headerName}>Zyncrox</Text>
             <Text style={headerSub}>{locale === 'en' ? 'Booking management platform' : 'Plataforma de gestión de reservas'}</Text>
-            <div style={waveArch} />
             </div>
           </Section>
 
@@ -90,7 +89,7 @@ const font = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue
 const main = { backgroundColor: '#f3f4f6', fontFamily: font };
 const container = { backgroundColor: '#ffffff', margin: '0 auto', maxWidth: '520px', borderRadius: '16px', overflow: 'hidden' as const };
 const header = { padding: 0 };
-const headerInner = { backgroundColor: '#4c1d95', padding: '28px 24px 0', textAlign: 'center' as const };
+const headerInner = { backgroundColor: '#4c1d95', padding: '28px 24px 24px', textAlign: 'center' as const, borderRadius: '0 0 40px 40px' };
 const logoBox = { width: '70px', height: '70px', borderRadius: '16px', backgroundColor: '#fff', margin: '0 auto 10px', textAlign: 'center' as const, lineHeight: '70px' };
 const logoText = { fontSize: '28px', fontWeight: '900', color: '#6d28d9', margin: 0, lineHeight: '70px', textAlign: 'center' as const };
 const headerName = { color: '#fff', fontSize: '16px', fontWeight: '700', margin: '0 0 2px', textAlign: 'center' as const };
@@ -109,6 +108,5 @@ const daysBox = { textAlign: 'center' as const, margin: '0 0 8px' };
 const daysNum = { fontSize: '48px', fontWeight: '800', color: '#6d28d9', margin: '0', lineHeight: '1', textAlign: 'center' as const };
 const daysLabel = { fontSize: '13px', color: '#9ca3af', margin: '4px 0 16px', textAlign: 'center' as const };
 const ctaBtn = { backgroundColor: '#6d28d9', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: '700', textDecoration: 'none', padding: '12px 28px', display: 'inline-block' };
-const waveArch = { height: '28px', backgroundColor: '#ffffff', borderRadius: '50% 50% 0 0 / 100% 100% 0 0', display: 'block', lineHeight: 0, fontSize: 0, marginTop: '14px' };
 const footerSec = { borderTop: '1px solid #f3f4f6', padding: '14px', textAlign: 'center' as const };
 const footerPow = { fontSize: '10px', color: '#9ca3af', margin: 0 };

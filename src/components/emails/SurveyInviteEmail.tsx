@@ -42,7 +42,6 @@ export const SurveyInviteEmail = ({
                   </div>
               }
               <Text style={headerName}>{tenantName}</Text>
-              <div style={waveArch} />
             </div>
           </Section>
 
@@ -82,7 +81,7 @@ const font = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue
 const main = { backgroundColor: '#f3f4f6', fontFamily: font };
 const container = { backgroundColor: '#ffffff', margin: '0 auto', maxWidth: '520px', borderRadius: '16px', overflow: 'hidden' as const };
 const header = { padding: 0 };
-const headerInner = { padding: '28px 24px 0', textAlign: 'center' as const };
+const headerInner = { padding: '28px 24px 24px', textAlign: 'center' as const, borderRadius: '0 0 40px 40px' };
 const initialsBox = { width: '70px', height: '70px', borderRadius: '16px', backgroundColor: '#fff', margin: '0 auto 10px', textAlign: 'center' as const, lineHeight: '70px' };
 const initialsText = { fontSize: '22px', fontWeight: '800', margin: 0, lineHeight: '70px', textAlign: 'center' as const };
 const headerName = { color: '#fff', fontSize: '15px', fontWeight: '700', margin: '0 0 2px', textAlign: 'center' as const };
@@ -92,7 +91,6 @@ const subtext = { fontSize: '14px', color: '#6b7280', margin: '0 0 20px', lineHe
 const starsRow = { textAlign: 'center' as const, marginBottom: '4px' };
 const starsText = { fontSize: '28px', color: '#f59e0b', letterSpacing: '4px', margin: 0, textAlign: 'center' as const };
 const ctaBtn = { borderRadius: '10px', color: '#fff', fontSize: '15px', fontWeight: '700', textDecoration: 'none', padding: '13px 32px', display: 'inline-block' };
-const waveArch = { height: '28px', backgroundColor: '#ffffff', borderRadius: '50% 50% 0 0 / 100% 100% 0 0', display: 'block', lineHeight: 0, fontSize: 0, marginTop: '14px' };
 const footerSec = { borderTop: '1px solid #f3f4f6', padding: '14px', textAlign: 'center' as const };
 const footerMain = { fontSize: '11px', color: '#9ca3af', margin: '0 0 4px' };
 const footerPow = { fontSize: '10px', color: '#9ca3af', margin: 0 };
