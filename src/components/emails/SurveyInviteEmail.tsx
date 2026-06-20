@@ -1,4 +1,4 @@
-import { Body, Button, Container, Head, Heading, Hr, Html, Img, Preview, Section, Text } from "@react-email/components";
+import { Body, Button, Container, Head, Html, Img, Preview, Section, Text } from "@react-email/components";
 import * as React from "react";
 import { t, type EmailLocale } from "@/lib/emailI18n";
 
@@ -8,37 +8,86 @@ interface SurveyInviteEmailProps {
   tenantLogo?: string;
   surveyUrl: string;
   locale?: EmailLocale;
+  primaryColor?: string;
 }
 
-export const SurveyInviteEmail = ({ customerName, tenantName, tenantLogo, surveyUrl, locale = 'es' }: SurveyInviteEmailProps) => (
-  <Html>
-    <Head />
-    <Preview>{t.surveyPreview(tenantName, locale)}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        {tenantLogo && <Img src={tenantLogo} width="150" alt={tenantName} style={logo} />}
-        <Heading style={h1}>{t.surveyHeading(customerName, locale)}</Heading>
-        <Text style={text}>
-          {t.surveyBody(tenantName, locale)}<strong>{tenantName}</strong>?
-        </Text>
-        <Section style={buttonSection}>
-          <Button href={surveyUrl} style={button}>{t.surveyButton(locale)}</Button>
-        </Section>
-        <Hr style={hr} />
-        <Text style={footer}>{t.surveyFooter(tenantName, locale)}</Text>
-      </Container>
-    </Body>
-  </Html>
-);
+export const SurveyInviteEmail = ({
+  customerName, tenantName, tenantLogo, surveyUrl, locale = 'es', primaryColor = '#6d28d9',
+}: SurveyInviteEmailProps) => {
+  const displayName = customerName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const initials = tenantName.slice(0, 2).toUpperCase();
+
+  return (
+    <Html lang={locale}>
+      <Head>
+        <style>{`
+          @media only screen and (max-width:600px){
+            .zy-container{width:100%!important;border-radius:0!important}
+            .zy-body{padding:20px 16px 24px!important}
+          }
+        `}</style>
+      </Head>
+      <Preview>{t.surveyPreview(tenantName, locale)}</Preview>
+      <Body style={main}>
+        <Container style={container} className="zy-container">
+
+          {/* ── Header ─────────────────────────── */}
+          <Section style={{ ...header, backgroundColor: primaryColor }}>
+            {tenantLogo
+              ? <Img src={tenantLogo} width="70" height="70" alt={tenantName}
+                  style={{ borderRadius: '16px', margin: '0 auto 10px', display: 'block' }} />
+              : <div style={initialsBox}>
+                  <Text style={{ ...initialsText, color: primaryColor }}>{initials}</Text>
+                </div>
+            }
+            <Text style={headerName}>{tenantName}</Text>
+          </Section>
+
+          {/* ── Body ───────────────────────────── */}
+          <Section style={bodyPad} className="zy-body">
+            <Text style={greeting}>{t.surveyHeading(displayName, locale)}</Text>
+            <Text style={subtext}>
+              {t.surveyBody(tenantName, locale)}<strong>{tenantName}</strong>?
+            </Text>
+
+            <div style={starsRow}>
+              <Text style={starsText}>★★★★★</Text>
+            </div>
+
+            <Section style={{ textAlign: 'center', margin: '20px 0' }}>
+              <Button href={surveyUrl} style={{ ...ctaBtn, backgroundColor: primaryColor }}>
+                {t.surveyButton(locale)}
+              </Button>
+            </Section>
+          </Section>
+
+          {/* ── Footer ─────────────────────────── */}
+          <Section style={footerSec}>
+            <Text style={footerMain}>{t.surveyFooter(tenantName, locale)}</Text>
+            <Text style={footerPow}>{t.poweredBy(locale)} <strong>Zyncrox</strong></Text>
+          </Section>
+
+        </Container>
+      </Body>
+    </Html>
+  );
+};
 
 export default SurveyInviteEmail;
 
-const main = { backgroundColor: "#f6f9fc", fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif' };
-const container = { backgroundColor: "#ffffff", margin: "0 auto", padding: "40px 20px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" };
-const logo = { margin: "0 auto 20px auto", display: "block" };
-const h1 = { color: "#333", fontSize: "24px", fontWeight: "bold", textAlign: "center" as const, margin: "30px 0" };
-const text = { color: "#555", fontSize: "16px", lineHeight: "26px", textAlign: "center" as const };
-const buttonSection = { textAlign: "center" as const, margin: "30px 0" };
-const button = { backgroundColor: "#9333ea", borderRadius: "6px", color: "#fff", fontSize: "16px", fontWeight: "bold", textDecoration: "none", textAlign: "center" as const, padding: "12px 28px" };
-const hr = { borderColor: "#e6ebf1", margin: "20px 0" };
-const footer = { color: "#8898aa", fontSize: "12px", textAlign: "center" as const };
+const font = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif';
+const main = { backgroundColor: '#f5f3ff', fontFamily: font };
+const container = { backgroundColor: '#ffffff', margin: '0 auto', maxWidth: '520px', borderRadius: '16px', overflow: 'hidden' as const };
+const header = { padding: '28px 24px 28px', textAlign: 'center' as const, borderRadius: '0 0 24px 24px' };
+const initialsBox = { width: '70px', height: '70px', borderRadius: '16px', backgroundColor: '#fff', margin: '0 auto 10px', textAlign: 'center' as const, lineHeight: '70px' };
+const initialsText = { fontSize: '22px', fontWeight: '800', margin: 0, lineHeight: '70px', textAlign: 'center' as const };
+const headerName = { color: '#fff', fontSize: '15px', fontWeight: '700', margin: '0 0 2px', textAlign: 'center' as const };
+const bodyPad = { padding: '28px 28px 8px', textAlign: 'center' as const };
+const greeting = { fontSize: '20px', fontWeight: '700', color: '#111827', margin: '0 0 8px', textAlign: 'center' as const };
+const subtext = { fontSize: '14px', color: '#6b7280', margin: '0 0 20px', lineHeight: '1.6', textAlign: 'center' as const };
+const starsRow = { textAlign: 'center' as const, marginBottom: '4px' };
+const starsText = { fontSize: '28px', color: '#f59e0b', letterSpacing: '4px', margin: 0, textAlign: 'center' as const };
+const ctaBtn = { borderRadius: '10px', color: '#fff', fontSize: '15px', fontWeight: '700', textDecoration: 'none', padding: '13px 32px', display: 'inline-block' };
+const footerSec = { borderTop: '1px solid #f5f3ff', padding: '14px', textAlign: 'center' as const };
+const footerMain = { fontSize: '11px', color: '#9ca3af', margin: '0 0 4px' };
+const footerPow = { fontSize: '10px', color: '#a78bfa', margin: 0 };

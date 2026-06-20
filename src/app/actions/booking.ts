@@ -526,6 +526,7 @@ export async function createBookingAction(data: {
               customBody: tenant.emailBodyTemplate,
               phone: tenant.whatsappNumber || branch.phone || undefined,
               contactEmail: (tenant as any).contactEmail || undefined,
+              primaryColor: tenant.primaryColor || undefined,
             }),
             vars
           );
@@ -911,6 +912,8 @@ export async function createBookingSessionAction(data: {
             customBody: tenant.emailBodyTemplate,
             phone: tenant.whatsappNumber || branch?.phone || undefined,
             contactEmail: (tenant as any).contactEmail || undefined,
+            primaryColor: tenant.primaryColor || undefined,
+            isHomeService: data.isHomeService ?? false,
           }),
           vars2
         );
@@ -1041,6 +1044,8 @@ export async function updateBookingAction(data: {
             tenantLogo: existing.tenant.logoUrl || undefined,
             phone: existing.tenant.whatsappNumber || undefined,
             contactEmail: (existing.tenant as any).contactEmail || undefined,
+            primaryColor: existing.tenant.primaryColor || undefined,
+            isHomeService: (existing as any).isHomeService || false,
           }),
           varsC
         );
@@ -1092,6 +1097,8 @@ export async function updateBookingAction(data: {
             tenantLogo: existing.tenant.logoUrl || undefined,
             phone: existing.tenant.whatsappNumber || undefined,
             contactEmail: (existing.tenant as any).contactEmail || undefined,
+            primaryColor: existing.tenant.primaryColor || undefined,
+            isHomeService: (existing as any).isHomeService || false,
           }),
           varsR
         );
@@ -1156,6 +1163,8 @@ export async function deleteBookingAction(id: string, tenantId: string) {
             tenantLogo: existing.tenant.logoUrl || undefined,
             phone: existing.tenant.whatsappNumber || undefined,
             contactEmail: (existing.tenant as any).contactEmail || undefined,
+            primaryColor: existing.tenant.primaryColor || undefined,
+            isHomeService: (existing as any).isHomeService || false,
           }),
           varsC
         );
@@ -1400,6 +1409,7 @@ export async function sendPendingSurveyEmailsAction(tenantId: string) {
             ...varsS,
             locale: localeS,
             tenantLogo: tenant.logoUrl || undefined,
+            primaryColor: tenant.primaryColor || undefined,
           }),
           varsS
         );

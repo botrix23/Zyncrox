@@ -131,6 +131,10 @@ export const t = {
   trialButton:  (l: EmailLocale) => l === 'en' ? 'Contact support' : 'Contactar soporte',
   trialFooter:  (l: EmailLocale) => l === 'en' ? 'Zyncrox · Premium booking management' : 'Zyncrox · Gestión de reservas premium',
 
+  // ── Location ────────────────────────────────────────────────────────────
+  homeServiceLabel: (l: EmailLocale) => l === 'en' ? 'Home service' : 'A domicilio',
+  poweredBy:        (l: EmailLocale) => l === 'en' ? 'Sent via' : 'Enviado por',
+
   // ── Survey ──────────────────────────────────────────────────────────────────
   surveySubject: (tenantName: string, l: EmailLocale) =>
     l === 'en' ? `How was your experience? - ${tenantName}` : `¿Cómo fue tu experiencia? - ${tenantName}`,
