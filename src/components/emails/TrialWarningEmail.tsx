@@ -27,12 +27,14 @@ export const TrialWarningEmail = ({ businessName, daysLeft, adminName, locale = 
         <Container style={container} className="zy-container">
 
           {/* ── Header (Zyncrox branding) ─────── */}
-          <Section style={header}>
+          <Section style={{ padding: 0, backgroundColor: '#ffffff' }}>
+            <div style={headerInner}>
             <div style={logoBox}>
               <Text style={logoText}>Z</Text>
             </div>
             <Text style={headerName}>Zyncrox</Text>
             <Text style={headerSub}>{locale === 'en' ? 'Booking management platform' : 'Plataforma de gestión de reservas'}</Text>
+            </div>
           </Section>
 
           {/* ── Body ───────────────────────────── */}
@@ -86,7 +88,8 @@ export default TrialWarningEmail;
 const font = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif';
 const main = { backgroundColor: '#f5f3ff', fontFamily: font };
 const container = { backgroundColor: '#ffffff', margin: '0 auto', maxWidth: '520px', borderRadius: '16px', overflow: 'hidden' as const };
-const header = { backgroundColor: '#4c1d95', padding: '28px 24px 28px', textAlign: 'center' as const, borderRadius: '0 0 24px 24px' };
+const header = { padding: 0, backgroundColor: '#ffffff' };
+const headerInner = { backgroundColor: '#4c1d95', padding: '28px 24px 28px', textAlign: 'center' as const, borderRadius: '0 0 24px 24px' };
 const logoBox = { width: '70px', height: '70px', borderRadius: '16px', backgroundColor: '#fff', margin: '0 auto 10px', textAlign: 'center' as const, lineHeight: '70px' };
 const logoText = { fontSize: '28px', fontWeight: '900', color: '#6d28d9', margin: 0, lineHeight: '70px', textAlign: 'center' as const };
 const headerName = { color: '#fff', fontSize: '16px', fontWeight: '700', margin: '0 0 2px', textAlign: 'center' as const };

@@ -32,15 +32,17 @@ export const SurveyInviteEmail = ({
         <Container style={container} className="zy-container">
 
           {/* ── Header ─────────────────────────── */}
-          <Section style={{ ...header, backgroundColor: primaryColor }}>
-            {tenantLogo
-              ? <Img src={tenantLogo} width="70" height="70" alt={tenantName}
-                  style={{ borderRadius: '16px', margin: '0 auto 10px', display: 'block' }} />
-              : <div style={initialsBox}>
-                  <Text style={{ ...initialsText, color: primaryColor }}>{initials}</Text>
-                </div>
-            }
-            <Text style={headerName}>{tenantName}</Text>
+          <Section style={{ padding: 0, backgroundColor: '#ffffff' }}>
+            <div style={{ ...headerInner, backgroundColor: primaryColor }}>
+              {tenantLogo
+                ? <Img src={tenantLogo} width="70" height="70" alt={tenantName}
+                    style={{ borderRadius: '16px', margin: '0 auto 10px', display: 'block' }} />
+                : <div style={initialsBox}>
+                    <Text style={{ ...initialsText, color: primaryColor }}>{initials}</Text>
+                  </div>
+              }
+              <Text style={headerName}>{tenantName}</Text>
+            </div>
           </Section>
 
           {/* ── Body ───────────────────────────── */}
@@ -78,7 +80,8 @@ export default SurveyInviteEmail;
 const font = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif';
 const main = { backgroundColor: '#f5f3ff', fontFamily: font };
 const container = { backgroundColor: '#ffffff', margin: '0 auto', maxWidth: '520px', borderRadius: '16px', overflow: 'hidden' as const };
-const header = { padding: '28px 24px 28px', textAlign: 'center' as const, borderRadius: '0 0 24px 24px' };
+const header = { padding: 0, backgroundColor: '#ffffff' };
+const headerInner = { padding: '28px 24px 28px', textAlign: 'center' as const, borderRadius: '0 0 24px 24px' };
 const initialsBox = { width: '70px', height: '70px', borderRadius: '16px', backgroundColor: '#fff', margin: '0 auto 10px', textAlign: 'center' as const, lineHeight: '70px' };
 const initialsText = { fontSize: '22px', fontWeight: '800', margin: 0, lineHeight: '70px', textAlign: 'center' as const };
 const headerName = { color: '#fff', fontSize: '15px', fontWeight: '700', margin: '0 0 2px', textAlign: 'center' as const };
