@@ -162,6 +162,7 @@ export async function updatePointsSettingsAction(data: {
   pointsPerDollar: number;
   pointsExpireEnabled: boolean;
   pointsExpireMonths: number;
+  pointsRedemptionNote?: string | null;
 }) {
   try {
     await db.update(tenants)
@@ -170,6 +171,7 @@ export async function updatePointsSettingsAction(data: {
         pointsPerDollar: data.pointsPerDollar,
         pointsExpireEnabled: data.pointsExpireEnabled,
         pointsExpireMonths: data.pointsExpireMonths,
+        pointsRedemptionNote: data.pointsRedemptionNote ?? null,
         updatedAt: new Date(),
       })
       .where(eq(tenants.id, data.tenantId));

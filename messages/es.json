@@ -163,7 +163,8 @@
     "points_modal_rewards_title": "Premios disponibles",
     "points_modal_no_rewards": "Aún no hay premios configurados.",
     "points_modal_keep_booking": "Sigue reservando para acumular más puntos.",
-    "points_modal_search_again": "Consultar otro correo"
+    "points_modal_search_again": "Consultar otro correo",
+    "points_modal_how_to_redeem": "¿Cómo canjear?"
   },
   "Login": {
     "title": "Iniciar sesión",

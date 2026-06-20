@@ -45,6 +45,7 @@ interface LoyaltyConfig {
   pointsPerDollar?: number;
   pointsExpireEnabled?: boolean;
   pointsExpireMonths?: number;
+  pointsRedemptionNote?: string | null;
 }
 
 interface PointsTransaction {
@@ -144,6 +145,7 @@ export default function ClientsClient({
   const [pointsPerDollar, setPointsPerDollar] = useState(loyaltyConfig?.pointsPerDollar ?? 10);
   const [pointsExpireEnabled, setPointsExpireEnabled] = useState(loyaltyConfig?.pointsExpireEnabled ?? false);
   const [pointsExpireMonths, setPointsExpireMonths] = useState(loyaltyConfig?.pointsExpireMonths ?? 6);
+  const [pointsRedemptionNote, setPointsRedemptionNote] = useState(loyaltyConfig?.pointsRedemptionNote ?? '');
   const [pointsSaving, setPointsSaving] = useState(false);
   const [pointsMessage, setPointsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   // Rewards state
@@ -182,6 +184,7 @@ export default function ClientsClient({
       pointsPerDollar,
       pointsExpireEnabled,
       pointsExpireMonths,
+      pointsRedemptionNote: pointsRedemptionNote.trim() || null,
     });
     if (result.success) {
       setPointsMessage({ type: 'success', text: locale === 'es' ? 'Configuración guardada' : 'Settings saved' });
@@ -754,6 +757,23 @@ export default function ClientsClient({
                       </div>
                     )}
                   </div>
+                  {/* Redemption instructions */}
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800 dark:text-white">{locale === 'es' ? 'Instrucciones de canje' : 'Redemption instructions'}</p>
+                      <p className="text-xs text-slate-500">{locale === 'es' ? 'Explica a tus clientes cómo pueden canjear sus puntos. Se mostrará en el widget público.' : 'Tell customers how to redeem their points. Shown in the public booking widget.'}</p>
+                    </div>
+                    <textarea
+                      value={pointsRedemptionNote}
+                      onChange={e => setPointsRedemptionNote(e.target.value)}
+                      maxLength={400}
+                      rows={3}
+                      placeholder={locale === 'es' ? 'Ej: Para canjear tus puntos, menciónalos al momento de tu cita y el encargado realizará el descuento.' : 'E.g. To redeem your points, mention them at your appointment and our staff will apply the discount.'}
+                      className="w-full p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm resize-none focus:ring-2 focus:ring-amber-500 focus:outline-none text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500"
+                    />
+                    <p className="text-xs text-slate-400 text-right">{pointsRedemptionNote.length}/400</p>
+                  </div>
+
                   {/* Rewards catalog */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">

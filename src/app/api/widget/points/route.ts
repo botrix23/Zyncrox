@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   // Validate tenant has points enabled + ENTERPRISE plan
   const tenant = await db.query.tenants.findFirst({
     where: eq(tenants.id, tenantId),
-    columns: { pointsEnabled: true, plan: true, pointsPerDollar: true },
+    columns: { pointsEnabled: true, plan: true, pointsPerDollar: true, pointsRedemptionNote: true },
   });
 
   if (!tenant || !tenant.pointsEnabled || tenant.plan !== 'ENTERPRISE') {
@@ -73,8 +73,10 @@ export async function GET(req: NextRequest) {
     columns: { name: true, description: true, pointsCost: true },
   });
 
+  const redemptionNote = tenant.pointsRedemptionNote ?? null;
+
   if (balance <= 0) {
-    return NextResponse.json({ pointsEnabled: true, balance: 0, nextReward: null, rewards });
+    return NextResponse.json({ pointsEnabled: true, balance: 0, nextReward: null, rewards, redemptionNote });
   }
 
   let nextReward: { name: string; pointsCost: number } | null = null;
@@ -86,5 +88,5 @@ export async function GET(req: NextRequest) {
     nextReward = nextUnaffordable;
   }
 
-  return NextResponse.json({ pointsEnabled: true, balance, nextReward, rewards });
+  return NextResponse.json({ pointsEnabled: true, balance, nextReward, rewards, redemptionNote });
 }

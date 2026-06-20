@@ -60,6 +60,7 @@ export const tenants = pgTable('tenants', {
   pointsPerDollar: integer('points_per_dollar').notNull().default(10),      // points awarded per $1 spent
   pointsExpireEnabled: boolean('points_expire_enabled').notNull().default(false),
   pointsExpireMonths: integer('points_expire_months').notNull().default(6),  // months of inactivity before expiry
+  pointsRedemptionNote: text('points_redemption_note'),
   // Wompi payment gateway credentials (for tenant's own card payments)
   wompiAppId: text('wompi_app_id'),
   wompiApiSecret: text('wompi_api_secret'),

@@ -98,6 +98,7 @@ export default async function Home({ params }: { params: { locale: string, slug:
           heroSubtitle={tenant.heroSubtitle}
           tenantTimezone={tenant.timezone || 'America/El_Salvador'}
           pointsEnabled={tenant.pointsEnabled && tenant.plan === 'ENTERPRISE'}
+          pointsRedemptionNote={tenant.pointsRedemptionNote || undefined}
         />
       ) : (
         <div className="min-h-screen bg-black text-white flex items-center justify-center">

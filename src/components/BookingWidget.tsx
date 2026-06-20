@@ -98,6 +98,7 @@ export default function BookingWidget({
   showStaffSelection,
   tenantTimezone,
   pointsEnabled,
+  pointsRedemptionNote,
 }: {
   branches: Branch[],
   services: Service[],
@@ -140,6 +141,7 @@ export default function BookingWidget({
   showStaffSelection?: boolean;
   tenantTimezone?: string;
   pointsEnabled?: boolean;
+  pointsRedemptionNote?: string;
 }) {
   const t = useTranslations('BookingWidget');
   const locale = useLocale();
@@ -206,6 +208,7 @@ export default function BookingWidget({
   const [pointsLookupResult, setPointsLookupResult] = useState<{
     balance: number;
     rewards: { name: string; description?: string | null; pointsCost: number }[];
+    redemptionNote: string | null;
   } | null>(null);
 
   const businessTimezone = tenantTimezone || (branches[0] as any)?.tenant?.timezone || 'America/El_Salvador';
@@ -1022,9 +1025,11 @@ export default function BookingWidget({
 
   const brand = primaryColor || '#9333ea';
 
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
   const handlePointsLookup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pointsLookupEmail.trim()) return;
+    if (!isValidEmail(pointsLookupEmail)) return;
     setPointsLookupLoading(true);
     setPointsLookupError(null);
     setPointsLookupResult(null);
@@ -1034,7 +1039,11 @@ export default function BookingWidget({
       if (!data.pointsEnabled) {
         setPointsLookupError(t("points_modal_unavailable"));
       } else {
-        setPointsLookupResult({ balance: data.balance ?? 0, rewards: data.rewards ?? [] });
+        setPointsLookupResult({
+          balance: data.balance ?? 0,
+          rewards: data.rewards ?? [],
+          redemptionNote: data.redemptionNote ?? pointsRedemptionNote ?? null,
+        });
       }
     } catch {
       setPointsLookupError(t("points_modal_error"));
@@ -1269,7 +1278,6 @@ export default function BookingWidget({
                     style={{ borderColor: `${brand}40`, color: brand }}
                     className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border bg-white dark:bg-white/5 transition-all duration-200 hover:opacity-80"
                   >
-                    <span className="text-base">⭐</span>
                     {t("points_lookup_btn")}
                   </button>
                 </div>
@@ -2688,12 +2696,9 @@ export default function BookingWidget({
 
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/10">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">⭐</span>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {t("points_modal_title")}
-                </h3>
-              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                {t("points_modal_title")}
+              </h3>
               <button
                 onClick={() => setShowPointsModal(false)}
                 className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
@@ -2725,7 +2730,7 @@ export default function BookingWidget({
                   )}
                   <button
                     type="submit"
-                    disabled={pointsLookupLoading || !pointsLookupEmail.trim()}
+                    disabled={pointsLookupLoading || !isValidEmail(pointsLookupEmail)}
                     style={{ backgroundColor: brand }}
                     className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-opacity"
                   >
@@ -2792,6 +2797,14 @@ export default function BookingWidget({
                     <p className="text-sm text-slate-400 dark:text-zinc-500 text-center">
                       {t("points_modal_no_rewards")}
                     </p>
+                  )}
+
+                  {/* Redemption note */}
+                  {pointsLookupResult.redemptionNote && (
+                    <div className="rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1">{t("points_modal_how_to_redeem")}</p>
+                      <p className="text-sm text-slate-600 dark:text-zinc-300 leading-relaxed">{pointsLookupResult.redemptionNote}</p>
+                    </div>
                   )}
 
                   {/* Search again */}

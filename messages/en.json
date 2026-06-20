@@ -163,7 +163,8 @@
     "points_modal_rewards_title": "Available rewards",
     "points_modal_no_rewards": "No rewards configured yet.",
     "points_modal_keep_booking": "Keep booking to earn more points.",
-    "points_modal_search_again": "Check another email"
+    "points_modal_search_again": "Check another email",
+    "points_modal_how_to_redeem": "How to redeem?"
   },
   "Login": {
     "title": "Login",
