@@ -1032,12 +1032,12 @@ export default function BookingWidget({
       const res = await fetch(`/api/widget/points?tenantId=${tenantId}&email=${encodeURIComponent(pointsLookupEmail.trim())}`);
       const data = await res.json();
       if (!data.pointsEnabled) {
-        setPointsLookupError(locale === 'es' ? 'El programa de puntos no está disponible.' : 'Points program is not available.');
+        setPointsLookupError(t("points_modal_unavailable"));
       } else {
         setPointsLookupResult({ balance: data.balance ?? 0, rewards: data.rewards ?? [] });
       }
     } catch {
-      setPointsLookupError(locale === 'es' ? 'Error al consultar. Intenta de nuevo.' : 'Error fetching points. Please try again.');
+      setPointsLookupError(t("points_modal_error"));
     } finally {
       setPointsLookupLoading(false);
     }
@@ -1270,7 +1270,7 @@ export default function BookingWidget({
                     className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border bg-white dark:bg-white/5 transition-all duration-200 hover:opacity-80"
                   >
                     <span className="text-base">⭐</span>
-                    {locale === 'es' ? 'Consultar mis puntos' : 'Check my points'}
+                    {t("points_lookup_btn")}
                   </button>
                 </div>
               )}
@@ -2684,14 +2684,14 @@ export default function BookingWidget({
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowPointsModal(false); } }}
         >
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-300 max-h-[90dvh] flex flex-col">
 
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="text-xl">⭐</span>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {locale === 'es' ? 'Mis puntos' : 'My points'}
+                  {t("points_modal_title")}
                 </h3>
               </div>
               <button
@@ -2702,22 +2702,23 @@ export default function BookingWidget({
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-5">
+            <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
               {/* Email form */}
               {!pointsLookupResult ? (
                 <form onSubmit={handlePointsLookup} className="space-y-3">
                   <p className="text-sm text-slate-500 dark:text-zinc-400">
-                    {locale === 'es'
-                      ? 'Ingresa tu correo electrónico para consultar tu saldo de puntos.'
-                      : 'Enter your email to check your points balance.'}
+                    {t("points_modal_desc")}
                   </p>
                   <input
                     type="email"
                     value={pointsLookupEmail}
                     onChange={e => setPointsLookupEmail(e.target.value)}
-                    placeholder={locale === 'es' ? 'tu@correo.com' : 'your@email.com'}
+                    placeholder={t("points_modal_placeholder")}
                     required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 text-sm focus:outline-none transition-colors"
+                    style={{ outlineColor: brand }}
+                    onFocus={e => { e.target.style.borderColor = brand; e.target.style.boxShadow = `0 0 0 1px ${brand}`; }}
+                    onBlur={e => { e.target.style.borderColor = ''; e.target.style.boxShadow = ''; }}
                   />
                   {pointsLookupError && (
                     <p className="text-xs text-red-500">{pointsLookupError}</p>
@@ -2729,8 +2730,8 @@ export default function BookingWidget({
                     className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-opacity"
                   >
                     {pointsLookupLoading
-                      ? <><Loader2 className="w-4 h-4 animate-spin" /> {locale === 'es' ? 'Consultando…' : 'Looking up…'}</>
-                      : (locale === 'es' ? 'Consultar' : 'Check')}
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> {t("points_modal_loading")}</>
+                      : t("points_modal_submit")}
                   </button>
                 </form>
               ) : (
@@ -2738,13 +2739,13 @@ export default function BookingWidget({
                   {/* Balance */}
                   <div className="rounded-2xl p-4 text-center" style={{ backgroundColor: `${brand}15`, border: `1px solid ${brand}30` }}>
                     <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: brand }}>
-                      {locale === 'es' ? 'Tu saldo' : 'Your balance'}
+                      {t("points_modal_balance_label")}
                     </p>
                     <p className="text-4xl font-black" style={{ color: brand }}>
                       {pointsLookupResult.balance.toLocaleString()}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
-                      {locale === 'es' ? 'puntos disponibles' : 'points available'}
+                      {t("points_modal_balance_unit")}
                     </p>
                   </div>
 
@@ -2752,7 +2753,7 @@ export default function BookingWidget({
                   {pointsLookupResult.rewards.length > 0 && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
-                        {locale === 'es' ? 'Premios disponibles' : 'Available rewards'}
+                        {t("points_modal_rewards_title")}
                       </p>
                       <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                         {pointsLookupResult.rewards.map((r, i) => {
@@ -2781,7 +2782,7 @@ export default function BookingWidget({
                       </div>
                       {pointsLookupResult.rewards.every(r => pointsLookupResult.balance < r.pointsCost) && (
                         <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2 text-center">
-                          {locale === 'es' ? 'Sigue reservando para acumular más puntos.' : 'Keep booking to earn more points.'}
+                          {t("points_modal_keep_booking")}
                         </p>
                       )}
                     </div>
@@ -2789,7 +2790,7 @@ export default function BookingWidget({
 
                   {pointsLookupResult.rewards.length === 0 && (
                     <p className="text-sm text-slate-400 dark:text-zinc-500 text-center">
-                      {locale === 'es' ? 'Aún no hay premios configurados.' : 'No rewards configured yet.'}
+                      {t("points_modal_no_rewards")}
                     </p>
                   )}
 
@@ -2798,7 +2799,7 @@ export default function BookingWidget({
                     onClick={() => { setPointsLookupResult(null); setPointsLookupEmail(''); setPointsLookupError(null); }}
                     className="w-full py-2 text-xs text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
                   >
-                    {locale === 'es' ? 'Consultar otro correo' : 'Check another email'}
+                    {t("points_modal_search_again")}
                   </button>
                 </div>
               )}

@@ -149,7 +149,21 @@
     "points_balance": "Tienes {balance} puntos",
     "points_need_more": "Te faltan {needed} puntos para {reward}",
     "points_can_redeem": "¡Puedes canjear: {reward}!",
-    "points_accumulated": "{balance} puntos acumulados"
+    "points_accumulated": "{balance} puntos acumulados",
+    "points_lookup_btn": "Consultar mis puntos",
+    "points_modal_title": "Mis puntos",
+    "points_modal_desc": "Ingresa tu correo electrónico para consultar tu saldo de puntos.",
+    "points_modal_placeholder": "tu@correo.com",
+    "points_modal_submit": "Consultar",
+    "points_modal_loading": "Consultando…",
+    "points_modal_error": "Error al consultar. Intenta de nuevo.",
+    "points_modal_unavailable": "El programa de puntos no está disponible.",
+    "points_modal_balance_label": "Tu saldo",
+    "points_modal_balance_unit": "puntos disponibles",
+    "points_modal_rewards_title": "Premios disponibles",
+    "points_modal_no_rewards": "Aún no hay premios configurados.",
+    "points_modal_keep_booking": "Sigue reservando para acumular más puntos.",
+    "points_modal_search_again": "Consultar otro correo"
   },
   "Login": {
     "title": "Iniciar sesión",

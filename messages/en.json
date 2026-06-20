@@ -149,7 +149,21 @@
     "points_balance": "You have {balance} points",
     "points_need_more": "You need {needed} more points for {reward}",
     "points_can_redeem": "You can redeem: {reward}!",
-    "points_accumulated": "{balance} points accumulated"
+    "points_accumulated": "{balance} points accumulated",
+    "points_lookup_btn": "Check my points",
+    "points_modal_title": "My points",
+    "points_modal_desc": "Enter your email to check your points balance.",
+    "points_modal_placeholder": "your@email.com",
+    "points_modal_submit": "Check",
+    "points_modal_loading": "Looking up…",
+    "points_modal_error": "Error fetching points. Please try again.",
+    "points_modal_unavailable": "Points program is not available.",
+    "points_modal_balance_label": "Your balance",
+    "points_modal_balance_unit": "points available",
+    "points_modal_rewards_title": "Available rewards",
+    "points_modal_no_rewards": "No rewards configured yet.",
+    "points_modal_keep_booking": "Keep booking to earn more points.",
+    "points_modal_search_again": "Check another email"
   },
   "Login": {
     "title": "Login",
