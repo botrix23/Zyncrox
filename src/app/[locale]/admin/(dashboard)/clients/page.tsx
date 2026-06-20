@@ -87,6 +87,7 @@ export default async function ClientsPage({
     pointsPerDollar: tenant?.pointsPerDollar ?? 10,
     pointsExpireEnabled: tenant?.pointsExpireEnabled ?? false,
     pointsExpireMonths: tenant?.pointsExpireMonths ?? 6,
+    pointsRedemptionNote: (tenant as any)?.pointsRedemptionNote ?? null,
   };
 
   return (
