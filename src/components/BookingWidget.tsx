@@ -198,6 +198,16 @@ export default function BookingWidget({
     nextReward: { name: string; pointsCost: number } | null;
   } | null>(null);
 
+  // Points lookup modal
+  const [showPointsModal, setShowPointsModal] = useState(false);
+  const [pointsLookupEmail, setPointsLookupEmail] = useState('');
+  const [pointsLookupLoading, setPointsLookupLoading] = useState(false);
+  const [pointsLookupError, setPointsLookupError] = useState<string | null>(null);
+  const [pointsLookupResult, setPointsLookupResult] = useState<{
+    balance: number;
+    rewards: { name: string; description?: string | null; pointsCost: number }[];
+  } | null>(null);
+
   const businessTimezone = tenantTimezone || (branches[0] as any)?.tenant?.timezone || 'America/El_Salvador';
   const [hasTzDifference, setHasTzDifference] = useState(false);
   const [businessOffsetLabel, setBusinessOffsetLabel] = useState("");
@@ -1012,6 +1022,27 @@ export default function BookingWidget({
 
   const brand = primaryColor || '#9333ea';
 
+  const handlePointsLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pointsLookupEmail.trim()) return;
+    setPointsLookupLoading(true);
+    setPointsLookupError(null);
+    setPointsLookupResult(null);
+    try {
+      const res = await fetch(`/api/widget/points?tenantId=${tenantId}&email=${encodeURIComponent(pointsLookupEmail.trim())}`);
+      const data = await res.json();
+      if (!data.pointsEnabled) {
+        setPointsLookupError(locale === 'es' ? 'El programa de puntos no está disponible.' : 'Points program is not available.');
+      } else {
+        setPointsLookupResult({ balance: data.balance ?? 0, rewards: data.rewards ?? [] });
+      }
+    } catch {
+      setPointsLookupError(locale === 'es' ? 'Error al consultar. Intenta de nuevo.' : 'Error fetching points. Please try again.');
+    } finally {
+      setPointsLookupLoading(false);
+    }
+  };
+
   return (
     <main
       id={`widget-${tenantId}`}
@@ -1230,6 +1261,19 @@ export default function BookingWidget({
                   </>
                 )}
               </div>
+
+              {pointsEnabled && (
+                <div className="mt-6 pt-5 border-t border-slate-200 dark:border-white/10 flex justify-center">
+                  <button
+                    onClick={() => { setShowPointsModal(true); setPointsLookupResult(null); setPointsLookupError(null); setPointsLookupEmail(''); }}
+                    style={{ borderColor: `${brand}40`, color: brand }}
+                    className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border bg-white dark:bg-white/5 transition-all duration-200 hover:opacity-80"
+                  >
+                    <span className="text-base">⭐</span>
+                    {locale === 'es' ? 'Consultar mis puntos' : 'Check my points'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -2633,6 +2677,137 @@ export default function BookingWidget({
         {/* ===== END RIGHT SIDE ===== */}
 
       </div>
+
+      {/* ===== POINTS LOOKUP MODAL ===== */}
+      {showPointsModal && pointsEnabled && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowPointsModal(false); } }}
+        >
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⭐</span>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  {locale === 'es' ? 'Mis puntos' : 'My points'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowPointsModal(false)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-5">
+              {/* Email form */}
+              {!pointsLookupResult ? (
+                <form onSubmit={handlePointsLookup} className="space-y-3">
+                  <p className="text-sm text-slate-500 dark:text-zinc-400">
+                    {locale === 'es'
+                      ? 'Ingresa tu correo electrónico para consultar tu saldo de puntos.'
+                      : 'Enter your email to check your points balance.'}
+                  </p>
+                  <input
+                    type="email"
+                    value={pointsLookupEmail}
+                    onChange={e => setPointsLookupEmail(e.target.value)}
+                    placeholder={locale === 'es' ? 'tu@correo.com' : 'your@email.com'}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+                  />
+                  {pointsLookupError && (
+                    <p className="text-xs text-red-500">{pointsLookupError}</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={pointsLookupLoading || !pointsLookupEmail.trim()}
+                    style={{ backgroundColor: brand }}
+                    className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-opacity"
+                  >
+                    {pointsLookupLoading
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> {locale === 'es' ? 'Consultando…' : 'Looking up…'}</>
+                      : (locale === 'es' ? 'Consultar' : 'Check')}
+                  </button>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  {/* Balance */}
+                  <div className="rounded-2xl p-4 text-center" style={{ backgroundColor: `${brand}15`, border: `1px solid ${brand}30` }}>
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: brand }}>
+                      {locale === 'es' ? 'Tu saldo' : 'Your balance'}
+                    </p>
+                    <p className="text-4xl font-black" style={{ color: brand }}>
+                      {pointsLookupResult.balance.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                      {locale === 'es' ? 'puntos disponibles' : 'points available'}
+                    </p>
+                  </div>
+
+                  {/* Rewards catalog */}
+                  {pointsLookupResult.rewards.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
+                        {locale === 'es' ? 'Premios disponibles' : 'Available rewards'}
+                      </p>
+                      <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                        {pointsLookupResult.rewards.map((r, i) => {
+                          const canAfford = pointsLookupResult.balance >= r.pointsCost;
+                          return (
+                            <div
+                              key={i}
+                              className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border text-sm ${
+                                canAfford
+                                  ? 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10'
+                                  : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span>{canAfford ? '✅' : '🔒'}</span>
+                                <span className={`font-semibold truncate ${canAfford ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-zinc-300'}`}>
+                                  {r.name}
+                                </span>
+                              </div>
+                              <span className={`shrink-0 font-bold text-xs ${canAfford ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-zinc-500'}`}>
+                                {r.pointsCost.toLocaleString()} pts
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {pointsLookupResult.rewards.every(r => pointsLookupResult.balance < r.pointsCost) && (
+                        <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2 text-center">
+                          {locale === 'es' ? 'Sigue reservando para acumular más puntos.' : 'Keep booking to earn more points.'}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {pointsLookupResult.rewards.length === 0 && (
+                    <p className="text-sm text-slate-400 dark:text-zinc-500 text-center">
+                      {locale === 'es' ? 'Aún no hay premios configurados.' : 'No rewards configured yet.'}
+                    </p>
+                  )}
+
+                  {/* Search again */}
+                  <button
+                    onClick={() => { setPointsLookupResult(null); setPointsLookupEmail(''); setPointsLookupError(null); }}
+                    className="w-full py-2 text-xs text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
+                  >
+                    {locale === 'es' ? 'Consultar otro correo' : 'Check another email'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ===== END POINTS LOOKUP MODAL ===== */}
+
     </main>
   );
 }

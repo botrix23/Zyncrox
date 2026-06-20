@@ -63,35 +63,28 @@ export async function GET(req: NextRequest) {
 
   const balance = loyalty?.loyaltyPointsBalance ?? 0;
 
-  if (balance <= 0) {
-    return NextResponse.json({ pointsEnabled: true, balance: 0, nextReward: null });
-  }
-
-  // Find the next reward they could earn (cheapest active reward with cost > balance → or cheapest affordable)
-  // Logic: show the next reward they CAN'T afford yet (closest above balance)
-  // If they can afford some, show cheapest one they can afford first
+  // Always fetch all active rewards so the widget can show the full catalog
   const rewards = await db.query.loyaltyRewards.findMany({
     where: and(
       eq(loyaltyRewards.tenantId, tenantId),
       eq(loyaltyRewards.isActive, true)
     ),
     orderBy: [asc(loyaltyRewards.pointsCost)],
-    columns: { name: true, pointsCost: true },
+    columns: { name: true, description: true, pointsCost: true },
   });
 
-  let nextReward: { name: string; pointsCost: number } | null = null;
+  if (balance <= 0) {
+    return NextResponse.json({ pointsEnabled: true, balance: 0, nextReward: null, rewards });
+  }
 
-  // Prioritize: cheapest reward they can't afford yet (motivational)
+  let nextReward: { name: string; pointsCost: number } | null = null;
   const nextUnaffordable = rewards.find(r => r.pointsCost > balance);
   const cheapestAffordable = rewards.find(r => r.pointsCost <= balance);
-
   if (cheapestAffordable) {
-    // They can already redeem something — show that
     nextReward = cheapestAffordable;
   } else if (nextUnaffordable) {
-    // Show how far they are from the next reward
     nextReward = nextUnaffordable;
   }
 
-  return NextResponse.json({ pointsEnabled: true, balance, nextReward });
+  return NextResponse.json({ pointsEnabled: true, balance, nextReward, rewards });
 }
