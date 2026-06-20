@@ -1021,13 +1021,19 @@ export default function BookingWidget({
         dangerouslySetInnerHTML={{
           __html: `
          #widget-${tenantId} .bg-purple-600:not(:disabled) { background-color: ${brand} !important; }
+         #widget-${tenantId} .hover\\:bg-purple-600:not(:disabled):hover { background-color: ${brand} !important; filter: brightness(1.1); }
          #widget-${tenantId} .hover\\:bg-purple-500:not(:disabled):hover { background-color: ${brand} !important; filter: brightness(1.2); }
          #widget-${tenantId} .text-purple-600:not(:disabled) { color: ${brand} !important; }
          #widget-${tenantId} .text-purple-500:not(:disabled) { color: ${brand} !important; }
          #widget-${tenantId} .text-purple-400:not(:disabled) { color: ${brand} !important; filter: brightness(1.2); }
+         #widget-${tenantId} .hover\\:text-purple-500:hover { color: ${brand} !important; }
+         #widget-${tenantId} .hover\\:text-purple-600:hover { color: ${brand} !important; }
+         #widget-${tenantId} .group:hover .group-hover\\:text-purple-500 { color: ${brand} !important; }
+         #widget-${tenantId} .group:hover .group-hover\\:text-purple-400 { color: ${brand} !important; filter: brightness(1.2); }
          #widget-${tenantId} .border-purple-500:not(:disabled) { border-color: ${brand} !important; }
          #widget-${tenantId} .border-l-purple-500:not(:disabled) { border-left-color: ${brand} !important; }
          #widget-${tenantId} .hover\\:border-purple-500\\/40:hover { border-color: ${brand}66 !important; }
+         #widget-${tenantId} .focus\\:border-purple-500:focus { border-color: ${brand} !important; }
          #widget-${tenantId} .bg-purple-500\\/5 { background-color: ${brand}0D !important; }
          #widget-${tenantId} .bg-purple-500\\/10 { background-color: ${brand}1A !important; }
          #widget-${tenantId} .hover\\:bg-purple-500\\/10:hover { background-color: ${brand}1A !important; }
@@ -1037,6 +1043,7 @@ export default function BookingWidget({
          #widget-${tenantId} .ring-purple-500 { --tw-ring-color: ${brand} !important; }
          #widget-${tenantId} .ring-purple-500\\/20 { --tw-ring-color: ${brand}33 !important; }
          #widget-${tenantId} .ring-purple-500\\/30 { --tw-ring-color: ${brand}4D !important; }
+         #widget-${tenantId} .focus\\:ring-purple-500:focus { --tw-ring-color: ${brand} !important; }
          #widget-${tenantId} .shadow-purple-500\\/20 { --tw-shadow-color: ${brand}33 !important; --tw-shadow: var(--tw-shadow-colored) !important; }
       `}} />
 

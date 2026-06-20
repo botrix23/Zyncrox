@@ -40,7 +40,7 @@ export const BookingCancellationEmail = ({
         <Container style={container} className="zy-container">
 
           {/* ── Header ─────────────────────────── */}
-          <Section style={{ padding: 0, backgroundColor: '#ffffff' }}>
+          <Section style={{ padding: 0 }}>
             <div style={{ ...headerInner, backgroundColor: primaryColor }}>
               {tenantLogo
                 ? <Img src={tenantLogo} width="70" height="70" alt={tenantName}
@@ -50,6 +50,7 @@ export const BookingCancellationEmail = ({
                   </div>
               }
               <Text style={headerName}>{tenantName}</Text>
+              <div style={waveArch} />
             </div>
           </Section>
 
@@ -121,10 +122,10 @@ export const BookingCancellationEmail = ({
 export default BookingCancellationEmail;
 
 const font = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif';
-const main = { backgroundColor: '#f5f3ff', fontFamily: font };
+const main = { backgroundColor: '#f3f4f6', fontFamily: font };
 const container = { backgroundColor: '#ffffff', margin: '0 auto', maxWidth: '520px', borderRadius: '16px', overflow: 'hidden' as const };
-const header = { padding: 0, backgroundColor: '#ffffff' };
-const headerInner = { padding: '28px 24px 28px', textAlign: 'center' as const, borderRadius: '0 0 24px 24px' };
+const header = { padding: 0 };
+const headerInner = { padding: '28px 24px 0', textAlign: 'center' as const };
 const initialsBox = { width: '70px', height: '70px', borderRadius: '16px', backgroundColor: '#fff', margin: '0 auto 10px', textAlign: 'center' as const, lineHeight: '70px' };
 const initialsText = { fontSize: '22px', fontWeight: '800', margin: 0, lineHeight: '70px', textAlign: 'center' as const };
 const headerName = { color: '#fff', fontSize: '15px', fontWeight: '700', margin: '0 0 2px', textAlign: 'center' as const };
@@ -136,7 +137,8 @@ const subtext = { fontSize: '13px', color: '#9ca3af', margin: '0 0 16px', lineHe
 const cancelCard = { border: '1px solid #fecdd3', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px' };
 const tdLabel: React.CSSProperties = { padding: '8px 14px', fontSize: '12px', color: '#9ca3af', width: '44%' };
 const tdValue: React.CSSProperties = { padding: '8px 14px', fontSize: '12px', fontWeight: '600', color: '#1e1b4b' };
-const contactPill = { fontSize: '11px', backgroundColor: '#faf5ff', border: '1px solid #ede9fe', padding: '5px 12px', borderRadius: '20px', fontWeight: '500', display: 'inline-block', margin: '2px 0' };
-const footerSec = { borderTop: '1px solid #f5f3ff', padding: '14px', textAlign: 'center' as const };
+const contactPill = { fontSize: '11px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', padding: '5px 12px', borderRadius: '20px', fontWeight: '500', display: 'inline-block', margin: '2px 0' };
+const waveArch = { height: '28px', backgroundColor: '#ffffff', borderRadius: '50% 50% 0 0 / 100% 100% 0 0', display: 'block', lineHeight: 0, fontSize: 0, marginTop: '14px' };
+const footerSec = { borderTop: '1px solid #f3f4f6', padding: '14px', textAlign: 'center' as const };
 const footerMain = { fontSize: '11px', color: '#9ca3af', margin: '0 0 4px' };
-const footerPow = { fontSize: '10px', color: '#a78bfa', margin: 0 };
+const footerPow = { fontSize: '10px', color: '#9ca3af', margin: 0 };
