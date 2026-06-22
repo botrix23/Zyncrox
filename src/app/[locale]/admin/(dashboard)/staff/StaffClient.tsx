@@ -654,6 +654,15 @@ export default function StaffClient({
             </button>
             {!isStaffRole && (
               <button
+                onClick={() => setActiveMainTab('receptionists')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 ${activeMainTab === 'receptionists' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+              >
+                <UserCog className="w-4 h-4" />
+                {t('tabReceptionists')}
+              </button>
+            )}
+            {!isStaffRole && (
+              <button
                 onClick={() => setActiveMainTab('requests')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 ${activeMainTab === 'requests' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
               >
@@ -664,15 +673,6 @@ export default function StaffClient({
                     {pendingRequests.length}
                   </span>
                 )}
-              </button>
-            )}
-            {!isStaffRole && (
-              <button
-                onClick={() => setActiveMainTab('receptionists')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 ${activeMainTab === 'receptionists' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
-              >
-                <UserCog className="w-4 h-4" />
-                {t('tabReceptionists')}
               </button>
             )}
           </div>
@@ -686,9 +686,9 @@ export default function StaffClient({
             className="w-full appearance-none bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
           >
             {!isStaffRole && <option value="team">{t('tabTeam')}</option>}
+            {!isStaffRole && <option value="receptionists">{t('tabReceptionists')}</option>}
             <option value="absences">{t('tabAbsences')}</option>
             {!isStaffRole && <option value="requests">{t('tabRequests')}{pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ''}</option>}
-            {!isStaffRole && <option value="receptionists">{t('tabReceptionists')}</option>}
           </select>
           <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
         </div>
@@ -732,7 +732,7 @@ export default function StaffClient({
                   <p className="text-xs text-slate-500 dark:text-zinc-500">{tTeam("receptionistsSubtitle", { count: receptionists.length })}</p>
                 </div>
               </div>
-              {isOwner && (
+              {!isStaffRole && (
                 <button onClick={() => { setShowRecepForm(true); setRecepError(null); }} className="flex items-center gap-2 px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl transition-all">
                   <Plus className="w-3.5 h-3.5" /> {tTeam("addReceptionist")}
                 </button>
@@ -776,7 +776,7 @@ export default function StaffClient({
                       </div>
                     )}
                   </div>
-                  {isOwner && (
+                  {!isStaffRole && (
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => openEditRecep(r)} title={tTeam("editBtn")} className="p-2 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-all"><Pencil className="w-4 h-4" /></button>
                       <button onClick={() => openSchedules(r)} title={tTeam("schedulesBtn")} className="p-2 rounded-xl text-slate-400 hover:text-purple-500 hover:bg-purple-500/10 transition-all"><Clock className="w-4 h-4" /></button>
@@ -789,7 +789,7 @@ export default function StaffClient({
                 </div>
               ))}
             </div>
-            {showRecepForm && isOwner && (
+            {showRecepForm && !isStaffRole && (
               <form onSubmit={handleCreateRecep} className="px-4 pb-4">
                 <div className="border-t border-slate-100 dark:border-white/5 pt-4 space-y-3">
                   <p className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide">{tTeam("newReceptionistTitle")}</p>
