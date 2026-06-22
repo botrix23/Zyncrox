@@ -645,13 +645,6 @@ export default function StaffClient({
               <User className="w-4 h-4" />
               {t('tabTeam')}
             </button>
-            <button
-              onClick={() => setActiveMainTab('absences')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 ${activeMainTab === 'absences' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
-            >
-              <CalendarOff className="w-4 h-4" />
-              {t('tabAbsences')}
-            </button>
             {!isStaffRole && (
               <button
                 onClick={() => setActiveMainTab('receptionists')}
@@ -661,6 +654,13 @@ export default function StaffClient({
                 {t('tabReceptionists')}
               </button>
             )}
+            <button
+              onClick={() => setActiveMainTab('absences')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 ${activeMainTab === 'absences' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+            >
+              <CalendarOff className="w-4 h-4" />
+              {t('tabAbsences')}
+            </button>
             {!isStaffRole && (
               <button
                 onClick={() => setActiveMainTab('requests')}
