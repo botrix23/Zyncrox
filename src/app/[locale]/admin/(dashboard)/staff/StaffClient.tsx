@@ -75,8 +75,9 @@ export default function StaffClient({
   const isStaffRole = role === 'STAFF' || role === 'RECEPTIONIST';
   type StaffTab = 'team' | 'absences' | 'requests' | 'receptionists';
 
-  // Local staff list state — avoids relying on router.refresh() for UI updates
+  // Local staff list state — syncs when server re-renders after router.refresh()
   const [staffList, setStaffList] = useState<any[]>(initialStaff);
+  useEffect(() => { setStaffList(initialStaff); }, [initialStaff]);
   const activeStaffCount = staffList.filter((m: any) => m.isActive !== false).length;
   const atLimit = activeStaffCount >= limit;
 
@@ -939,7 +940,7 @@ export default function StaffClient({
                       required
                       type="text" 
                       value={formData.name}
-                      onChange={e => setFormData({...formData, name: e.target.value})}
+                      onChange={e => setFormData({...formData, name: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s'-]/g, '')})}
                       className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium"
                       placeholder={t('form.namePlaceholder')}
                     />
@@ -971,7 +972,7 @@ export default function StaffClient({
                     <input 
                       type="text" 
                       value={formData.emergencyContactName}
-                      onChange={e => setFormData({...formData, emergencyContactName: e.target.value})}
+                      onChange={e => setFormData({...formData, emergencyContactName: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s'-]/g, '')})}
                       className="w-full p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all text-sm font-medium"
                       placeholder={t('form.emergencyContactPlaceholder')}
                     />
