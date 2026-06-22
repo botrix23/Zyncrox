@@ -277,8 +277,6 @@ export async function createReceptionistAction(data: {
 }) {
   const { session, tenantId } = await assertAdmin();
 
-  if (!session.isOwner) return { success: false, error: 'OWNER_ONLY' };
-
   const existing = await db.query.users.findFirst({ where: eq(users.email, data.email) });
   if (existing) return { success: false, error: 'EMAIL_EXISTS' };
 
@@ -288,7 +286,7 @@ export async function createReceptionistAction(data: {
   const expires = new Date();
   expires.setDate(expires.getDate() + 7);
 
-  await db.insert(users).values({
+  const [newUser] = await db.insert(users).values({
     tenantId,
     name: data.name,
     email: data.email,
@@ -302,7 +300,7 @@ export async function createReceptionistAction(data: {
     emergencyContactName: data.emergencyContactName || null,
     emergencyContactPhone: data.emergencyContactPhone || null,
     assignedBranchIds: data.branchIds ?? [],
-  });
+  }).returning();
 
   await logAuditEvent({
     action: 'ADMIN_CREATED',
@@ -311,8 +309,8 @@ export async function createReceptionistAction(data: {
     details: { email: data.email, name: data.name, role: 'RECEPTIONIST' },
   });
 
-  revalidatePath('/[locale]/admin/team', 'page');
-  return { success: true, tempPassword };
+  revalidatePath('/[locale]/admin/staff', 'page');
+  return { success: true, tempPassword, userId: newUser.id, branchIds: data.branchIds ?? [] };
 }
 
 export async function updateReceptionistAction(targetUserId: string, data: {

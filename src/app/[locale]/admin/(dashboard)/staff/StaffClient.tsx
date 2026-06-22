@@ -150,10 +150,29 @@ export default function StaffClient({
   };
   const handleCreateRecep = async (e: React.FormEvent) => {
     e.preventDefault(); setRecepCreating(true); setRecepError(null);
+    const savedBranchIds = [...rBranchIds];
+    const savedName = rName;
     const res = await createReceptionistAction({ name: rName, email: rEmail, phone: rPhone || undefined, emergencyContactName: rEcName || undefined, emergencyContactPhone: rEcPhone || undefined, branchIds: rBranchIds });
     setRecepCreating(false);
-    if (res.success && res.tempPassword) { setRecepTempPass(res.tempPassword); resetRecepForm(); await refreshReceptionists(); }
-    else { const errMap: Record<string, string> = { EMAIL_EXISTS: tTeam("errorEmailExists"), OWNER_ONLY: tTeam("errorOwnerOnly") }; setRecepError(errMap[(res as any).error] || tTeam("errorGeneric")); }
+    if (res.success && res.tempPassword) {
+      setRecepTempPass(res.tempPassword);
+      resetRecepForm();
+      await refreshReceptionists();
+      // Auto-open schedule modal if branches were assigned
+      if ((res as any).userId && savedBranchIds.length > 0) {
+        const newRecep: Receptionist = { id: (res as any).userId, name: savedName, email: '', isActive: true, createdAt: new Date(), assignedBranchIds: savedBranchIds };
+        setScheduleRecep(newRecep);
+        setSchedules([]);
+        setNewSchedBranchId(savedBranchIds[0]);
+        setNewSchedData('');
+        setEditingSchedId(null);
+        setScheduleLoading(false);
+        setScheduleError(null);
+      }
+    } else {
+      const errMap: Record<string, string> = { EMAIL_EXISTS: tTeam("errorEmailExists"), OWNER_ONLY: tTeam("errorOwnerOnly") };
+      setRecepError(errMap[(res as any).error] || tTeam("errorGeneric"));
+    }
   };
   const openEditRecep = (r: Receptionist) => { setEditRecep(r); setEditName(r.name); setEditPhone(r.phone ?? ""); setEditEcName(r.emergencyContactName ?? ""); setEditEcPhone(r.emergencyContactPhone ?? ""); setEditBranchIds(r.assignedBranchIds ?? []); setEditError(null); };
   const handleSaveEditRecep = async () => {
