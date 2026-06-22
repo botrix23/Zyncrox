@@ -12,7 +12,7 @@ export default async function BillingPage({ params }: { params: { locale: string
   const session = await getSession()
   const locale = params.locale || 'es'
 
-  if (!session || session.role === 'STAFF') {
+  if (!session || session.role === 'STAFF' || session.role === 'RECEPTIONIST') {
     redirect(`/${locale}/admin`)
   }
 

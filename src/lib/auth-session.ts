@@ -7,7 +7,7 @@ import { cache } from "react";
 export type SessionUser = {
   email: string;
   name?: string | null;
-  role: 'ADMIN' | 'SUPER_ADMIN' | 'STAFF';
+  role: 'ADMIN' | 'SUPER_ADMIN' | 'STAFF' | 'RECEPTIONIST';
   tenantId?: string | null;
   userId?: string;
   staffId?: string | null;

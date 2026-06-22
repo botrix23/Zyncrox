@@ -63,14 +63,14 @@ export default function StaffClient({
   planLimit?: number,
   plan?: string,
   showStaffSelection?: boolean,
-  role?: 'ADMIN' | 'SUPER_ADMIN' | 'STAFF',
+  role?: 'ADMIN' | 'SUPER_ADMIN' | 'STAFF' | 'RECEPTIONIST',
   currentStaffId?: string,
   initialBlocks?: any[],
   pendingRequests?: any[],
 }) {
   const limit = planLimit ?? 999;
   const t = useTranslations('Dashboard.staff');
-  const isStaffRole = role === 'STAFF';
+  const isStaffRole = role === 'STAFF' || role === 'RECEPTIONIST';
   type StaffTab = 'team' | 'absences' | 'requests';
 
   // Local staff list state — avoids relying on router.refresh() for UI updates
@@ -78,7 +78,7 @@ export default function StaffClient({
   const activeStaffCount = staffList.filter((m: any) => m.isActive !== false).length;
   const atLimit = activeStaffCount >= limit;
 
-  const [activeMainTab, setActiveMainTab] = useState<StaffTab>(role === 'STAFF' ? 'absences' : 'team');
+  const [activeMainTab, setActiveMainTab] = useState<StaffTab>(isStaffRole ? 'absences' : 'team');
   const [searchTerm, setSearchTerm] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("all");
   const [staffVisible, setStaffVisible] = useState(20);

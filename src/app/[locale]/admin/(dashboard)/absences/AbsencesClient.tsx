@@ -24,13 +24,13 @@ export default function AbsencesClient({
   branches: any[],
   staff: any[],
   tenantId: string,
-  role?: 'ADMIN' | 'SUPER_ADMIN' | 'STAFF',
+  role?: 'ADMIN' | 'SUPER_ADMIN' | 'STAFF' | 'RECEPTIONIST',
   currentStaffId?: string,
   pendingRequests?: any[],
   /** When set, hides header + internal tabs and shows only this content */
   embeddedTab?: 'blocks' | 'pending',
 }) {
-  const isStaffRole = role === 'STAFF';
+  const isStaffRole = role === 'STAFF' || role === 'RECEPTIONIST';
   const t = useTranslations('Dashboard.absences');
   const tServices = useTranslations('Dashboard.services.table');
   const [isModalOpen, setIsModalOpen] = useState(false);

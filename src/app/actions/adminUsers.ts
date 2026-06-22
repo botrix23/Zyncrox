@@ -251,3 +251,93 @@ export async function getRecoveryEmailAction() {
   });
   return tenant?.recoveryEmail ?? null;
 }
+
+// ─── RECEPTIONIST ACTIONS ────────────────────────────────────────────────────
+
+export async function getReceptionistsAction() {
+  const { tenantId } = await assertAdmin();
+  return db.query.users.findMany({
+    where: and(eq(users.tenantId, tenantId), eq(users.role, 'RECEPTIONIST')),
+    columns: { id: true, name: true, email: true, isActive: true, createdAt: true },
+    orderBy: (u, { asc }) => [asc(u.createdAt)],
+  });
+}
+
+export async function createReceptionistAction(data: { name: string; email: string }) {
+  const { session, tenantId } = await assertAdmin();
+
+  if (!session.isOwner) return { success: false, error: 'OWNER_ONLY' };
+
+  const existing = await db.query.users.findFirst({ where: eq(users.email, data.email) });
+  if (existing) return { success: false, error: 'EMAIL_EXISTS' };
+
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+  const tempPassword = 'Tmp@' + Array.from({ length: 8 }, () => chars[crypto.randomInt(chars.length)]).join('');
+  const hashed = await bcrypt.hash(tempPassword, 10);
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 7);
+
+  await db.insert(users).values({
+    tenantId,
+    name: data.name,
+    email: data.email,
+    password: hashed,
+    role: 'RECEPTIONIST',
+    isOwner: false,
+    isActive: true,
+    mustChangePassword: true,
+    tempPasswordExpiresAt: expires,
+  });
+
+  await logAuditEvent({
+    action: 'ADMIN_CREATED',
+    userId: session.userId,
+    tenantId,
+    details: { email: data.email, name: data.name, role: 'RECEPTIONIST' },
+  });
+
+  revalidatePath('/[locale]/admin/team', 'page');
+  return { success: true, tempPassword };
+}
+
+export async function deleteReceptionistAction(targetUserId: string) {
+  const { session, tenantId } = await assertAdmin();
+
+  if (!session.isOwner) return { success: false, error: 'OWNER_ONLY' };
+  if (session.userId === targetUserId) return { success: false, error: 'CANNOT_DELETE_SELF' };
+
+  const target = await db.query.users.findFirst({
+    where: and(eq(users.id, targetUserId), eq(users.tenantId, tenantId), eq(users.role, 'RECEPTIONIST')),
+    columns: { id: true, email: true },
+  });
+  if (!target) return { success: false, error: 'NOT_FOUND' };
+
+  await db.delete(users).where(and(eq(users.id, targetUserId), eq(users.tenantId, tenantId)));
+
+  await logAuditEvent({
+    action: 'ADMIN_DELETED',
+    userId: session.userId,
+    tenantId,
+    details: { deletedUserId: targetUserId, deletedEmail: target.email, role: 'RECEPTIONIST' },
+  });
+
+  revalidatePath('/[locale]/admin/team', 'page');
+  return { success: true };
+}
+
+export async function toggleReceptionistAction(targetUserId: string, isActive: boolean) {
+  const { session, tenantId } = await assertAdmin();
+
+  if (!session.isOwner) return { success: false, error: 'OWNER_ONLY' };
+
+  const target = await db.query.users.findFirst({
+    where: and(eq(users.id, targetUserId), eq(users.tenantId, tenantId), eq(users.role, 'RECEPTIONIST')),
+    columns: { id: true },
+  });
+  if (!target) return { success: false, error: 'NOT_FOUND' };
+
+  await db.update(users).set({ isActive }).where(and(eq(users.id, targetUserId), eq(users.tenantId, tenantId)));
+
+  revalidatePath('/[locale]/admin/team', 'page');
+  return { success: true };
+}

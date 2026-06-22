@@ -32,7 +32,7 @@ export default async function AdminDashboard({ params: { locale } }: { params: {
   let tenantId: string | null = null;
   const isAdmin = session?.role !== 'STAFF';
 
-  if (session?.role === 'STAFF') {
+  if (session?.role === 'STAFF' || session?.role === 'RECEPTIONIST') {
     redirect(`/${locale}/admin/bookings`);
   } else if (session?.role === 'SUPER_ADMIN') {
     if (session.impersonatedTenantId) tenantId = session.impersonatedTenantId;

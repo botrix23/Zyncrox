@@ -10,7 +10,7 @@ export default async function SettingsPage({ params }: { params: { locale: strin
   const session = await getSession();
   const locale = params.locale || 'es';
 
-  if (!session || session.role === 'STAFF') {
+  if (!session || session.role === 'STAFF' || session.role === 'RECEPTIONIST') {
     redirect(`/${locale}/admin`);
   }
 

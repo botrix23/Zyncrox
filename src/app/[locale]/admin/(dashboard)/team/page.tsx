@@ -5,15 +5,13 @@ import { tenants, users } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getPlanFeatures } from "@/core/plans";
 import { TeamClient } from "./TeamClient";
-import { getTranslations } from "next-intl/server";
 
 export default async function TeamPage({ params }: { params: { locale: string } }) {
   const session = await getSession();
   const locale = params.locale || 'es';
-  const t = await getTranslations('Dashboard.team');
 
   if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.role)) {
-    redirect(`/${locale}/admin/login`);
+    redirect(`/${locale}/admin`);
   }
 
   const tenantId = session.role === 'SUPER_ADMIN'
@@ -26,19 +24,26 @@ export default async function TeamPage({ params }: { params: { locale: string } 
   if (!tenant) redirect(`/${locale}/admin`);
 
   const features = getPlanFeatures(tenant.plan);
-  const maxAdmins = features.maxAdmins; // 0, 3, or -1
 
-  const admins = await db.query.users.findMany({
-    where: and(eq(users.tenantId, tenantId), eq(users.role, 'ADMIN')),
-    columns: { id: true, name: true, email: true, isActive: true, isOwner: true, createdAt: true },
-    orderBy: (u, { asc }) => [asc(u.createdAt)],
-  });
+  const [admins, receptionists] = await Promise.all([
+    db.query.users.findMany({
+      where: and(eq(users.tenantId, tenantId), eq(users.role, 'ADMIN')),
+      columns: { id: true, name: true, email: true, isActive: true, isOwner: true, createdAt: true },
+      orderBy: (u, { asc }) => [asc(u.createdAt)],
+    }),
+    db.query.users.findMany({
+      where: and(eq(users.tenantId, tenantId), eq(users.role, 'RECEPTIONIST')),
+      columns: { id: true, name: true, email: true, isActive: true, createdAt: true },
+      orderBy: (u, { asc }) => [asc(u.createdAt)],
+    }),
+  ]);
 
   return (
     <TeamClient
       initialAdmins={admins}
+      initialReceptionists={receptionists}
       plan={tenant.plan}
-      maxAdmins={maxAdmins}
+      maxAdmins={features.maxAdmins}
       isOwner={session.isOwner ?? false}
       locale={locale}
     />
