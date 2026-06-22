@@ -153,6 +153,7 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
 
   const displayName = user?.name || userEmail?.split('@')[0] || 'Usuario';
   const isStaff = user?.role === 'STAFF';
+  const isReceptionist = user?.role === 'RECEPTIONIST';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const billingDateStr = nextBillingDate ? format(new Date(nextBillingDate), 'dd MMM yyyy') : null;
 
@@ -333,8 +334,8 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
                   </div>
                 </div>
 
-                {/* Trial or billing info (not shown to super admin) */}
-                {!isSuperAdmin && (
+                {/* Trial or billing info (not shown to super admin, staff, or receptionist) */}
+                {!isSuperAdmin && !isStaff && !isReceptionist && (
                   isTrial ? (
                     <div className={`mt-3 flex items-center gap-2 px-3 py-2 border rounded-xl ${
                       trialDaysLeft !== null && trialDaysLeft <= 3
@@ -378,7 +379,7 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
 
               {/* Links */}
               <div className="py-1.5">
-                {!isStaff && (
+                {!isStaff && !isReceptionist && (
                   <Link
                     href={`/${locale}/admin/billing`}
                     onClick={() => setAvatarOpen(false)}
