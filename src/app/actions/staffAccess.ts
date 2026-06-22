@@ -77,7 +77,7 @@ export async function createStaffAccessAction(staffId: string, tenantId: string)
       email: member.email,
       name: member.name,
       password: hashedPassword,
-      role: 'STAFF',
+      role: (member as any).isReceptionist ? 'RECEPTIONIST' : 'STAFF',
       isActive: true,
       mustChangePassword: true,
       tempPasswordExpiresAt: expiresAt,

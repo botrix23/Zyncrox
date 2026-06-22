@@ -1,6 +1,6 @@
 import React from 'react';
 import { db } from '@/db';
-import { staff as staffTable, branches as branchesTable, serviceCategories, tenants, blocks, absenceRequests, users } from '@/db/schema';
+import { staff as staffTable, branches as branchesTable, serviceCategories, tenants, blocks, absenceRequests } from '@/db/schema';
 import { eq, desc, and, ne } from 'drizzle-orm';
 import { getSession, getEffectiveTenantId } from '@/lib/auth-session';
 import { redirect } from 'next/navigation';
@@ -18,10 +18,9 @@ export default async function StaffPage() {
   }
 
   const isStaffRole = session?.role === 'STAFF';
-  const isAdminRole = session?.role === 'ADMIN' || session?.role === 'SUPER_ADMIN';
   const currentStaffId = session?.staffId ?? undefined;
 
-  const [dbStaffRaw, dbBranches, dbCategories, planLimit, tenant, initialBlocks, pendingRequests, dbReceptionists] = await Promise.all([
+  const [dbStaffRaw, dbBranches, dbCategories, planLimit, tenant, initialBlocks, pendingRequests] = await Promise.all([
     db.query.staff.findMany({
       where: eq(staffTable.tenantId, tenantId),
       with: {
@@ -53,14 +52,6 @@ export default async function StaffPage() {
       : db.select().from(absenceRequests).where(
           and(eq(absenceRequests.tenantId, tenantId), eq(absenceRequests.status, 'PENDING'))
         ).orderBy(desc(absenceRequests.createdAt)),
-    // Receptionists — only for admin roles
-    isAdminRole
-      ? db.query.users.findMany({
-          where: and(eq(users.tenantId, tenantId), eq(users.role, 'RECEPTIONIST')),
-          columns: { id: true, name: true, email: true, isActive: true, createdAt: true, phone: true, emergencyContactName: true, emergencyContactPhone: true, assignedBranchIds: true },
-          orderBy: (u, { asc }) => [asc(u.createdAt)],
-        })
-      : Promise.resolve([]),
   ]);
 
   // Aplicar límites de plan antes de renderizar
@@ -93,8 +84,6 @@ export default async function StaffPage() {
       currentStaffId={currentStaffId}
       initialBlocks={initialBlocks}
       pendingRequests={pendingRequests}
-      initialReceptionists={dbReceptionists}
-      isOwner={session?.isOwner ?? false}
     />
   );
 }

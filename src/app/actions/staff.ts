@@ -71,6 +71,7 @@ export async function createStaffAction(data: {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   inheritBranchHours?: boolean;
+  isReceptionist?: boolean;
   categoryIds?: string[];
   assignments?: Array<{
     branchId: string;
@@ -108,6 +109,7 @@ export async function createStaffAction(data: {
       emergencyContactPhone: data.emergencyContactPhone,
       allowsHomeService: data.allowsHomeService ?? true,
       inheritBranchHours: data.inheritBranchHours ?? false,
+      isReceptionist: data.isReceptionist ?? false,
     }).returning();
 
     // Lógica de Horarios: Si hereda de sucursal, ignorar assignments manuales para la base

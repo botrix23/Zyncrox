@@ -23,7 +23,7 @@ export default async function Home({ params }: { params: { locale: string, slug:
       orderBy: (srv, { asc }) => [asc(srv.sortOrder)],
     }),
     db.query.staff.findMany({
-      where: (s, { eq, and }) => and(eq(s.tenantId, tenant.id), eq(s.isActive, true)),
+      where: (s, { eq, and }) => and(eq(s.tenantId, tenant.id), eq(s.isActive, true), eq(s.isReceptionist, false)),
       with: {
         categories: true,
         assignments: { columns: { branchId: true, isPermanent: true } },

@@ -96,6 +96,7 @@ export const staff = pgTable('staff', {
   emergencyContactPhone: varchar('emergency_contact_phone', { length: 30 }),
   allowsHomeService: boolean('allows_home_service').notNull().default(true),
   inheritBranchHours: boolean('inherit_branch_hours').notNull().default(false),
+  isReceptionist: boolean('is_receptionist').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
