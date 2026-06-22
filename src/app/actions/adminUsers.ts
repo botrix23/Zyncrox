@@ -2,7 +2,7 @@
 
 import crypto from 'crypto';
 import { db } from "@/db";
-import { users, tenants } from "@/db/schema";
+import { users, tenants, branches, receptionistSchedules } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
 import { logAuditEvent } from "@/lib/audit";
@@ -258,12 +258,23 @@ export async function getReceptionistsAction() {
   const { tenantId } = await assertAdmin();
   return db.query.users.findMany({
     where: and(eq(users.tenantId, tenantId), eq(users.role, 'RECEPTIONIST')),
-    columns: { id: true, name: true, email: true, isActive: true, createdAt: true },
+    columns: {
+      id: true, name: true, email: true, isActive: true, createdAt: true,
+      phone: true, emergencyContactName: true, emergencyContactPhone: true,
+      assignedBranchIds: true,
+    },
     orderBy: (u, { asc }) => [asc(u.createdAt)],
   });
 }
 
-export async function createReceptionistAction(data: { name: string; email: string }) {
+export async function createReceptionistAction(data: {
+  name: string;
+  email: string;
+  phone?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  branchIds?: string[];
+}) {
   const { session, tenantId } = await assertAdmin();
 
   if (!session.isOwner) return { success: false, error: 'OWNER_ONLY' };
@@ -287,6 +298,10 @@ export async function createReceptionistAction(data: { name: string; email: stri
     isActive: true,
     mustChangePassword: true,
     tempPasswordExpiresAt: expires,
+    phone: data.phone || null,
+    emergencyContactName: data.emergencyContactName || null,
+    emergencyContactPhone: data.emergencyContactPhone || null,
+    assignedBranchIds: data.branchIds ?? [],
   });
 
   await logAuditEvent({
@@ -298,6 +313,80 @@ export async function createReceptionistAction(data: { name: string; email: stri
 
   revalidatePath('/[locale]/admin/team', 'page');
   return { success: true, tempPassword };
+}
+
+export async function updateReceptionistAction(targetUserId: string, data: {
+  name?: string;
+  phone?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  branchIds?: string[];
+}) {
+  const { session, tenantId } = await assertAdmin();
+  if (!session.isOwner) return { success: false, error: 'OWNER_ONLY' };
+
+  const target = await db.query.users.findFirst({
+    where: and(eq(users.id, targetUserId), eq(users.tenantId, tenantId), eq(users.role, 'RECEPTIONIST')),
+    columns: { id: true },
+  });
+  if (!target) return { success: false, error: 'NOT_FOUND' };
+
+  const updates: Partial<typeof users.$inferInsert> = {};
+  if (data.name !== undefined) updates.name = data.name;
+  if ('phone' in data) updates.phone = data.phone ?? null;
+  if ('emergencyContactName' in data) updates.emergencyContactName = data.emergencyContactName ?? null;
+  if ('emergencyContactPhone' in data) updates.emergencyContactPhone = data.emergencyContactPhone ?? null;
+  if (data.branchIds !== undefined) updates.assignedBranchIds = data.branchIds;
+
+  await db.update(users).set(updates).where(and(eq(users.id, targetUserId), eq(users.tenantId, tenantId)));
+  revalidatePath('/[locale]/admin/team', 'page');
+  return { success: true };
+}
+
+export async function getReceptionistSchedulesAction(userId: string) {
+  const { tenantId } = await assertAdmin();
+  return db.query.receptionistSchedules.findMany({
+    where: and(
+      eq(receptionistSchedules.tenantId, tenantId),
+      eq(receptionistSchedules.userId, userId),
+    ),
+  });
+}
+
+export async function saveReceptionistScheduleAction(data: {
+  userId: string;
+  branchId: string;
+  daysOfWeek: string[];
+  startTime: string;
+  endTime: string;
+  scheduleId?: string;
+}) {
+  const { session, tenantId } = await assertAdmin();
+  if (!session.isOwner) return { success: false, error: 'OWNER_ONLY' };
+
+  if (data.scheduleId) {
+    await db.update(receptionistSchedules)
+      .set({ daysOfWeek: data.daysOfWeek, startTime: data.startTime, endTime: data.endTime })
+      .where(and(eq(receptionistSchedules.id, data.scheduleId), eq(receptionistSchedules.tenantId, tenantId)));
+  } else {
+    await db.insert(receptionistSchedules).values({
+      tenantId,
+      userId: data.userId,
+      branchId: data.branchId,
+      daysOfWeek: data.daysOfWeek,
+      startTime: data.startTime,
+      endTime: data.endTime,
+    });
+  }
+  return { success: true };
+}
+
+export async function deleteReceptionistScheduleAction(scheduleId: string) {
+  const { tenantId } = await assertAdmin();
+  await db.delete(receptionistSchedules).where(
+    and(eq(receptionistSchedules.id, scheduleId), eq(receptionistSchedules.tenantId, tenantId))
+  );
+  return { success: true };
 }
 
 export async function deleteReceptionistAction(targetUserId: string) {

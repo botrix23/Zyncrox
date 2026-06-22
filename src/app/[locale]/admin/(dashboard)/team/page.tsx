@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { tenants, users } from "@/db/schema";
+import { tenants, users, branches } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getPlanFeatures } from "@/core/plans";
 import { TeamClient } from "./TeamClient";
@@ -25,7 +25,7 @@ export default async function TeamPage({ params }: { params: { locale: string } 
 
   const features = getPlanFeatures(tenant.plan);
 
-  const [admins, receptionists] = await Promise.all([
+  const [admins, receptionists, tenantBranches] = await Promise.all([
     db.query.users.findMany({
       where: and(eq(users.tenantId, tenantId), eq(users.role, 'ADMIN')),
       columns: { id: true, name: true, email: true, isActive: true, isOwner: true, createdAt: true },
@@ -33,15 +33,23 @@ export default async function TeamPage({ params }: { params: { locale: string } 
     }),
     db.query.users.findMany({
       where: and(eq(users.tenantId, tenantId), eq(users.role, 'RECEPTIONIST')),
-      columns: { id: true, name: true, email: true, isActive: true, createdAt: true },
+      columns: {
+        id: true, name: true, email: true, isActive: true, createdAt: true,
+        phone: true, emergencyContactName: true, emergencyContactPhone: true,
+        assignedBranchIds: true,
+      },
       orderBy: (u, { asc }) => [asc(u.createdAt)],
     }),
+    db.select({ id: branches.id, name: branches.name })
+      .from(branches)
+      .where(and(eq(branches.tenantId, tenantId), eq(branches.isActive, true))),
   ]);
 
   return (
     <TeamClient
       initialAdmins={admins}
       initialReceptionists={receptionists}
+      tenantBranches={tenantBranches}
       plan={tenant.plan}
       maxAdmins={features.maxAdmins}
       isOwner={session.isOwner ?? false}

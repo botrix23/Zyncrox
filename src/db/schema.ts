@@ -260,8 +260,29 @@ export const users = pgTable('users', {
   tempPasswordExpiresAt: timestamp('temp_password_expires_at', { withTimezone: true, mode: 'date' }),
   resetPasswordToken: text('reset_password_token'),
   resetPasswordExpiresAt: timestamp('reset_password_expires_at', { withTimezone: true, mode: 'date' }),
+  phone: varchar('phone', { length: 30 }),
+  emergencyContactName: varchar('emergency_contact_name', { length: 255 }),
+  emergencyContactPhone: varchar('emergency_contact_phone', { length: 30 }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
+
+// 12b. ReceptionistSchedules (Horarios de recepcionistas por sucursal)
+export const receptionistSchedules = pgTable('receptionist_schedules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  branchId: uuid('branch_id').notNull().references(() => branches.id, { onDelete: 'cascade' }),
+  daysOfWeek: json('days_of_week').$type<string[]>().notNull().default([]),
+  startTime: varchar('start_time', { length: 5 }).notNull(),
+  endTime: varchar('end_time', { length: 5 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+export const receptionistSchedulesRelations = relations(receptionistSchedules, ({ one }) => ({
+  tenant: one(tenants, { fields: [receptionistSchedules.tenantId], references: [tenants.id] }),
+  user: one(users, { fields: [receptionistSchedules.userId], references: [users.id] }),
+  branch: one(branches, { fields: [receptionistSchedules.branchId], references: [branches.id] }),
+}));
 
 // 13. AbsenceRequests (Solicitudes de ausencia enviadas por el staff, requieren aprobación)
 export const absenceRequests = pgTable('absence_requests', {
