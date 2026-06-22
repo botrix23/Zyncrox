@@ -191,12 +191,12 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
             })}
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="flex gap-3">
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input type="date" value={newSpecialDate} onChange={e => setNewSpecialDate(e.target.value)}
-                className="flex-1 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4 rounded-2xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all" />
+                className="flex-1 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-3 rounded-2xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all" />
               <button type="button" onClick={addSpecialDate}
-                className="px-6 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold text-sm shadow-xl shadow-purple-500/20 transition-all">
+                className="w-full sm:w-auto px-5 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-purple-500/20 transition-all">
                 {t('addDate')}
               </button>
             </div>
@@ -208,60 +208,56 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
                   <p className="text-sm font-medium text-slate-400">{t('noSpecialDates')}</p>
                 </div>
               ) : Object.entries(data.special).sort(([a], [b]) => a.localeCompare(b)).map(([dateKey, schedule]) => (
-                <div key={dateKey} className="p-4 bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-white/5 rounded-2xl">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-600 font-bold text-xs">
-                        {new Date(dateKey + 'T12:00:00').getDate()}
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
-                          {new Date(dateKey + 'T12:00:00').toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}
-                        </p>
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{dateKey}</p>
-                      </div>
+                <div key={dateKey} className="p-3 sm:p-4 bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-white/5 rounded-2xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 shrink-0 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-600 font-bold text-xs">
+                      {new Date(dateKey + 'T12:00:00').getDate()}
                     </div>
-                    <div className="flex items-center gap-4">
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" checked={schedule.isOpen}
-                          onChange={e => setData(prev => ({
-                            ...prev,
-                            special: {
-                              ...prev.special,
-                              [dateKey]: {
-                                ...prev.special[dateKey],
-                                isOpen: e.target.checked,
-                                slots: e.target.checked && prev.special[dateKey].slots.length === 0
-                                  ? [{ open: '08:00', close: '17:00' }]
-                                  : prev.special[dateKey].slots
-                              }
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-black text-slate-900 dark:text-white tracking-tight truncate">
+                        {new Date(dateKey + 'T12:00:00').toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </p>
+                      <p className="text-xs text-slate-400">{dateKey}</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                      <input type="checkbox" checked={schedule.isOpen}
+                        onChange={e => setData(prev => ({
+                          ...prev,
+                          special: {
+                            ...prev.special,
+                            [dateKey]: {
+                              ...prev.special[dateKey],
+                              isOpen: e.target.checked,
+                              slots: e.target.checked && prev.special[dateKey].slots.length === 0
+                                ? [{ open: '08:00', close: '17:00' }]
+                                : prev.special[dateKey].slots
                             }
-                          }))}
-                          className="sr-only peer" />
-                        <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 shadow-inner"></div>
-                      </label>
-                      <button type="button" onClick={() => removeSpecialDate(dateKey)}
-                        className="p-2 text-slate-300 hover:text-rose-500 transition-colors">
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
+                          }
+                        }))}
+                        className="sr-only peer" />
+                      <div className="w-10 h-5 bg-slate-200 dark:bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600 shadow-inner"></div>
+                    </label>
+                    <button type="button" onClick={() => removeSpecialDate(dateKey)}
+                      className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors shrink-0">
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
 
                   {schedule.isOpen && (
-                    <div className="space-y-3 pl-13">
+                    <div className="space-y-2">
                       {schedule.slots.map((slot, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <div className="flex-1 grid grid-cols-2 gap-2">
+                        <div key={idx} className="flex items-center gap-1.5">
+                          <div className="flex-1 grid grid-cols-2 gap-1.5">
                             <input type="time" value={slot.open}
                               onChange={e => updateSlot("", idx, 'open', e.target.value, true, dateKey)}
-                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all" />
+                              className="w-full min-w-0 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all" />
                             <input type="time" value={slot.close}
                               onChange={e => updateSlot("", idx, 'close', e.target.value, true, dateKey)}
-                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all" />
+                              className="w-full min-w-0 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all" />
                           </div>
                           <button type="button" onClick={() => removeSlot("", idx, true, dateKey)}
-                            className="p-3 text-slate-400 hover:text-rose-500 rounded-xl transition-all">
-                            <Trash2 className="w-4 h-4" />
+                            className="p-2 text-slate-400 hover:text-rose-500 rounded-xl transition-all shrink-0">
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ))}

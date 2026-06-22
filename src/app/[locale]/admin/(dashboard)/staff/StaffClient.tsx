@@ -932,7 +932,7 @@ export default function StaffClient({
                 </button>
               </div>
               
-              <form onSubmit={handleSave} className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
+              <form onSubmit={handleSave} className="p-4 sm:p-8 space-y-5 sm:space-y-8 overflow-y-auto custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1">{t('form.nameLabel')}</label>
