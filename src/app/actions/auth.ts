@@ -262,7 +262,9 @@ export async function forgotPasswordAction(email: string, locale: string = 'es')
 
     const isEs = locale !== 'en';
     await resend.emails.send({
-      from: 'Zyncrox <noreply@zyncrox.com>',
+      from: process.env.NODE_ENV === 'development'
+        ? 'Zyncrox <onboarding@resend.dev>'
+        : 'Zyncrox <noreply@zyncrox.com>',
       to: email,
       subject: isEs ? 'Recupera tu contraseña - Zyncrox' : 'Reset your password - Zyncrox',
       html: `
