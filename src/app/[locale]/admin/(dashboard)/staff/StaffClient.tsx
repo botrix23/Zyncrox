@@ -723,11 +723,13 @@ export default function StaffClient({
           return (
           <div
             key={member.id}
-            onClick={() => handleOpenModal(member)}
-            className={`bg-white dark:bg-zinc-900 border rounded-2xl overflow-hidden shadow-sm transition-all cursor-pointer ${
+            onClick={() => !isStaffRole && handleOpenModal(member)}
+            className={`bg-white dark:bg-zinc-900 border rounded-2xl overflow-hidden shadow-sm transition-all ${isStaffRole ? 'cursor-default' : 'cursor-pointer'} ${
               member.isActive === false
                 ? 'border-slate-200 dark:border-white/5 opacity-60'
-                : 'border-slate-200 dark:border-white/5 hover:border-purple-500/40 hover:shadow-md hover:shadow-purple-500/10 active:scale-[0.99]'
+                : isStaffRole
+                  ? 'border-slate-200 dark:border-white/5'
+                  : 'border-slate-200 dark:border-white/5 hover:border-purple-500/40 hover:shadow-md hover:shadow-purple-500/10 active:scale-[0.99]'
             }`}
           >
             {/* ── Header: nombre + menú ── */}
@@ -768,12 +770,14 @@ export default function StaffClient({
                   </span>
                 )}
               </div>
-              <button
-                onClick={(e) => handleOpenMenu(e, member.id)}
-                className={`p-2 rounded-xl shrink-0 transition-all ${openMenu === member.id ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'}`}
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
+              {!isStaffRole && (
+                <button
+                  onClick={(e) => handleOpenMenu(e, member.id)}
+                  className={`p-2 rounded-xl shrink-0 transition-all ${openMenu === member.id ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'}`}
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {/* ── Badges: Home Service + categorías (máx 2 o todas) + overflow ── */}
@@ -850,24 +854,26 @@ export default function StaffClient({
                         {member.user.mustChangePassword ? <Clock className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
                         {member.user.mustChangePassword ? t('accessPending') : t('accessActive')}
                       </span>
-                      <div className="flex items-center gap-1.5">
-                        {member.user.mustChangePassword && (
+                      {!isStaffRole && (
+                        <div className="flex items-center gap-1.5">
+                          {member.user.mustChangePassword && (
+                            <button
+                              onClick={() => handleResetPassword(member)}
+                              className="flex items-center gap-1 text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-500/5 hover:bg-amber-500/10 px-2.5 py-1.5 rounded-xl transition-all border border-amber-500/10"
+                            >
+                              <KeyRound className="w-3 h-3" />
+                              {t('accessResendPassword')}
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleResetPassword(member)}
-                            className="flex items-center gap-1 text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-500/5 hover:bg-amber-500/10 px-2.5 py-1.5 rounded-xl transition-all border border-amber-500/10"
+                            onClick={() => handleRevokeAccess(member)}
+                            className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-rose-500 px-2.5 py-1.5 rounded-xl hover:bg-rose-500/5 transition-all"
                           >
-                            <KeyRound className="w-3 h-3" />
-                            {t('accessResendPassword')}
+                            <ShieldOff className="w-3 h-3" />
+                            {t('accessRevoke')}
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleRevokeAccess(member)}
-                          className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-rose-500 px-2.5 py-1.5 rounded-xl hover:bg-rose-500/5 transition-all"
-                        >
-                          <ShieldOff className="w-3 h-3" />
-                          {t('accessRevoke')}
-                        </button>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center justify-between">
@@ -875,23 +881,32 @@ export default function StaffClient({
                         <ShieldOff className="w-3.5 h-3.5" />
                         {t('accessInactive')}
                       </span>
-                      <button
-                        onClick={() => handleReactivateAccess(member)}
-                        className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-emerald-500 px-2.5 py-1.5 rounded-xl hover:bg-emerald-500/5 transition-all"
-                      >
-                        <ShieldCheck className="w-3 h-3" />
-                        {t('accessReactivate')}
-                      </button>
+                      {!isStaffRole && (
+                        <button
+                          onClick={() => handleReactivateAccess(member)}
+                          className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-emerald-500 px-2.5 py-1.5 rounded-xl hover:bg-emerald-500/5 transition-all"
+                        >
+                          <ShieldCheck className="w-3 h-3" />
+                          {t('accessReactivate')}
+                        </button>
+                      )}
                     </div>
                   )
                 ) : (
-                  <button
-                    onClick={() => handleCreateAccess(member)}
-                    className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-500/5 hover:bg-purple-500/10 rounded-xl transition-all border border-purple-500/10"
-                  >
-                    <KeyRound className="w-3 h-3" />
-                    {t('accessCreate')}
-                  </button>
+                  !isStaffRole ? (
+                    <button
+                      onClick={() => handleCreateAccess(member)}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-500/5 hover:bg-purple-500/10 rounded-xl transition-all border border-purple-500/10"
+                    >
+                      <KeyRound className="w-3 h-3" />
+                      {t('accessCreate')}
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-xs font-black text-slate-400">
+                      <ShieldOff className="w-3.5 h-3.5" />
+                      {t('accessUnavailable')}
+                    </div>
+                  )
                 )
               ) : (
                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-400">

@@ -119,7 +119,8 @@ export default function ClientsClient({
   const plan = loyaltyConfig?.plan ?? 'BASIC';
   const pointsEnabled = loyaltyConfig?.pointsEnabled ?? false;
   const loyaltyEnabled = loyaltyConfig?.enabled ?? false;
-  const isAdminRole = currentUserRole !== 'STAFF';
+  const isAdminRole = currentUserRole !== 'STAFF' && currentUserRole !== 'RECEPTIONIST';
+  const isReceptionistRole = currentUserRole === 'RECEPTIONIST';
 
   // Contact edit state (admin only)
   const [editingContact, setEditingContact] = useState(false);
@@ -412,41 +413,45 @@ export default function ClientsClient({
       </div>
 
       {/* Tab switcher */}
-      <div className="hidden md:flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
-        {(['directory', 'loyalty', 'points', 'surveys'] as const).map(tab => {
-          const icons = { directory: Contact, loyalty: MonitorCheck, points: Star, surveys: ClipboardList };
-          const labels: Record<string, string> = {
-            directory: t('tabDirectory'),
-            loyalty: t('tabLoyalty'),
-            points: t('tabPoints'),
-            surveys: t('tabSurveys'),
-          };
-          const Icon = icons[tab];
-          return (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex items-center gap-2 py-2 px-4 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === tab ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+      {!isReceptionistRole && (
+        <>
+          <div className="hidden md:flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
+            {(['directory', 'loyalty', 'points', 'surveys'] as const).map(tab => {
+              const icons = { directory: Contact, loyalty: MonitorCheck, points: Star, surveys: ClipboardList };
+              const labels: Record<string, string> = {
+                directory: t('tabDirectory'),
+                loyalty: t('tabLoyalty'),
+                points: t('tabPoints'),
+                surveys: t('tabSurveys'),
+              };
+              const Icon = icons[tab];
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex items-center gap-2 py-2 px-4 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === tab ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" /> {labels[tab]}
+                </button>
+              );
+            })}
+          </div>
+          {/* Mobile: select */}
+          <div className="md:hidden relative">
+            <select
+              value={activeTab}
+              onChange={e => setActiveTab(e.target.value as any)}
+              className="w-full appearance-none bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
             >
-              <Icon className="w-4 h-4 shrink-0" /> {labels[tab]}
-            </button>
-          );
-        })}
-      </div>
-      {/* Mobile: select */}
-      <div className="md:hidden relative">
-        <select
-          value={activeTab}
-          onChange={e => setActiveTab(e.target.value as any)}
-          className="w-full appearance-none bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-2xl py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
-        >
-          <option value="directory">{t('tabDirectory')}</option>
-          <option value="loyalty">{t('tabLoyalty')}</option>
-          <option value="points">{t('tabPoints')}</option>
-          <option value="surveys">{t('tabSurveys')}</option>
-        </select>
-        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
-      </div>
+              <option value="directory">{t('tabDirectory')}</option>
+              <option value="loyalty">{t('tabLoyalty')}</option>
+              <option value="points">{t('tabPoints')}</option>
+              <option value="surveys">{t('tabSurveys')}</option>
+            </select>
+            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
+          </div>
+        </>
+      )}
 
       {/* ---- DIRECTORY TAB ---- */}
       {activeTab === 'directory' && (<>
