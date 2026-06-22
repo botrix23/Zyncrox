@@ -1091,7 +1091,9 @@
       "startTimeLabel": "Start",
       "endTimeLabel": "End",
       "addScheduleBtn": "Add schedule",
-      "noBranchesForSchedule": "Assign a branch first to configure schedules."
+      "noBranchesForSchedule": "Assign a branch first to configure schedules.",
+      "scheduleConfigured": "Schedule configured",
+      "editScheduleTitle": "Edit schedule"
     },
     "analytics": {
       "title": "Advanced analytics",

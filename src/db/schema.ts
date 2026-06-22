@@ -205,6 +205,7 @@ export const staffAssignments = pgTable('staff_assignments', {
   endTime: varchar('end_time', { length: 5 }),
   // Días de la semana que aplica esta asignación
   daysOfWeek: json('days_of_week').$type<string[]>().default(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']).notNull(),
+  scheduleData: text('schedule_data'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
@@ -275,6 +276,7 @@ export const receptionistSchedules = pgTable('receptionist_schedules', {
   daysOfWeek: json('days_of_week').$type<string[]>().notNull().default([]),
   startTime: varchar('start_time', { length: 5 }).notNull(),
   endTime: varchar('end_time', { length: 5 }).notNull(),
+  scheduleData: text('schedule_data'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 

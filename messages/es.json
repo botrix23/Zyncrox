@@ -1091,7 +1091,9 @@
       "startTimeLabel": "Entrada",
       "endTimeLabel": "Salida",
       "addScheduleBtn": "Agregar horario",
-      "noBranchesForSchedule": "Asigna una sucursal primero para configurar horarios."
+      "noBranchesForSchedule": "Asigna una sucursal primero para configurar horarios.",
+      "scheduleConfigured": "Horario configurado",
+      "editScheduleTitle": "Editar horario"
     },
     "analytics": {
       "title": "Analítica avanzada",

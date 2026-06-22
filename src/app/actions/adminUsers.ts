@@ -356,9 +356,7 @@ export async function getReceptionistSchedulesAction(userId: string) {
 export async function saveReceptionistScheduleAction(data: {
   userId: string;
   branchId: string;
-  daysOfWeek: string[];
-  startTime: string;
-  endTime: string;
+  scheduleData: string;
   scheduleId?: string;
 }) {
   const { session, tenantId } = await assertAdmin();
@@ -366,16 +364,17 @@ export async function saveReceptionistScheduleAction(data: {
 
   if (data.scheduleId) {
     await db.update(receptionistSchedules)
-      .set({ daysOfWeek: data.daysOfWeek, startTime: data.startTime, endTime: data.endTime })
+      .set({ scheduleData: data.scheduleData })
       .where(and(eq(receptionistSchedules.id, data.scheduleId), eq(receptionistSchedules.tenantId, tenantId)));
   } else {
     await db.insert(receptionistSchedules).values({
       tenantId,
       userId: data.userId,
       branchId: data.branchId,
-      daysOfWeek: data.daysOfWeek,
-      startTime: data.startTime,
-      endTime: data.endTime,
+      daysOfWeek: [],
+      startTime: '00:00',
+      endTime: '00:00',
+      scheduleData: data.scheduleData,
     });
   }
   return { success: true };

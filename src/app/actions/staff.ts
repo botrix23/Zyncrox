@@ -80,6 +80,7 @@ export async function createStaffAction(data: {
     endTime?: string;
     daysOfWeek: string[];
     isPermanent?: boolean;
+    scheduleData?: string;
   }>;
 }) {
   let ctx: Awaited<ReturnType<typeof assertAdmin>> | null = null;
@@ -136,6 +137,7 @@ export async function createStaffAction(data: {
           endTime: a.endTime,
           daysOfWeek: a.daysOfWeek,
           isPermanent: a.isPermanent ?? false,
+          scheduleData: a.scheduleData ?? null,
         }))
       );
     } else if (!data.inheritBranchHours) {
@@ -193,6 +195,7 @@ export async function updateStaffAction(data: {
     endTime?: string;
     daysOfWeek: string[];
     isPermanent?: boolean;
+    scheduleData?: string;
   }>;
 }) {
   let ctx: Awaited<ReturnType<typeof assertAdmin>> | null = null;
@@ -253,6 +256,7 @@ export async function updateStaffAction(data: {
               endTime: a.endTime || null,
               daysOfWeek: a.daysOfWeek,
               isPermanent: a.isPermanent ?? false,
+              scheduleData: a.scheduleData ?? null,
             }))
           );
         }

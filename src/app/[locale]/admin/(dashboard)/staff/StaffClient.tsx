@@ -42,6 +42,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import PhoneInput from "@/components/PhoneInput";
 import { PlanGate, PlanGateSection } from "@/components/PlanGate";
 import { canUseFeature } from "@/core/plans";
+import BusinessHoursPicker from "@/components/BusinessHoursPicker";
 
 export default function StaffClient({
   initialStaff,
@@ -161,7 +162,8 @@ export default function StaffClient({
         endDate: a.endDate ? new Date(a.endDate).toISOString().split('T')[0] : "",
         startTime: a.startTime || "",
         endTime: a.endTime || "",
-        isPermanent: !!a.isPermanent
+        isPermanent: !!a.isPermanent,
+        scheduleData: a.scheduleData || "",
       }));
 
       // Asegurar que haya al menos una permanente, si no hay, la primera de la lista lo será por defecto (seguridad)
@@ -198,7 +200,8 @@ export default function StaffClient({
           endDate: "",
           startTime: "",
           endTime: "",
-          isPermanent: true
+          isPermanent: true,
+          scheduleData: "",
         }],
         allowsHomeService: true,
         categoryIds: []
@@ -1054,32 +1057,22 @@ export default function StaffClient({
                         </div>
                       </div>
                       <div className="p-5 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="text-sm font-black text-slate-400">{t('form.branchSelect')}</label>
-                            <select 
-                              required
-                              value={assignment.branchId}
-                              onChange={e => handleAssignmentChange(realIdx, 'branchId', e.target.value)}
-                              className="w-full p-3 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none"
-                            >
-                              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                            </select>
-                          </div>
-                          <div className={`space-y-1.5 transition-opacity duration-300 ${formData.inheritBranchHours ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-                            <label className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">{t('form.baseSchedule')}</label>
-                            <div className="grid grid-cols-2 gap-2">
-                               <input type="time" value={assignment.startTime} onChange={e => handleAssignmentChange(realIdx, 'startTime', e.target.value)} className="p-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
-                               <input type="time" value={assignment.endTime} onChange={e => handleAssignmentChange(realIdx, 'endTime', e.target.value)} className="p-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold" />
-                            </div>
-                          </div>
+                        <div className="space-y-1.5">
+                          <label className="text-sm font-black text-slate-400">{t('form.branchSelect')}</label>
+                          <select
+                            required
+                            value={assignment.branchId}
+                            onChange={e => handleAssignmentChange(realIdx, 'branchId', e.target.value)}
+                            className="w-full p-3 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none"
+                          >
+                            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                          </select>
                         </div>
-                        <div className={`flex flex-wrap gap-1 transition-opacity duration-300 ${formData.inheritBranchHours ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-                          {days.map(day => (
-                            <button key={day} type="button" onClick={() => toggleDay(realIdx, day)} className={`px-2.5 py-2 rounded-xl text-xs font-bold uppercase transition-all ${assignment.daysOfWeek.includes(day) ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-zinc-800 text-slate-400 border border-slate-100 dark:border-white/5'}`}>
-                              {t(`days.${day}`)}
-                            </button>
-                          ))}
+                        <div className={`transition-opacity duration-300 ${formData.inheritBranchHours ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                          <BusinessHoursPicker
+                            value={assignment.scheduleData || ""}
+                            onChange={val => handleAssignmentChange(realIdx, 'scheduleData', val)}
+                          />
                         </div>
                       </div>
                     </div>

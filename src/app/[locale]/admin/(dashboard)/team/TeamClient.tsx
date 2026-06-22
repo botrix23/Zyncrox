@@ -14,6 +14,7 @@ import {
   getReceptionistSchedulesAction, saveReceptionistScheduleAction, deleteReceptionistScheduleAction,
 } from "@/app/actions/adminUsers";
 import Link from "next/link";
+import BusinessHoursPicker from "@/components/BusinessHoursPicker";
 
 type Admin = { id: string; name: string; email: string; isActive: boolean; isOwner: boolean; createdAt: Date };
 type Receptionist = {
@@ -22,7 +23,7 @@ type Receptionist = {
   assignedBranchIds?: string[];
 };
 type Branch = { id: string; name: string };
-type Schedule = { id: string; userId: string; branchId: string; daysOfWeek: string[]; startTime: string; endTime: string };
+type Schedule = { id: string; userId: string; branchId: string; daysOfWeek: string[]; startTime: string; endTime: string; scheduleData?: string | null };
 
 interface TeamClientProps {
   initialAdmins: Admin[];
@@ -80,8 +81,8 @@ export function TeamClient({ initialAdmins, initialReceptionists, tenantBranches
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [newSchedBranchId, setNewSchedBranchId] = useState("");
-  const [newSchedDays, setNewSchedDays] = useState<string[]>([]);
-  const [newSchedStart, setNewSchedStart] = useState("08:00"); const [newSchedEnd, setNewSchedEnd] = useState("17:00");
+  const [newSchedData, setNewSchedData] = useState("");
+  const [editingSchedId, setEditingSchedId] = useState<string | null>(null);
   const [schedSaving, setSchedSaving] = useState(false);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -189,21 +190,30 @@ export function TeamClient({ initialAdmins, initialReceptionists, tenantBranches
     setScheduleRecep(r); setScheduleLoading(true); setScheduleError(null);
     const res = await getReceptionistSchedulesAction(r.id);
     setScheduleLoading(false); setSchedules(res as Schedule[]);
-    setNewSchedBranchId(r.assignedBranchIds?.[0] ?? ""); setNewSchedDays([]); setNewSchedStart("08:00"); setNewSchedEnd("17:00");
+    setNewSchedBranchId(r.assignedBranchIds?.[0] ?? "");
+    setNewSchedData(""); setEditingSchedId(null);
   };
 
-  const handleAddSchedule = async () => {
-    if (!scheduleRecep || !newSchedBranchId || newSchedDays.length === 0) return;
+  const handleSaveSchedule = async () => {
+    if (!scheduleRecep || !newSchedBranchId) return;
     setSchedSaving(true); setScheduleError(null);
     const res = await saveReceptionistScheduleAction({
-      userId: scheduleRecep.id, branchId: newSchedBranchId, daysOfWeek: newSchedDays,
-      startTime: newSchedStart, endTime: newSchedEnd,
+      userId: scheduleRecep.id,
+      branchId: newSchedBranchId,
+      scheduleData: newSchedData,
+      scheduleId: editingSchedId ?? undefined,
     });
     setSchedSaving(false);
     if (res.success) {
       const updated = await getReceptionistSchedulesAction(scheduleRecep.id);
-      setSchedules(updated as Schedule[]); setNewSchedDays([]); setNewSchedStart("08:00"); setNewSchedEnd("17:00");
+      setSchedules(updated as Schedule[]); setNewSchedData(""); setEditingSchedId(null);
     } else setScheduleError(t("errorGeneric"));
+  };
+
+  const startEditSchedule = (s: Schedule) => {
+    setEditingSchedId(s.id);
+    setNewSchedBranchId(s.branchId);
+    setNewSchedData(s.scheduleData ?? "");
   };
 
   const handleDeleteSchedule = async (scheduleId: string) => {
@@ -517,7 +527,7 @@ export function TeamClient({ initialAdmins, initialReceptionists, tenantBranches
       {/* ── SCHEDULE MODAL ─────────────────────────────────────────────── */}
       {scheduleRecep && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-md max-h-[90dvh] flex flex-col">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90dvh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/10">
               <div>
                 <p className="font-black text-slate-900 dark:text-white">{t("schedulesModalTitle")}</p>
@@ -527,69 +537,62 @@ export function TeamClient({ initialAdmins, initialReceptionists, tenantBranches
             </div>
             <div className="p-6 space-y-5 overflow-y-auto flex-1">
               {scheduleError && <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-xs font-bold"><AlertCircle className="w-4 h-4 shrink-0" />{scheduleError}</div>}
+
+              {/* Existing schedules list */}
               {scheduleLoading ? (
                 <div className="flex justify-center py-4"><div className="w-5 h-5 border-2 border-slate-200 dark:border-white/20 border-t-purple-500 rounded-full animate-spin" /></div>
-              ) : schedules.length === 0 ? (
+              ) : schedules.length === 0 && !editingSchedId ? (
                 <p className="text-sm text-slate-400 dark:text-zinc-500 text-center py-2">{t("noSchedules")}</p>
-              ) : (
+              ) : !editingSchedId && (
                 <div className="space-y-2">
                   {schedules.map(s => (
                     <div key={s.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-white/5 rounded-xl">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-slate-900 dark:text-white">{branchName(s.branchId)}</p>
-                        <div className="flex items-center gap-2 flex-wrap mt-1">
-                          <span className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-1"><Clock className="w-3 h-3" />{s.startTime} – {s.endTime}</span>
-                          <div className="flex gap-1 flex-wrap">
-                            {(s.daysOfWeek as string[]).map(d => (
-                              <span key={d} className="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded-lg font-semibold">{dayLabels[d] ?? d}</span>
-                            ))}
-                          </div>
-                        </div>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">{t("scheduleConfigured")}</p>
                       </div>
+                      <button onClick={() => startEditSchedule(s)} className="p-2 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-all shrink-0"><Pencil className="w-4 h-4" /></button>
                       <button onClick={() => handleDeleteSchedule(s.id)} className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all shrink-0"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   ))}
                 </div>
               )}
+
+              {/* Add / Edit schedule form */}
               {(scheduleRecep.assignedBranchIds?.length ?? 0) > 0 ? (
-                <div className="space-y-3 border-t border-slate-100 dark:border-white/10 pt-4">
-                  <p className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide">{t("addScheduleTitle")}</p>
-                  <div className="relative">
-                    <select value={newSchedBranchId} onChange={e => setNewSchedBranchId(e.target.value)}
-                      className="w-full appearance-none bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-4 pr-10 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors cursor-pointer">
-                      {scheduleRecep.assignedBranchIds!.map(bid => <option key={bid} value={bid}>{branchName(bid)}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2">{t("daysLabel")}</p>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {DAYS.map(d => (
-                        <button key={d} type="button" onClick={() => setNewSchedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])}
-                          className={`text-xs font-bold px-2.5 py-1.5 rounded-xl border transition-all ${newSchedDays.includes(d) ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-white/5 text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-white/10 hover:border-purple-400'}`}>
-                          {dayLabels[d]}
-                        </button>
-                      ))}
+                editingSchedId === null ? (
+                  /* Show "add new" button when not editing */
+                  <div className="border-t border-slate-100 dark:border-white/10 pt-4">
+                    <p className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide mb-3">{t("addScheduleTitle")}</p>
+                    <div className="relative mb-3">
+                      <select value={newSchedBranchId} onChange={e => setNewSchedBranchId(e.target.value)}
+                        className="w-full appearance-none bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-4 pr-10 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors cursor-pointer">
+                        {scheduleRecep.assignedBranchIds!.map(bid => <option key={bid} value={bid}>{branchName(bid)}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                     </div>
+                    <BusinessHoursPicker value={newSchedData} onChange={setNewSchedData} />
+                    <button onClick={handleSaveSchedule} disabled={schedSaving}
+                      className="w-full mt-3 py-2.5 rounded-xl text-sm font-bold bg-purple-600 hover:bg-purple-500 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                      {schedSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                      {t("addScheduleBtn")}
+                    </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1 block">{t("startTimeLabel")}</label>
-                      <input type="time" value={newSchedStart} onChange={e => setNewSchedStart(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors" />
+                ) : (
+                  /* Editing existing schedule */
+                  <div className="border-t border-slate-100 dark:border-white/10 pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide">{t("editScheduleTitle")} — {branchName(newSchedBranchId)}</p>
+                      <button onClick={() => { setEditingSchedId(null); setNewSchedData(""); }} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200">{t("cancel")}</button>
                     </div>
-                    <div>
-                      <label className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-1 block">{t("endTimeLabel")}</label>
-                      <input type="time" value={newSchedEnd} onChange={e => setNewSchedEnd(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors" />
-                    </div>
+                    <BusinessHoursPicker value={newSchedData} onChange={setNewSchedData} />
+                    <button onClick={handleSaveSchedule} disabled={schedSaving}
+                      className="w-full py-2.5 rounded-xl text-sm font-bold bg-sky-600 hover:bg-sky-500 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                      {schedSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                      {t("saveBtn")}
+                    </button>
                   </div>
-                  <button onClick={handleAddSchedule} disabled={schedSaving || newSchedDays.length === 0}
-                    className="w-full py-2.5 rounded-xl text-sm font-bold bg-purple-600 hover:bg-purple-500 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                    {schedSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                    {t("addScheduleBtn")}
-                  </button>
-                </div>
+                )
               ) : (
                 <p className="text-xs text-slate-400 dark:text-zinc-500 text-center border-t border-slate-100 dark:border-white/10 pt-4">{t("noBranchesForSchedule")}</p>
               )}
