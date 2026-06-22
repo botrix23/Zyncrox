@@ -274,6 +274,7 @@ export async function createReceptionistAction(data: {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   branchIds?: string[];
+  scheduleData?: string;
 }) {
   const { session, tenantId } = await assertAdmin();
 
@@ -302,6 +303,21 @@ export async function createReceptionistAction(data: {
     assignedBranchIds: data.branchIds ?? [],
   }).returning();
 
+  // Save schedule for each assigned branch if scheduleData provided
+  if (data.scheduleData && data.branchIds && data.branchIds.length > 0) {
+    await db.insert(receptionistSchedules).values(
+      data.branchIds.map(branchId => ({
+        tenantId,
+        userId: newUser.id,
+        branchId,
+        daysOfWeek: [] as string[],
+        startTime: '00:00',
+        endTime: '00:00',
+        scheduleData: data.scheduleData!,
+      }))
+    );
+  }
+
   await logAuditEvent({
     action: 'ADMIN_CREATED',
     userId: session.userId,
@@ -310,7 +326,7 @@ export async function createReceptionistAction(data: {
   });
 
   revalidatePath('/[locale]/admin/staff', 'page');
-  return { success: true, tempPassword, userId: newUser.id, branchIds: data.branchIds ?? [] };
+  return { success: true, tempPassword, userId: newUser.id };
 }
 
 export async function updateReceptionistAction(targetUserId: string, data: {

@@ -588,6 +588,7 @@
       "tabAbsences": "Absences",
       "tabRequests": "Requests",
       "tabReceptionists": "Receptionists",
+      "scheduleLabel": "Work schedule",
       "deactivated": "Deactivated",
       "confirmDeactivateTitle": "Deactivate specialist",
       "confirmDeactivateMsg": "\"{name}\" will not appear in the widget and will lose portal access.",

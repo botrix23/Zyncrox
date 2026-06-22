@@ -112,6 +112,7 @@ export default function StaffClient({
   const [rName, setRName] = useState(""); const [rEmail, setREmail] = useState("");
   const [rPhone, setRPhone] = useState(""); const [rEcName, setREcName] = useState(""); const [rEcPhone, setREcPhone] = useState("");
   const [rBranchIds, setRBranchIds] = useState<string[]>([]);
+  const [rSchedData, setRSchedData] = useState("");
   const [editRecep, setEditRecep] = useState<Receptionist | null>(null);
   const [editName, setEditName] = useState(""); const [editPhone, setEditPhone] = useState("");
   const [editEcName, setEditEcName] = useState(""); const [editEcPhone, setEditEcPhone] = useState("");
@@ -130,7 +131,7 @@ export default function StaffClient({
   const branchName = (id: string) => branches.find((b: any) => b.id === id)?.name ?? id;
   const copyRecepPass = (pass: string) => { navigator.clipboard.writeText(pass); setRecepCopied(true); setTimeout(() => setRecepCopied(false), 2000); };
   const toggleBranch = (id: string, list: string[], setList: (v: string[]) => void) => setList(list.includes(id) ? list.filter(b => b !== id) : [...list, id]);
-  const resetRecepForm = () => { setRName(""); setREmail(""); setRPhone(""); setREcName(""); setREcPhone(""); setRBranchIds([]); setRecepError(null); setShowRecepForm(false); };
+  const resetRecepForm = () => { setRName(""); setREmail(""); setRPhone(""); setREcName(""); setREcPhone(""); setRBranchIds([]); setRSchedData(""); setRecepError(null); setShowRecepForm(false); };
   const refreshReceptionists = async () => setReceptionists((await getReceptionistsAction()) as Receptionist[]);
 
   const handleDeleteRecep = async (r: Receptionist) => {
@@ -150,25 +151,12 @@ export default function StaffClient({
   };
   const handleCreateRecep = async (e: React.FormEvent) => {
     e.preventDefault(); setRecepCreating(true); setRecepError(null);
-    const savedBranchIds = [...rBranchIds];
-    const savedName = rName;
-    const res = await createReceptionistAction({ name: rName, email: rEmail, phone: rPhone || undefined, emergencyContactName: rEcName || undefined, emergencyContactPhone: rEcPhone || undefined, branchIds: rBranchIds });
+    const res = await createReceptionistAction({ name: rName, email: rEmail, phone: rPhone || undefined, emergencyContactName: rEcName || undefined, emergencyContactPhone: rEcPhone || undefined, branchIds: rBranchIds, scheduleData: rSchedData || undefined });
     setRecepCreating(false);
     if (res.success && res.tempPassword) {
       setRecepTempPass(res.tempPassword);
       resetRecepForm();
       await refreshReceptionists();
-      // Auto-open schedule modal if branches were assigned
-      if ((res as any).userId && savedBranchIds.length > 0) {
-        const newRecep: Receptionist = { id: (res as any).userId, name: savedName, email: '', isActive: true, createdAt: new Date(), assignedBranchIds: savedBranchIds };
-        setScheduleRecep(newRecep);
-        setSchedules([]);
-        setNewSchedBranchId(savedBranchIds[0]);
-        setNewSchedData('');
-        setEditingSchedId(null);
-        setScheduleLoading(false);
-        setScheduleError(null);
-      }
     } else {
       const errMap: Record<string, string> = { EMAIL_EXISTS: tTeam("errorEmailExists"), OWNER_ONLY: tTeam("errorOwnerOnly") };
       setRecepError(errMap[(res as any).error] || tTeam("errorGeneric"));
@@ -840,6 +828,14 @@ export default function StaffClient({
                           </button>
                         ))}
                       </div>
+                    </div>
+                  )}
+                  {rBranchIds.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide flex items-center gap-1">
+                        <Clock className="w-3 h-3" />{t('scheduleLabel')}
+                      </p>
+                      <BusinessHoursPicker value={rSchedData} onChange={setRSchedData} />
                     </div>
                   )}
                   <div className="flex gap-2">

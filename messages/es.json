@@ -516,6 +516,7 @@
       "tabAbsences": "Ausencias",
       "tabRequests": "Solicitudes",
       "tabReceptionists": "Recepcionistas",
+      "scheduleLabel": "Horario de trabajo",
       "showStaffLabel": "Mostrar selección de personal al crear una cita",
       "showStaffHint": "Si se desactiva, el sistema asignará un especialista automáticamente.",
       "new": "Añadir miembro",
