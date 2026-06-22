@@ -2,16 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Copy, Calendar as CalendarIcon, X } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 
-const DAYS = [
-  { id: 'monday', name: 'Lunes' },
-  { id: 'tuesday', name: 'Martes' },
-  { id: 'wednesday', name: 'Miércoles' },
-  { id: 'thursday', name: 'Jueves' },
-  { id: 'friday', name: 'Viernes' },
-  { id: 'saturday', name: 'Sábado' },
-  { id: 'sunday', name: 'Domingo' },
-];
+const DAY_IDS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 export interface TimeSlot {
   open: string;
@@ -34,16 +27,19 @@ const DEFAULT_SCHEDULE: DaySchedule = {
 };
 
 const INITIAL_DATA: BusinessHoursData = {
-  regular: DAYS.reduce((acc, day) => ({ ...acc, [day.id]: { ...DEFAULT_SCHEDULE } }), {}),
+  regular: DAY_IDS.reduce((acc, id) => ({ ...acc, [id]: { ...DEFAULT_SCHEDULE } }), {}),
   special: {}
 };
 
 interface BusinessHoursPickerProps {
-  value: string; // Serialized JSON
+  value: string;
   onChange: (value: string) => void;
 }
 
 export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPickerProps) {
+  const t = useTranslations('BusinessHours');
+  const locale = useLocale();
+
   const [data, setData] = useState<BusinessHoursData>(() => {
     try {
       if (!value) return INITIAL_DATA;
@@ -67,90 +63,48 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
   const updateRegularDay = (dayId: string, schedule: Partial<DaySchedule>) => {
     setData(prev => ({
       ...prev,
-      regular: {
-        ...prev.regular,
-        [dayId]: { ...prev.regular[dayId], ...schedule }
-      }
+      regular: { ...prev.regular, [dayId]: { ...prev.regular[dayId], ...schedule } }
     }));
   };
 
   const addSlot = (dayId: string, isSpecial = false, dateKey?: string) => {
-    const updateFn = (prev: BusinessHoursData) => {
+    setData(prev => {
       const target = isSpecial && dateKey ? prev.special[dateKey] : prev.regular[dayId];
       const newSlots = [...target.slots, { open: '13:00', close: '17:00' }];
-      
-      if (isSpecial && dateKey) {
-        return {
-          ...prev,
-          special: { ...prev.special, [dateKey]: { ...target, slots: newSlots } }
-        };
-      }
-      return {
-        ...prev,
-        regular: { ...prev.regular, [dayId]: { ...target, slots: newSlots } }
-      };
-    };
-    setData(updateFn);
+      if (isSpecial && dateKey) return { ...prev, special: { ...prev.special, [dateKey]: { ...target, slots: newSlots } } };
+      return { ...prev, regular: { ...prev.regular, [dayId]: { ...target, slots: newSlots } } };
+    });
   };
 
   const removeSlot = (dayId: string, slotIndex: number, isSpecial = false, dateKey?: string) => {
-    const updateFn = (prev: BusinessHoursData) => {
+    setData(prev => {
       const target = isSpecial && dateKey ? prev.special[dateKey] : prev.regular[dayId];
       const newSlots = target.slots.filter((_, i) => i !== slotIndex);
-      
-      if (isSpecial && dateKey) {
-        return {
-          ...prev,
-          special: { ...prev.special, [dateKey]: { ...target, slots: newSlots } }
-        };
-      }
-      return {
-        ...prev,
-        regular: { ...prev.regular, [dayId]: { ...target, slots: newSlots } }
-      };
-    };
-    setData(updateFn);
+      if (isSpecial && dateKey) return { ...prev, special: { ...prev.special, [dateKey]: { ...target, slots: newSlots } } };
+      return { ...prev, regular: { ...prev.regular, [dayId]: { ...target, slots: newSlots } } };
+    });
   };
 
   const updateSlot = (dayId: string, slotIndex: number, field: 'open' | 'close', val: string, isSpecial = false, dateKey?: string) => {
-    const updateFn = (prev: BusinessHoursData) => {
+    setData(prev => {
       const target = isSpecial && dateKey ? prev.special[dateKey] : prev.regular[dayId];
       const newSlots = target.slots.map((s, i) => i === slotIndex ? { ...s, [field]: val } : s);
-      
-      if (isSpecial && dateKey) {
-        return {
-          ...prev,
-          special: { ...prev.special, [dateKey]: { ...target, slots: newSlots } }
-        };
-      }
-      return {
-        ...prev,
-        regular: { ...prev.regular, [dayId]: { ...target, slots: newSlots } }
-      };
-    };
-    setData(updateFn);
+      if (isSpecial && dateKey) return { ...prev, special: { ...prev.special, [dateKey]: { ...target, slots: newSlots } } };
+      return { ...prev, regular: { ...prev.regular, [dayId]: { ...target, slots: newSlots } } };
+    });
   };
 
   const copyToAll = (fromDayId: string) => {
     const source = data.regular[fromDayId];
     setData(prev => ({
       ...prev,
-      regular: DAYS.reduce((acc, day) => ({
-        ...acc,
-        [day.id]: JSON.parse(JSON.stringify(source))
-      }), {})
+      regular: DAY_IDS.reduce((acc, id) => ({ ...acc, [id]: JSON.parse(JSON.stringify(source)) }), {})
     }));
   };
 
   const addSpecialDate = () => {
     if (!newSpecialDate) return;
-    setData(prev => ({
-      ...prev,
-      special: {
-        ...prev.special,
-        [newSpecialDate]: { isOpen: false, slots: [] }
-      }
-    }));
+    setData(prev => ({ ...prev, special: { ...prev.special, [newSpecialDate]: { isOpen: false, slots: [] } } }));
     setNewSpecialDate("");
   };
 
@@ -165,52 +119,40 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
   return (
     <div className="bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden flex flex-col min-h-[400px]">
       <div className="flex border-b border-slate-200 dark:border-white/5 p-2 gap-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab('regular')}
-          className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'regular' ? 'bg-white dark:bg-zinc-800 shadow-sm text-purple-600' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white'}`}
-        >
-          Horario regular
+        <button type="button" onClick={() => setActiveTab('regular')}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'regular' ? 'bg-white dark:bg-zinc-800 shadow-sm text-purple-600' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white'}`}>
+          {t('regularTab')}
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('special')}
-          className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'special' ? 'bg-white dark:bg-zinc-800 shadow-sm text-purple-600' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white'}`}
-        >
-          Fechas especiales
+        <button type="button" onClick={() => setActiveTab('special')}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'special' ? 'bg-white dark:bg-zinc-800 shadow-sm text-purple-600' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white'}`}>
+          {t('specialTab')}
         </button>
       </div>
 
       <div className="p-6 flex-1 overflow-y-auto max-h-[500px] custom-scrollbar">
         {activeTab === 'regular' ? (
           <div className="space-y-6">
-            {DAYS.map(day => {
-              const schedule = data.regular[day.id];
+            {DAY_IDS.map(dayId => {
+              const schedule = data.regular[dayId];
               return (
-                <div key={day.id} className="group p-4 bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-white/5 rounded-2xl hover:border-purple-500/30 transition-all">
+                <div key={dayId} className="group p-4 bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-white/5 rounded-2xl hover:border-purple-500/30 transition-all">
                   <div className="flex items-center justify-between gap-2 mb-4">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${schedule.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-                      <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight truncate">{day.name}</span>
+                      <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight truncate">{t(`days.${dayId}`)}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => copyToAll(day.id)}
+                      <button type="button" onClick={() => copyToAll(dayId)}
                         className="flex items-center gap-1 px-2 py-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-black uppercase tracking-wider transition-all hover:bg-purple-600 hover:text-white active:scale-95 shadow-sm border border-purple-100 dark:border-purple-500/20"
-                        title="Copiar horario a todos los días"
-                      >
+                        title={t('copyToAll')}>
                         <Copy className="w-3 h-3 shrink-0" />
-                        <span className="sm:hidden">Copiar</span>
-                        <span className="hidden sm:inline">Copiar a todos</span>
+                        <span className="sm:hidden">{t('copyShort')}</span>
+                        <span className="hidden sm:inline">{t('copyToAll')}</span>
                       </button>
                       <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                        <input
-                          type="checkbox"
-                          checked={schedule.isOpen}
-                          onChange={e => updateRegularDay(day.id, { isOpen: e.target.checked })}
-                          className="sr-only peer"
-                        />
+                        <input type="checkbox" checked={schedule.isOpen}
+                          onChange={e => updateRegularDay(dayId, { isOpen: e.target.checked })}
+                          className="sr-only peer" />
                         <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
                       </label>
                     </div>
@@ -221,41 +163,29 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
                       {schedule.slots.map((slot, idx) => (
                         <div key={idx} className="flex items-center gap-2">
                           <div className="flex-1 grid grid-cols-2 gap-2">
-                            <input
-                              type="time"
-                              value={slot.open}
-                              onChange={e => updateSlot(day.id, idx, 'open', e.target.value)}
-                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
-                            />
-                            <input
-                              type="time"
-                              value={slot.close}
-                              onChange={e => updateSlot(day.id, idx, 'close', e.target.value)}
-                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
-                            />
+                            <input type="time" value={slot.open}
+                              onChange={e => updateSlot(dayId, idx, 'open', e.target.value)}
+                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all" />
+                            <input type="time" value={slot.close}
+                              onChange={e => updateSlot(dayId, idx, 'close', e.target.value)}
+                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all" />
                           </div>
                           {schedule.slots.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeSlot(day.id, idx)}
-                              className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all"
-                            >
+                            <button type="button" onClick={() => removeSlot(dayId, idx)}
+                              className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           )}
                         </div>
                       ))}
-                      <button
-                        type="button"
-                        onClick={() => addSlot(day.id)}
-                        className="w-full py-2 border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-400 hover:text-purple-500 hover:border-purple-500/50 transition-all flex items-center justify-center gap-1.5 uppercase tracking-widest"
-                      >
+                      <button type="button" onClick={() => addSlot(dayId)}
+                        className="w-full py-2 border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-400 hover:text-purple-500 hover:border-purple-500/50 transition-all flex items-center justify-center gap-1.5 uppercase tracking-widest">
                         <Plus className="w-3.5 h-3.5" />
-                        Añadir tramo
+                        {t('addSlot')}
                       </button>
                     </div>
                   ) : (
-                    <div className="py-2 px-1 text-xs text-slate-400 italic">Cerrado</div>
+                    <div className="py-2 px-1 text-xs text-slate-400 italic">{t('closed')}</div>
                   )}
                 </div>
               );
@@ -264,18 +194,11 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
         ) : (
           <div className="space-y-6">
             <div className="flex gap-3">
-              <input
-                type="date"
-                value={newSpecialDate}
-                onChange={e => setNewSpecialDate(e.target.value)}
-                className="flex-1 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4 rounded-2xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
-              />
-              <button
-                type="button"
-                onClick={addSpecialDate}
-                className="px-6 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold text-sm shadow-xl shadow-purple-500/20 transition-all"
-              >
-                Añadir fecha
+              <input type="date" value={newSpecialDate} onChange={e => setNewSpecialDate(e.target.value)}
+                className="flex-1 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4 rounded-2xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all" />
+              <button type="button" onClick={addSpecialDate}
+                className="px-6 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold text-sm shadow-xl shadow-purple-500/20 transition-all">
+                {t('addDate')}
               </button>
             </div>
 
@@ -283,7 +206,7 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
               {Object.entries(data.special).length === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-slate-100 dark:border-white/5">
                   <CalendarIcon className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-                  <p className="text-sm font-medium text-slate-400">No hay fechas especiales configuradas</p>
+                  <p className="text-sm font-medium text-slate-400">{t('noSpecialDates')}</p>
                 </div>
               ) : Object.entries(data.special).sort(([a], [b]) => a.localeCompare(b)).map(([dateKey, schedule]) => (
                 <div key={dateKey} className="p-4 bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-white/5 rounded-2xl">
@@ -294,36 +217,32 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
                       </div>
                       <div>
                         <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
-                          {new Date(dateKey + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' })}
+                          {new Date(dateKey + 'T12:00:00').toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}
                         </p>
                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{dateKey}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={schedule.isOpen}
+                        <input type="checkbox" checked={schedule.isOpen}
                           onChange={e => setData(prev => ({
                             ...prev,
-                            special: { 
-                              ...prev.special, 
-                              [dateKey]: { 
-                                ...prev.special[dateKey], 
+                            special: {
+                              ...prev.special,
+                              [dateKey]: {
+                                ...prev.special[dateKey],
                                 isOpen: e.target.checked,
-                                slots: e.target.checked && prev.special[dateKey].slots.length === 0 ? [{ open: '08:00', close: '17:00' }] : prev.special[dateKey].slots
-                              } 
+                                slots: e.target.checked && prev.special[dateKey].slots.length === 0
+                                  ? [{ open: '08:00', close: '17:00' }]
+                                  : prev.special[dateKey].slots
+                              }
                             }
                           }))}
-                          className="sr-only peer"
-                        />
+                          className="sr-only peer" />
                         <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 shadow-inner"></div>
                       </label>
-                      <button
-                        type="button"
-                        onClick={() => removeSpecialDate(dateKey)}
-                        className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
-                      >
+                      <button type="button" onClick={() => removeSpecialDate(dateKey)}
+                        className="p-2 text-slate-300 hover:text-rose-500 transition-colors">
                         <X className="w-5 h-5" />
                       </button>
                     </div>
@@ -334,35 +253,23 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
                       {schedule.slots.map((slot, idx) => (
                         <div key={idx} className="flex items-center gap-2">
                           <div className="flex-1 grid grid-cols-2 gap-2">
-                            <input
-                              type="time"
-                              value={slot.open}
+                            <input type="time" value={slot.open}
                               onChange={e => updateSlot("", idx, 'open', e.target.value, true, dateKey)}
-                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
-                            />
-                            <input
-                              type="time"
-                              value={slot.close}
+                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all" />
+                            <input type="time" value={slot.close}
                               onChange={e => updateSlot("", idx, 'close', e.target.value, true, dateKey)}
-                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all"
-                            />
+                              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2.5 px-3 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none transition-all" />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => removeSlot("", idx, true, dateKey)}
-                            className="p-3 text-slate-400 hover:text-rose-500 rounded-xl transition-all"
-                          >
+                          <button type="button" onClick={() => removeSlot("", idx, true, dateKey)}
+                            className="p-3 text-slate-400 hover:text-rose-500 rounded-xl transition-all">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       ))}
-                      <button
-                        type="button"
-                        onClick={() => addSlot("", true, dateKey)}
-                        className="w-full py-2 border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-400 hover:text-purple-500 hover:border-purple-500/50 transition-all flex items-center justify-center gap-1.5 uppercase tracking-widest"
-                      >
+                      <button type="button" onClick={() => addSlot("", true, dateKey)}
+                        className="w-full py-2 border border-dashed border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-400 hover:text-purple-500 hover:border-purple-500/50 transition-all flex items-center justify-center gap-1.5 uppercase tracking-widest">
                         <Plus className="w-3.5 h-3.5" />
-                        Añadir tramo
+                        {t('addSlot')}
                       </button>
                     </div>
                   )}
@@ -372,7 +279,6 @@ export default function BusinessHoursPicker({ value, onChange }: BusinessHoursPi
           </div>
         )}
       </div>
-      
     </div>
   );
 }

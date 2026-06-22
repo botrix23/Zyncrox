@@ -29,9 +29,22 @@ import {
   CalendarOff,
   ClipboardList,
   Lock,
+  UserCog,
+  MapPin,
+  ShieldAlert,
+  ToggleLeft,
+  ToggleRight,
+  Pencil,
+  AlertCircle,
+  ChevronDown,
 } from 'lucide-react';
 import AbsencesClient from '../absences/AbsencesClient';
 import { createStaffAction, updateStaffAction, deleteStaffAction, getStaffFutureBookingCount, toggleStaffActiveAction } from "@/app/actions/staff";
+import {
+  getReceptionistsAction, createReceptionistAction, deleteReceptionistAction,
+  toggleReceptionistAction, updateReceptionistAction,
+  getReceptionistSchedulesAction, saveReceptionistScheduleAction, deleteReceptionistScheduleAction,
+} from "@/app/actions/adminUsers";
 import { updateShowStaffSelectionAction } from "@/app/actions/tenant";
 import { createStaffAccessAction, revokeStaffAccessAction, reactivateStaffAccessAction, resetStaffPasswordAction } from "@/app/actions/staffAccess";
 import { Tag } from 'lucide-react';
@@ -56,6 +69,8 @@ export default function StaffClient({
   currentStaffId,
   initialBlocks = [],
   pendingRequests = [],
+  initialReceptionists = [],
+  isOwner = false,
 }: {
   initialStaff: any[],
   branches: any[],
@@ -68,11 +83,14 @@ export default function StaffClient({
   currentStaffId?: string,
   initialBlocks?: any[],
   pendingRequests?: any[],
+  initialReceptionists?: any[],
+  isOwner?: boolean,
 }) {
   const limit = planLimit ?? 999;
   const t = useTranslations('Dashboard.staff');
+  const tTeam = useTranslations('Dashboard.team');
   const isStaffRole = role === 'STAFF' || role === 'RECEPTIONIST';
-  type StaffTab = 'team' | 'absences' | 'requests';
+  type StaffTab = 'team' | 'absences' | 'requests' | 'receptionists';
 
   // Local staff list state — avoids relying on router.refresh() for UI updates
   const [staffList, setStaffList] = useState<any[]>(initialStaff);
@@ -80,6 +98,91 @@ export default function StaffClient({
   const atLimit = activeStaffCount >= limit;
 
   const [activeMainTab, setActiveMainTab] = useState<StaffTab>(isStaffRole ? 'absences' : 'team');
+
+  // ── Receptionist state ────────────────────────────────────────────────────
+  type Receptionist = { id: string; name: string; email: string; isActive: boolean; createdAt: Date; phone?: string | null; emergencyContactName?: string | null; emergencyContactPhone?: string | null; assignedBranchIds?: string[] };
+  type Schedule = { id: string; userId: string; branchId: string; daysOfWeek: string[]; startTime: string; endTime: string; scheduleData?: string | null };
+  const [receptionists, setReceptionists] = useState<Receptionist[]>(initialReceptionists);
+  const [recepActionId, setRecepActionId] = useState<string | null>(null);
+  const [recepError, setRecepError] = useState<string | null>(null);
+  const [recepCreating, setRecepCreating] = useState(false);
+  const [showRecepForm, setShowRecepForm] = useState(false);
+  const [recepTempPass, setRecepTempPass] = useState<string | null>(null);
+  const [recepCopied, setRecepCopied] = useState(false);
+  const [rName, setRName] = useState(""); const [rEmail, setREmail] = useState("");
+  const [rPhone, setRPhone] = useState(""); const [rEcName, setREcName] = useState(""); const [rEcPhone, setREcPhone] = useState("");
+  const [rBranchIds, setRBranchIds] = useState<string[]>([]);
+  const [editRecep, setEditRecep] = useState<Receptionist | null>(null);
+  const [editName, setEditName] = useState(""); const [editPhone, setEditPhone] = useState("");
+  const [editEcName, setEditEcName] = useState(""); const [editEcPhone, setEditEcPhone] = useState("");
+  const [editBranchIds, setEditBranchIds] = useState<string[]>([]);
+  const [editSaving, setEditSaving] = useState(false); const [editError, setEditError] = useState<string | null>(null);
+  const [scheduleRecep, setScheduleRecep] = useState<Receptionist | null>(null);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [newSchedBranchId, setNewSchedBranchId] = useState("");
+  const [newSchedData, setNewSchedData] = useState("");
+  const [editingSchedId, setEditingSchedId] = useState<string | null>(null);
+  const [schedSaving, setSchedSaving] = useState(false);
+
+  // ── Receptionist helpers ──────────────────────────────────────────────────
+  const branchName = (id: string) => branches.find((b: any) => b.id === id)?.name ?? id;
+  const copyRecepPass = (pass: string) => { navigator.clipboard.writeText(pass); setRecepCopied(true); setTimeout(() => setRecepCopied(false), 2000); };
+  const toggleBranch = (id: string, list: string[], setList: (v: string[]) => void) => setList(list.includes(id) ? list.filter(b => b !== id) : [...list, id]);
+  const resetRecepForm = () => { setRName(""); setREmail(""); setRPhone(""); setREcName(""); setREcPhone(""); setRBranchIds([]); setRecepError(null); setShowRecepForm(false); };
+  const refreshReceptionists = async () => setReceptionists((await getReceptionistsAction()) as Receptionist[]);
+
+  const handleDeleteRecep = async (r: Receptionist) => {
+    if (!confirm(tTeam("confirmDelete", { name: r.name }))) return;
+    setRecepActionId(r.id); setRecepError(null);
+    const res = await deleteReceptionistAction(r.id);
+    setRecepActionId(null);
+    if (res.success) setReceptionists(prev => prev.filter(x => x.id !== r.id));
+    else setRecepError(tTeam("errorGeneric"));
+  };
+  const handleToggleRecep = async (r: Receptionist) => {
+    setRecepActionId(r.id); setRecepError(null);
+    const res = await toggleReceptionistAction(r.id, !r.isActive);
+    setRecepActionId(null);
+    if (res.success) setReceptionists(prev => prev.map(x => x.id === r.id ? { ...x, isActive: !x.isActive } : x));
+    else setRecepError(tTeam("errorGeneric"));
+  };
+  const handleCreateRecep = async (e: React.FormEvent) => {
+    e.preventDefault(); setRecepCreating(true); setRecepError(null);
+    const res = await createReceptionistAction({ name: rName, email: rEmail, phone: rPhone || undefined, emergencyContactName: rEcName || undefined, emergencyContactPhone: rEcPhone || undefined, branchIds: rBranchIds });
+    setRecepCreating(false);
+    if (res.success && res.tempPassword) { setRecepTempPass(res.tempPassword); resetRecepForm(); await refreshReceptionists(); }
+    else { const errMap: Record<string, string> = { EMAIL_EXISTS: tTeam("errorEmailExists"), OWNER_ONLY: tTeam("errorOwnerOnly") }; setRecepError(errMap[(res as any).error] || tTeam("errorGeneric")); }
+  };
+  const openEditRecep = (r: Receptionist) => { setEditRecep(r); setEditName(r.name); setEditPhone(r.phone ?? ""); setEditEcName(r.emergencyContactName ?? ""); setEditEcPhone(r.emergencyContactPhone ?? ""); setEditBranchIds(r.assignedBranchIds ?? []); setEditError(null); };
+  const handleSaveEditRecep = async () => {
+    if (!editRecep) return; setEditSaving(true); setEditError(null);
+    const res = await updateReceptionistAction(editRecep.id, { name: editName, phone: editPhone || null, emergencyContactName: editEcName || null, emergencyContactPhone: editEcPhone || null, branchIds: editBranchIds });
+    setEditSaving(false);
+    if (res.success) { await refreshReceptionists(); setEditRecep(null); }
+    else setEditError(tTeam("errorGeneric"));
+  };
+  const openSchedules = async (r: Receptionist) => {
+    setScheduleRecep(r); setScheduleLoading(true); setScheduleError(null);
+    const res = await getReceptionistSchedulesAction(r.id);
+    setScheduleLoading(false); setSchedules(res as Schedule[]);
+    setNewSchedBranchId(r.assignedBranchIds?.[0] ?? ""); setNewSchedData(""); setEditingSchedId(null);
+  };
+  const handleSaveSchedule = async () => {
+    if (!scheduleRecep || !newSchedBranchId) return;
+    setSchedSaving(true); setScheduleError(null);
+    const res = await saveReceptionistScheduleAction({ userId: scheduleRecep.id, branchId: newSchedBranchId, scheduleData: newSchedData, scheduleId: editingSchedId ?? undefined });
+    setSchedSaving(false);
+    if (res.success) { const updated = await getReceptionistSchedulesAction(scheduleRecep.id); setSchedules(updated as Schedule[]); setNewSchedData(""); setEditingSchedId(null); }
+    else setScheduleError(tTeam("errorGeneric"));
+  };
+  const startEditSchedule = (s: Schedule) => { setEditingSchedId(s.id); setNewSchedBranchId(s.branchId); setNewSchedData(s.scheduleData ?? ""); };
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    const res = await deleteReceptionistScheduleAction(scheduleId);
+    if (res.success && scheduleRecep) { const updated = await getReceptionistSchedulesAction(scheduleRecep.id); setSchedules(updated as Schedule[]); }
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("all");
   const [staffVisible, setStaffVisible] = useState(20);
@@ -563,6 +666,15 @@ export default function StaffClient({
                 )}
               </button>
             )}
+            {!isStaffRole && (
+              <button
+                onClick={() => setActiveMainTab('receptionists')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 ${activeMainTab === 'receptionists' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
+              >
+                <UserCog className="w-4 h-4" />
+                {t('tabReceptionists')}
+              </button>
+            )}
           </div>
         </div>
 
@@ -576,6 +688,7 @@ export default function StaffClient({
             {!isStaffRole && <option value="team">{t('tabTeam')}</option>}
             <option value="absences">{t('tabAbsences')}</option>
             {!isStaffRole && <option value="requests">{t('tabRequests')}{pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ''}</option>}
+            {!isStaffRole && <option value="receptionists">{t('tabReceptionists')}</option>}
           </select>
           <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
         </div>
@@ -606,6 +719,121 @@ export default function StaffClient({
             pendingRequests={pendingRequests}
             embeddedTab="pending"
           />
+        )}
+
+        {/* ── Tab: Recepcionistas ── */}
+        {!isStaffRole && activeMainTab === 'receptionists' && (
+          <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-3xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-sky-500/10 rounded-xl flex items-center justify-center"><UserCog className="w-4 h-4 text-sky-500" /></div>
+                <div>
+                  <p className="font-black text-slate-900 dark:text-white text-sm">{tTeam("receptionistsTitle")}</p>
+                  <p className="text-xs text-slate-500 dark:text-zinc-500">{tTeam("receptionistsSubtitle", { count: receptionists.length })}</p>
+                </div>
+              </div>
+              {isOwner && (
+                <button onClick={() => { setShowRecepForm(true); setRecepError(null); }} className="flex items-center gap-2 px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl transition-all">
+                  <Plus className="w-3.5 h-3.5" /> {tTeam("addReceptionist")}
+                </button>
+              )}
+            </div>
+            {recepError && <div className="mx-4 mt-4 flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-xs font-bold"><AlertCircle className="w-4 h-4 shrink-0" /> {recepError}</div>}
+            {recepTempPass && (
+              <div className="mx-4 mt-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 space-y-2">
+                <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">{tTeam("tempPassTitle")}</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-sm font-mono bg-white dark:bg-black/30 px-3 py-2 rounded-xl border border-emerald-500/20 text-slate-900 dark:text-white break-all">{recepTempPass}</code>
+                  <button onClick={() => copyRecepPass(recepTempPass)} className="p-2 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl transition-all shrink-0">
+                    {recepCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70">{tTeam("tempPassNote")}</p>
+              </div>
+            )}
+            <div className="p-4 space-y-3">
+              {receptionists.length === 0 && !showRecepForm && (
+                <p className="text-sm text-slate-400 dark:text-zinc-500 text-center py-6">{tTeam("noReceptionists")}</p>
+              )}
+              {receptionists.map(r => (
+                <div key={r.id} className="bg-slate-50 dark:bg-white/5 rounded-2xl p-3 flex items-start gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black shrink-0 mt-0.5 ${r.isActive ? 'bg-sky-600 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-400'}`}>
+                    {r.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={`font-bold text-sm ${r.isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400 line-through'}`}>{r.name}</p>
+                      {!r.isActive && <span className="text-xs font-black uppercase tracking-wide text-slate-400 bg-slate-200 dark:bg-white/10 px-1.5 py-0.5 rounded-lg">{tTeam("inactive")}</span>}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-zinc-500">{r.email}</p>
+                    {r.phone && <p className="text-xs text-slate-500 dark:text-zinc-500 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" />{r.phone}</p>}
+                    {(r.assignedBranchIds?.length ?? 0) > 0 && (
+                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                        <MapPin className="w-3 h-3 text-sky-500 shrink-0" />
+                        {r.assignedBranchIds!.map(bid => (
+                          <span key={bid} className="text-xs bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded-lg font-semibold">{branchName(bid)}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {isOwner && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => openEditRecep(r)} title={tTeam("editBtn")} className="p-2 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-all"><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => openSchedules(r)} title={tTeam("schedulesBtn")} className="p-2 rounded-xl text-slate-400 hover:text-purple-500 hover:bg-purple-500/10 transition-all"><Clock className="w-4 h-4" /></button>
+                      <button onClick={() => handleToggleRecep(r)} disabled={recepActionId === r.id} className="p-2 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-all disabled:opacity-40">
+                        {r.isActive ? <ToggleRight className="w-4 h-4 text-sky-500" /> : <ToggleLeft className="w-4 h-4" />}
+                      </button>
+                      <button onClick={() => handleDeleteRecep(r)} disabled={recepActionId === r.id} className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all disabled:opacity-40"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {showRecepForm && isOwner && (
+              <form onSubmit={handleCreateRecep} className="px-4 pb-4">
+                <div className="border-t border-slate-100 dark:border-white/5 pt-4 space-y-3">
+                  <p className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide">{tTeam("newReceptionistTitle")}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input type="text" placeholder={tTeam("namePlaceholder")} value={rName} onChange={e => setRName(e.target.value)} required
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-colors" />
+                    <input type="email" placeholder={tTeam("emailPlaceholder")} value={rEmail} onChange={e => setREmail(e.target.value)} required
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-colors" />
+                    <input type="tel" placeholder={tTeam("phonePlaceholder")} value={rPhone} onChange={e => setRPhone(e.target.value)}
+                      className="sm:col-span-2 w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-colors" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 flex items-center gap-1"><ShieldAlert className="w-3 h-3" />{tTeam("ecLabel")}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input type="text" placeholder={tTeam("ecNamePlaceholder")} value={rEcName} onChange={e => setREcName(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-colors" />
+                      <input type="tel" placeholder={tTeam("ecPhonePlaceholder")} value={rEcPhone} onChange={e => setREcPhone(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-colors" />
+                    </div>
+                  </div>
+                  {branches.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-2 flex items-center gap-1"><MapPin className="w-3 h-3" />{tTeam("assignBranches")}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {branches.map((b: any) => (
+                          <button key={b.id} type="button" onClick={() => toggleBranch(b.id, rBranchIds, setRBranchIds)}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all ${rBranchIds.includes(b.id) ? 'bg-sky-600 text-white border-sky-600' : 'bg-white dark:bg-white/5 text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-white/10 hover:border-sky-400'}`}>
+                            {b.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <button type="button" onClick={resetRecepForm} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-all">{tTeam("cancel")}</button>
+                    <button type="submit" disabled={recepCreating} className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-sky-600 hover:bg-sky-500 text-white transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+                      {recepCreating && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                      {tTeam("createBtn")}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
         )}
 
         {/* ── Tab: Equipo (contenido original) ── */}
@@ -1344,6 +1572,131 @@ export default function StaffClient({
         {/* end tab: team */}
       </div>
       {/* end outer space-y-6 */}
+
+      {/* ── RECEPTIONIST EDIT MODAL ─────────────────────────────────────── */}
+      {editRecep && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-md max-h-[90dvh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/10">
+              <p className="font-black text-slate-900 dark:text-white">{tTeam("editModalTitle")}</p>
+              <button onClick={() => setEditRecep(null)} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-all"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              {editError && <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-xs font-bold"><AlertCircle className="w-4 h-4 shrink-0" />{editError}</div>}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide">{tTeam("nameLabel")}</label>
+                <input type="text" value={editName} onChange={e => setEditName(e.target.value)} required
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide flex items-center gap-1"><Phone className="w-3 h-3" />{tTeam("phoneLabel")}</label>
+                <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder={tTeam("phonePlaceholder")}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-colors" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide flex items-center gap-1"><ShieldAlert className="w-3 h-3" />{tTeam("ecLabel")}</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="text" value={editEcName} onChange={e => setEditEcName(e.target.value)} placeholder={tTeam("ecNamePlaceholder")}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-colors" />
+                  <input type="tel" value={editEcPhone} onChange={e => setEditEcPhone(e.target.value)} placeholder={tTeam("ecPhonePlaceholder")}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-colors" />
+                </div>
+              </div>
+              {branches.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide flex items-center gap-1"><MapPin className="w-3 h-3" />{tTeam("assignBranches")}</label>
+                  <div className="flex flex-wrap gap-2">
+                    {branches.map((b: any) => (
+                      <button key={b.id} type="button" onClick={() => toggleBranch(b.id, editBranchIds, setEditBranchIds)}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all ${editBranchIds.includes(b.id) ? 'bg-sky-600 text-white border-sky-600' : 'bg-white dark:bg-white/5 text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-white/10 hover:border-sky-400'}`}>
+                        {b.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-slate-100 dark:border-white/10">
+              <button onClick={() => setEditRecep(null)} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-all">{tTeam("cancel")}</button>
+              <button onClick={handleSaveEditRecep} disabled={editSaving} className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-sky-600 hover:bg-sky-500 text-white transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+                {editSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                {tTeam("saveBtn")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── RECEPTIONIST SCHEDULE MODAL ─────────────────────────────────── */}
+      {scheduleRecep && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90dvh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/10">
+              <div>
+                <p className="font-black text-slate-900 dark:text-white">{tTeam("schedulesModalTitle")}</p>
+                <p className="text-xs text-slate-500 dark:text-zinc-400">{scheduleRecep.name}</p>
+              </div>
+              <button onClick={() => setScheduleRecep(null)} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-all"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
+              {scheduleError && <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-xs font-bold"><AlertCircle className="w-4 h-4 shrink-0" />{scheduleError}</div>}
+              {scheduleLoading ? (
+                <div className="flex justify-center py-4"><div className="w-5 h-5 border-2 border-slate-200 dark:border-white/20 border-t-purple-500 rounded-full animate-spin" /></div>
+              ) : schedules.length === 0 && !editingSchedId ? (
+                <p className="text-sm text-slate-400 dark:text-zinc-500 text-center py-2">{tTeam("noSchedules")}</p>
+              ) : !editingSchedId && (
+                <div className="space-y-2">
+                  {schedules.map(s => (
+                    <div key={s.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-white/5 rounded-xl">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{branchName(s.branchId)}</p>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">{tTeam("scheduleConfigured")}</p>
+                      </div>
+                      <button onClick={() => startEditSchedule(s)} className="p-2 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition-all shrink-0"><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteSchedule(s.id)} className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all shrink-0"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(scheduleRecep.assignedBranchIds?.length ?? 0) > 0 ? (
+                editingSchedId === null ? (
+                  <div className="border-t border-slate-100 dark:border-white/10 pt-4">
+                    <p className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide mb-3">{tTeam("addScheduleTitle")}</p>
+                    <div className="relative mb-3">
+                      <select value={newSchedBranchId} onChange={e => setNewSchedBranchId(e.target.value)}
+                        className="w-full appearance-none bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-4 pr-10 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors cursor-pointer">
+                        {scheduleRecep.assignedBranchIds!.map(bid => <option key={bid} value={bid}>{branchName(bid)}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                    <BusinessHoursPicker value={newSchedData} onChange={setNewSchedData} />
+                    <button onClick={handleSaveSchedule} disabled={schedSaving}
+                      className="w-full mt-3 py-2.5 rounded-xl text-sm font-bold bg-purple-600 hover:bg-purple-500 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                      {schedSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                      {tTeam("addScheduleBtn")}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="border-t border-slate-100 dark:border-white/10 pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wide">{tTeam("editScheduleTitle")} — {branchName(newSchedBranchId)}</p>
+                      <button onClick={() => { setEditingSchedId(null); setNewSchedData(""); }} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200">{tTeam("cancel")}</button>
+                    </div>
+                    <BusinessHoursPicker value={newSchedData} onChange={setNewSchedData} />
+                    <button onClick={handleSaveSchedule} disabled={schedSaving}
+                      className="w-full py-2.5 rounded-xl text-sm font-bold bg-sky-600 hover:bg-sky-500 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                      {schedSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                      {tTeam("saveBtn")}
+                    </button>
+                  </div>
+                )
+              ) : (
+                <p className="text-xs text-slate-400 dark:text-zinc-500 text-center border-t border-slate-100 dark:border-white/10 pt-4">{tTeam("noBranchesForSchedule")}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

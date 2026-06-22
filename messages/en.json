@@ -587,6 +587,7 @@
       "tabTeam": "Team",
       "tabAbsences": "Absences",
       "tabRequests": "Requests",
+      "tabReceptionists": "Receptionists",
       "deactivated": "Deactivated",
       "confirmDeactivateTitle": "Deactivate specialist",
       "confirmDeactivateMsg": "\"{name}\" will not appear in the widget and will lose portal access.",
@@ -2475,5 +2476,24 @@
     "tooLateTitle": "Cancellation window has passed",
     "tooLateDesc": "Online cancellations are only allowed up to {hours} hours before the appointment. To cancel or reschedule, please contact us directly.",
     "tooLateInline": "The online cancellation window has passed. Please contact {tenantName} directly."
+  },
+  "BusinessHours": {
+    "regularTab": "Regular schedule",
+    "specialTab": "Special dates",
+    "copyToAll": "Copy to all",
+    "copyShort": "Copy",
+    "addSlot": "Add slot",
+    "closed": "Closed",
+    "addDate": "Add date",
+    "noSpecialDates": "No special dates configured",
+    "days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    }
   }
 }
