@@ -47,7 +47,7 @@ function StatusBadge({ status, t }: { status: string; t: ReturnType<typeof useTr
 }
 
 // ─── Role badge ───────────────────────────────────────────────────────────────
-function RoleBadge({ role, t }: { role: string; t: ReturnType<typeof useTranslations> }) {
+function RoleBadge({ role, isReceptionist, t }: { role: string; isReceptionist?: boolean; t: ReturnType<typeof useTranslations> }) {
   if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-violet-500/10 text-violet-600 dark:text-violet-400">
@@ -55,8 +55,15 @@ function RoleBadge({ role, t }: { role: string; t: ReturnType<typeof useTranslat
       </span>
     );
   }
+  if (isReceptionist) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400">
+        <Users className="w-3 h-3" /> {t('roleReceptionist')}
+      </span>
+    );
+  }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
       <Users className="w-3 h-3" /> {t('roleStaff')}
     </span>
   );
@@ -440,7 +447,7 @@ export default function TenantUsersModal({
                             <p className="text-zinc-600 dark:text-zinc-400 text-xs truncate max-w-[180px]">{user.email}</p>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <RoleBadge role={user.role} t={t} />
+                            <RoleBadge role={user.role} isReceptionist={user.isReceptionist} t={t} />
                           </td>
                           <td className="px-4 py-3 text-center">
                             <StatusBadge status={user.status} t={t} />
@@ -476,7 +483,7 @@ export default function TenantUsersModal({
                         <UserActionMenu user={user} t={t} onAction={handleAction} />
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <RoleBadge role={user.role} t={t} />
+                        <RoleBadge role={user.role} isReceptionist={user.isReceptionist} t={t} />
                         <StatusBadge status={user.status} t={t} />
                         <span className="text-xs text-zinc-400">· {formatRelative(user.lastLoginAt)}</span>
                       </div>

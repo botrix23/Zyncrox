@@ -1723,6 +1723,7 @@
       "colActions": "Acciones",
       "roleAdmin": "Admin",
       "roleStaff": "Especialista",
+      "roleReceptionist": "Recepcionista",
       "statusActive": "Activo",
       "statusPending": "Pendiente",
       "statusInactive": "Inactivo",

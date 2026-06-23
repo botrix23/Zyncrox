@@ -746,17 +746,18 @@ export async function deleteTenantAdminAction(userId: string, tenantId: string) 
 export async function getTenantUsersAction(tenantId: string) {
   await assertSuperAdmin();
 
-  const tenantUsers = await db.query.users.findMany({
-    where: and(eq(users.tenantId, tenantId)),
-    orderBy: [desc(users.createdAt)],
-  });
-
-  // Get last login for each user from audit logs (grab recent logins, map by userId)
-  const loginLogs = await db.query.auditLogs.findMany({
-    where: and(eq(auditLogs.action, 'LOGIN_SUCCESS'), eq(auditLogs.tenantId, tenantId)),
-    orderBy: [desc(auditLogs.createdAt)],
-    limit: 200,
-  });
+  const [tenantUsers, loginLogs] = await Promise.all([
+    db.query.users.findMany({
+      where: eq(users.tenantId, tenantId),
+      with: { staff: { columns: { isReceptionist: true } } },
+      orderBy: [desc(users.createdAt)],
+    }),
+    db.query.auditLogs.findMany({
+      where: and(eq(auditLogs.action, 'LOGIN_SUCCESS'), eq(auditLogs.tenantId, tenantId)),
+      orderBy: [desc(auditLogs.createdAt)],
+      limit: 200,
+    }),
+  ]);
 
   const lastLoginByUser: Record<string, Date> = {};
   for (const log of loginLogs) {
@@ -770,11 +771,11 @@ export async function getTenantUsersAction(tenantId: string) {
     name: u.name,
     email: u.email,
     role: u.role,
+    isReceptionist: u.staff?.isReceptionist ?? false,
     isActive: u.isActive,
     mustChangePassword: u.mustChangePassword,
     createdAt: u.createdAt,
     lastLoginAt: lastLoginByUser[u.id] ?? null,
-    // Derived status: Pending = active but must change password (hasn't completed setup)
     status: !u.isActive ? 'INACTIVE' : u.mustChangePassword ? 'PENDING' : 'ACTIVE',
   }));
 }
