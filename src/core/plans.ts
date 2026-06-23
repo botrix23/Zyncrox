@@ -1,6 +1,6 @@
 // src/core/plans.ts
 
-export type PlanType = 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
+export type PlanType = 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE' | 'BASIC_TEST';
 
 export interface PlanFeatures {
   // Capacidad
@@ -48,6 +48,39 @@ export interface PlanFeatures {
 }
 
 export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
+  BASIC_TEST: {
+    maxBranches: 1,
+    maxStaff: 3,
+    maxServices: 20,
+
+    multiServiceBooking: false,
+    separateServiceScheduling: false,
+
+    customTheme: true,
+    customHero: true,
+    customWidgetSteps: true,
+    customSchedulingModeLabels: true,
+    customEmailTemplate: false,
+
+    simultaneousServices: false,
+    serviceCategories: false,
+    servicesPerBranch: false,
+
+    staffAccess: true,
+    staffCategories: false,
+    staffRotations: false,
+
+    surveys: false,
+    nps: false,
+
+    weeklyMonthlyStats: false,
+    advancedAnalytics: false,
+
+    maxAdmins: 0,
+
+    prioritySupport: false,
+    auditLogsAdmin: false,
+  },
   BASIC: {
     maxBranches: 1,
     maxStaff: 3,
@@ -151,6 +184,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
 
 /** Precios base (fallback si platform_config no tiene valores configurados). */
 export const PLAN_PRICES: Record<PlanType, number> = {
+  BASIC_TEST: 1,
   BASIC: 25,
   PROFESSIONAL: 59,
   ENTERPRISE: 99,
@@ -182,6 +216,7 @@ export function parsePlanPrices(cfg: {
   planPriceEnterprise?: string | null
 } | null | undefined): Record<PlanType, number> {
   return {
+    BASIC_TEST:   PLAN_PRICES.BASIC_TEST,
     BASIC:        parseFloat(cfg?.planPriceBasic        ?? '') || PLAN_PRICES.BASIC,
     PROFESSIONAL: parseFloat(cfg?.planPriceProfessional ?? '') || PLAN_PRICES.PROFESSIONAL,
     ENTERPRISE:   parseFloat(cfg?.planPriceEnterprise   ?? '') || PLAN_PRICES.ENTERPRISE,
@@ -204,6 +239,7 @@ export function parsePlanIds(cfg: {
 } {
   return {
     ids: {
+      BASIC_TEST:   '',
       BASIC:        cfg?.n1coPlanIdBasic        ?? '',
       PROFESSIONAL: cfg?.n1coPlanIdProfessional ?? '',
       ENTERPRISE:   cfg?.n1coPlanIdEnterprise   ?? '',
@@ -230,6 +266,7 @@ export function canUseFeature(plan: string | null | undefined, feature: keyof Pl
 export function getPlanDisplayName(plan?: string | null): string {
   const normalized = plan === 'FREE' ? 'BASIC' : plan === 'PRO' ? 'PROFESSIONAL' : plan;
   const names: Record<string, string> = {
+    BASIC_TEST: 'Básico Test',
     BASIC: 'Inicial',
     PROFESSIONAL: 'Profesional',
     ENTERPRISE: 'Negocio',

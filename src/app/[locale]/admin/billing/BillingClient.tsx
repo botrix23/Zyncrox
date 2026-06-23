@@ -41,21 +41,24 @@ type Props = {
   isOwner?: boolean
 }
 
-const PLANS: PlanType[] = ['BASIC', 'PROFESSIONAL', 'ENTERPRISE']
+const PLANS: PlanType[] = ['BASIC_TEST', 'BASIC', 'PROFESSIONAL', 'ENTERPRISE']
 const PLAN_NAMES: Record<PlanType, string> = {
+  BASIC_TEST: 'Básico Test',
   BASIC: 'Inicial',
   PROFESSIONAL: 'Profesional',
   ENTERPRISE: 'Negocio',
 }
-const PLAN_ORDER: Record<string, number> = { BASIC: 0, PROFESSIONAL: 1, ENTERPRISE: 2 }
+const PLAN_ORDER: Record<string, number> = { BASIC_TEST: -1, BASIC: 0, PROFESSIONAL: 1, ENTERPRISE: 2 }
 
 const PLAN_SUBTITLES: Record<PlanType, { en: string; es: string }> = {
+  BASIC_TEST:   { en: 'Test plan — $1 every 2 days',   es: 'Plan de prueba — $1 cada 2 días' },
   BASIC:        { en: 'For independent professionals', es: 'Para profesionales independientes' },
   PROFESSIONAL: { en: 'For mid-size salons',           es: 'Para salones medianos' },
   ENTERPRISE:   { en: 'For chains & clinics',          es: 'Para cadenas y clínicas' },
 }
 
 const PLAN_HIGHLIGHTS: Record<PlanType, { en: string; es: string }> = {
+  BASIC_TEST:   { en: '1 location · 3 specialists · 20 services', es: '1 sucursal · 3 especialistas · 20 servicios' },
   BASIC:        { en: '1 location · 3 specialists · 20 services', es: '1 sucursal · 3 especialistas · 20 servicios' },
   PROFESSIONAL: { en: '2 locations · 10 specialists · 50 services', es: '2 sucursales · 10 especialistas · 50 servicios' },
   ENTERPRISE:   { en: 'Unlimited everything',                       es: 'Todo ilimitado' },
@@ -142,7 +145,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 }
 
 export default function BillingClient({ tenantId, plan, tenantStatus, subscription, locale, planPrices: dynamicPrices, isOwner = true }: Props) {
-  const prices: DynamicPrices = dynamicPrices ?? PLAN_PRICES
+  const prices: DynamicPrices = { ...PLAN_PRICES, ...dynamicPrices }
   const t = useTranslations('Billing')
   const [modal, setModal] = useState<'upgrade' | 'downgrade' | 'cancel' | 'activate' | 'reactivate' | null>(null)
   const [targetPlan, setTargetPlan] = useState<PlanType>('PROFESSIONAL')
@@ -448,8 +451,9 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold">{PLAN_NAMES[p]}</span>
                       {isCurrent && <span className="px-2 py-0.5 bg-purple-600 text-white text-xs font-bold rounded-full">{t('changePlan.current')}</span>}
+                      {p === 'BASIC_TEST' && <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">TEST</span>}
                     </div>
-                    <span className="text-lg font-black">${prices[p]}<span className="text-xs font-normal text-zinc-500">{t('perMonth')}</span></span>
+                    <span className="text-lg font-black">${prices[p]}<span className="text-xs font-normal text-zinc-500">{p === 'BASIC_TEST' ? '/2 días' : t('perMonth')}</span></span>
                   </div>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">{PLAN_SUBTITLES[p][locale as 'en' | 'es'] ?? PLAN_SUBTITLES[p].en}</p>
                   <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-2">{PLAN_HIGHLIGHTS[p][locale as 'en' | 'es'] ?? PLAN_HIGHLIGHTS[p].en}</p>

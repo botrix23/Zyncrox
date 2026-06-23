@@ -21,9 +21,10 @@
 // Subscription link URLs
 // ---------------------------------------------------------------------------
 
-export type N1coPlanKey = 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE'
+export type N1coPlanKey = 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE' | 'BASIC_TEST'
 
 const LINK_ENV_KEYS: Record<N1coPlanKey, string> = {
+  BASIC_TEST:   'N1CO_LINK_BASIC_TEST',
   BASIC:        'N1CO_LINK_BASIC',
   PROFESSIONAL: 'N1CO_LINK_PROFESSIONAL',
   ENTERPRISE:   'N1CO_LINK_ENTERPRISE',
