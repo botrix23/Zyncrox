@@ -20,7 +20,7 @@ export default async function StaffPage() {
   const isStaffRole = session?.role === 'STAFF';
   const currentStaffId = session?.staffId ?? undefined;
 
-  const [dbStaffRaw, dbBranches, dbCategories, planLimit, tenant, initialBlocks, pendingRequests] = await Promise.all([
+  const [dbStaffRaw, dbBranches, dbCategories, planLimit, receptionistLimit, tenant, initialBlocks, pendingRequests] = await Promise.all([
     db.query.staff.findMany({
       where: eq(staffTable.tenantId, tenantId),
       with: {
@@ -37,6 +37,7 @@ export default async function StaffPage() {
       orderBy: (c, { asc }) => [asc(c.createdAt)],
     }),
     checkPlanLimit(tenantId, 'staff'),
+    checkPlanLimit(tenantId, 'receptionists'),
     db.query.tenants.findFirst({ where: eq(tenants.id, tenantId), columns: { showStaffSelection: true } }),
     // Absence blocks
     isStaffRole && currentStaffId
@@ -78,6 +79,7 @@ export default async function StaffPage() {
       categories={dbCategories}
       tenantId={tenantId}
       planLimit={planLimit.limit}
+      receptionistLimit={receptionistLimit.limit}
       plan={planLimit.plan}
       showStaffSelection={tenant?.showStaffSelection ?? true}
       role={(session?.impersonatedRole ?? session?.role) ?? 'ADMIN'}

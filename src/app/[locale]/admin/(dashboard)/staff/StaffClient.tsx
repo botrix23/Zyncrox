@@ -51,6 +51,7 @@ export default function StaffClient({
   categories = [],
   tenantId,
   planLimit,
+  receptionistLimit,
   plan,
   showStaffSelection: initialShowStaffSelection = true,
   role = 'ADMIN',
@@ -63,6 +64,7 @@ export default function StaffClient({
   categories?: any[],
   tenantId: string,
   planLimit?: number,
+  receptionistLimit?: number,
   plan?: string,
   showStaffSelection?: boolean,
   role?: 'ADMIN' | 'SUPER_ADMIN' | 'STAFF' | 'RECEPTIONIST',
@@ -71,6 +73,7 @@ export default function StaffClient({
   pendingRequests?: any[],
 }) {
   const limit = planLimit ?? 999;
+  const recepLimit = receptionistLimit ?? 999;
   const t = useTranslations('Dashboard.staff');
   const isStaffRole = role === 'STAFF' || role === 'RECEPTIONIST';
   type StaffTab = 'team' | 'absences' | 'requests' | 'receptionists';
@@ -79,7 +82,9 @@ export default function StaffClient({
   const [staffList, setStaffList] = useState<any[]>(initialStaff);
   useEffect(() => { setStaffList(initialStaff); }, [initialStaff]);
   const activeStaffCount = staffList.filter((m: any) => m.isActive !== false).length;
+  const activeReceptionistCount = staffList.filter((m: any) => m.isActive !== false && m.isReceptionist).length;
   const atLimit = activeStaffCount >= limit;
+  const atReceptionistLimit = activeReceptionistCount >= recepLimit;
 
   const [activeMainTab, setActiveMainTab] = useState<StaffTab>(isStaffRole ? 'absences' : 'team');
 
@@ -634,23 +639,29 @@ export default function StaffClient({
           <p className="text-slate-500 dark:text-zinc-400">{t('subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
-          {limit < 999 && (
-            <span className={`text-sm font-bold px-4 py-3 rounded-2xl border ${
-              atLimit
-                ? 'bg-red-500/10 border-red-500/30 text-red-500'
-                : activeStaffCount >= limit - 1
-                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
-                  : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400'
-            }`}>
-              {activeStaffCount} / {limit}
-            </span>
-          )}
+          {(() => {
+            const isRecepTab = activeMainTab === 'receptionists';
+            const displayCount = isRecepTab ? activeReceptionistCount : activeStaffCount;
+            const displayLimit = isRecepTab ? recepLimit : limit;
+            const isAtTabLimit = isRecepTab ? atReceptionistLimit : atLimit;
+            return displayLimit < 999 && (
+              <span className={`text-sm font-bold px-4 py-3 rounded-2xl border ${
+                isAtTabLimit
+                  ? 'bg-red-500/10 border-red-500/30 text-red-500'
+                  : displayCount >= displayLimit - 1
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                    : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400'
+              }`}>
+                {displayCount} / {displayLimit}
+              </span>
+            );
+          })()}
           <button
-            onClick={() => !atLimit && handleOpenModal()}
-            disabled={atLimit}
-            title={atLimit ? `Límite de ${limit} empleados alcanzado. Actualiza tu plan para agregar más.` : undefined}
+            onClick={() => !(activeMainTab === 'receptionists' ? atReceptionistLimit : atLimit) && handleOpenModal()}
+            disabled={activeMainTab === 'receptionists' ? atReceptionistLimit : atLimit}
+            title={(activeMainTab === 'receptionists' ? atReceptionistLimit : atLimit) ? `Límite de plan alcanzado. Actualiza tu plan para agregar más.` : undefined}
             className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold shadow-xl transition-all ${
-              atLimit
+              (activeMainTab === 'receptionists' ? atReceptionistLimit : atLimit)
                 ? 'bg-slate-200 dark:bg-zinc-700 text-slate-400 dark:text-zinc-500 cursor-not-allowed shadow-none'
                 : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-500/20 active:scale-95'
             }`}

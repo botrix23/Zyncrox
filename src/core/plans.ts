@@ -43,6 +43,9 @@ export interface PlanFeatures {
   // Admins adicionales (sin contar al owner)
   maxAdmins: number;                   // 0 = solo owner, -1 = ilimitado
 
+  // Recepcionistas
+  maxReceptionists: number;            // recepcionistas activos permitidos
+
   // Enterprise exclusivo
   auditLogsAdmin: boolean;             // Audit logs visibles al admin
 }
@@ -52,6 +55,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxBranches: 1,
     maxStaff: 3,
     maxServices: 20,
+    maxReceptionists: 1,
 
     multiServiceBooking: false,
     separateServiceScheduling: false,
@@ -85,6 +89,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxBranches: 1,
     maxStaff: 3,
     maxServices: 20,
+    maxReceptionists: 1,
 
     multiServiceBooking: false,
     separateServiceScheduling: false,
@@ -118,6 +123,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxBranches: 2,
     maxStaff: 10,
     maxServices: 50,
+    maxReceptionists: 2,
 
     multiServiceBooking: true,
     separateServiceScheduling: true,
@@ -151,6 +157,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxBranches: 9999,
     maxStaff: 9999,
     maxServices: 9999,
+    maxReceptionists: 9999,
 
     multiServiceBooking: true,
     separateServiceScheduling: true,

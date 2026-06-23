@@ -98,6 +98,18 @@ export async function createStaffAction(data: {
         plan: limitCheck.plan,
       };
     }
+    if (data.isReceptionist) {
+      const recepCheck = await checkPlanLimit(tenantId, "receptionists");
+      if (!recepCheck.allowed) {
+        return {
+          success: false,
+          error: "PLAN_LIMIT_EXCEEDED",
+          limit: recepCheck.limit,
+          current: recepCheck.current,
+          plan: recepCheck.plan,
+        };
+      }
+    }
 
     const [newStaff] = await db.insert(staff).values({
       tenantId: data.tenantId,

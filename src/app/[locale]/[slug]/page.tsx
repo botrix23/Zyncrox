@@ -27,6 +27,7 @@ export default async function Home({ params }: { params: { locale: string, slug:
       with: {
         categories: true,
         assignments: { columns: { branchId: true, isPermanent: true } },
+        user: { columns: { role: true } },
       },
     }),
     db.query.coverageZones.findMany({ where: (zones, { eq, and }) => and(eq(zones.tenantId, tenant.id), eq(zones.isActive, true)) }),
@@ -37,10 +38,12 @@ export default async function Home({ params }: { params: { locale: string, slug:
     ...s,
     categoryIds: (s.categories || []).map((c: any) => c.categoryId),
   }));
-  const tenantStaff = rawStaff.map(s => ({
-    ...s,
-    categoryIds: (s.categories || []).map((c: any) => c.categoryId),
-  }));
+  const tenantStaff = rawStaff
+    .filter(s => s.user?.role !== 'RECEPTIONIST')
+    .map(s => ({
+      ...s,
+      categoryIds: (s.categories || []).map((c: any) => c.categoryId),
+    }));
 
   // Tenant suspendido: mostrar página de no disponible
   if (tenant?.status === 'SUSPENDED') {

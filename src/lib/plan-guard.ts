@@ -4,7 +4,7 @@ import { eq, and } from "drizzle-orm";
 import { getPlanFeatures } from "@/core/plans";
 import { sql } from "drizzle-orm";
 
-type Resource = "branches" | "staff" | "services";
+type Resource = "branches" | "staff" | "services" | "receptionists";
 
 export async function checkPlanLimit(
   tenantId: string,
@@ -42,6 +42,13 @@ export async function checkPlanLimit(
       .where(and(eq(services.tenantId, tenantId), eq(services.isActive, true)));
     current = row?.count ?? 0;
     limit = features.maxServices;
+  } else if (resource === "receptionists") {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(staff)
+      .where(and(eq(staff.tenantId, tenantId), eq(staff.isActive, true), eq(staff.isReceptionist, true)));
+    current = row?.count ?? 0;
+    limit = features.maxReceptionists;
   }
 
   return { allowed: current < limit, current, limit, plan };
