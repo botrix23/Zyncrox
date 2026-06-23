@@ -58,20 +58,19 @@ async function notifyAdminAbsenceRequest(data: {
 
   const staffBranchId = staffMember.branchId;
 
-  // Prefer admins explicitly assigned to the staff member's branch
+  const nonOwners = allAdmins.filter(a => !a.isOwner);
+  const owners = allAdmins.filter(a => a.isOwner);
+
+  // 1. Non-owner admins assigned to the staff's branch
   let recipients = staffBranchId
-    ? allAdmins.filter(a => a.assignedBranchIds?.includes(staffBranchId))
+    ? nonOwners.filter(a => a.assignedBranchIds?.includes(staffBranchId))
     : [];
 
-  // Fallback: if no branch-scoped admin found, notify all owners
-  if (!recipients.length) {
-    recipients = allAdmins.filter(a => a.isOwner);
-  }
+  // 2. Any active non-owner admin
+  if (!recipients.length) recipients = nonOwners;
 
-  // Last resort: notify all active admins
-  if (!recipients.length) {
-    recipients = allAdmins;
-  }
+  // 3. Owners — only if no delegated admin exists
+  if (!recipients.length) recipients = owners;
 
   if (!recipients.length) return;
 
