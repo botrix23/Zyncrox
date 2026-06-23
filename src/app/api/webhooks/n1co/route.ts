@@ -38,6 +38,8 @@ function addDays(date: Date, days: number): Date {
 export async function POST(req: NextRequest) {
   // Validate webhook secret
   const secret = req.headers.get('x-n1co-secret')
+  const expected = process.env.N1CO_WEBHOOK_SECRET
+  console.log(`[N1CO Webhook Debug] received prefix: "${secret?.substring(0, 6)}" expected prefix: "${expected?.substring(0, 6)}"`)
   if (!validateWebhookSecret(secret)) {
     console.warn('[N1CO Webhook] Invalid secret')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
