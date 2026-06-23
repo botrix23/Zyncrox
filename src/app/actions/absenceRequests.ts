@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { absenceRequests, blocks, users, staff as staffTable, tenants } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, arrayContains } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth-session";
 import { logAuditEvent } from "@/lib/audit";
@@ -46,15 +46,34 @@ async function notifyAdminAbsenceRequest(data: {
   startTime: Date;
   endTime: Date;
 }) {
-  const [staffMember, adminUsers, tenant] = await Promise.all([
-    db.query.staff.findFirst({ where: eq(staffTable.id, data.staffId), columns: { name: true } }),
-    db.select({ email: users.email, name: users.name })
+  const [staffMember, allAdmins, tenant] = await Promise.all([
+    db.query.staff.findFirst({ where: eq(staffTable.id, data.staffId), columns: { name: true, branchId: true } }),
+    db.select({ email: users.email, name: users.name, isOwner: users.isOwner, assignedBranchIds: users.assignedBranchIds })
       .from(users)
-      .where(and(eq(users.tenantId, data.tenantId), eq(users.isOwner, true))),
+      .where(and(eq(users.tenantId, data.tenantId), eq(users.role, 'ADMIN'), eq(users.isActive, true))),
     db.query.tenants.findFirst({ where: eq(tenants.id, data.tenantId), columns: { name: true } }),
   ]);
 
-  if (!adminUsers.length || !staffMember) return;
+  if (!allAdmins.length || !staffMember) return;
+
+  const staffBranchId = staffMember.branchId;
+
+  // Prefer admins explicitly assigned to the staff member's branch
+  let recipients = staffBranchId
+    ? allAdmins.filter(a => a.assignedBranchIds?.includes(staffBranchId))
+    : [];
+
+  // Fallback: if no branch-scoped admin found, notify all owners
+  if (!recipients.length) {
+    recipients = allAdmins.filter(a => a.isOwner);
+  }
+
+  // Last resort: notify all active admins
+  if (!recipients.length) {
+    recipients = allAdmins;
+  }
+
+  if (!recipients.length) return;
 
   const staffName = staffMember.name;
   const tenantName = tenant?.name ?? '';
@@ -125,7 +144,7 @@ async function notifyAdminAbsenceRequest(data: {
 </html>`;
 
   await Promise.allSettled(
-    adminUsers.map(admin =>
+    recipients.map(admin =>
       resend.emails.send({
         from: "Zyncrox <notificaciones@zyncrox.com>",
         to: admin.email,
