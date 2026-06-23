@@ -123,7 +123,9 @@ export default function BookingsClient({
   const [activeTab, setActiveTab] = useState("Todas");
   const [serviceTypeFilter, setServiceTypeFilter] = useState<'' | 'branch' | 'home'>('');
   const [showFilterPanel, setShowFilterPanel] = useState(false);
-  const [branchFilter, setBranchFilter] = useState<string>("");
+  const [branchFilter, setBranchFilter] = useState<string>(
+    userRole === 'RECEPTIONIST' && assignedBranchIds.length > 0 ? assignedBranchIds[0] : ""
+  );
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<any | null>(null);
