@@ -192,6 +192,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
   const isActive = subStatus === 'ACTIVE'
   const isPastDue = subStatus === 'PAST_DUE'
   const isCancelled = subStatus === 'CANCELLED'
+  const isPendingPayment = subStatus === 'PENDING_PAYMENT'
 
   const showError = (msg: string) => { setError(msg); setTimeout(() => setError(null), 5000) }
   const showSuccess = (msg: string) => { setSuccess(msg); setTimeout(() => setSuccess(null), 4000) }
@@ -200,7 +201,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
     setTargetPlan(p)
     const currentOrder = getPlanOrder(currentPlan)
     const targetOrder = getPlanOrder(p)
-    if (!hasSubscription || isSuspended || isCancelled) setModal('activate')
+    if (!hasSubscription || isSuspended || isCancelled || isPendingPayment) setModal('activate')
     else if (targetOrder > currentOrder) setModal('upgrade')
     else setModal('downgrade')
   }
