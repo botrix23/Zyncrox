@@ -687,3 +687,25 @@ export const superAdminNotifications = pgTable('super_admin_notifications', {
 export const superAdminNotificationsRelations = relations(superAdminNotifications, ({ one }) => ({
   tenant: one(tenants, { fields: [superAdminNotifications.tenantId], references: [tenants.id] }),
 }));
+
+// ── Subscription Plans (gestionados desde super admin) ───────────────────────
+// Catálogo de planes de suscripción de la plataforma.
+// Permite agregar/editar/desactivar planes sin tocar código ni variables de entorno.
+export const subscriptionPlans = pgTable('subscription_plans', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // Identificador único del plan — usado en subscriptions.plan y tenants.plan
+  slug:             varchar('slug',             { length: 50  }).notNull().unique(),
+  name:             varchar('name',             { length: 100 }).notNull(),
+  description:      text('description'),
+  highlights:       varchar('highlights',       { length: 255 }),
+  price:            decimal('price',            { precision: 10, scale: 2 }).notNull(),
+  billingCycleDays: integer('billing_cycle_days').notNull().default(30),
+  // URL completa del link de suscripción en N1CO (pay.n1co.shop/pl/...)
+  n1coLink:         text('n1co_link'),
+  isActive:         boolean('is_active').notNull().default(true),
+  // Marca el plan como de prueba (muestra badge TEST en la UI)
+  isTest:           boolean('is_test').notNull().default(false),
+  sortOrder:        integer('sort_order').notNull().default(0),
+  createdAt:        timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt:        timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});

@@ -1,11 +1,11 @@
 "use server"
 
 import { db } from '@/db'
-import { subscriptions, tenants } from '@/db/schema'
+import { subscriptions, tenants, subscriptionPlans } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth-session'
-import { getN1coSubscriptionLink } from '@/lib/n1co'
+import { getN1coSubscriptionLink, buildN1coLink } from '@/lib/n1co'
 import { getPlanPrice, PlanType } from '@/core/plans'
 import { enforceDowngradeLimits } from '@/lib/billing'
 import { logAuditEvent } from '@/lib/audit'
@@ -86,7 +86,16 @@ export async function activateSubscriptionAction(
       },
     })
 
-    const redirectUrl = getN1coSubscriptionLink(plan, tenant.contactEmail ?? undefined)
+    // Look up N1CO link from DB plan first; fall back to env var for backward compat
+    let redirectUrl: string
+    const dbPlan = await db.query.subscriptionPlans.findFirst({
+      where: eq(subscriptionPlans.slug, plan),
+    })
+    if (dbPlan?.n1coLink) {
+      redirectUrl = buildN1coLink(dbPlan.n1coLink, tenant.contactEmail ?? undefined)
+    } else {
+      redirectUrl = getN1coSubscriptionLink(plan, tenant.contactEmail ?? undefined)
+    }
 
     revalidatePath('/[locale]/admin/billing', 'page')
     await logAuditEvent({ action: 'SUBSCRIPTION_ACTIVATED', userId: session.userId, tenantId, details: { plan } })

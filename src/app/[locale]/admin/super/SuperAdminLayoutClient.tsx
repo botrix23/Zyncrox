@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShieldCheck, Users, BarChart2, FileText, LogOut, CreditCard, Menu, Mail } from 'lucide-react';
+import { ShieldCheck, Users, BarChart2, FileText, LogOut, CreditCard, Menu, Mail, Layers } from 'lucide-react';
 import { logoutAction } from '@/app/actions/auth';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LangToggle } from '@/components/LangToggle';
@@ -41,6 +41,7 @@ export function SuperAdminLayoutClient({
   const navItems = [
     { href: `/${locale}/admin/super`,          label: t('dashboard'),  icon: BarChart2 },
     { href: `/${locale}/admin/super/tenants`,  label: t('companies'),  icon: Users },
+    { href: `/${locale}/admin/super/plans`,    label: 'Planes',        icon: Layers },
     { href: `/${locale}/admin/super/emails`,   label: 'Emails',        icon: Mail },
     { href: `/${locale}/admin/super/payments`, label: t('payments'),   icon: CreditCard },
     { href: `/${locale}/admin/super/logs`,     label: t('logs'),       icon: FileText },

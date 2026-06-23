@@ -34,7 +34,7 @@ const LINK_ENV_KEYS: Record<N1coPlanKey, string> = {
  * Returns the N1CO hosted subscription link for the given plan.
  * Optionally pre-fills the subscriber's email to improve webhook matching.
  *
- * @param plan   — BASIC | PROFESSIONAL | ENTERPRISE
+ * @param plan   — BASIC | PROFESSIONAL | ENTERPRISE | BASIC_TEST
  * @param email  — tenant owner email to pre-fill on N1CO's checkout page
  */
 export function getN1coSubscriptionLink(plan: string, email?: string): string {
@@ -45,6 +45,20 @@ export function getN1coSubscriptionLink(plan: string, email?: string): string {
   const baseUrl = process.env[envKey] ?? ''
   if (!baseUrl) throw new Error(`N1CO subscription link not configured: ${envKey}`)
 
+  if (!email) return baseUrl
+  return `${baseUrl}?email=${encodeURIComponent(email)}`
+}
+
+/**
+ * Builds an N1CO checkout URL from a base URL stored in the DB.
+ * Used when the N1CO link comes from the subscription_plans table
+ * instead of environment variables.
+ *
+ * @param baseUrl — full N1CO link URL (e.g. https://pay.n1co.shop/pl/k3RdPFkYZ)
+ * @param email   — tenant owner email to pre-fill
+ */
+export function buildN1coLink(baseUrl: string, email?: string): string {
+  if (!baseUrl) throw new Error('N1CO link URL is empty')
   if (!email) return baseUrl
   return `${baseUrl}?email=${encodeURIComponent(email)}`
 }

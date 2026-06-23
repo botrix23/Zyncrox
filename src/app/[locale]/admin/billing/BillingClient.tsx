@@ -6,6 +6,20 @@ import { AlertTriangle, CheckCircle, ExternalLink, XCircle, X, Lock, ShieldCheck
 import { PLAN_FEATURES, PLAN_PRICES, PlanType } from '@/core/plans'
 
 type DynamicPrices = Record<PlanType, number>
+
+export type DbPlan = {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  highlights: string | null
+  price: string
+  billingCycleDays: number
+  n1coLink: string | null
+  isActive: boolean
+  isTest: boolean
+  sortOrder: number
+}
 import {
   activateSubscriptionAction,
   cancelSubscriptionAction,
@@ -38,31 +52,16 @@ type Props = {
   subscription: SubscriptionData | null
   locale: string
   planPrices?: DynamicPrices
+  dbPlans?: DbPlan[]
   isOwner?: boolean
 }
 
-const PLANS: PlanType[] = ['BASIC_TEST', 'BASIC', 'PROFESSIONAL', 'ENTERPRISE']
-const PLAN_NAMES: Record<PlanType, string> = {
-  BASIC_TEST: 'Básico Test',
-  BASIC: 'Inicial',
-  PROFESSIONAL: 'Profesional',
-  ENTERPRISE: 'Negocio',
+// Fallback constants for when DB plans are not yet loaded
+const FALLBACK_PLANS: PlanType[] = ['BASIC_TEST', 'BASIC', 'PROFESSIONAL', 'ENTERPRISE']
+const FALLBACK_PLAN_NAMES: Record<string, string> = {
+  BASIC_TEST: 'Básico Test', BASIC: 'Inicial', PROFESSIONAL: 'Profesional', ENTERPRISE: 'Negocio',
 }
 const PLAN_ORDER: Record<string, number> = { BASIC_TEST: -1, BASIC: 0, PROFESSIONAL: 1, ENTERPRISE: 2 }
-
-const PLAN_SUBTITLES: Record<PlanType, { en: string; es: string }> = {
-  BASIC_TEST:   { en: 'Test plan — $1 every 2 days',   es: 'Plan de prueba — $1 cada 2 días' },
-  BASIC:        { en: 'For independent professionals', es: 'Para profesionales independientes' },
-  PROFESSIONAL: { en: 'For mid-size salons',           es: 'Para salones medianos' },
-  ENTERPRISE:   { en: 'For chains & clinics',          es: 'Para cadenas y clínicas' },
-}
-
-const PLAN_HIGHLIGHTS: Record<PlanType, { en: string; es: string }> = {
-  BASIC_TEST:   { en: '1 location · 3 specialists · 20 services', es: '1 sucursal · 3 especialistas · 20 servicios' },
-  BASIC:        { en: '1 location · 3 specialists · 20 services', es: '1 sucursal · 3 especialistas · 20 servicios' },
-  PROFESSIONAL: { en: '2 locations · 10 specialists · 50 services', es: '2 sucursales · 10 especialistas · 50 servicios' },
-  ENTERPRISE:   { en: 'Unlimited everything',                       es: 'Todo ilimitado' },
-}
 
 const FEATURE_KEYS: Array<keyof typeof PLAN_FEATURES.BASIC> = [
   'maxBranches', 'maxStaff', 'maxServices', 'multiServiceBooking',
@@ -144,14 +143,37 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return createPortal(content, document.body)
 }
 
-export default function BillingClient({ tenantId, plan, tenantStatus, subscription, locale, planPrices: dynamicPrices, isOwner = true }: Props) {
+export default function BillingClient({ tenantId, plan, tenantStatus, subscription, locale, planPrices: dynamicPrices, dbPlans, isOwner = true }: Props) {
   const prices: DynamicPrices = { ...PLAN_PRICES, ...dynamicPrices }
   const t = useTranslations('Billing')
   const [modal, setModal] = useState<'upgrade' | 'downgrade' | 'cancel' | 'activate' | 'reactivate' | null>(null)
-  const [targetPlan, setTargetPlan] = useState<PlanType>('PROFESSIONAL')
+  const [targetPlan, setTargetPlan] = useState<string>('PROFESSIONAL')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  // Helpers for DB-driven plans
+  const activePlans = dbPlans ?? []
+  const getPlanBySlug = (slug: string): DbPlan | undefined => activePlans.find(p => p.slug === slug)
+  const getPlanName = (slug: string): string => getPlanBySlug(slug)?.name ?? FALLBACK_PLAN_NAMES[slug] ?? slug
+  const getPlanPrice = (slug: string): number => {
+    const dbPrice = getPlanBySlug(slug)?.price
+    if (dbPrice) return parseFloat(dbPrice)
+    return prices[slug as PlanType] ?? 0
+  }
+  const getPlanOrder = (slug: string): number => getPlanBySlug(slug)?.sortOrder ?? PLAN_ORDER[slug] ?? 0
+  const getPlanCycleDays = (slug: string): number => getPlanBySlug(slug)?.billingCycleDays ?? 30
+  const formatCycleLabel = (slug: string): string => {
+    const days = getPlanCycleDays(slug)
+    if (days === 30) return t('perMonth')
+    if (days === 1) return '/día'
+    return `/${days} días`
+  }
+  const planFeatures = (slug: string) => PLAN_FEATURES[slug as PlanType] ?? PLAN_FEATURES.BASIC
+  // Use DB plans if available, otherwise fall back to hardcoded slugs
+  const planSlugs: string[] = activePlans.length > 0
+    ? activePlans.map(p => p.slug)
+    : FALLBACK_PLANS
 
   // Lock body scroll when any modal is open
   useEffect(() => {
@@ -174,10 +196,10 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
   const showError = (msg: string) => { setError(msg); setTimeout(() => setError(null), 5000) }
   const showSuccess = (msg: string) => { setSuccess(msg); setTimeout(() => setSuccess(null), 4000) }
 
-  const openPlanModal = (p: PlanType) => {
+  const openPlanModal = (p: string) => {
     setTargetPlan(p)
-    const currentOrder = PLAN_ORDER[currentPlan] ?? 0
-    const targetOrder = PLAN_ORDER[p] ?? 0
+    const currentOrder = getPlanOrder(currentPlan)
+    const targetOrder = getPlanOrder(p)
     if (!hasSubscription || isSuspended || isCancelled) setModal('activate')
     else if (targetOrder > currentOrder) setModal('upgrade')
     else setModal('downgrade')
@@ -213,13 +235,12 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
     if (res.success) {
       if (res.deferred) {
         setModal(null)
-        showSuccess(t('success.planDowngradeScheduled', { plan: PLAN_NAMES[targetPlan], date: formatDate(subscription?.currentPeriodEnd ?? null, locale) }))
+        showSuccess(t('success.planDowngradeScheduled', { plan: getPlanName(targetPlan), date: formatDate(subscription?.currentPeriodEnd ?? null, locale) }))
       } else if (res.redirectUrl) {
-        // Upgrade → redirect to new plan checkout
         window.location.href = res.redirectUrl
       } else {
         setModal(null)
-        showSuccess(t('success.planUpgraded', { plan: PLAN_NAMES[targetPlan] }))
+        showSuccess(t('success.planUpgraded', { plan: getPlanName(targetPlan) }))
       }
     } else {
       showError(res.error ?? t('error.changePlan'))
@@ -234,8 +255,8 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
     else showError(res.error ?? t('error.cancel'))
   }
 
-  const currentFeatures = PLAN_FEATURES[currentPlan]
-  const targetFeatures = PLAN_FEATURES[targetPlan]
+  const currentFeatures = planFeatures(currentPlan)
+  const targetFeatures = planFeatures(targetPlan)
 
   const gainedFeatures = FEATURE_KEYS.filter(key => {
     const cur = currentFeatures[key]; const tgt = targetFeatures[key]
@@ -287,16 +308,19 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
           </div>
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">{t('suspended.desc')}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {PLANS.map(p => (
+            {planSlugs.map(p => (
               <div key={p} className={`rounded-2xl border p-4 cursor-pointer transition-all ${p === currentPlan ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-zinc-200 dark:border-white/10 hover:border-purple-400'}`}>
-                <div className="text-sm font-bold mb-0.5">{PLAN_NAMES[p]}</div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">{PLAN_SUBTITLES[p][locale as 'en' | 'es'] ?? PLAN_SUBTITLES[p].en}</p>
-                <div className="text-2xl font-black mb-1">${prices[p]}<span className="text-sm font-normal text-zinc-500">{t('perMonth')}</span></div>
-                <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-3">{PLAN_HIGHLIGHTS[p][locale as 'en' | 'es'] ?? PLAN_HIGHLIGHTS[p].en}</p>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-sm font-bold">{getPlanName(p)}</span>
+                  {getPlanBySlug(p)?.isTest && <span className="px-1.5 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">TEST</span>}
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">{getPlanBySlug(p)?.description}</p>
+                <div className="text-2xl font-black mb-1">${getPlanPrice(p)}<span className="text-sm font-normal text-zinc-500">{formatCycleLabel(p)}</span></div>
+                <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-3">{getPlanBySlug(p)?.highlights}</p>
                 {isOwner && (
                   <button onClick={() => { setTargetPlan(p); setModal('reactivate') }}
                     className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">
-                    {t('suspended.reactivateWith', { plan: PLAN_NAMES[p] })}
+                    {t('suspended.reactivateWith', { plan: getPlanName(p) })}
                   </button>
                 )}
               </div>
@@ -304,10 +328,10 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
           </div>
         </div>
         {modal === 'reactivate' && (
-          <Modal title={t('modal.reactivate.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
+          <Modal title={t('modal.reactivate.title', { plan: getPlanName(targetPlan) })} onClose={() => setModal(null)}>
             <RedirectNotice
-              planName={PLAN_NAMES[targetPlan]}
-              amount={prices[targetPlan]}
+              planName={getPlanName(targetPlan)}
+              amount={getPlanPrice(targetPlan)}
               onConfirm={handleReactivate}
               onCancel={() => setModal(null)}
               loading={loading}
@@ -332,16 +356,19 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
           <h2 className="text-lg font-bold mb-2">{t('noSub.title')}</h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">{t('noSub.desc')}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {PLANS.map(p => (
+            {planSlugs.map(p => (
               <div key={p} className="rounded-2xl border border-zinc-200 dark:border-white/10 p-4">
-                <div className="text-sm font-bold mb-0.5">{PLAN_NAMES[p]}</div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">{PLAN_SUBTITLES[p][locale as 'en' | 'es'] ?? PLAN_SUBTITLES[p].en}</p>
-                <div className="text-2xl font-black mb-1">${prices[p]}<span className="text-sm font-normal text-zinc-500">{t('perMonth')}</span></div>
-                <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-3">{PLAN_HIGHLIGHTS[p][locale as 'en' | 'es'] ?? PLAN_HIGHLIGHTS[p].en}</p>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-sm font-bold">{getPlanName(p)}</span>
+                  {getPlanBySlug(p)?.isTest && <span className="px-1.5 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">TEST</span>}
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">{getPlanBySlug(p)?.description}</p>
+                <div className="text-2xl font-black mb-1">${getPlanPrice(p)}<span className="text-sm font-normal text-zinc-500">{formatCycleLabel(p)}</span></div>
+                <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-3">{getPlanBySlug(p)?.highlights}</p>
                 <ul className="space-y-1 mb-4">
                   {FEATURE_KEYS.slice(0, 6).map(key => (
                     <li key={key} className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-                      <span className={PLAN_FEATURES[p][key] ? 'text-purple-600' : 'text-zinc-300 dark:text-zinc-600'}>{featureValue(p, key)}</span>
+                      <span className={planFeatures(p)[key] ? 'text-purple-600' : 'text-zinc-300 dark:text-zinc-600'}>{featureValue(p as PlanType, key)}</span>
                       {t(`features.${key}` as any)}
                     </li>
                   ))}
@@ -349,7 +376,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                 {isOwner && (
                   <button onClick={() => openPlanModal(p)}
                     className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">
-                    {t('noSub.activate', { plan: PLAN_NAMES[p] })}
+                    {t('noSub.activate', { plan: getPlanName(p) })}
                   </button>
                 )}
               </div>
@@ -357,10 +384,10 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
           </div>
         </div>
         {modal === 'activate' && (
-          <Modal title={t('modal.activate.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
+          <Modal title={t('modal.activate.title', { plan: getPlanName(targetPlan) })} onClose={() => setModal(null)}>
             <RedirectNotice
-              planName={PLAN_NAMES[targetPlan]}
-              amount={prices[targetPlan]}
+              planName={getPlanName(targetPlan)}
+              amount={getPlanPrice(targetPlan)}
               onConfirm={handleActivate}
               onCancel={() => setModal(null)}
               loading={loading}
@@ -386,14 +413,14 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
           <div className={cardCls}>
             <h2 className="text-base font-bold mb-4">{t('currentSub.title')}</h2>
             <div className="flex items-center gap-2 mb-3">
-              <span className="px-2.5 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-bold rounded-full uppercase">{PLAN_NAMES[currentPlan]}</span>
+              <span className="px-2.5 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-bold rounded-full uppercase">{getPlanName(currentPlan)}</span>
               {isActive && <span className="px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">{t('currentSub.statusActive')}</span>}
               {isPastDue && <span className="px-2.5 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 text-xs font-semibold rounded-full">{t('currentSub.statusPastDue')}</span>}
               {isCancelled && <span className="px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-xs font-semibold rounded-full">{t('currentSub.statusCancelled')}</span>}
             </div>
 
             {isActive && subscription?.currentPeriodEnd && (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.rich('currentSub.nextInvoice', { amount: prices[currentPlan], date: formatDate(subscription.currentPeriodEnd, locale), strong: richStrong })}</p>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.rich('currentSub.nextInvoice', { amount: getPlanPrice(currentPlan), date: formatDate(subscription.currentPeriodEnd, locale), strong: richStrong })}</p>
             )}
             {isCancelled && subscription?.currentPeriodEnd && (
               <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.rich('currentSub.accessUntil', { date: formatDate(subscription.currentPeriodEnd, locale), strong: richStrong })}</p>
@@ -410,7 +437,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                 <AlertTriangle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                 <p className="text-sm text-blue-700 dark:text-blue-300">
                   {t.rich('currentSub.pendingDowngrade', {
-                    plan: PLAN_NAMES[subscription.pendingPlan as PlanType] ?? subscription.pendingPlan,
+                    plan: getPlanName(subscription.pendingPlan),
                     date: formatDate(subscription.currentPeriodEnd, locale),
                     strong: richStrong,
                   })}
@@ -442,25 +469,26 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
         <div className={cardCls}>
           <h2 className="text-base font-bold mb-4">{t('changePlan.title')}</h2>
           <div className="space-y-3">
-            {PLANS.map(p => {
+            {planSlugs.map(p => {
               const isCurrent = p === currentPlan
-              const isUpgrade = PLAN_ORDER[p] > PLAN_ORDER[currentPlan]
+              const isUpgrade = getPlanOrder(p) > getPlanOrder(currentPlan)
+              const dbP = getPlanBySlug(p)
               return (
                 <div key={p} className={`rounded-2xl border p-4 transition-all ${isCurrent ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/10' : 'border-zinc-200 dark:border-white/10'}`}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold">{PLAN_NAMES[p]}</span>
+                      <span className="text-sm font-bold">{getPlanName(p)}</span>
                       {isCurrent && <span className="px-2 py-0.5 bg-purple-600 text-white text-xs font-bold rounded-full">{t('changePlan.current')}</span>}
-                      {p === 'BASIC_TEST' && <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">TEST</span>}
+                      {dbP?.isTest && <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">TEST</span>}
                     </div>
-                    <span className="text-lg font-black">${prices[p]}<span className="text-xs font-normal text-zinc-500">{p === 'BASIC_TEST' ? '/2 días' : t('perMonth')}</span></span>
+                    <span className="text-lg font-black">${getPlanPrice(p)}<span className="text-xs font-normal text-zinc-500">{formatCycleLabel(p)}</span></span>
                   </div>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">{PLAN_SUBTITLES[p][locale as 'en' | 'es'] ?? PLAN_SUBTITLES[p].en}</p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-2">{PLAN_HIGHLIGHTS[p][locale as 'en' | 'es'] ?? PLAN_HIGHLIGHTS[p].en}</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">{dbP?.description}</p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-2">{dbP?.highlights}</p>
                   <ul className="space-y-1 mb-3">
                     {FEATURE_KEYS.slice(0, 5).map(key => (
                       <li key={key} className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-                        <span className={PLAN_FEATURES[p][key] && PLAN_FEATURES[p][key] !== 0 ? 'text-purple-600 font-bold' : 'text-zinc-300 dark:text-zinc-600'}>{featureValue(p, key)}</span>
+                        <span className={planFeatures(p)[key] && planFeatures(p)[key] !== 0 ? 'text-purple-600 font-bold' : 'text-zinc-300 dark:text-zinc-600'}>{featureValue(p as PlanType, key)}</span>
                         {t(`features.${key}` as any)}
                       </li>
                     ))}
@@ -468,7 +496,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                   {!isCurrent && isOwner && (
                     <button onClick={() => openPlanModal(p)}
                       className={`w-full py-1.5 text-xs font-semibold rounded-xl transition-colors ${isUpgrade ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-zinc-100 dark:bg-white/10 hover:bg-zinc-200 dark:hover:bg-white/20 text-zinc-700 dark:text-zinc-300'}`}>
-                      {isUpgrade ? t('changePlan.upgrade', { plan: PLAN_NAMES[p] }) : t('changePlan.downgrade', { plan: PLAN_NAMES[p] })}
+                      {isUpgrade ? t('changePlan.upgrade', { plan: getPlanName(p) }) : t('changePlan.downgrade', { plan: getPlanName(p) })}
                     </button>
                   )}
                 </div>
@@ -479,7 +507,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
       </div>
 
       {modal === 'upgrade' && (
-        <Modal title={t('modal.upgrade.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
+        <Modal title={t('modal.upgrade.title', { plan: getPlanName(targetPlan) })} onClose={() => setModal(null)}>
           {gainedFeatures.length > 0 && (
             <div className="mb-4">
               <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">{t('modal.upgrade.willGain')}</p>
@@ -488,8 +516,8 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                   <li key={key} className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
                     <span className="text-green-500 font-bold">✓</span>
                     {t(`features.${key}` as any)}
-                    {typeof PLAN_FEATURES[targetPlan][key] === 'number' && (
-                      <span className="text-zinc-500 text-xs">({PLAN_FEATURES[currentPlan][key]} → {PLAN_FEATURES[targetPlan][key] === 9999 ? '∞' : PLAN_FEATURES[targetPlan][key]})</span>
+                    {typeof targetFeatures[key] === 'number' && (
+                      <span className="text-zinc-500 text-xs">({currentFeatures[key]} → {targetFeatures[key] === 9999 ? '∞' : targetFeatures[key]})</span>
                     )}
                   </li>
                 ))}
@@ -498,8 +526,8 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
           )}
           <div className="border-t border-zinc-100 dark:border-white/10 pt-4">
             <RedirectNotice
-              planName={PLAN_NAMES[targetPlan]}
-              amount={prices[targetPlan]}
+              planName={getPlanName(targetPlan)}
+              amount={getPlanPrice(targetPlan)}
               onConfirm={handleChangePlan}
               onCancel={() => setModal(null)}
               loading={loading}
@@ -509,7 +537,7 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
       )}
 
       {modal === 'downgrade' && (
-        <Modal title={t('modal.downgrade.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
+        <Modal title={t('modal.downgrade.title', { plan: getPlanName(targetPlan) })} onClose={() => setModal(null)}>
           {lostFeatures.length > 0 && (
             <div className="mb-4">
               <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">{t('modal.downgrade.willLose')}</p>
@@ -518,17 +546,17 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                   <li key={key} className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
                     <span className="text-red-500 font-bold">✗</span>
                     {t(`features.${key}` as any)}
-                    {typeof PLAN_FEATURES[currentPlan][key] === 'number' && (
-                      <span className="text-zinc-500 text-xs">({PLAN_FEATURES[currentPlan][key] === 9999 ? '∞' : PLAN_FEATURES[currentPlan][key]} → {PLAN_FEATURES[targetPlan][key] === 9999 ? '∞' : PLAN_FEATURES[targetPlan][key]})</span>
+                    {typeof currentFeatures[key] === 'number' && (
+                      <span className="text-zinc-500 text-xs">({currentFeatures[key] === 9999 ? '∞' : currentFeatures[key]} → {targetFeatures[key] === 9999 ? '∞' : targetFeatures[key]})</span>
                     )}
                   </li>
                 ))}
               </ul>
             </div>
           )}
-          {(PLAN_FEATURES[targetPlan].maxBranches < PLAN_FEATURES[currentPlan].maxBranches ||
-            PLAN_FEATURES[targetPlan].maxStaff < PLAN_FEATURES[currentPlan].maxStaff ||
-            PLAN_FEATURES[targetPlan].maxServices < PLAN_FEATURES[currentPlan].maxServices) && (
+          {(targetFeatures.maxBranches < currentFeatures.maxBranches ||
+            targetFeatures.maxStaff < currentFeatures.maxStaff ||
+            targetFeatures.maxServices < currentFeatures.maxServices) && (
             <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl mb-4">
               <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
               <p className="text-sm text-yellow-700 dark:text-yellow-400">{t('modal.downgrade.limitWarning')}</p>
@@ -560,10 +588,10 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
       )}
 
       {modal === 'activate' && (
-        <Modal title={t('modal.activate.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
+        <Modal title={t('modal.activate.title', { plan: getPlanName(targetPlan) })} onClose={() => setModal(null)}>
           <RedirectNotice
-            planName={PLAN_NAMES[targetPlan]}
-            amount={prices[targetPlan]}
+            planName={getPlanName(targetPlan)}
+            amount={getPlanPrice(targetPlan)}
             onConfirm={handleActivate}
             onCancel={() => setModal(null)}
             loading={loading}
@@ -572,10 +600,10 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
       )}
 
       {modal === 'reactivate' && (
-        <Modal title={t('modal.reactivate.title', { plan: PLAN_NAMES[targetPlan] })} onClose={() => setModal(null)}>
+        <Modal title={t('modal.reactivate.title', { plan: getPlanName(targetPlan) })} onClose={() => setModal(null)}>
           <RedirectNotice
-            planName={PLAN_NAMES[targetPlan]}
-            amount={prices[targetPlan]}
+            planName={getPlanName(targetPlan)}
+            amount={getPlanPrice(targetPlan)}
             onConfirm={handleReactivate}
             onCancel={() => setModal(null)}
             loading={loading}
