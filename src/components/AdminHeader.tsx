@@ -327,17 +327,6 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{displayName}</p>
                     {userEmail && <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">{userEmail}</p>}
-                    <div className="mt-1">
-                      {isSuperAdmin ? (
-                        <span className="text-xs font-bold bg-purple-600 text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">{t('superAdmin')}</span>
-                      ) : isStaff ? (
-                        <span className="text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">{t('staff')}</span>
-                      ) : isReceptionist ? (
-                        <span className="text-xs font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">{t('receptionist')}</span>
-                      ) : (
-                        <span className="text-xs font-bold bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">{t('admin')}</span>
-                      )}
-                    </div>
                   </div>
                 </div>
 
