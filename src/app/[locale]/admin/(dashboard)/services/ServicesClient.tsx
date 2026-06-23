@@ -135,6 +135,9 @@ export default function ServicesClient({
   const [isAddingZone, setIsAddingZone] = useState(false);
   const [newZone, setNewZone] = useState({ name: '', fee: '0', description: '' });
   const [deleteZoneId, setDeleteZoneId] = useState<string | null>(null);
+  const [editingZoneId, setEditingZoneId] = useState<string | null>(null);
+  const [editZoneData, setEditZoneData] = useState({ name: '', fee: '' });
+  const [savingZoneId, setSavingZoneId] = useState<string | null>(null);
   const [domMessage, setDomMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [isSavingDom, setIsSavingDom] = useState(false);
 
@@ -208,6 +211,23 @@ export default function ServicesClient({
     if (res.success) {
       setZones(zones.filter(z => z.id !== id));
     }
+  };
+
+  const handleStartEditZone = (zone: any) => {
+    setEditingZoneId(zone.id);
+    setEditZoneData({ name: zone.name, fee: String(zone.fee) });
+    setIsAddingZone(false);
+  };
+
+  const handleSaveEditZone = async (zoneId: string) => {
+    if (!editZoneData.name.trim()) return;
+    setSavingZoneId(zoneId);
+    const res = await updateCoverageZoneAction({ id: zoneId, name: editZoneData.name.trim(), fee: editZoneData.fee });
+    if (res.success) {
+      setZones(prev => prev.map(z => z.id === zoneId ? { ...z, name: editZoneData.name.trim(), fee: editZoneData.fee } : z));
+      setEditingZoneId(null);
+    }
+    setSavingZoneId(null);
   };
 
   // Category CRUD state
@@ -1581,37 +1601,90 @@ export default function ServicesClient({
                     <div className="flex flex-col gap-2">
                       {zones.map(zone => {
                         const isZoneActive = zone.isActive !== false;
+                        const isEditing = editingZoneId === zone.id;
                         return (
-                          <div key={zone.id} className={`flex items-center justify-between p-4 rounded-2xl border group transition-all ${isZoneActive ? 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-purple-500/50' : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200/50 dark:border-white/5 opacity-60'}`}>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isZoneActive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-200 dark:bg-white/10 text-slate-400'}`}>
-                                <Truck className="w-4 h-4" />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <p className="text-sm font-black text-slate-900 dark:text-white">{zone.name}</p>
-                                  {!isZoneActive && <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">{locale === 'es' ? 'Desactivado' : 'Deactivated'}</span>}
+                          <div key={zone.id} className={`rounded-2xl border transition-all ${isZoneActive ? 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10' : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200/50 dark:border-white/5 opacity-60'} ${isEditing ? 'border-purple-500/50 shadow-sm' : 'hover:border-purple-500/30'}`}>
+                            {isEditing ? (
+                              /* Inline edit form */
+                              <div className="p-4 space-y-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 block">{tPortal('form.newZoneName')}</label>
+                                    <input
+                                      value={editZoneData.name}
+                                      onChange={e => setEditZoneData(p => ({ ...p, name: e.target.value }))}
+                                      className="w-full p-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                      autoFocus
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 block">{tPortal('form.newZoneFee')}</label>
+                                    <div className="relative">
+                                      <span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">$</span>
+                                      <input
+                                        type="number"
+                                        value={editZoneData.fee}
+                                        onChange={e => setEditZoneData(p => ({ ...p, fee: e.target.value }))}
+                                        className="w-full p-2.5 pl-7 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-black focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
-                                <p className="text-xs text-emerald-600 font-bold tracking-tight">+${zone.fee} {tPortal('form.feeLabel')}</p>
+                                <div className="flex justify-end gap-2">
+                                  <button type="button" onClick={() => setEditingZoneId(null)} className="text-xs font-bold text-slate-500 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-all">{tPortal('form.cancel')}</button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveEditZone(zone.id)}
+                                    disabled={savingZoneId === zone.id || !editZoneData.name.trim()}
+                                    className="flex items-center gap-1.5 px-4 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-black rounded-lg transition-all"
+                                  >
+                                    {savingZoneId === zone.id ? <Save className="w-3 h-3 animate-pulse" /> : <Save className="w-3 h-3" />}
+                                    {tPortal('form.saveZone')}
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => handleToggleZone(zone)}
-                                title={isZoneActive ? (locale === 'es' ? 'Desactivar zona' : 'Deactivate zone') : (locale === 'es' ? 'Activar zona' : 'Activate zone')}
-                                className={`p-2 rounded-xl transition-all ${isZoneActive ? 'text-amber-500 hover:bg-amber-500/10' : 'text-emerald-500 hover:bg-emerald-500/10'}`}
-                              >
-                                {isZoneActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteZone(zone.id)}
-                                className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
+                            ) : (
+                              /* Normal row */
+                              <div className="flex items-center justify-between p-4 group">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center ${isZoneActive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-200 dark:bg-white/10 text-slate-400'}`}>
+                                    <Truck className="w-4 h-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <p className="text-sm font-black text-slate-900 dark:text-white">{zone.name}</p>
+                                      {!isZoneActive && <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">{locale === 'es' ? 'Desactivado' : 'Deactivated'}</span>}
+                                    </div>
+                                    <p className="text-xs text-emerald-600 font-bold tracking-tight">+${zone.fee} {tPortal('form.feeLabel')}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartEditZone(zone)}
+                                    title={tPortal('form.editZone')}
+                                    className="p-2 text-slate-400 hover:text-purple-500 hover:bg-purple-500/10 rounded-xl transition-all"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleZone(zone)}
+                                    title={isZoneActive ? (locale === 'es' ? 'Desactivar zona' : 'Deactivate zone') : (locale === 'es' ? 'Activar zona' : 'Activate zone')}
+                                    className={`p-2 rounded-xl transition-all ${isZoneActive ? 'text-amber-500 hover:bg-amber-500/10' : 'text-emerald-500 hover:bg-emerald-500/10'}`}
+                                  >
+                                    {isZoneActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteZone(zone.id)}
+                                    className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}

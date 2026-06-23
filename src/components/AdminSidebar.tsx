@@ -143,6 +143,17 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan, tenantSlug 
                     {t('viewing')}: <strong className="text-amber-300 font-bold">{user.impersonatedTenantName}</strong>
                   </p>
                   <p className="text-xs text-amber-400/70 truncate mt-0.5">{t('as')}: {user.email}</p>
+                  {user.impersonatedRole && (
+                    <div className="mt-1.5">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {t('roleAs')}: {
+                          user.impersonatedRole === 'STAFF' ? t('impersonatedRoleStaff') :
+                          user.impersonatedRole === 'RECEPTIONIST' ? t('impersonatedRoleReceptionist') :
+                          t('impersonatedRoleAdmin')
+                        }
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <button
