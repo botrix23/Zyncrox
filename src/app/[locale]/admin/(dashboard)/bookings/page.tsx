@@ -62,10 +62,11 @@ export default async function BookingsPage() {
       orderBy: (srv, { asc }) => [asc(srv.sortOrder)],
     }),
     db.query.staff.findMany({
-      where: (s, { eq }) => eq(s.tenantId, tenantId),
+      where: (s, { eq, and }) => and(eq(s.tenantId, tenantId), eq(s.isActive, true), eq(s.isReceptionist, false)),
       with: {
         categories: true,
         assignments: { columns: { branchId: true, isPermanent: true } },
+        user: { columns: { role: true } },
       },
     }),
     db.select().from(branches).where(and(eq(branches.tenantId, tenantId), eq(branches.isActive, true))),
@@ -80,10 +81,12 @@ export default async function BookingsPage() {
     ...s,
     categoryIds: (s.categories || []).map((c: any) => c.categoryId),
   }));
-  const mappedStaff = dbStaff.map((s: any) => ({
-    ...s,
-    categoryIds: (s.categories || []).map((c: any) => c.categoryId),
-  }));
+  const mappedStaff = dbStaff
+    .filter((s: any) => s.user?.role !== 'RECEPTIONIST')
+    .map((s: any) => ({
+      ...s,
+      categoryIds: (s.categories || []).map((c: any) => c.categoryId),
+    }));
 
   console.log(`[BookingsPage] tenantId=${tenantId} totalBookings=${dbBookings.length} latestStart=${dbBookings[0]?.startTime?.toISOString() ?? 'none'}`);
 
