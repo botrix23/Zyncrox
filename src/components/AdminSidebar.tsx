@@ -104,7 +104,7 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan, tenantSlug 
     { name: t('bookings'), icon: Calendar, href: `/${locale}/admin/bookings`, active: pathname.includes('/bookings'), staffVisible: true, receptionistVisible: true },
     { name: t('branches'), icon: MapPin, href: `/${locale}/admin/branches`, active: pathname.includes('/branches'), staffVisible: false, receptionistVisible: false },
     { name: t('services'), icon: Sparkles, href: `/${locale}/admin/services`, active: pathname.includes('/services') || pathname.includes('/categories'), staffVisible: false, receptionistVisible: false },
-    { name: t('staff'), icon: Users, href: `/${locale}/admin/staff`, active: pathname.includes('/staff'), staffVisible: true, receptionistVisible: true },
+    { name: (isStaff || isReceptionist) ? t('absences') : t('staff'), icon: (isStaff || isReceptionist) ? CalendarOff : Users, href: `/${locale}/admin/staff`, active: pathname.includes('/staff'), staffVisible: true, receptionistVisible: true },
     { name: t('clients'), icon: Contact, href: `/${locale}/admin/clients`, active: pathname.includes('/clients') || pathname.includes('/surveys'), staffVisible: false, receptionistVisible: true },
     { name: t('appearance'), icon: Palette, href: `/${locale}/admin/appearance`, active: pathname.includes('/appearance'), staffVisible: false, receptionistVisible: false },
     { name: t('settings'), icon: Settings, href: `/${locale}/admin/settings`, active: pathname.includes('/settings'), staffVisible: false, receptionistVisible: false },

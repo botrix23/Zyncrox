@@ -58,6 +58,8 @@ export default function ClientNotesPreview({
   const [newContent, setNewContent] = useState('');
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [loadingAll, setLoadingAll] = useState(false);
+  const [allLoaded, setAllLoaded] = useState(false);
 
   const isEs = locale !== 'en';
   const labels = {
@@ -67,7 +69,8 @@ export default function ClientNotesPreview({
     placeholder: isEs ? 'Nota rápida sobre el cliente...' : 'Quick note about the client...',
     save: isEs ? 'Guardar' : 'Save',
     cancel: isEs ? 'Cancelar' : 'Cancel',
-    viewAll: (count: number | string) => isEs ? `Ver todas las notas (${count})` : `View all notes (${count})`,
+    viewAll: (count: number | string) => isEs ? `Ver todas (${count}+)` : `View all (${count}+)`,
+    loadingAll: isEs ? 'Cargando...' : 'Loading...',
     roleAdmin: isEs ? 'Admin' : 'Admin',
     roleStaff: isEs ? 'Staff' : 'Staff',
     warning: isEs ? 'Alerta' : 'Alert',
@@ -101,6 +104,19 @@ export default function ClientNotesPreview({
       setShowAdd(false);
     }
     setSaving(false);
+  }
+
+  async function handleLoadAll() {
+    setLoadingAll(true);
+    const { notes: all } = await getClientNotesPreviewAction(clientEmail, clientName, 100);
+    const sorted = [...((all as Note[]) || [])].sort((a, b) => {
+      const aWarn = isWarningNote(a.content) ? 0 : 1;
+      const bWarn = isWarningNote(b.content) ? 0 : 1;
+      return aWarn - bWarn;
+    });
+    setNotes(sorted);
+    setAllLoaded(true);
+    setLoadingAll(false);
   }
 
   return (
@@ -221,11 +237,15 @@ export default function ClientNotesPreview({
       </div>
 
       {/* "View all" link when there might be more */}
-      {notes.length === 3 && (
+      {!allLoaded && notes.length >= 10 && (
         <div className="px-4 py-2.5 border-t border-violet-100 dark:border-violet-500/10 text-center">
-          <span className="text-xs text-violet-500 dark:text-violet-400 font-bold">
-            {labels.viewAll('3+')}
-          </span>
+          <button
+            onClick={handleLoadAll}
+            disabled={loadingAll}
+            className="text-xs text-violet-500 dark:text-violet-400 font-bold hover:underline disabled:opacity-50"
+          >
+            {loadingAll ? labels.loadingAll : labels.viewAll(notes.length)}
+          </button>
         </div>
       )}
     </div>

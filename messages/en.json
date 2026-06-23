@@ -987,6 +987,7 @@
       "superAdmin": "Super admin",
       "admin": "Admin",
       "staff": "Specialist",
+      "receptionist": "Receptionist",
       "billing": "Billing",
       "settings": "Settings",
       "changePassword": "Change password",

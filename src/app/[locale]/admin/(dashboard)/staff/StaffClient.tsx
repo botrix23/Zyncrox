@@ -540,8 +540,9 @@ export default function StaffClient({
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t('title')}</h1>
           </div>
-          {/* Tab selector desktop — shown for all roles but Solicitudes hidden for STAFF */}
+          {/* Tab selector desktop */}
           <div className="hidden md:flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit overflow-x-auto">
+            {!isStaffRole && (
             <button
               onClick={() => setActiveMainTab('team')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 ${activeMainTab === 'team' ? 'bg-white dark:bg-zinc-900 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'}`}
@@ -549,6 +550,7 @@ export default function StaffClient({
               <User className="w-4 h-4" />
               {t('tabTeam')}
             </button>
+            )}
             {!isStaffRole && (
               <button
                 onClick={() => setActiveMainTab('receptionists')}

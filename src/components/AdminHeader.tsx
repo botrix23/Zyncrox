@@ -297,6 +297,10 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
                   <span className="text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded flex items-center gap-1 tracking-tighter uppercase">
                     <UserCircle className="w-3 h-3" />{t('staff')}
                   </span>
+                ) : isReceptionist ? (
+                  <span className="text-xs font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 rounded flex items-center gap-1 tracking-tighter uppercase">
+                    <UserCircle className="w-3 h-3" />{t('receptionist')}
+                  </span>
                 ) : (
                   <span className="text-xs font-bold bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 px-2 py-0.5 rounded flex items-center gap-1 tracking-tighter uppercase">
                     <UserCircle className="w-3 h-3" />{t('admin')}
@@ -325,11 +329,13 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
                     {userEmail && <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">{userEmail}</p>}
                     <div className="mt-1">
                       {isSuperAdmin ? (
-                        <span className="text-xs font-bold bg-purple-600 text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">Super Admin</span>
+                        <span className="text-xs font-bold bg-purple-600 text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">{t('superAdmin')}</span>
                       ) : isStaff ? (
-                        <span className="text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">Staff</span>
+                        <span className="text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">{t('staff')}</span>
+                      ) : isReceptionist ? (
+                        <span className="text-xs font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">{t('receptionist')}</span>
                       ) : (
-                        <span className="text-xs font-bold bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">Admin</span>
+                        <span className="text-xs font-bold bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-400 px-1.5 py-0.5 rounded uppercase tracking-tighter">{t('admin')}</span>
                       )}
                     </div>
                   </div>
