@@ -586,11 +586,12 @@ export async function getEmailTemplatesAction() {
     reschedule: cfg?.emailTplReschedule ?? null,
     trialWarning: cfg?.emailTplTrialWarning ?? null,
     surveyInvite: cfg?.emailTplSurveyInvite ?? null,
+    absenceRequest: cfg?.emailTplAbsenceRequest ?? null,
   };
 }
 
 export async function updateEmailTemplateAction(
-  key: 'confirmation' | 'reminder' | 'cancellation' | 'reschedule' | 'trialWarning' | 'surveyInvite',
+  key: 'confirmation' | 'reminder' | 'cancellation' | 'reschedule' | 'trialWarning' | 'surveyInvite' | 'absenceRequest',
   html: string | null
 ) {
   const session = await assertSuperAdmin();
@@ -602,6 +603,7 @@ export async function updateEmailTemplateAction(
     reschedule: { emailTplReschedule: html },
     trialWarning: { emailTplTrialWarning: html },
     surveyInvite: { emailTplSurveyInvite: html },
+    absenceRequest: { emailTplAbsenceRequest: html },
   } as const;
 
   // Ensure row exists

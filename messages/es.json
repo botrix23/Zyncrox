@@ -1926,6 +1926,11 @@
           "label": "Invitación a encuesta",
           "description": "Se envía después de que finaliza una cita para solicitar retroalimentación.",
           "trigger": "Al marcar una cita como Finalizada"
+        },
+        "absenceRequest": {
+          "label": "Solicitud de ausencia",
+          "description": "Se envía al admin de la sucursal (o al propietario) cuando un especialista solicita una ausencia.",
+          "trigger": "Cuando un especialista envía una solicitud de ausencia"
         }
       },
       "variables": {
@@ -1945,7 +1950,10 @@
         "adminName": "Nombre del administrador",
         "surveyUrl": "URL de la encuesta",
         "phone": "Teléfono / WhatsApp del negocio",
-        "contactEmail": "Correo de contacto del negocio"
+        "contactEmail": "Correo de contacto del negocio",
+        "startDate": "Fecha de inicio de la ausencia",
+        "endDate": "Fecha de fin de la ausencia",
+        "reason": "Motivo de la ausencia"
       },
       "previewTab": "Vista previa",
       "editorTab": "Editor HTML",

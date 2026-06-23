@@ -498,6 +498,7 @@ export const platformConfig = pgTable('platform_config', {
   emailTplReschedule: text('email_tpl_reschedule'),
   emailTplTrialWarning: text('email_tpl_trial_warning'),
   emailTplSurveyInvite: text('email_tpl_survey_invite'),
+  emailTplAbsenceRequest: text('email_tpl_absence_request'),
   // Precios de planes (editables desde super admin, en USD)
   planPriceBasic: decimal('plan_price_basic', { precision: 10, scale: 2 }).default('25.00'),
   planPriceProfessional: decimal('plan_price_professional', { precision: 10, scale: 2 }).default('59.00'),

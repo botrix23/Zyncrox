@@ -8,6 +8,7 @@ import { BookingCancellationEmail } from '@/components/emails/BookingCancellatio
 import { BookingRescheduleEmail } from '@/components/emails/BookingRescheduleEmail';
 import { TrialWarningEmail } from '@/components/emails/TrialWarningEmail';
 import { SurveyInviteEmail } from '@/components/emails/SurveyInviteEmail';
+import { AbsenceRequestEmail } from '@/components/emails/AbsenceRequestEmail';
 import { db } from '@/db';
 import { platformConfig } from '@/db/schema';
 import { type EmailLocale } from '@/lib/emailI18n';
@@ -20,12 +21,15 @@ function replaceVars(html: string, vars: Record<string, string>): string {
 
 const SAMPLE: Record<EmailLocale, Record<string, string>> = {
   es: {
+    staffName: 'Ana López',
+    startDate: 'lunes, 14 de julio de 2026',
+    endDate: 'viernes, 18 de julio de 2026',
+    reason: 'Vacaciones familiares',
     customerName: 'María González',
     serviceName: 'Corte y Peinado Premium',
     date: 'lunes, 15 de enero',
     time: '10:00 AM',
     branchName: 'Sucursal Central',
-    staffName: 'Ana López',
     tenantName: 'Salón Bella',
     oldDate: 'viernes, 12 de enero',
     oldTime: '02:00 PM',
@@ -40,12 +44,15 @@ const SAMPLE: Record<EmailLocale, Record<string, string>> = {
     cancelUrl: 'https://zyncrox.com/es/cancel/demo-booking-id?token=demo-token',
   },
   en: {
+    staffName: 'Anne Lopez',
+    startDate: 'Monday, July 14, 2026',
+    endDate: 'Friday, July 18, 2026',
+    reason: 'Family vacation',
     customerName: 'Mary Johnson',
     serviceName: 'Premium Cut & Style',
     date: 'Monday, January 15',
     time: '10:00 AM',
     branchName: 'Main Branch',
-    staffName: 'Anne Lopez',
     tenantName: 'Bella Salon',
     oldDate: 'Friday, January 12',
     oldTime: '02:00 PM',
@@ -186,6 +193,22 @@ export async function GET(req: NextRequest) {
           customerName: sample.customerName,
           tenantName: sample.tenantName,
           surveyUrl: sample.surveyUrl,
+          locale,
+        }));
+      }
+      break;
+    }
+    case 'absenceRequest': {
+      if (cfg?.emailTplAbsenceRequest) {
+        html = replaceVars(cfg.emailTplAbsenceRequest, sample);
+      } else {
+        html = await render(React.createElement(AbsenceRequestEmail, {
+          staffName: sample.staffName,
+          tenantName: sample.tenantName,
+          startDate: sample.startDate,
+          endDate: sample.endDate,
+          reason: sample.reason,
+          panelUrl: `https://www.zyncrox.com/${locale}/admin/staff`,
           locale,
         }));
       }

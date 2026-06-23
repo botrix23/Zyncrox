@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { getEmailTemplatesAction, updateEmailTemplateAction } from '@/app/actions/superAdmin';
 import { CheckCircle, Eye, Code2, RotateCcw, Save, Loader2 } from 'lucide-react';
 
-type TemplateKey = 'confirmation' | 'reminder' | 'cancellation' | 'reschedule' | 'trialWarning' | 'surveyInvite';
+type TemplateKey = 'confirmation' | 'reminder' | 'cancellation' | 'reschedule' | 'trialWarning' | 'surveyInvite' | 'absenceRequest';
 type Templates = Awaited<ReturnType<typeof getEmailTemplatesAction>>;
 
 const TEMPLATE_VARIABLES: Record<TemplateKey, string[]> = {
@@ -15,6 +15,7 @@ const TEMPLATE_VARIABLES: Record<TemplateKey, string[]> = {
   reschedule:   ['customerName', 'serviceName', 'oldDate', 'oldTime', 'newDate', 'newTime', 'branchName', 'staffName', 'tenantName', 'phone', 'contactEmail'],
   trialWarning: ['businessName', 'daysLeft', 'adminName'],
   surveyInvite: ['customerName', 'tenantName', 'surveyUrl'],
+  absenceRequest: ['staffName', 'tenantName', 'startDate', 'endDate', 'reason'],
 };
 
 const TEMPLATE_KEYS = Object.keys(TEMPLATE_VARIABLES) as TemplateKey[];

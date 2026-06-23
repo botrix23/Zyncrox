@@ -1926,6 +1926,11 @@
           "label": "Survey Invite",
           "description": "Sent after an appointment is completed to request feedback.",
           "trigger": "When a booking is marked as Completed"
+        },
+        "absenceRequest": {
+          "label": "Absence Request",
+          "description": "Sent to the branch admin (or owner) when a specialist submits an absence request.",
+          "trigger": "When a specialist submits an absence request"
         }
       },
       "variables": {
@@ -1945,7 +1950,10 @@
         "adminName": "Administrator name",
         "surveyUrl": "Survey URL",
         "phone": "Business phone / WhatsApp",
-        "contactEmail": "Business contact email"
+        "contactEmail": "Business contact email",
+        "startDate": "Absence start date",
+        "endDate": "Absence end date",
+        "reason": "Absence reason"
       },
       "previewTab": "Preview",
       "editorTab": "HTML Editor",

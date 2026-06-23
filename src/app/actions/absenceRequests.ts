@@ -7,6 +7,10 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth-session";
 import { logAuditEvent } from "@/lib/audit";
 import { resend } from "@/lib/resend";
+import { render } from "@react-email/render";
+import React from "react";
+import { AbsenceRequestEmail } from "@/components/emails/AbsenceRequestEmail";
+import { platformConfig } from "@/db/schema";
 import { format } from "date-fns";
 import { es, enUS } from "date-fns/locale";
 
@@ -46,12 +50,13 @@ async function notifyAdminAbsenceRequest(data: {
   startTime: Date;
   endTime: Date;
 }) {
-  const [staffMember, allAdmins, tenant] = await Promise.all([
+  const [staffMember, allAdmins, tenant, cfg] = await Promise.all([
     db.query.staff.findFirst({ where: eq(staffTable.id, data.staffId), columns: { name: true, branchId: true } }),
     db.select({ email: users.email, name: users.name, isOwner: users.isOwner, assignedBranchIds: users.assignedBranchIds })
       .from(users)
       .where(and(eq(users.tenantId, data.tenantId), eq(users.role, 'ADMIN'), eq(users.isActive, true))),
     db.query.tenants.findFirst({ where: eq(tenants.id, data.tenantId), columns: { name: true } }),
+    db.select().from(platformConfig).limit(1).then(rows => rows[0] ?? null),
   ]);
 
   if (!allAdmins.length || !staffMember) return;
@@ -81,66 +86,32 @@ async function notifyAdminAbsenceRequest(data: {
   const endStr = format(data.endTime, "d 'de' MMMM yyyy", { locale: dateLocale });
   const panelUrl = `https://www.zyncrox.com/es/admin/staff`;
 
-  const html = `
-<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f8f8f8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f8f8;padding:32px 16px;">
-    <tr><td align="center">
-      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-        <!-- Header -->
-        <tr>
-          <td style="background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:28px 32px;">
-            <p style="margin:0;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">Zyncrox</p>
-            <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.75);">${tenantName}</p>
-          </td>
-        </tr>
-        <!-- Body -->
-        <tr>
-          <td style="padding:32px;">
-            <p style="margin:0 0 8px;font-size:18px;font-weight:800;color:#1e1b4b;">📋 Nueva solicitud de ausencia</p>
-            <p style="margin:0 0 24px;font-size:14px;color:#64748b;">Un miembro de tu equipo ha solicitado días de ausencia que requieren tu aprobación.</p>
+  let html: string;
 
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;border-radius:12px;overflow:hidden;margin-bottom:24px;">
-              <tr>
-                <td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
-                  <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.8px;">Especialista</p>
-                  <p style="margin:4px 0 0;font-size:15px;font-weight:700;color:#1e293b;">${staffName}</p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
-                  <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.8px;">Período</p>
-                  <p style="margin:4px 0 0;font-size:15px;font-weight:700;color:#1e293b;">${startStr} → ${endStr}</p>
-                </td>
-              </tr>
-              ${data.reason ? `
-              <tr>
-                <td style="padding:16px 20px;">
-                  <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.8px;">Motivo</p>
-                  <p style="margin:4px 0 0;font-size:14px;color:#475569;">${data.reason}</p>
-                </td>
-              </tr>` : ''}
-            </table>
-
-            <a href="${panelUrl}" style="display:block;background:#7c3aed;color:#ffffff;text-align:center;padding:14px 24px;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;letter-spacing:0.2px;">
-              Revisar en el panel →
-            </a>
-            <p style="margin:20px 0 0;font-size:12px;color:#94a3b8;text-align:center;">Ve a <strong>Staff → Solicitudes</strong> para aprobar o rechazar.</p>
-          </td>
-        </tr>
-        <!-- Footer -->
-        <tr>
-          <td style="padding:16px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;">
-            <p style="margin:0;font-size:11px;color:#cbd5e1;text-align:center;">Zyncrox · Este es un mensaje automático, no respondas a este correo.</p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+  if (cfg?.emailTplAbsenceRequest) {
+    const vars: Record<string, string> = {
+      staffName,
+      tenantName,
+      startDate: startStr,
+      endDate: endStr,
+      reason: data.reason ?? '',
+      panelUrl,
+    };
+    html = Object.entries(vars).reduce(
+      (acc, [k, v]) => acc.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), v),
+      cfg.emailTplAbsenceRequest
+    );
+  } else {
+    html = await render(React.createElement(AbsenceRequestEmail, {
+      staffName,
+      tenantName,
+      startDate: startStr,
+      endDate: endStr,
+      reason: data.reason,
+      panelUrl,
+      locale: 'es',
+    }));
+  }
 
   await Promise.allSettled(
     recipients.map(admin =>
