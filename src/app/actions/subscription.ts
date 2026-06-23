@@ -8,6 +8,7 @@ import { getSession } from '@/lib/auth-session'
 import { getN1coSubscriptionLink } from '@/lib/n1co'
 import { getPlanPrice, PlanType } from '@/core/plans'
 import { enforceDowngradeLimits } from '@/lib/billing'
+import { logAuditEvent } from '@/lib/audit'
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date)
@@ -88,6 +89,7 @@ export async function activateSubscriptionAction(
     const redirectUrl = getN1coSubscriptionLink(plan, tenant.contactEmail ?? undefined)
 
     revalidatePath('/[locale]/admin/billing', 'page')
+    await logAuditEvent({ action: 'SUBSCRIPTION_ACTIVATED', userId: session.userId, tenantId, details: { plan } })
     return { success: true, redirectUrl }
   } catch (err) {
     console.error('activateSubscription error:', err)
@@ -128,6 +130,7 @@ export async function changePlanAction(
         .where(eq(subscriptions.tenantId, tenantId))
 
       revalidatePath('/[locale]/admin/billing', 'page')
+      await logAuditEvent({ action: 'PLAN_CHANGED', userId: session.userId, tenantId, details: { from: currentPlan, to: newPlan, deferred: true } })
       return { success: true, deferred: true }
     }
 
@@ -144,6 +147,7 @@ export async function changePlanAction(
     const redirectUrl = getN1coSubscriptionLink(newPlan, tenant.contactEmail ?? undefined)
 
     revalidatePath('/[locale]/admin/billing', 'page')
+    await logAuditEvent({ action: 'PLAN_CHANGED', userId: session.userId, tenantId, details: { from: currentPlan, to: newPlan, deferred: false } })
     return { success: true, deferred: false, redirectUrl }
   } catch (err) {
     console.error('changePlan error:', err)
@@ -169,6 +173,7 @@ export async function cancelSubscriptionAction(tenantId: string) {
       .where(eq(subscriptions.tenantId, tenantId))
 
     revalidatePath('/[locale]/admin/billing', 'page')
+    await logAuditEvent({ action: 'SUBSCRIPTION_CANCELLED', userId: session.userId, tenantId })
     return { success: true }
   } catch (err) {
     console.error('cancelSubscription error:', err)

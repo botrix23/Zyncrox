@@ -5,6 +5,7 @@ import { serviceCategories } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
+import { logAuditEvent } from "@/lib/audit";
 
 async function assertAdmin() {
   const session = await getSession();
@@ -35,7 +36,7 @@ export async function createCategoryAction(data: {
   color?: string;
 }) {
   try {
-    const { tenantId } = await assertAdmin();
+    const { session, tenantId } = await assertAdmin();
     const [created] = await db.insert(serviceCategories).values({
       tenantId,
       name: data.name.trim(),
@@ -45,6 +46,7 @@ export async function createCategoryAction(data: {
     revalidatePath("/[locale]/admin/categories", "page");
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/admin/staff", "page");
+    await logAuditEvent({ action: 'CATEGORY_CREATED', userId: session.userId, tenantId, details: { name: data.name, color: data.color } });
     return { success: true, category: created };
   } catch (error) {
     console.error("Error creating category:", error);
@@ -59,7 +61,7 @@ export async function updateCategoryAction(data: {
   color?: string;
 }) {
   try {
-    const { tenantId } = await assertAdmin();
+    const { session, tenantId } = await assertAdmin();
     await db.update(serviceCategories)
       .set({
         name: data.name?.trim(),
@@ -71,6 +73,7 @@ export async function updateCategoryAction(data: {
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/admin/staff", "page");
     revalidatePath("/[locale]/[slug]", "page");
+    await logAuditEvent({ action: 'CATEGORY_UPDATED', userId: session.userId, tenantId, details: { categoryId: data.id, name: data.name, color: data.color } });
     return { success: true };
   } catch (error) {
     console.error("Error updating category:", error);
@@ -80,7 +83,7 @@ export async function updateCategoryAction(data: {
 
 export async function deleteCategoryAction(id: string, tenantId: string) {
   try {
-    const { tenantId: sessionTenantId } = await assertAdmin();
+    const { session, tenantId: sessionTenantId } = await assertAdmin();
     await db.delete(serviceCategories)
       .where(and(eq(serviceCategories.id, id), eq(serviceCategories.tenantId, sessionTenantId)));
 
@@ -88,6 +91,7 @@ export async function deleteCategoryAction(id: string, tenantId: string) {
     revalidatePath("/[locale]/admin/services", "page");
     revalidatePath("/[locale]/admin/staff", "page");
     revalidatePath("/[locale]/[slug]", "page");
+    await logAuditEvent({ action: 'CATEGORY_DELETED', userId: session.userId, tenantId: sessionTenantId, details: { categoryId: id } });
     return { success: true };
   } catch (error) {
     console.error("Error deleting category:", error);

@@ -148,6 +148,8 @@ export async function updateLoyaltySettingsAction(data: {
         updatedAt: new Date(),
       })
       .where(eq(tenants.id, data.tenantId));
+    const session = await getSession();
+    await logAuditEvent({ action: 'LOYALTY_SETTINGS_UPDATED', userId: session?.userId, tenantId: data.tenantId, details: { loyaltyEnabled: data.loyaltyEnabled, windowMonths: data.loyaltyWindowMonths, frequentThreshold: data.loyaltyFrequentThreshold } });
     revalidatePath('/', 'layout');
     return { success: true };
   } catch (error) {
@@ -175,6 +177,8 @@ export async function updatePointsSettingsAction(data: {
         updatedAt: new Date(),
       })
       .where(eq(tenants.id, data.tenantId));
+    const session = await getSession();
+    await logAuditEvent({ action: 'POINTS_SETTINGS_UPDATED', userId: session?.userId, tenantId: data.tenantId, details: { pointsEnabled: data.pointsEnabled, pointsPerDollar: data.pointsPerDollar, expireEnabled: data.pointsExpireEnabled } });
     revalidatePath('/', 'layout');
     return { success: true };
   } catch (error) {

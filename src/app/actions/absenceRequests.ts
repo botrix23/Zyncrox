@@ -5,6 +5,7 @@ import { absenceRequests, blocks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth-session";
+import { logAuditEvent } from "@/lib/audit";
 
 export async function createAbsenceRequestAction(data: {
   tenantId: string;
@@ -22,6 +23,7 @@ export async function createAbsenceRequestAction(data: {
       endTime: data.endTime,
       status: 'PENDING',
     });
+    await logAuditEvent({ action: 'ABSENCE_REQUESTED', tenantId: data.tenantId, details: { staffId: data.staffId, reason: data.reason, startTime: data.startTime, endTime: data.endTime } });
     revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {
@@ -58,6 +60,7 @@ export async function approveAbsenceRequestAction(requestId: string) {
       endTime: request.endTime,
     });
 
+    await logAuditEvent({ action: 'ABSENCE_APPROVED', userId: session.userId, tenantId: request.tenantId, details: { requestId, staffId: request.staffId, staffName: request.staff?.name } });
     revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {
@@ -77,6 +80,7 @@ export async function rejectAbsenceRequestAction(requestId: string) {
       .set({ status: 'REJECTED' })
       .where(eq(absenceRequests.id, requestId));
 
+    await logAuditEvent({ action: 'ABSENCE_REJECTED', userId: session.userId, details: { requestId } });
     revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {

@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth-session";
 import bcrypt from "bcryptjs";
 import { canUseFeature } from "@/core/plans";
+import { logAuditEvent } from "@/lib/audit";
 
 function generateTempPassword(): string {
   const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -83,6 +84,7 @@ export async function createStaffAccessAction(staffId: string, tenantId: string)
       tempPasswordExpiresAt: expiresAt,
     });
 
+    await logAuditEvent({ action: 'STAFF_ACCESS_CREATED', userId: session.userId, tenantId, details: { staffId, staffEmail: member.email, staffName: member.name } });
     revalidatePath("/", "layout");
     return { success: true, tempPassword };
   } catch (error) {
@@ -102,6 +104,7 @@ export async function revokeStaffAccessAction(staffId: string, tenantId: string)
       .set({ isActive: false })
       .where(and(eq(users.staffId, staffId), eq(users.tenantId, tenantId)));
 
+    await logAuditEvent({ action: 'STAFF_ACCESS_REVOKED', userId: session.userId, tenantId, details: { staffId } });
     revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {
@@ -121,6 +124,7 @@ export async function reactivateStaffAccessAction(staffId: string, tenantId: str
       .set({ isActive: true })
       .where(and(eq(users.staffId, staffId), eq(users.tenantId, tenantId)));
 
+    await logAuditEvent({ action: 'STAFF_ACCESS_REACTIVATED', userId: session.userId, tenantId, details: { staffId } });
     revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {
@@ -157,6 +161,7 @@ export async function resetStaffPasswordAction(staffId: string, tenantId: string
       })
       .where(and(eq(users.staffId, staffId), eq(users.tenantId, tenantId)));
 
+    await logAuditEvent({ action: 'STAFF_PASSWORD_RESET', userId: session.userId, tenantId, details: { staffId } });
     revalidatePath("/", "layout");
     return { success: true, tempPassword };
   } catch (error) {

@@ -5,6 +5,7 @@ import { blocks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getSession, getEffectiveTenantId } from "@/lib/auth-session";
+import { logAuditEvent } from "@/lib/audit";
 
 async function assertAdmin() {
   const session = await getSession();
@@ -25,7 +26,7 @@ export async function createBlockAction(data: {
   endTime: Date;
 }) {
   try {
-    const { tenantId } = await assertAdmin();
+    const { session, tenantId } = await assertAdmin();
     const [newBlock] = await db.insert(blocks).values({
       tenantId,
       branchId: data.branchId,
@@ -39,6 +40,7 @@ export async function createBlockAction(data: {
     revalidatePath("/[locale]/admin/(dashboard)/absences", "page");
     revalidatePath("/[locale]/admin/(dashboard)/branches", "page");
     revalidatePath("/[locale]/admin/(dashboard)/bookings", "page");
+    await logAuditEvent({ action: 'BLOCK_CREATED', userId: session.userId, tenantId, details: { blockId: newBlock.id, branchId: data.branchId, staffId: data.staffId, reason: data.reason, startTime: data.startTime, endTime: data.endTime } });
     return { success: true, block: newBlock };
   } catch (error) {
     console.error("Error creating block:", error);
@@ -65,7 +67,7 @@ export async function getBlocksAction(branchId: string, tenantId: string) {
 
 export async function cancelBlockAction(id: string, tenantId: string, cancelReason?: string) {
   try {
-    const { tenantId: sessionTenantId } = await assertAdmin();
+    const { session, tenantId: sessionTenantId } = await assertAdmin();
     await db.update(blocks)
       .set({ status: 'CANCELLED', cancelReason: cancelReason || null })
       .where(
@@ -77,6 +79,7 @@ export async function cancelBlockAction(id: string, tenantId: string, cancelReas
     revalidatePath("/[locale]/admin/(dashboard)/absences", "page");
     revalidatePath("/[locale]/admin/(dashboard)/branches", "page");
     revalidatePath("/[locale]/admin/(dashboard)/bookings", "page");
+    await logAuditEvent({ action: 'BLOCK_CANCELLED', userId: session.userId, tenantId: sessionTenantId, details: { blockId: id, cancelReason } });
     return { success: true };
   } catch (error) {
     console.error("Error cancelling block:", error);
@@ -93,7 +96,7 @@ export async function updateBlockAction(data: {
   endTime: Date;
 }) {
   try {
-    const { tenantId } = await assertAdmin();
+    const { session, tenantId } = await assertAdmin();
     await db.update(blocks)
       .set({
         staffId: data.staffId || null,
@@ -111,6 +114,7 @@ export async function updateBlockAction(data: {
     revalidatePath("/[locale]/admin/(dashboard)/absences", "page");
     revalidatePath("/[locale]/admin/(dashboard)/branches", "page");
     revalidatePath("/[locale]/admin/(dashboard)/bookings", "page");
+    await logAuditEvent({ action: 'BLOCK_UPDATED', userId: session.userId, tenantId, details: { blockId: data.id, staffId: data.staffId, reason: data.reason, startTime: data.startTime, endTime: data.endTime } });
     return { success: true };
   } catch (error) {
     console.error("Error updating block:", error);

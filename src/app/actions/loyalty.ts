@@ -10,6 +10,7 @@ import {
 } from '@/db/schema';
 import { eq, and, lt, gt, desc, sql } from 'drizzle-orm';
 import { getSession, getEffectiveTenantId } from '@/lib/auth-session';
+import { logAuditEvent } from '@/lib/audit';
 import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
 
@@ -61,6 +62,7 @@ export async function createRewardAction(data: {
   });
 
   revalidatePath('/', 'layout');
+  await logAuditEvent({ action: 'REWARD_CREATED', userId: session?.userId, tenantId, details: { name: data.name, pointsCost: data.pointsCost } });
   return { success: true };
 }
 
@@ -87,6 +89,7 @@ export async function updateRewardAction(data: {
     .where(and(eq(loyaltyRewards.id, data.id), eq(loyaltyRewards.tenantId, tenantId)));
 
   revalidatePath('/', 'layout');
+  await logAuditEvent({ action: 'REWARD_UPDATED', userId: session?.userId, tenantId, details: { rewardId: data.id, name: data.name, pointsCost: data.pointsCost, isActive: data.isActive } });
   return { success: true };
 }
 
@@ -99,6 +102,7 @@ export async function deleteRewardAction(rewardId: string) {
     .where(and(eq(loyaltyRewards.id, rewardId), eq(loyaltyRewards.tenantId, tenantId)));
 
   revalidatePath('/', 'layout');
+  await logAuditEvent({ action: 'REWARD_DELETED', userId: session?.userId, tenantId, details: { rewardId } });
   return { success: true };
 }
 
@@ -215,6 +219,7 @@ export async function redeemRewardAction(data: {
   });
 
   revalidatePath('/', 'layout');
+  await logAuditEvent({ action: 'POINTS_REDEEMED', userId: session?.userId, tenantId, details: { clientEmail: email, clientName: data.clientName, rewardId: reward.id, rewardName: reward.name, pointsCost: reward.pointsCost, newBalance } });
   return { success: true, newBalance };
 }
 

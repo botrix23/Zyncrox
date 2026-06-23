@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { clientNotes } from "@/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth-session";
+import { logAuditEvent } from "@/lib/audit";
 
 function getEffectiveTenantId(session: NonNullable<Awaited<ReturnType<typeof getSession>>>) {
   if (session.role === 'SUPER_ADMIN') return session.impersonatedTenantId || null;
@@ -107,6 +108,7 @@ export async function createClientNoteAction(
     content: trimmed,
   }).returning();
 
+  await logAuditEvent({ action: 'CLIENT_NOTE_CREATED', userId: session.userId, tenantId, details: { clientEmail: normalizeEmail(clientEmail), clientName, noteId: note.id } });
   return { note };
 }
 
@@ -139,6 +141,7 @@ export async function updateClientNoteAction(noteId: string, content: string) {
     .where(eq(clientNotes.id, noteId))
     .returning();
 
+  await logAuditEvent({ action: 'CLIENT_NOTE_UPDATED', userId: session.userId, tenantId, details: { noteId, clientEmail: existing[0].clientEmail } });
   return { note: updated };
 }
 
@@ -155,9 +158,11 @@ export async function deleteClientNoteAction(noteId: string) {
   const tenantId = getEffectiveTenantId(session);
   if (!tenantId) return { error: 'No tenant' as const };
 
+  const [deleted] = await db.select().from(clientNotes).where(and(eq(clientNotes.id, noteId), eq(clientNotes.tenantId, tenantId))).limit(1);
   await db.delete(clientNotes)
     .where(and(eq(clientNotes.id, noteId), eq(clientNotes.tenantId, tenantId)));
 
+  await logAuditEvent({ action: 'CLIENT_NOTE_DELETED', userId: session.userId, tenantId, details: { noteId, clientEmail: deleted?.clientEmail } });
   return { success: true };
 }
 
@@ -195,6 +200,7 @@ export async function updateClientContactAction({
         eq(bookings.customerEmail, normalized)
       ));
 
+    await logAuditEvent({ action: 'CLIENT_CONTACT_UPDATED', userId: session.userId, tenantId, details: { oldEmail, newEmail: newEmail.trim() || null } });
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message };
