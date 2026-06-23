@@ -80,7 +80,7 @@ export default async function StaffPage() {
       planLimit={planLimit.limit}
       plan={planLimit.plan}
       showStaffSelection={tenant?.showStaffSelection ?? true}
-      role={session?.role ?? 'ADMIN'}
+      role={(session?.impersonatedRole ?? session?.role) ?? 'ADMIN'}
       currentStaffId={currentStaffId}
       initialBlocks={initialBlocks}
       pendingRequests={pendingRequests}

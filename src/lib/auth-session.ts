@@ -17,6 +17,7 @@ export type SessionUser = {
   impersonatedBy?: string;
   impersonatedTenantId?: string;
   impersonatedTenantName?: string;
+  impersonatedRole?: 'ADMIN' | 'STAFF' | 'RECEPTIONIST';
 };
 
 const checkUserSession = cache(async (userId: string) => {

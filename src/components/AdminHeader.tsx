@@ -152,8 +152,9 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
   }, [avatarOpen]);
 
   const displayName = user?.name || userEmail?.split('@')[0] || 'Usuario';
-  const isStaff = user?.role === 'STAFF';
-  const isReceptionist = user?.role === 'RECEPTIONIST';
+  const effectiveRole = user?.impersonatedRole ?? user?.role;
+  const isStaff = effectiveRole === 'STAFF';
+  const isReceptionist = effectiveRole === 'RECEPTIONIST';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const billingDateStr = nextBillingDate ? format(new Date(nextBillingDate), 'dd MMM yyyy') : null;
 

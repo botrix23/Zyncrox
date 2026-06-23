@@ -96,7 +96,7 @@ export default async function ClientsPage({
       vipThreshold={tenant?.vipThreshold || 5}
       notesCounts={notesCounts}
       currentUserId={session.userId || ''}
-      currentUserRole={session.role}
+      currentUserRole={session.impersonatedRole ?? session.role}
       loyaltyRows={loyaltyRows}
       loyaltyConfig={loyaltyConfig}
       tenantId={tenantId!}

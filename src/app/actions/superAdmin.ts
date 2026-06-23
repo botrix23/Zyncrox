@@ -1035,7 +1035,11 @@ export async function getPlatformRevenueStatsAction() {
 // Crea un token temporal para que el Super Admin abra el panel de un tenant
 // en una NUEVA PESTAÑA sin modificar su propia sesión.
 // Rate limit: máx. 10 tokens por hora por Super Admin.
-export async function startImpersonationAction(tenantId: string, locale: string = 'es') {
+export async function startImpersonationAction(
+  tenantId: string,
+  locale: string = 'es',
+  targetRole: 'ADMIN' | 'STAFF' | 'RECEPTIONIST' = 'ADMIN',
+) {
   const session = await assertSuperAdmin();
   if (!session.userId) throw new Error('Super Admin userId not found in session');
 
@@ -1066,6 +1070,7 @@ export async function startImpersonationAction(tenantId: string, locale: string 
       superAdminEmail: session.email,
       targetTenantName: tenant.name,
       locale,
+      targetRole,
       expiresAt,
     })
     .returning({ id: impersonationTokens.id });
@@ -1074,7 +1079,7 @@ export async function startImpersonationAction(tenantId: string, locale: string 
     action: 'IMPERSONATION_STARTED',
     userId: session.userId,
     tenantId,
-    details: { superAdminEmail: session.email, tenantName: tenant.name, tokenId: token.id },
+    details: { superAdminEmail: session.email, tenantName: tenant.name, tokenId: token.id, targetRole },
   });
 
   return { success: true as const, tokenId: token.id };

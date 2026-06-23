@@ -653,6 +653,7 @@ export const impersonationTokens = pgTable('impersonation_tokens', {
   superAdminEmail: varchar('super_admin_email', { length: 255 }).notNull(),
   targetTenantName: varchar('target_tenant_name', { length: 255 }).notNull(),
   locale: varchar('locale', { length: 10 }).notNull().default('es'),
+  targetRole: varchar('target_role', { length: 20 }).notNull().default('ADMIN'),
   expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
   usedAt: timestamp('used_at', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),

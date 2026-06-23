@@ -51,6 +51,7 @@ export async function GET(
     ...session,
     impersonatedTenantId: token.targetTenantId,
     impersonatedTenantName: token.targetTenantName,
+    impersonatedRole: (token.targetRole ?? 'ADMIN') as 'ADMIN' | 'STAFF' | 'RECEPTIONIST',
   };
 
   cookies().set('zync_session', JSON.stringify(impersonatedSession), {
@@ -69,6 +70,7 @@ export async function GET(
       superAdminEmail: session.email,
       tenantName: token.targetTenantName,
       tokenId: token.id,
+      targetRole: token.targetRole ?? 'ADMIN',
       method: 'token',
     },
   });

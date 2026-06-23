@@ -80,8 +80,9 @@ export function AdminSidebar({ user, locale, tenantName, tenantPlan, tenantSlug 
   };
 
   const isImpersonating = user?.role === 'SUPER_ADMIN' && !!user?.impersonatedTenantId;
-  const isStaff = user?.role === 'STAFF';
-  const isReceptionist = user?.role === 'RECEPTIONIST';
+  const effectiveRole = user?.impersonatedRole ?? user?.role;
+  const isStaff = effectiveRole === 'STAFF';
+  const isReceptionist = effectiveRole === 'RECEPTIONIST';
 
   const portalUrl = tenantSlug
     ? (typeof window !== 'undefined' ? `${window.location.origin}/${tenantSlug}` : `/${tenantSlug}`)

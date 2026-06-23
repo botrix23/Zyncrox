@@ -186,6 +186,7 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
   const [usersTarget, setUsersTarget] = useState<Tenant | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number; openUp: boolean } | null>(null);
   const [impersonateTarget, setImpersonateTarget] = useState<Tenant | null>(null);
+  const [impersonateRole, setImpersonateRole] = useState<'ADMIN' | 'STAFF' | 'RECEPTIONIST'>('ADMIN');
   const [impersonateLoading, setImpersonateLoading] = useState(false);
   const [impersonateError, setImpersonateError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -277,6 +278,7 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
     setOpenMenu(null);
     setMenuPos(null);
     setImpersonateError(null);
+    setImpersonateRole('ADMIN');
     setImpersonateTarget(tenant);
   };
 
@@ -284,7 +286,7 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
     if (!impersonateTarget) return;
     setImpersonateLoading(true);
     setImpersonateError(null);
-    const res = await startImpersonationAction(impersonateTarget.id, locale);
+    const res = await startImpersonationAction(impersonateTarget.id, locale, impersonateRole);
     if (res.success) {
       setImpersonateTarget(null);
       setImpersonateLoading(false);
@@ -402,6 +404,22 @@ export default function TenantsTable({ tenants: initialTenants, locale }: { tena
             <p className="text-sm font-bold text-zinc-900 dark:text-white text-center mb-5">
               {impersonateTarget.name}
             </p>
+            {/* Role selector */}
+            <div className="mb-4">
+              <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">Ver como rol</p>
+              <div className="grid grid-cols-3 gap-2">
+                {(['ADMIN', 'STAFF', 'RECEPTIONIST'] as const).map(r => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setImpersonateRole(r)}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${impersonateRole === r ? 'bg-amber-500 text-white border-amber-500' : 'bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-white/10 hover:border-amber-400'}`}
+                  >
+                    {r === 'ADMIN' ? 'Admin' : r === 'STAFF' ? 'Staff' : 'Recepcionista'}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl p-3 mb-5 flex gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700 dark:text-amber-300">{t('impersonateWarning')}</p>
