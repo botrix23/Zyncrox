@@ -26,7 +26,7 @@ import { db } from '@/db'
 import { subscriptions, tenants } from '@/db/schema'
 import { and, eq, ilike } from 'drizzle-orm'
 import { validateWebhookSecret, extractWebhookEmail, N1coWebhookPayload } from '@/lib/n1co'
-import { getPlanPrice } from '@/core/plans'
+import { getPlanPrice, getPlanFeatures } from '@/core/plans'
 import { createNotification } from '@/lib/notifications'
 
 function addDays(date: Date, days: number): Date {
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
             cancelledAt:        null,
             gracePeriodEndsAt:  null,
             currentPeriodStart: now,
-            currentPeriodEnd:   addDays(now, 30),
+            currentPeriodEnd:   addDays(now, getPlanFeatures(activePlan).billingCycleDays),
             updatedAt:          now,
           })
           .where(eq(subscriptions.id, sub.id))
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
             cancelledAt:        null,
             gracePeriodEndsAt:  null,
             currentPeriodStart: now,
-            currentPeriodEnd:   addDays(now, 30),
+            currentPeriodEnd:   addDays(now, getPlanFeatures(sub.plan).billingCycleDays),
             lastPaymentAt:      now,
             lastPaymentAmount:  String(amount),
             updatedAt:          now,

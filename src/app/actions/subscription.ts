@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth-session'
 import { getN1coSubscriptionLink, buildN1coLink } from '@/lib/n1co'
-import { getPlanPrice, PlanType } from '@/core/plans'
+import { getPlanPrice, getPlanFeatures, PlanType } from '@/core/plans'
 import { enforceDowngradeLimits } from '@/lib/billing'
 import { logAuditEvent } from '@/lib/audit'
 
@@ -67,7 +67,7 @@ export async function activateSubscriptionAction(
       plan,
       status: 'PENDING_PAYMENT',
       currentPeriodStart: now,
-      currentPeriodEnd:   addDays(now, 30),
+      currentPeriodEnd:   addDays(now, getPlanFeatures(plan).billingCycleDays),
     }).onConflictDoUpdate({
       target: subscriptions.tenantId,
       set: {
@@ -211,7 +211,7 @@ export async function reactivateSubscriptionAction(
 
 export async function applyPendingDowngradeAction(tenantId: string, newPlan: string) {
   const now = new Date()
-  const periodEnd = addDays(now, 30)
+  const periodEnd = addDays(now, getPlanFeatures(newPlan).billingCycleDays)
 
   await db.update(subscriptions)
     .set({

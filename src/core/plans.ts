@@ -46,6 +46,9 @@ export interface PlanFeatures {
   // Recepcionistas
   maxReceptionists: number;            // recepcionistas activos permitidos
 
+  // Ciclo de facturación
+  billingCycleDays: number;            // días entre cobros (2 para BASIC_TEST, 30 para el resto)
+
   // Enterprise exclusivo
   auditLogsAdmin: boolean;             // Audit logs visibles al admin
 }
@@ -56,6 +59,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxStaff: 3,
     maxServices: 20,
     maxReceptionists: 1,
+    billingCycleDays: 2,
 
     multiServiceBooking: false,
     separateServiceScheduling: false,
@@ -90,6 +94,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxStaff: 3,
     maxServices: 20,
     maxReceptionists: 1,
+    billingCycleDays: 30,
 
     multiServiceBooking: false,
     separateServiceScheduling: false,
@@ -124,6 +129,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxStaff: 10,
     maxServices: 50,
     maxReceptionists: 2,
+    billingCycleDays: 30,
 
     multiServiceBooking: true,
     separateServiceScheduling: true,
@@ -158,6 +164,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxStaff: 9999,
     maxServices: 9999,
     maxReceptionists: 9999,
+    billingCycleDays: 30,
 
     multiServiceBooking: true,
     separateServiceScheduling: true,

@@ -17,7 +17,7 @@ import { db } from '@/db'
 import { subscriptions, tenants } from '@/db/schema'
 import { and, eq, isNotNull, lte, ne } from 'drizzle-orm'
 import { enforceDowngradeLimits } from '@/lib/billing'
-import { getPlanPrice } from '@/core/plans'
+import { getPlanPrice, getPlanFeatures } from '@/core/plans'
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date)
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
       console.log(`[Billing Cron] Applying pending downgrade: tenant ${sub.tenantId} ${sub.plan} → ${newPlan}`)
 
       try {
-        const newPeriodEnd = addDays(now, 30)
+        const newPeriodEnd = addDays(now, getPlanFeatures(newPlan).billingCycleDays)
 
         await db.update(subscriptions)
           .set({
