@@ -26,6 +26,9 @@ export async function createSubscriptionPlanAction(data: {
   name: string
   description?: string
   highlights?: string
+  nameEn?: string
+  descriptionEn?: string
+  highlightsEn?: string
   price: number
   billingCycleDays: number
   n1coLink?: string
@@ -42,6 +45,9 @@ export async function createSubscriptionPlanAction(data: {
       name:             data.name,
       description:      data.description || null,
       highlights:       data.highlights || null,
+      nameEn:           data.nameEn || null,
+      descriptionEn:    data.descriptionEn || null,
+      highlightsEn:     data.highlightsEn || null,
       price:            String(data.price),
       billingCycleDays: data.billingCycleDays,
       n1coLink:         data.n1coLink || null,
@@ -69,6 +75,9 @@ export async function updateSubscriptionPlanAction(
     name: string
     description: string
     highlights: string
+    nameEn: string
+    descriptionEn: string
+    highlightsEn: string
     price: number
     billingCycleDays: number
     n1coLink: string
@@ -87,6 +96,9 @@ export async function updateSubscriptionPlanAction(
         ...( data.name             !== undefined && { name: data.name }),
         ...( data.description      !== undefined && { description: data.description || null }),
         ...( data.highlights       !== undefined && { highlights: data.highlights || null }),
+        ...( data.nameEn           !== undefined && { nameEn: data.nameEn || null }),
+        ...( data.descriptionEn    !== undefined && { descriptionEn: data.descriptionEn || null }),
+        ...( data.highlightsEn     !== undefined && { highlightsEn: data.highlightsEn || null }),
         ...( data.price            !== undefined && { price: String(data.price) }),
         ...( data.billingCycleDays !== undefined && { billingCycleDays: data.billingCycleDays }),
         ...( data.n1coLink         !== undefined && { n1coLink: data.n1coLink || null }),

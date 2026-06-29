@@ -1518,6 +1518,12 @@
         "staffFallback": "Unassigned",
         "serviceFallback": "Service",
         "noCustomer": "No name"
+      },
+      "responses": {
+        "yes": "Yes",
+        "no": "No",
+        "npsLabel": "NPS",
+        "starsLabel": "{value}/5"
       }
     },
     "modal": {
@@ -2032,6 +2038,8 @@
     "ownerOnlyNotice": "Only the account owner can modify the plan or payment information.",
     "processing": "Processing...",
     "perMonth": "/mo",
+    "perDay": "/day",
+    "perDays": "/{days} days",
     "card": {
       "number": "Card number",
       "holder": "Cardholder name",

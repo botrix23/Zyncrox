@@ -13,6 +13,9 @@ export type DbPlan = {
   name: string
   description: string | null
   highlights: string | null
+  nameEn: string | null
+  descriptionEn: string | null
+  highlightsEn: string | null
   price: string
   billingCycleDays: number
   n1coLink: string | null
@@ -106,7 +109,7 @@ function RedirectNotice({ planName, amount, onConfirm, onCancel, loading }: {
       </div>
       <div className="flex justify-between items-center p-3 bg-zinc-50 dark:bg-white/5 rounded-xl">
         <span className="text-sm text-zinc-600 dark:text-zinc-400">{planName}</span>
-        <span className="text-sm font-bold">${amount}/mes</span>
+        <span className="text-sm font-bold">${amount}{t('perMonth')}</span>
       </div>
       <div className="flex gap-3 pt-1">
         <button onClick={onCancel}
@@ -155,7 +158,22 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
   // Helpers for DB-driven plans
   const activePlans = dbPlans ?? []
   const getPlanBySlug = (slug: string): DbPlan | undefined => activePlans.find(p => p.slug === slug)
-  const getPlanName = (slug: string): string => getPlanBySlug(slug)?.name ?? FALLBACK_PLAN_NAMES[slug] ?? slug
+  const isEn = locale === 'en'
+  const getPlanName = (slug: string): string => {
+    const p = getPlanBySlug(slug)
+    if (!p) return FALLBACK_PLAN_NAMES[slug] ?? slug
+    return (isEn ? p.nameEn : null) ?? p.name
+  }
+  const getPlanDescription = (slug: string): string | null => {
+    const p = getPlanBySlug(slug)
+    if (!p) return null
+    return (isEn ? p.descriptionEn : null) ?? p.description ?? null
+  }
+  const getPlanHighlights = (slug: string): string | null => {
+    const p = getPlanBySlug(slug)
+    if (!p) return null
+    return (isEn ? p.highlightsEn : null) ?? p.highlights ?? null
+  }
   const getPlanPrice = (slug: string): number => {
     const dbPrice = getPlanBySlug(slug)?.price
     if (dbPrice) return parseFloat(dbPrice)
@@ -166,8 +184,8 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
   const formatCycleLabel = (slug: string): string => {
     const days = getPlanCycleDays(slug)
     if (days === 30) return t('perMonth')
-    if (days === 1) return '/día'
-    return `/${days} días`
+    if (days === 1) return t('perDay')
+    return t('perDays', { days })
   }
   const planFeatures = (slug: string) => PLAN_FEATURES[slug as PlanType] ?? PLAN_FEATURES.BASIC
   // Use DB plans if available, otherwise fall back to hardcoded slugs
@@ -315,9 +333,9 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                   <span className="text-sm font-bold">{getPlanName(p)}</span>
                   {getPlanBySlug(p)?.isTest && <span className="px-1.5 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">TEST</span>}
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">{getPlanBySlug(p)?.description}</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">{getPlanDescription(p)}</p>
                 <div className="text-2xl font-black mb-1">${getPlanPrice(p)}<span className="text-sm font-normal text-zinc-500">{formatCycleLabel(p)}</span></div>
-                <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-3">{getPlanBySlug(p)?.highlights}</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-3">{getPlanHighlights(p)}</p>
                 {isOwner && (
                   <button onClick={() => { setTargetPlan(p); setModal('reactivate') }}
                     className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">
@@ -363,9 +381,9 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
                   <span className="text-sm font-bold">{getPlanName(p)}</span>
                   {getPlanBySlug(p)?.isTest && <span className="px-1.5 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">TEST</span>}
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">{getPlanBySlug(p)?.description}</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">{getPlanDescription(p)}</p>
                 <div className="text-2xl font-black mb-1">${getPlanPrice(p)}<span className="text-sm font-normal text-zinc-500">{formatCycleLabel(p)}</span></div>
-                <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-3">{getPlanBySlug(p)?.highlights}</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-3">{getPlanHighlights(p)}</p>
                 <ul className="space-y-1 mb-4">
                   {FEATURE_KEYS.slice(0, 6).map(key => (
                     <li key={key} className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">

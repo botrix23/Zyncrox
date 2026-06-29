@@ -699,6 +699,9 @@ export const subscriptionPlans = pgTable('subscription_plans', {
   name:             varchar('name',             { length: 100 }).notNull(),
   description:      text('description'),
   highlights:       varchar('highlights',       { length: 255 }),
+  nameEn:           varchar('name_en',          { length: 100 }),
+  descriptionEn:    text('description_en'),
+  highlightsEn:     varchar('highlights_en',    { length: 255 }),
   price:            decimal('price',            { precision: 10, scale: 2 }).notNull(),
   billingCycleDays: integer('billing_cycle_days').notNull().default(30),
   // URL completa del link de suscripción en N1CO (pay.n1co.shop/pl/...)

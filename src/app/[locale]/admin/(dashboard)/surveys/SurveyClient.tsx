@@ -654,16 +654,36 @@ export default function SurveyClient({
                         </div>
                       </div>
 
-                      {/* Row 3: comment + text responses */}
-                      {(r.comment || r.responses?.some((resp: any) => resp.questionType === 'TEXT' && resp.answer)) && (
+                      {/* Row 3: comment + all custom responses */}
+                      {(r.comment || r.responses?.some((resp: any) => resp.answer != null && resp.answer !== '')) && (
                         <div className="space-y-2 border-t border-slate-100 dark:border-white/5 pt-2.5">
                           {r.comment && (
                             <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium italic border-l-2 border-purple-500/30 pl-3">"{r.comment}"</p>
                           )}
-                          {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).map((resp: any, i: number) => (
+                          {r.responses?.filter((resp: any) => resp.answer != null && resp.answer !== '').map((resp: any, i: number) => (
                             <div key={i} className="px-2.5 py-1.5 bg-purple-500/5 rounded-lg border border-purple-500/10">
                               <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-0.5">{resp.questionText}</p>
-                              <p className="text-xs text-purple-600 font-bold break-words">{resp.answer}</p>
+                              {resp.questionType === 'TEXT' && (
+                                <p className="text-xs text-purple-600 font-bold break-words">{resp.answer}</p>
+                              )}
+                              {resp.questionType === 'STARS' && (
+                                <div className="flex items-center gap-1">
+                                  {Array.from({ length: 5 }).map((_, s) => (
+                                    <Star key={s} className={`w-3.5 h-3.5 ${s < Number(resp.answer) ? 'text-yellow-400 fill-current' : 'text-slate-200 dark:text-zinc-600'}`} />
+                                  ))}
+                                  <span className="text-xs text-slate-500 ml-1">{t('audit.responses.starsLabel', { value: resp.answer })}</span>
+                                </div>
+                              )}
+                              {resp.questionType === 'YES_NO' && (
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${resp.answer === 'yes' || resp.answer === true || resp.answer === 'true' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                  {(resp.answer === 'yes' || resp.answer === true || resp.answer === 'true') ? t('audit.responses.yes') : t('audit.responses.no')}
+                                </span>
+                              )}
+                              {resp.questionType === 'NPS' && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                  {t('audit.responses.npsLabel')} {resp.answer}
+                                </span>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -717,16 +737,36 @@ export default function SurveyClient({
                               )}
                             </div>
                           </td>
-                          {/* Comment + responses */}
+                          {/* Comment + all custom responses */}
                           <td className="py-4 px-3 min-w-[200px] max-w-[320px]">
                             <div className="space-y-1.5">
                               {r.comment && (
                                 <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium italic border-l-2 border-purple-500/30 pl-2">"{r.comment}"</p>
                               )}
-                              {r.responses?.filter((resp: any) => resp.questionType === 'TEXT' && resp.answer).map((resp: any, i: number) => (
+                              {r.responses?.filter((resp: any) => resp.answer != null && resp.answer !== '').map((resp: any, i: number) => (
                                 <div key={i} className="px-2 py-1 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                                  <p className="text-xs font-black text-slate-400 tracking-tighter">{resp.questionText}</p>
-                                  <p className="text-xs text-purple-600 font-bold break-words">{resp.answer}</p>
+                                  <p className="text-xs font-black text-slate-400 tracking-tighter mb-0.5">{resp.questionText}</p>
+                                  {resp.questionType === 'TEXT' && (
+                                    <p className="text-xs text-purple-600 font-bold break-words">{resp.answer}</p>
+                                  )}
+                                  {resp.questionType === 'STARS' && (
+                                    <div className="flex items-center gap-0.5">
+                                      {Array.from({ length: 5 }).map((_, s) => (
+                                        <Star key={s} className={`w-3 h-3 ${s < Number(resp.answer) ? 'text-yellow-400 fill-current' : 'text-slate-200 dark:text-zinc-600'}`} />
+                                      ))}
+                                      <span className="text-xs text-slate-500 ml-1">{t('audit.responses.starsLabel', { value: resp.answer })}</span>
+                                    </div>
+                                  )}
+                                  {resp.questionType === 'YES_NO' && (
+                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-bold ${resp.answer === 'yes' || resp.answer === true || resp.answer === 'true' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                      {(resp.answer === 'yes' || resp.answer === true || resp.answer === 'true') ? t('audit.responses.yes') : t('audit.responses.no')}
+                                    </span>
+                                  )}
+                                  {resp.questionType === 'NPS' && (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                      {t('audit.responses.npsLabel')} {resp.answer}
+                                    </span>
+                                  )}
                                 </div>
                               ))}
                             </div>

@@ -14,6 +14,9 @@ type Plan = {
   name: string
   description: string | null
   highlights: string | null
+  nameEn: string | null
+  descriptionEn: string | null
+  highlightsEn: string | null
   price: string
   billingCycleDays: number
   n1coLink: string | null
@@ -27,6 +30,9 @@ type FormData = {
   name: string
   description: string
   highlights: string
+  nameEn: string
+  descriptionEn: string
+  highlightsEn: string
   price: string
   billingCycleDays: string
   n1coLink: string
@@ -40,6 +46,9 @@ const emptyForm: FormData = {
   name: '',
   description: '',
   highlights: '',
+  nameEn: '',
+  descriptionEn: '',
+  highlightsEn: '',
   price: '',
   billingCycleDays: '30',
   n1coLink: '',
@@ -74,6 +83,9 @@ export default function PlansClient({ plans: initialPlans }: { plans: Plan[] }) 
       name:             plan.name,
       description:      plan.description ?? '',
       highlights:       plan.highlights ?? '',
+      nameEn:           plan.nameEn ?? '',
+      descriptionEn:    plan.descriptionEn ?? '',
+      highlightsEn:     plan.highlightsEn ?? '',
       price:            plan.price,
       billingCycleDays: String(plan.billingCycleDays),
       n1coLink:         plan.n1coLink ?? '',
@@ -92,6 +104,9 @@ export default function PlansClient({ plans: initialPlans }: { plans: Plan[] }) 
       name:             form.name,
       description:      form.description,
       highlights:       form.highlights,
+      nameEn:           form.nameEn,
+      descriptionEn:    form.descriptionEn,
+      highlightsEn:     form.highlightsEn,
       price:            parseFloat(form.price),
       billingCycleDays: parseInt(form.billingCycleDays),
       n1coLink:         form.n1coLink,
@@ -295,8 +310,12 @@ export default function PlansClient({ plans: initialPlans }: { plans: Plan[] }) 
                 </div>
               </div>
 
+              <div className="pt-1 pb-0.5">
+                <span className="text-xs font-black text-zinc-400 uppercase tracking-widest">🇪🇸 Español</span>
+              </div>
+
               <div>
-                <label className="block text-xs font-semibold text-zinc-500 mb-1">Descripción</label>
+                <label className="block text-xs font-semibold text-zinc-500 mb-1">Descripción (ES)</label>
                 <input
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -306,11 +325,46 @@ export default function PlansClient({ plans: initialPlans }: { plans: Plan[] }) 
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-500 mb-1">Highlights</label>
+                <label className="block text-xs font-semibold text-zinc-500 mb-1">Highlights (ES)</label>
                 <input
                   value={form.highlights}
                   onChange={e => setForm(f => ({ ...f, highlights: e.target.value }))}
                   placeholder="1 sucursal · 3 especialistas · 20 servicios"
+                  className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-white/10 rounded-xl bg-transparent focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="pt-1 pb-0.5">
+                <span className="text-xs font-black text-zinc-400 uppercase tracking-widest">🇺🇸 English</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-500 mb-1">Name (EN)</label>
+                  <input
+                    value={form.nameEn}
+                    onChange={e => setForm(f => ({ ...f, nameEn: e.target.value }))}
+                    placeholder="Starter, Professional…"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-white/10 rounded-xl bg-transparent focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-500 mb-1">Highlights (EN)</label>
+                  <input
+                    value={form.highlightsEn}
+                    onChange={e => setForm(f => ({ ...f, highlightsEn: e.target.value }))}
+                    placeholder="1 branch · 3 specialists · 20 services"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-white/10 rounded-xl bg-transparent focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-500 mb-1">Description (EN)</label>
+                <input
+                  value={form.descriptionEn}
+                  onChange={e => setForm(f => ({ ...f, descriptionEn: e.target.value }))}
+                  placeholder="For independent professionals"
                   className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-white/10 rounded-xl bg-transparent focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
