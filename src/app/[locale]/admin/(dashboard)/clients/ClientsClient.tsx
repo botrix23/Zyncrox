@@ -999,7 +999,7 @@ export default function ClientsClient({
                            ) : (
                              <div className="text-xs italic opacity-60">{t('noPhone')}</div>
                            )}
-                           {isAdminRole && (
+                           {(isAdminRole || isReceptionistRole) && (
                              <button onClick={() => { setEditingContact(true); setContactEmail(selectedClient.email || ''); setContactPhone(selectedClient.phone || ''); }} className="p-1 text-slate-400 hover:text-purple-600 transition-colors rounded-lg hover:bg-purple-50 dark:hover:bg-purple-500/10">
                                <Pencil className="w-3 h-3" />
                              </button>
