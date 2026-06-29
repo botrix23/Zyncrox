@@ -17,6 +17,7 @@ export async function enforceDowngradeLimits(tenantId: string, newPlan: string) 
     enforceStaffLimit(tenantId, features.maxStaff),
     enforceServiceLimit(tenantId, features.maxServices),
     enforceAdminLimit(tenantId, features.maxAdmins),
+    enforceReceptionistLimit(tenantId, features.maxReceptionists),
   ])
 }
 
@@ -73,6 +74,25 @@ async function enforceServiceLimit(tenantId: string, limit: number) {
   for (const row of all) {
     if (!keepIds.has(row.id)) {
       await db.update(services).set({ isActive: false }).where(eq(services.id, row.id))
+    }
+  }
+}
+
+/** Mantiene las `limit` recepcionistas más antiguas activas, desactiva el resto. */
+async function enforceReceptionistLimit(tenantId: string, limit: number) {
+  if (limit >= 9999) return
+  const all = await db
+    .select({ id: staff.id })
+    .from(staff)
+    .where(and(eq(staff.tenantId, tenantId), eq(staff.isActive, true), eq(staff.isReceptionist, true)))
+    .orderBy(asc(staff.createdAt))
+
+  if (all.length <= limit) return
+
+  const keepIds = new Set(all.slice(0, limit).map(r => r.id))
+  for (const row of all) {
+    if (!keepIds.has(row.id)) {
+      await db.update(staff).set({ isActive: false }).where(eq(staff.id, row.id))
     }
   }
 }
