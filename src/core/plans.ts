@@ -49,8 +49,6 @@ export interface PlanFeatures {
   // Ciclo de facturación
   billingCycleDays: number;            // días entre cobros (2 para BASIC_TEST, 30 para el resto)
 
-  // Enterprise exclusivo
-  auditLogsAdmin: boolean;             // Audit logs visibles al admin
 }
 
 export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
@@ -87,7 +85,6 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxAdmins: 0,
 
     prioritySupport: false,
-    auditLogsAdmin: false,
   },
   BASIC: {
     maxBranches: 1,
@@ -122,7 +119,6 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxAdmins: 0,
 
     prioritySupport: false,
-    auditLogsAdmin: false,
   },
   PROFESSIONAL: {
     maxBranches: 2,
@@ -157,7 +153,6 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxAdmins: 2,
 
     prioritySupport: true,
-    auditLogsAdmin: false,
   },
   ENTERPRISE: {
     maxBranches: 9999,
@@ -192,7 +187,6 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxAdmins: -1,
 
     prioritySupport: true,
-    auditLogsAdmin: true,
   },
 };
 
