@@ -2036,6 +2036,28 @@
   "Billing": {
     "title": "Facturación",
     "ownerOnlyNotice": "Solo el dueño de la cuenta puede modificar el plan o la información de pago.",
+    "plans": {
+      "BASIC_TEST": {
+        "name": "Básico Test",
+        "description": "Para pruebas de plataforma",
+        "highlights": "1 sucursal · 3 especialistas · 20 servicios"
+      },
+      "BASIC": {
+        "name": "Inicial",
+        "description": "Para profesionales independientes",
+        "highlights": "1 sucursal · 3 especialistas · 20 servicios"
+      },
+      "PROFESSIONAL": {
+        "name": "Profesional",
+        "description": "Para salones medianos",
+        "highlights": "2 sucursales · 10 especialistas · 50 servicios"
+      },
+      "ENTERPRISE": {
+        "name": "Negocio",
+        "description": "Para cadenas y clínicas",
+        "highlights": "Todo ilimitado"
+      }
+    },
     "processing": "Procesando...",
     "perMonth": "/mes",
     "perDay": "/día",

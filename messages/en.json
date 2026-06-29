@@ -2036,6 +2036,28 @@
   "Billing": {
     "title": "Billing",
     "ownerOnlyNotice": "Only the account owner can modify the plan or payment information.",
+    "plans": {
+      "BASIC_TEST": {
+        "name": "Starter Test",
+        "description": "For testing purposes",
+        "highlights": "1 branch · 3 specialists · 20 services"
+      },
+      "BASIC": {
+        "name": "Starter",
+        "description": "For independent professionals",
+        "highlights": "1 branch · 3 specialists · 20 services"
+      },
+      "PROFESSIONAL": {
+        "name": "Professional",
+        "description": "For medium-sized salons",
+        "highlights": "2 branches · 10 specialists · 50 services"
+      },
+      "ENTERPRISE": {
+        "name": "Business",
+        "description": "For chains and clinics",
+        "highlights": "Unlimited everything"
+      }
+    },
     "processing": "Processing...",
     "perMonth": "/mo",
     "perDay": "/day",

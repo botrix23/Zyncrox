@@ -158,21 +158,18 @@ export default function BillingClient({ tenantId, plan, tenantStatus, subscripti
   // Helpers for DB-driven plans
   const activePlans = dbPlans ?? []
   const getPlanBySlug = (slug: string): DbPlan | undefined => activePlans.find(p => p.slug === slug)
-  const isEn = locale === 'en'
+  const KNOWN_SLUGS = ['BASIC_TEST', 'BASIC', 'PROFESSIONAL', 'ENTERPRISE']
   const getPlanName = (slug: string): string => {
-    const p = getPlanBySlug(slug)
-    if (!p) return FALLBACK_PLAN_NAMES[slug] ?? slug
-    return (isEn ? p.nameEn : null) ?? p.name
+    if (KNOWN_SLUGS.includes(slug)) return t(`plans.${slug}.name` as any)
+    return getPlanBySlug(slug)?.name ?? FALLBACK_PLAN_NAMES[slug] ?? slug
   }
   const getPlanDescription = (slug: string): string | null => {
-    const p = getPlanBySlug(slug)
-    if (!p) return null
-    return (isEn ? p.descriptionEn : null) ?? p.description ?? null
+    if (KNOWN_SLUGS.includes(slug)) return t(`plans.${slug}.description` as any)
+    return getPlanBySlug(slug)?.description ?? null
   }
   const getPlanHighlights = (slug: string): string | null => {
-    const p = getPlanBySlug(slug)
-    if (!p) return null
-    return (isEn ? p.highlightsEn : null) ?? p.highlights ?? null
+    if (KNOWN_SLUGS.includes(slug)) return t(`plans.${slug}.highlights` as any)
+    return getPlanBySlug(slug)?.highlights ?? null
   }
   const getPlanPrice = (slug: string): number => {
     const dbPrice = getPlanBySlug(slug)?.price
