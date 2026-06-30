@@ -69,37 +69,34 @@ export async function POST(req: NextRequest) {
     const now = new Date()
 
     // --------------------------------------------------------------------------
-    // SubscriptionConfirmation: if no row matched by subscriptionId,
-    // this is likely a brand-new subscriber — try email-based matching
+    // If no row matched by subscriptionId, try email-based matching.
+    // This covers:
+    //   - SubscriptionConfirmation: first-time subscriber (no subscriptionId stored yet)
+    //   - SubscriptionPayment / others: N1CO may send a different subscriptionId
+    //     on recurring charges than the one stored from the initial confirmation
     // --------------------------------------------------------------------------
-    if (type === 'SubscriptionConfirmation' && !sub) {
+    if (!sub) {
       const email = extractWebhookEmail(event)
       if (email) {
-        // Find tenant by contact email (case-insensitive)
         const matchedTenant = await db.query.tenants.findFirst({
           where: ilike(tenants.contactEmail, email),
         })
         if (matchedTenant) {
+          // For confirmation: match PENDING_PAYMENT; for renewals: match ACTIVE/PAST_DUE
           sub = await db.query.subscriptions.findFirst({
-            where: and(
-              eq(subscriptions.tenantId, matchedTenant.id),
-              eq(subscriptions.status, 'PENDING_PAYMENT'),
-            ),
+            where: type === 'SubscriptionConfirmation'
+              ? and(eq(subscriptions.tenantId, matchedTenant.id), eq(subscriptions.status, 'PENDING_PAYMENT'))
+              : eq(subscriptions.tenantId, matchedTenant.id),
           })
           if (sub) {
-            console.log(`[N1CO Webhook] SubscriptionConfirmation — matched tenant ${matchedTenant.id} by email: ${email}`)
+            console.log(`[N1CO Webhook] ${type} — matched tenant ${matchedTenant.id} by email: ${email}`)
           }
         }
       }
       if (!sub) {
-        console.warn(`[N1CO Webhook] SubscriptionConfirmation — no match for subscriptionId: ${subscriptionId} or email`)
+        console.warn(`[N1CO Webhook] ${type} — no match for subscriptionId: ${subscriptionId} or email`)
         return NextResponse.json({ received: true })
       }
-    }
-
-    if (!sub) {
-      console.warn(`[N1CO Webhook] No local subscription found for n1coSubscriptionId: ${subscriptionId}`)
-      return NextResponse.json({ received: true })
     }
 
     // Fetch tenant for notification messages
