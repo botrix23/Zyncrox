@@ -51,7 +51,7 @@ function ResponsesScroll({ children, bgFrom = 'bg-white dark:bg-zinc-900' }: { c
         {children}
       </div>
       {showGradient && (
-        <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-purple-50 dark:from-zinc-900 to-transparent pointer-events-none rounded-b-lg" />
+        <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-purple-200 dark:from-zinc-900 to-transparent pointer-events-none rounded-b-lg" />
       )}
     </div>
   )
