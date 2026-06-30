@@ -135,15 +135,18 @@ export async function POST(req: NextRequest) {
 
       case 'SubscriptionPayment': {
         const amount = event.amount ?? getPlanPrice(sub.plan)
+        // Use the payment timestamp from N1CO if available so the next billing
+        // date is anchored to the actual charge date, not the webhook arrival time.
+        const paymentDate = event.timestamp ? new Date(event.timestamp) : now
 
         await db.update(subscriptions)
           .set({
             status:             'ACTIVE',
             cancelledAt:        null,
             gracePeriodEndsAt:  null,
-            currentPeriodStart: now,
-            currentPeriodEnd:   addDays(now, getPlanFeatures(sub.plan).billingCycleDays),
-            lastPaymentAt:      now,
+            currentPeriodStart: paymentDate,
+            currentPeriodEnd:   addDays(paymentDate, getPlanFeatures(sub.plan).billingCycleDays),
+            lastPaymentAt:      paymentDate,
             lastPaymentAmount:  String(amount),
             updatedAt:          now,
           })
