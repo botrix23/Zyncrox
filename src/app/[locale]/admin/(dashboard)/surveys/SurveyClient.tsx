@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Plus,
   Trash2,
@@ -29,6 +29,33 @@ import {
   reorderSurveyQuestionsAction 
 } from "@/app/actions/survey";
 import { useRouter } from "next/navigation";
+
+function ResponsesScroll({ children, bgFrom = 'bg-white dark:bg-zinc-900' }: { children: React.ReactNode; bgFrom?: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [showGradient, setShowGradient] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const check = () => setShowGradient(el.scrollHeight > el.clientHeight && el.scrollTop + el.clientHeight < el.scrollHeight - 2)
+    check()
+    el.addEventListener('scroll', check)
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => { el.removeEventListener('scroll', check); ro.disconnect() }
+  }, [children])
+
+  return (
+    <div className="relative">
+      <div ref={ref} className="max-h-[110px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-white/10">
+        {children}
+      </div>
+      {showGradient && (
+        <div className={`absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white dark:from-zinc-900 to-transparent pointer-events-none rounded-b-lg`} />
+      )}
+    </div>
+  )
+}
 
 interface SurveyQuestion {
   id: string;
@@ -656,7 +683,8 @@ export default function SurveyClient({
 
                       {/* Row 3: comment + all custom responses */}
                       {(r.comment || r.responses?.some((resp: any) => resp.answer != null && resp.answer !== '')) && (
-                        <div className="space-y-2 border-t border-slate-100 dark:border-white/5 pt-2.5">
+                        <div className="border-t border-slate-100 dark:border-white/5 pt-2.5">
+                          <ResponsesScroll bgFrom="bg-slate-50 dark:bg-zinc-800">
                           {r.comment && (
                             <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium italic border-l-2 border-purple-500/30 pl-3">"{r.comment}"</p>
                           )}
@@ -686,6 +714,7 @@ export default function SurveyClient({
                               )}
                             </div>
                           ))}
+                          </ResponsesScroll>
                         </div>
                       )}
                     </div>
@@ -739,7 +768,7 @@ export default function SurveyClient({
                           </td>
                           {/* Comment + all custom responses */}
                           <td className="py-4 px-3 min-w-[200px] max-w-[320px]">
-                            <div className="space-y-1.5">
+                            <ResponsesScroll>
                               {r.comment && (
                                 <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium italic border-l-2 border-purple-500/30 pl-2">"{r.comment}"</p>
                               )}
@@ -769,7 +798,7 @@ export default function SurveyClient({
                                   )}
                                 </div>
                               ))}
-                            </div>
+                            </ResponsesScroll>
                           </td>
                           {/* Submitted date */}
                           <td className="py-4 px-3 whitespace-nowrap">
