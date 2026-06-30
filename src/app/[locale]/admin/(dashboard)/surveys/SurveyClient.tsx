@@ -47,7 +47,7 @@ function ResponsesScroll({ children, bgFrom = 'bg-white dark:bg-zinc-900' }: { c
 
   return (
     <div className="relative">
-      <div ref={ref} className="max-h-[110px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-white/10">
+      <div ref={ref} className="max-h-[160px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-white/10">
         {children}
       </div>
       {showGradient && (
