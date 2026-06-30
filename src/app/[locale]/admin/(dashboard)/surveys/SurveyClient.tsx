@@ -47,11 +47,11 @@ function ResponsesScroll({ children, bgFrom = 'bg-white dark:bg-zinc-900' }: { c
 
   return (
     <div className="relative">
-      <div ref={ref} className="max-h-[160px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-white/10">
+      <div ref={ref} className="max-h-[125px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-white/10">
         {children}
       </div>
       {showGradient && (
-        <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-purple-200 dark:from-zinc-900 to-transparent pointer-events-none rounded-b-lg" />
+        <div className="absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-t from-purple-200 dark:from-zinc-900 to-transparent pointer-events-none rounded-b-lg" />
       )}
     </div>
   )
