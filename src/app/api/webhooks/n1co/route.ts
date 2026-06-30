@@ -44,9 +44,10 @@ export async function POST(req: NextRequest) {
   }
 
   let event: N1coWebhookPayload
+  let rawBody: string
   try {
-    const body = await req.text()
-    event = JSON.parse(body) as N1coWebhookPayload
+    rawBody = await req.text()
+    event = JSON.parse(rawBody) as N1coWebhookPayload
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
@@ -58,7 +59,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true })
   }
 
-  console.log(`[N1CO Webhook] ${type} — subscriptionId: ${subscriptionId}`)
+  // Log full payload so we can identify all fields N1CO sends (esp. next billing date)
+  console.log(`[N1CO Webhook] ${type} — subscriptionId: ${subscriptionId} — full payload:`, rawBody)
 
   try {
     // Primary lookup: find subscription row by N1CO subscription ID
