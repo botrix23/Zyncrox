@@ -77,15 +77,52 @@ export interface N1coWebhookPayload {
   type: N1coWebhookType
   /** N1CO subscription ID for this subscriber */
   subscriptionId: string
-  /** Subscriber email — used to identify the Zyncrox tenant */
+
+  // ── Subscriber identity (N1CO varies field name across event types) ──────
   email?: string
   subscriberEmail?: string
   customerEmail?: string
+  customerName?: string
+  subscriberName?: string
+  customerId?: string | number
+
+  // ── Subscription link / plan ─────────────────────────────────────────────
   /** N1CO subscription link numeric ID (e.g. 5531, 5532, 5533) */
   linkId?: number | string
+  planId?: number | string
+  planName?: string
+
+  // ── Payment info ─────────────────────────────────────────────────────────
   amount?: number
+  currency?: string
   transactionId?: string
+  orderId?: string | number
+  paymentMethod?: string
+
+  // ── Billing cycle dates — use these instead of calculating locally ───────
+  /** ISO date string for the next scheduled charge */
+  nextBillingDate?: string
+  nextPaymentDate?: string
+  renewalDate?: string
+  nextChargeDate?: string
+  nextRenewalDate?: string
+  /** ISO date string when the current billing period ends */
+  currentPeriodEnd?: string
+  expirationDate?: string
+  subscriptionEndDate?: string
+  /** ISO date string when the current billing period started */
+  currentPeriodStart?: string
+  activationDate?: string
+
+  // ── Status ───────────────────────────────────────────────────────────────
+  status?: string
+
+  // ── Timestamps ───────────────────────────────────────────────────────────
   timestamp?: string
+  createdAt?: string
+  updatedAt?: string
+
+  // ── Catch-all — captures any undocumented fields N1CO adds ───────────────
   [key: string]: unknown
 }
 
@@ -100,6 +137,31 @@ export function extractWebhookEmail(payload: N1coWebhookPayload): string | null 
     payload.customerEmail ??
     null
   )
+}
+
+/**
+ * Extracts the next billing date from a webhook payload.
+ * Tries every known field name N1CO might use.
+ * Returns a Date if a valid date string is found, otherwise null.
+ *
+ * If N1CO provides this field, always prefer it over calculating locally —
+ * N1CO's date is authoritative and accounts for weekends, holidays, etc.
+ */
+export function extractNextBillingDate(payload: N1coWebhookPayload): Date | null {
+  const raw =
+    payload.nextBillingDate ??
+    payload.nextPaymentDate ??
+    payload.renewalDate ??
+    payload.nextChargeDate ??
+    payload.nextRenewalDate ??
+    payload.currentPeriodEnd ??
+    payload.expirationDate ??
+    payload.subscriptionEndDate ??
+    null
+
+  if (!raw || typeof raw !== 'string') return null
+  const d = new Date(raw)
+  return isNaN(d.getTime()) ? null : d
 }
 
 // ---------------------------------------------------------------------------

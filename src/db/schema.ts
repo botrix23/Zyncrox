@@ -8,6 +8,7 @@ import {
   decimal,
   boolean,
   json,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -712,4 +713,17 @@ export const subscriptionPlans = pgTable('subscription_plans', {
   sortOrder:        integer('sort_order').notNull().default(0),
   createdAt:        timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt:        timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// ─── N1CO Webhook Event Log ───────────────────────────────────────────────────
+// Persists every raw payload N1CO sends so we can inspect field names,
+// debug billing flows, and know which event types N1CO actually uses.
+export const n1coWebhookEvents = pgTable('n1co_webhook_events', {
+  id:             uuid('id').primaryKey().defaultRandom(),
+  receivedAt:     timestamp('received_at',     { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  eventType:      text('event_type'),
+  subscriptionId: text('subscription_id'),
+  // Full JSON payload exactly as received from N1CO — never truncated
+  rawPayload:     jsonb('raw_payload').$type<Record<string, unknown>>().notNull(),
+  httpStatus:     integer('http_status').notNull().default(200),
 });

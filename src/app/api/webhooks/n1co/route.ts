@@ -15,17 +15,24 @@
  *     Match by n1coSubscriptionId (stored during SubscriptionConfirmation)
  *
  * Supported event types:
- *   SubscriptionConfirmation  — subscription was created/activated
+ *   SubscriptionConfirmation  — subscription was created/activated (also fires on renewals)
  *   SubscriptionPayment       — recurring payment succeeded
  *   SubscriptionFailed        — payment failed (move to PAST_DUE)
  *   SubscriptionCancelled     — subscription was cancelled in N1CO
+ *
+ * Every payload is logged to n1co_webhook_events for audit and field discovery.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { subscriptions, tenants } from '@/db/schema'
+import { subscriptions, tenants, n1coWebhookEvents } from '@/db/schema'
 import { and, eq, ilike } from 'drizzle-orm'
-import { validateWebhookSecret, extractWebhookEmail, N1coWebhookPayload } from '@/lib/n1co'
+import {
+  validateWebhookSecret,
+  extractWebhookEmail,
+  extractNextBillingDate,
+  N1coWebhookPayload,
+} from '@/lib/n1co'
 import { getPlanPrice, getPlanFeatures } from '@/core/plans'
 import { createNotification } from '@/lib/notifications'
 
@@ -56,11 +63,27 @@ export async function POST(req: NextRequest) {
 
   if (!subscriptionId) {
     console.warn('[N1CO Webhook] Missing subscriptionId in payload')
+    // Still log even malformed payloads
+    void db.insert(n1coWebhookEvents).values({
+      eventType:      type ?? 'UNKNOWN',
+      subscriptionId: null,
+      rawPayload:     event as Record<string, unknown>,
+      httpStatus:     200,
+    }).catch(() => {})
     return NextResponse.json({ received: true })
   }
 
-  // Log full payload so we can identify all fields N1CO sends (esp. next billing date)
-  console.log(`[N1CO Webhook] ${type} — subscriptionId: ${subscriptionId} — full payload:`, rawBody)
+  console.log(`[N1CO Webhook] ${type} — subscriptionId: ${subscriptionId}`)
+  console.log('[N1CO Webhook] raw payload:', rawBody)
+
+  // ── Persist raw payload to n1co_webhook_events ────────────────────────────
+  // Fire-and-forget: don't let a logging failure block the main flow.
+  void db.insert(n1coWebhookEvents).values({
+    eventType:      type,
+    subscriptionId: subscriptionId,
+    rawPayload:     event as Record<string, unknown>,
+    httpStatus:     200,
+  }).catch((err) => console.error('[N1CO Webhook] Failed to log event to DB:', err))
 
   try {
     // Primary lookup: find subscription row by N1CO subscription ID
@@ -70,13 +93,9 @@ export async function POST(req: NextRequest) {
 
     const now = new Date()
 
-    // --------------------------------------------------------------------------
-    // If no row matched by subscriptionId, try email-based matching.
-    // This covers:
-    //   - SubscriptionConfirmation: first-time subscriber (no subscriptionId stored yet)
-    //   - SubscriptionPayment / others: N1CO may send a different subscriptionId
-    //     on recurring charges than the one stored from the initial confirmation
-    // --------------------------------------------------------------------------
+    // ── Email-based fallback ──────────────────────────────────────────────────
+    // Covers first-time SubscriptionConfirmation (no subscriptionId stored yet)
+    // and any case where N1CO uses a different subscriptionId on renewals.
     if (!sub) {
       const email = extractWebhookEmail(event)
       if (email) {
@@ -84,7 +103,6 @@ export async function POST(req: NextRequest) {
           where: ilike(tenants.contactEmail, email),
         })
         if (matchedTenant) {
-          // For confirmation: match PENDING_PAYMENT; for renewals: match ACTIVE/PAST_DUE
           sub = await db.query.subscriptions.findFirst({
             where: type === 'SubscriptionConfirmation'
               ? and(eq(subscriptions.tenantId, matchedTenant.id), eq(subscriptions.status, 'PENDING_PAYMENT'))
@@ -108,21 +126,35 @@ export async function POST(req: NextRequest) {
     })
     const tenantName = tenant?.name ?? 'Empresa desconocida'
 
+    // ── Resolve next billing date ─────────────────────────────────────────────
+    // Prefer N1CO's authoritative date; fall back to our local calculation.
+    const n1coNextDate = extractNextBillingDate(event)
+
     switch (type) {
       case 'SubscriptionConfirmation': {
         // Determine plan: use pendingPlan if upgrading, otherwise current plan
         const activePlan = sub.pendingPlan ?? sub.plan
 
+        // Use N1CO's next billing date if provided; otherwise calculate from now.
+        const periodEnd = n1coNextDate ?? addDays(now, getPlanFeatures(activePlan).billingCycleDays)
+
+        // lastPaymentAt: always update — SubscriptionConfirmation fires on both
+        // first-time signup AND each recurring renewal charge.
+        const paymentDate = event.timestamp ? new Date(event.timestamp) : now
+        const amount = event.amount ?? getPlanPrice(activePlan)
+
         await db.update(subscriptions)
           .set({
             plan:               activePlan,
-            n1coSubscriptionId: subscriptionId,   // store for all future webhook matching
+            n1coSubscriptionId: subscriptionId,
             status:             'ACTIVE',
             pendingPlan:        null,
             cancelledAt:        null,
             gracePeriodEndsAt:  null,
-            currentPeriodStart: now,
-            currentPeriodEnd:   addDays(now, getPlanFeatures(activePlan).billingCycleDays),
+            currentPeriodStart: paymentDate,
+            currentPeriodEnd:   periodEnd,
+            lastPaymentAt:      paymentDate,
+            lastPaymentAmount:  String(amount),
             updatedAt:          now,
           })
           .where(eq(subscriptions.id, sub.id))
@@ -131,15 +163,26 @@ export async function POST(req: NextRequest) {
           .set({ plan: activePlan, status: 'ACTIVE', updatedAt: now })
           .where(eq(tenants.id, sub.tenantId))
 
-        console.log(`[N1CO Webhook] SubscriptionConfirmation — tenant ${sub.tenantId} activated, plan: ${activePlan}`)
+        console.log(
+          `[N1CO Webhook] SubscriptionConfirmation — tenant ${sub.tenantId} activated/renewed, ` +
+          `plan: ${activePlan}, periodEnd: ${periodEnd.toISOString()} ` +
+          `(source: ${n1coNextDate ? 'N1CO payload' : 'calculated'})`
+        )
+        void createNotification({
+          type: 'PAYMENT_RECEIVED',
+          message: `Pago recibido de "${tenantName}" — $${amount} (${activePlan})`,
+          link: `/admin/super/payments`,
+          tenantId: sub.tenantId,
+          tenantName,
+          urgency: 'LOW',
+        })
         break
       }
 
       case 'SubscriptionPayment': {
         const amount = event.amount ?? getPlanPrice(sub.plan)
-        // Use the payment timestamp from N1CO if available so the next billing
-        // date is anchored to the actual charge date, not the webhook arrival time.
         const paymentDate = event.timestamp ? new Date(event.timestamp) : now
+        const periodEnd = n1coNextDate ?? addDays(paymentDate, getPlanFeatures(sub.plan).billingCycleDays)
 
         await db.update(subscriptions)
           .set({
@@ -147,7 +190,7 @@ export async function POST(req: NextRequest) {
             cancelledAt:        null,
             gracePeriodEndsAt:  null,
             currentPeriodStart: paymentDate,
-            currentPeriodEnd:   addDays(paymentDate, getPlanFeatures(sub.plan).billingCycleDays),
+            currentPeriodEnd:   periodEnd,
             lastPaymentAt:      paymentDate,
             lastPaymentAmount:  String(amount),
             updatedAt:          now,
@@ -158,7 +201,10 @@ export async function POST(req: NextRequest) {
           .set({ status: 'ACTIVE', updatedAt: now })
           .where(eq(tenants.id, sub.tenantId))
 
-        console.log(`[N1CO Webhook] SubscriptionPayment — tenant ${sub.tenantId}, amount: ${amount}`)
+        console.log(
+          `[N1CO Webhook] SubscriptionPayment — tenant ${sub.tenantId}, amount: ${amount}, ` +
+          `periodEnd: ${periodEnd.toISOString()} (source: ${n1coNextDate ? 'N1CO payload' : 'calculated'})`
+        )
         void createNotification({
           type: 'PAYMENT_RECEIVED',
           message: `Pago recibido de "${tenantName}" — $${amount} (${sub.plan})`,
@@ -171,7 +217,6 @@ export async function POST(req: NextRequest) {
       }
 
       case 'SubscriptionFailed': {
-        // Payment failed — give a 3-day grace period before suspending
         await db.update(subscriptions)
           .set({
             status:            'PAST_DUE',
