@@ -46,7 +46,17 @@ export async function POST(req: NextRequest) {
   // Validate webhook secret
   const secret = req.headers.get('x-n1co-secret')
   if (!validateWebhookSecret(secret)) {
-    console.warn('[N1CO Webhook] Invalid secret')
+    // Diagnostic: log all header names (not values) + masked secret info so we
+    // can see whether N1CO sends the secret under a different header name or
+    // with a different value than N1CO_WEBHOOK_SECRET.
+    const headerNames = Array.from(req.headers.keys()).join(', ')
+    const mask = (v: string | null | undefined) =>
+      v ? `${v.slice(0, 4)}…${v.slice(-4)} (len ${v.length})` : 'null'
+    console.warn(
+      `[N1CO Webhook] Invalid secret — received x-n1co-secret: ${mask(secret)}; ` +
+      `expected: ${mask(process.env.N1CO_WEBHOOK_SECRET)}; ` +
+      `headers present: [${headerNames}]`
+    )
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
