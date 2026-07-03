@@ -43,23 +43,8 @@ function addDays(date: Date, days: number): Date {
 }
 
 export async function POST(req: NextRequest) {
-  // Validate webhook secret
-  const secret = req.headers.get('x-n1co-secret')
-  if (!validateWebhookSecret(secret)) {
-    // Diagnostic: log all header names (not values) + masked secret info so we
-    // can see whether N1CO sends the secret under a different header name or
-    // with a different value than N1CO_WEBHOOK_SECRET.
-    const headerNames = Array.from(req.headers.keys()).join(', ')
-    const mask = (v: string | null | undefined) =>
-      v ? `${v.slice(0, 4)}…${v.slice(-4)} (len ${v.length})` : 'null'
-    console.warn(
-      `[N1CO Webhook] Invalid secret — received x-n1co-secret: ${mask(secret)}; ` +
-      `expected: ${mask(process.env.N1CO_WEBHOOK_SECRET)}; ` +
-      `headers present: [${headerNames}]`
-    )
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+  // Read body FIRST so every attempt gets logged to the DB, even rejected ones.
+  // Vercel log retention is too short to debug webhooks that fire every 2 days.
   let event: N1coWebhookPayload
   let rawBody: string
   try {
@@ -67,6 +52,30 @@ export async function POST(req: NextRequest) {
     event = JSON.parse(rawBody) as N1coWebhookPayload
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  const mask = (v: string | null | undefined) =>
+    v ? `${v.slice(0, 4)}…${v.slice(-4)} (len ${v.length})` : 'null'
+
+  // Validate webhook secret
+  const secret = req.headers.get('x-n1co-secret')
+  if (!validateWebhookSecret(secret)) {
+    const headerNames = Array.from(req.headers.keys()).join(', ')
+    const diagnostics = {
+      _rejected: 'invalid_secret',
+      _receivedSecret: mask(secret),
+      _expectedSecret: mask(process.env.N1CO_WEBHOOK_SECRET),
+      _headers: headerNames,
+    }
+    console.warn(`[N1CO Webhook] Invalid secret —`, JSON.stringify(diagnostics))
+    // Persist the rejected attempt (payload + secret diagnostics) for later review
+    void db.insert(n1coWebhookEvents).values({
+      eventType:      `REJECTED_401:${event.type ?? 'UNKNOWN'}`,
+      subscriptionId: event.subscriptionId ?? null,
+      rawPayload:     { ...event, ...diagnostics } as Record<string, unknown>,
+      httpStatus:     401,
+    }).catch((err) => console.error('[N1CO Webhook] Failed to log rejected event:', err))
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const { type, subscriptionId } = event
