@@ -73,12 +73,47 @@ export type N1coWebhookType =
   | 'SubscriptionCancelled'
   | 'SubscriptionFailed'
 
+/**
+ * N1CO webhook metadata object — all subscriber/billing fields live here.
+ * Field names use PascalCase as sent by N1CO.
+ */
+export interface N1coWebhookMetadata {
+  SubscriptionLinkId?: string | number
+  SubscriptionId?: string | number
+  SubscriptionName?: string
+  /** Amount as a string, e.g. "15.00" */
+  SubscriptionPrice?: string | number
+  CancellationReason?: string
+  BuyerName?: string
+  BuyerPhone?: string
+  /** Primary email field in N1CO payloads */
+  BuyerEmail?: string
+  StoreId?: string | number
+  /** ISO datetime string — when the current billing period started */
+  SubscriptionStartDate?: string
+  /** ISO datetime string — when the current billing period ends (= next charge date) */
+  SubscriptionEndDate?: string
+  OrderId?: string | number
+  OrderReference?: string | number
+  [key: string]: unknown
+}
+
 export interface N1coWebhookPayload {
   type: N1coWebhookType
   /** N1CO subscription ID for this subscriber */
   subscriptionId: string
 
-  // ── Subscriber identity (N1CO varies field name across event types) ──────
+  /**
+   * All subscriber and billing details are nested here.
+   * Field names are PascalCase (BuyerEmail, SubscriptionEndDate, etc.)
+   */
+  metadata?: N1coWebhookMetadata
+
+  // ── Top-level fields (legacy / fallback) ─────────────────────────────────
+  description?: string
+  level?: string
+
+  // ── Subscriber identity (fallback if not in metadata) ────────────────────
   email?: string
   subscriberEmail?: string
   customerEmail?: string
@@ -87,37 +122,31 @@ export interface N1coWebhookPayload {
   customerId?: string | number
 
   // ── Subscription link / plan ─────────────────────────────────────────────
-  /** N1CO subscription link numeric ID (e.g. 5531, 5532, 5533) */
   linkId?: number | string
   planId?: number | string
   planName?: string
 
-  // ── Payment info ─────────────────────────────────────────────────────────
+  // ── Payment info (fallback if not in metadata) ────────────────────────────
   amount?: number
   currency?: string
   transactionId?: string
   orderId?: string | number
   paymentMethod?: string
 
-  // ── Billing cycle dates — use these instead of calculating locally ───────
-  /** ISO date string for the next scheduled charge */
+  // ── Billing cycle dates (fallback if not in metadata) ────────────────────
   nextBillingDate?: string
   nextPaymentDate?: string
   renewalDate?: string
   nextChargeDate?: string
   nextRenewalDate?: string
-  /** ISO date string when the current billing period ends */
   currentPeriodEnd?: string
   expirationDate?: string
   subscriptionEndDate?: string
-  /** ISO date string when the current billing period started */
   currentPeriodStart?: string
   activationDate?: string
 
-  // ── Status ───────────────────────────────────────────────────────────────
+  // ── Status / timestamps ───────────────────────────────────────────────────
   status?: string
-
-  // ── Timestamps ───────────────────────────────────────────────────────────
   timestamp?: string
   createdAt?: string
   updatedAt?: string
@@ -127,11 +156,12 @@ export interface N1coWebhookPayload {
 }
 
 /**
- * Extracts subscriber email from a webhook payload, trying multiple field names
- * since N1CO may vary key names across event types.
+ * Extracts subscriber email from a webhook payload.
+ * N1CO puts the email inside metadata.BuyerEmail; top-level fields are fallbacks.
  */
 export function extractWebhookEmail(payload: N1coWebhookPayload): string | null {
   return (
+    payload.metadata?.BuyerEmail ??
     payload.email ??
     payload.subscriberEmail ??
     payload.customerEmail ??
@@ -141,14 +171,18 @@ export function extractWebhookEmail(payload: N1coWebhookPayload): string | null 
 
 /**
  * Extracts the next billing date from a webhook payload.
- * Tries every known field name N1CO might use.
- * Returns a Date if a valid date string is found, otherwise null.
  *
- * If N1CO provides this field, always prefer it over calculating locally —
- * N1CO's date is authoritative and accounts for weekends, holidays, etc.
+ * Per N1CO docs the authoritative field is metadata.SubscriptionEndDate —
+ * it marks when the current period ends, which equals the next charge date.
+ * All other field names are fallbacks for legacy or undocumented variants.
+ *
+ * Returns a Date if a valid date string is found, otherwise null.
  */
 export function extractNextBillingDate(payload: N1coWebhookPayload): Date | null {
   const raw =
+    // ── Primary: N1CO's documented field (inside metadata) ──────────────────
+    payload.metadata?.SubscriptionEndDate ??
+    // ── Fallbacks: top-level variants (undocumented / future-proofing) ───────
     payload.nextBillingDate ??
     payload.nextPaymentDate ??
     payload.renewalDate ??
@@ -162,6 +196,46 @@ export function extractNextBillingDate(payload: N1coWebhookPayload): Date | null
   if (!raw || typeof raw !== 'string') return null
   const d = new Date(raw)
   return isNaN(d.getTime()) ? null : d
+}
+
+/**
+ * Extracts the current period start from a webhook payload.
+ * N1CO sends metadata.SubscriptionStartDate.
+ */
+export function extractPeriodStart(payload: N1coWebhookPayload): Date | null {
+  const raw =
+    payload.metadata?.SubscriptionStartDate ??
+    payload.currentPeriodStart ??
+    payload.activationDate ??
+    payload.timestamp ??
+    null
+
+  if (!raw || typeof raw !== 'string') return null
+  const d = new Date(raw)
+  return isNaN(d.getTime()) ? null : d
+}
+
+/**
+ * Extracts the payment amount from a webhook payload.
+ * N1CO sends metadata.SubscriptionPrice as a string; falls back to top-level amount.
+ */
+export function extractAmount(payload: N1coWebhookPayload): number | null {
+  const raw = payload.metadata?.SubscriptionPrice ?? payload.amount ?? null
+  if (raw === null || raw === undefined) return null
+  const n = typeof raw === 'number' ? raw : parseFloat(String(raw))
+  return isNaN(n) ? null : n
+}
+
+/**
+ * Extracts subscriber name from a webhook payload.
+ */
+export function extractBuyerName(payload: N1coWebhookPayload): string | null {
+  return (
+    payload.metadata?.BuyerName ??
+    payload.customerName ??
+    payload.subscriberName ??
+    null
+  )
 }
 
 // ---------------------------------------------------------------------------

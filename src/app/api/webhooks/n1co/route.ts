@@ -31,6 +31,8 @@ import {
   validateWebhookSecret,
   extractWebhookEmail,
   extractNextBillingDate,
+  extractPeriodStart,
+  extractAmount,
   N1coWebhookPayload,
 } from '@/lib/n1co'
 import { getPlanPrice, getPlanFeatures } from '@/core/plans'
@@ -145,22 +147,25 @@ export async function POST(req: NextRequest) {
     })
     const tenantName = tenant?.name ?? 'Empresa desconocida'
 
-    // ── Resolve next billing date ─────────────────────────────────────────────
-    // Prefer N1CO's authoritative date; fall back to our local calculation.
-    const n1coNextDate = extractNextBillingDate(event)
+    // ── Resolve billing dates and amount from N1CO payload ───────────────────
+    // N1CO puts all these inside metadata.*  (documented in n1co.ts helpers)
+    const n1coNextDate    = extractNextBillingDate(event)
+    const n1coPeriodStart = extractPeriodStart(event)
+    const n1coAmount      = extractAmount(event)
 
     switch (type) {
       case 'SubscriptionConfirmation': {
         // Determine plan: use pendingPlan if upgrading, otherwise current plan
         const activePlan = sub.pendingPlan ?? sub.plan
 
-        // Use N1CO's next billing date if provided; otherwise calculate from now.
+        // Period end: prefer N1CO's SubscriptionEndDate, fall back to calculation
         const periodEnd = n1coNextDate ?? addDays(now, getPlanFeatures(activePlan).billingCycleDays)
 
-        // lastPaymentAt: always update — SubscriptionConfirmation fires on both
-        // first-time signup AND each recurring renewal charge.
-        const paymentDate = event.timestamp ? new Date(event.timestamp) : now
-        const amount = event.amount ?? getPlanPrice(activePlan)
+        // Period start: prefer N1CO's SubscriptionStartDate, fall back to now
+        const paymentDate = n1coPeriodStart ?? (event.timestamp ? new Date(event.timestamp) : now)
+
+        // Amount: prefer N1CO's SubscriptionPrice, fall back to plan default
+        const amount = n1coAmount ?? getPlanPrice(activePlan)
 
         await db.update(subscriptions)
           .set({
@@ -184,8 +189,9 @@ export async function POST(req: NextRequest) {
 
         console.log(
           `[N1CO Webhook] SubscriptionConfirmation — tenant ${sub.tenantId} activated/renewed, ` +
-          `plan: ${activePlan}, periodEnd: ${periodEnd.toISOString()} ` +
-          `(source: ${n1coNextDate ? 'N1CO payload' : 'calculated'})`
+          `plan: ${activePlan}, periodStart: ${paymentDate.toISOString()}, ` +
+          `periodEnd: ${periodEnd.toISOString()} ` +
+          `(source: ${n1coNextDate ? 'N1CO metadata.SubscriptionEndDate' : 'calculated'})`
         )
         void createNotification({
           type: 'PAYMENT_RECEIVED',
@@ -199,8 +205,8 @@ export async function POST(req: NextRequest) {
       }
 
       case 'SubscriptionPayment': {
-        const amount = event.amount ?? getPlanPrice(sub.plan)
-        const paymentDate = event.timestamp ? new Date(event.timestamp) : now
+        const amount = n1coAmount ?? getPlanPrice(sub.plan)
+        const paymentDate = n1coPeriodStart ?? (event.timestamp ? new Date(event.timestamp) : now)
         const periodEnd = n1coNextDate ?? addDays(paymentDate, getPlanFeatures(sub.plan).billingCycleDays)
 
         await db.update(subscriptions)
@@ -222,7 +228,7 @@ export async function POST(req: NextRequest) {
 
         console.log(
           `[N1CO Webhook] SubscriptionPayment — tenant ${sub.tenantId}, amount: ${amount}, ` +
-          `periodEnd: ${periodEnd.toISOString()} (source: ${n1coNextDate ? 'N1CO payload' : 'calculated'})`
+          `periodEnd: ${periodEnd.toISOString()} (source: ${n1coNextDate ? 'N1CO metadata.SubscriptionEndDate' : 'calculated'})`
         )
         void createNotification({
           type: 'PAYMENT_RECEIVED',
