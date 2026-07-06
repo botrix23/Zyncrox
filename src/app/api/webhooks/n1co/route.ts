@@ -4,7 +4,9 @@
  * N1CO fires events when subscriptions are confirmed, renewed, failed, or cancelled.
  * This route updates the local DB so the app reflects the real billing state.
  *
- * Header: x-n1co-secret  (compared against N1CO_WEBHOOK_SECRET env var)
+ * Auth: N1CO signs the raw body with HMAC-SHA256 (key = N1CO_WEBHOOK_SECRET,
+ *       the secret generated in the N1CO Business portal) and sends the
+ *       signature in the `X-H4B-Hmac-Sha256` header. See validateWebhookSignature.
  *
  * Tenant lookup strategy (redirect/hosted-checkout model):
  *   SubscriptionConfirmation:
@@ -28,7 +30,7 @@ import { db } from '@/db'
 import { subscriptions, tenants, n1coWebhookEvents } from '@/db/schema'
 import { and, eq, ilike } from 'drizzle-orm'
 import {
-  validateWebhookSecret,
+  validateWebhookSignature,
   extractWebhookEmail,
   extractNextBillingDate,
   extractPeriodStart,
@@ -59,17 +61,18 @@ export async function POST(req: NextRequest) {
   const mask = (v: string | null | undefined) =>
     v ? `${v.slice(0, 4)}…${v.slice(-4)} (len ${v.length})` : 'null'
 
-  // Validate webhook secret
-  const secret = req.headers.get('x-n1co-secret')
-  if (!validateWebhookSecret(secret)) {
+  // Validate webhook HMAC signature.
+  // N1CO signs the raw body with HMAC-SHA256 and sends it in X-H4B-Hmac-Sha256.
+  const signature = req.headers.get('x-h4b-hmac-sha256')
+  if (!validateWebhookSignature(rawBody, signature)) {
     const headerNames = Array.from(req.headers.keys()).join(', ')
     const diagnostics = {
-      _rejected: 'invalid_secret',
-      _receivedSecret: mask(secret),
-      _expectedSecret: mask(process.env.N1CO_WEBHOOK_SECRET),
+      _rejected: 'invalid_signature',
+      _receivedSignature: mask(signature),
+      _secretConfigured: process.env.N1CO_WEBHOOK_SECRET ? 'yes' : 'no',
       _headers: headerNames,
     }
-    console.warn(`[N1CO Webhook] Invalid secret —`, JSON.stringify(diagnostics))
+    console.warn(`[N1CO Webhook] Invalid signature —`, JSON.stringify(diagnostics))
     // Persist the rejected attempt (payload + secret diagnostics) for later review
     void db.insert(n1coWebhookEvents).values({
       eventType:      `REJECTED_401:${event.type ?? 'UNKNOWN'}`,

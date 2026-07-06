@@ -239,12 +239,59 @@ export function extractBuyerName(payload: N1coWebhookPayload): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Webhook secret validation
+// Webhook signature validation
 // ---------------------------------------------------------------------------
+
+import crypto from 'crypto'
+
+/** Constant-time string compare that tolerates length mismatches safely. */
+function timingSafeEqualStr(a: string, b: string): boolean {
+  const ab = Buffer.from(a)
+  const bb = Buffer.from(b)
+  if (ab.length !== bb.length) {
+    // Still run a comparison to avoid leaking length via timing, then fail.
+    crypto.timingSafeEqual(ab, ab)
+    return false
+  }
+  return crypto.timingSafeEqual(ab, bb)
+}
 
 /**
  * Validates that an incoming webhook came from N1CO.
- * Uses constant-time comparison to prevent timing attacks.
+ *
+ * Per N1CO docs (https://docs.n1co.com/docs/developer-tool/webhook), N1CO signs
+ * every webhook with HMAC SHA-256 over the raw request body, using the secret
+ * key generated in the N1CO Business portal, and sends the signature in the
+ * `X-H4B-Hmac-Sha256` header.
+ *
+ * The docs' own examples disagree on the digest encoding (Node uses base64,
+ * Python/PHP use hex), so we accept either. Comparison is constant-time.
+ *
+ * The shared secret must be stored in the N1CO_WEBHOOK_SECRET env var and match
+ * exactly the key generated in the portal.
+ *
+ * @param rawBody   — the exact raw request body string (NOT re-serialized JSON)
+ * @param signature — value of the `X-H4B-Hmac-Sha256` request header
+ */
+export function validateWebhookSignature(
+  rawBody: string,
+  signature: string | null | undefined,
+): boolean {
+  const secret = process.env.N1CO_WEBHOOK_SECRET
+  if (!secret || !signature) return false
+
+  const digest = crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest()
+  const expectedHex = digest.toString('hex')
+  const expectedBase64 = digest.toString('base64')
+  const provided = signature.trim()
+
+  return timingSafeEqualStr(provided, expectedHex) || timingSafeEqualStr(provided, expectedBase64)
+}
+
+/**
+ * @deprecated N1CO signs webhooks with HMAC (`X-H4B-Hmac-Sha256`); use
+ * {@link validateWebhookSignature}. Kept only for backward compatibility with
+ * any legacy plain-secret setup. Compares a header value to N1CO_WEBHOOK_SECRET.
  */
 export function validateWebhookSecret(secret: string | null | undefined): boolean {
   const expected = process.env.N1CO_WEBHOOK_SECRET
