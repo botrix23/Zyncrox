@@ -110,36 +110,79 @@ export async function POST(req: NextRequest) {
   }).catch((err) => console.error('[N1CO Webhook] Failed to log event to DB:', err))
 
   try {
-    // Primary lookup: find subscription row by N1CO subscription ID
+    // ── Resolve billing dates and amount from the N1CO payload ────────────────
+    // Needed both for matching (plan/price preference) and the updates below.
+    // N1CO puts all of these inside metadata.* (see helpers in lib/n1co.ts).
+    const n1coNextDate    = extractNextBillingDate(event)
+    const n1coPeriodStart = extractPeriodStart(event)
+    const n1coAmount      = extractAmount(event)
+
+    const now = new Date()
+
+    // ── Match the local subscription this event belongs to ────────────────────
+    // 1) Primary: by N1CO subscription ID. Reliable for every recurring event
+    //    once the first payment has linked the ID onto the row.
     let sub = await db.query.subscriptions.findFirst({
       where: eq(subscriptions.n1coSubscriptionId, subscriptionId),
     })
 
-    const now = new Date()
-
-    // ── Email-based fallback ──────────────────────────────────────────────────
-    // Covers first-time SubscriptionConfirmation (no subscriptionId stored yet)
-    // and any case where N1CO uses a different subscriptionId on renewals.
+    // 2) Email fallback — first-time linking only. We ONLY attach to a
+    //    subscription that is AWAITING payment (PENDING_PAYMENT) and is not
+    //    already linked to a *different* N1CO subscription. This guarantees a
+    //    payment can never hijack another tenant's active subscription, even
+    //    when the same email is shared across several (test) tenants.
+    //    If nothing safe matches, we log and skip instead of guessing.
     if (!sub) {
       const email = extractWebhookEmail(event)
       if (email) {
-        const matchedTenant = await db.query.tenants.findFirst({
-          where: ilike(tenants.contactEmail, email),
-        })
-        if (matchedTenant) {
-          sub = await db.query.subscriptions.findFirst({
-            where: type === 'SubscriptionConfirmation'
-              ? and(eq(subscriptions.tenantId, matchedTenant.id), eq(subscriptions.status, 'PENDING_PAYMENT'))
-              : eq(subscriptions.tenantId, matchedTenant.id),
+        const candidates = await db
+          .select({
+            id:                 subscriptions.id,
+            tenantId:           subscriptions.tenantId,
+            plan:               subscriptions.plan,
+            pendingPlan:        subscriptions.pendingPlan,
+            n1coSubscriptionId: subscriptions.n1coSubscriptionId,
+            updatedAt:          subscriptions.updatedAt,
           })
-          if (sub) {
-            console.log(`[N1CO Webhook] ${type} — matched tenant ${matchedTenant.id} by email: ${email}`)
-          }
+          .from(subscriptions)
+          .innerJoin(tenants, eq(tenants.id, subscriptions.tenantId))
+          .where(and(
+            ilike(tenants.contactEmail, email),
+            eq(subscriptions.status, 'PENDING_PAYMENT'),
+          ))
+
+        // Never touch a row already tied to a different N1CO subscription.
+        const safe = candidates.filter(
+          (c) => !c.n1coSubscriptionId || c.n1coSubscriptionId === subscriptionId,
+        )
+
+        // When several tenants share the email, prefer the one whose plan price
+        // matches the amount just charged (→ correct plan), then the most recent.
+        const priceMatches = (c: (typeof safe)[number]) =>
+          n1coAmount != null && getPlanPrice(c.pendingPlan ?? c.plan) === n1coAmount
+        safe.sort((a, b) => {
+          const d = (priceMatches(b) ? 1 : 0) - (priceMatches(a) ? 1 : 0)
+          if (d !== 0) return d
+          return (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0)
+        })
+
+        if (safe.length > 0) {
+          sub = await db.query.subscriptions.findFirst({
+            where: eq(subscriptions.id, safe[0].id),
+          })
+          console.log(
+            `[N1CO Webhook] ${type} — linked PENDING_PAYMENT subscription ${safe[0].id} ` +
+            `(tenant ${safe[0].tenantId}) by email: ${email}` +
+            (safe.length > 1 ? ` — ${safe.length} candidates, picked best by plan/recency` : '')
+          )
         }
       }
       if (!sub) {
-        console.warn(`[N1CO Webhook] ${type} — no match for subscriptionId: ${subscriptionId} or email`)
-        return NextResponse.json({ received: true })
+        console.warn(
+          `[N1CO Webhook] ${type} — no safe PENDING_PAYMENT match for subscriptionId ` +
+          `${subscriptionId} / email. Skipping to avoid mis-assignment (event logged).`
+        )
+        return NextResponse.json({ received: true, matched: false })
       }
     }
 
@@ -149,12 +192,6 @@ export async function POST(req: NextRequest) {
       columns: { id: true, name: true },
     })
     const tenantName = tenant?.name ?? 'Empresa desconocida'
-
-    // ── Resolve billing dates and amount from N1CO payload ───────────────────
-    // N1CO puts all these inside metadata.*  (documented in n1co.ts helpers)
-    const n1coNextDate    = extractNextBillingDate(event)
-    const n1coPeriodStart = extractPeriodStart(event)
-    const n1coAmount      = extractAmount(event)
 
     switch (type) {
       case 'SubscriptionConfirmation': {
@@ -214,6 +251,8 @@ export async function POST(req: NextRequest) {
 
         await db.update(subscriptions)
           .set({
+            // Self-heal the link so every future event matches by ID, not email.
+            n1coSubscriptionId: subscriptionId,
             status:             'ACTIVE',
             cancelledAt:        null,
             gracePeriodEndsAt:  null,

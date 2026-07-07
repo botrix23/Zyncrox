@@ -75,8 +75,11 @@ const FEATURE_KEYS: Array<keyof typeof PLAN_FEATURES.BASIC> = [
 
 function formatDate(iso: string | null, locale: string): string {
   if (!iso) return '—'
+  // Render billing dates in UTC so the date shown matches the calendar date N1CO
+  // sends (e.g. "2026-07-09T04:23Z" must read "9 de julio", not shift to the 8th
+  // for viewers in negative-UTC timezones like es-SV / UTC-6).
   return new Date(iso).toLocaleDateString(locale === 'en' ? 'en-US' : 'es-SV', {
-    day: 'numeric', month: 'long', year: 'numeric',
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
   })
 }
 
