@@ -156,7 +156,13 @@ export function AdminHeader({ user, locale, userEmail, nextBillingDate, tenantSt
   const isStaff = effectiveRole === 'STAFF';
   const isReceptionist = effectiveRole === 'RECEPTIONIST';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const billingDateStr = nextBillingDate ? format(new Date(nextBillingDate), 'dd MMM yyyy') : null;
+  // Format in UTC so the calendar date matches what N1CO sends and what the
+  // billing page shows (local tz would shift e.g. Jul 15 04:23Z back to Jul 14).
+  const billingDateStr = nextBillingDate
+    ? new Date(nextBillingDate).toLocaleDateString(locale === 'en' ? 'en-US' : 'es-SV', {
+        day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC',
+      })
+    : null;
 
   const isTrial = tenantStatus === 'TRIAL';
   const trialDaysLeft = (isTrial && trialEndsAt)
