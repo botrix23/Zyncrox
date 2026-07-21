@@ -2124,7 +2124,7 @@
       "cancelSub": {
         "title": "Cancel subscription",
         "desc": "Your access will continue until <strong>{date}</strong>. After that, your account will be suspended.",
-        "noMoreCharges": "No further charges will be made.",
+        "noMoreCharges": "Important: this cancels your subscription in Zyncrox, but the recurring charge in N1CO must be cancelled separately at panel.n1co.com to stop further charges.",
         "keep": "Keep subscription",
         "confirm": "Confirm cancellation"
       },

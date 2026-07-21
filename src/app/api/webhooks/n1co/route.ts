@@ -249,6 +249,38 @@ export async function POST(req: NextRequest) {
         const paymentDate = n1coPeriodStart ?? (event.timestamp ? new Date(event.timestamp) : now)
         const periodEnd = n1coNextDate ?? addDays(paymentDate, getPlanFeatures(sub.plan).billingCycleDays)
 
+        // If the tenant already cancelled, N1CO charged despite the cancellation
+        // (we can't stop N1CO's recurring charge from our side — it must be
+        // cancelled in panel.n1co.com). Record the payment for audit but DO NOT
+        // reactivate: keep status CANCELLED so the app respects the user's intent.
+        if (sub.status === 'CANCELLED') {
+          await db.update(subscriptions)
+            .set({
+              n1coSubscriptionId: subscriptionId,
+              lastPaymentAt:      paymentDate,
+              lastPaymentAmount:  String(amount),
+              // They paid, so extend access through the paid period, but stay cancelled.
+              currentPeriodEnd:   periodEnd,
+              updatedAt:          now,
+            })
+            .where(eq(subscriptions.id, sub.id))
+
+          console.warn(
+            `[N1CO Webhook] SubscriptionPayment on CANCELLED sub — tenant ${sub.tenantId} ` +
+            `charged $${amount} despite cancellation. Kept CANCELLED; recorded payment. ` +
+            `N1CO subscription must be cancelled in panel.n1co.com.`
+          )
+          void createNotification({
+            type: 'PAYMENT_RECEIVED',
+            message: `⚠️ N1CO cobró $${amount} a "${tenantName}" pese a estar CANCELADA. Cancelar en panel.n1co.com.`,
+            link: `/admin/super/payments`,
+            tenantId: sub.tenantId,
+            tenantName,
+            urgency: 'HIGH',
+          })
+          break
+        }
+
         await db.update(subscriptions)
           .set({
             // Self-heal the link so every future event matches by ID, not email.
