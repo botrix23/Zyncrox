@@ -17,12 +17,13 @@
  * NOTE: the Bearer token here is a completely different mechanism from the
  * HMAC signature used to verify INCOMING webhooks (see validateWebhookSignature).
  *
- * Required env vars (credentials are issued by the N1CO team, not self-service):
- *   N1CO_API_CLIENT_ID
- *   N1CO_API_CLIENT_SECRET
- *   N1CO_API_BASE_URL   — optional. Defaults to production.
- *                         prod:    https://api.n1co.com
- *                         sandbox: https://api-sandbox.n1co.shop
+ * Required env vars. Create the credentials yourself in the N1CO portal:
+ * Configuraciones → API → "crear nueva API" → it returns both values.
+ *   N1CO_CLIENT_ID       (alias: N1CO_API_CLIENT_ID)
+ *   N1CO_CLIENT_SECRET   (alias: N1CO_API_CLIENT_SECRET)
+ *   N1CO_BASE_URL        — optional. Defaults to production.
+ *                          prod:    https://api.n1co.com
+ *                          sandbox: https://api-sandbox.n1co.shop
  */
 
 const DEFAULT_BASE_URL = 'https://api.n1co.com'
@@ -34,9 +35,22 @@ function getBaseUrl(): string {
   return base.replace(/\/+$/, '')
 }
 
+/**
+ * Credentials are created by the merchant in the N1CO portal
+ * (Configuraciones → API → crear nueva API), which hands back exactly these
+ * two values. We accept the names N1CO itself uses, with an N1CO_API_* alias.
+ */
+function getCredentials(): { clientId?: string; clientSecret?: string } {
+  return {
+    clientId:     process.env.N1CO_CLIENT_ID     || process.env.N1CO_API_CLIENT_ID,
+    clientSecret: process.env.N1CO_CLIENT_SECRET || process.env.N1CO_API_CLIENT_SECRET,
+  }
+}
+
 /** True when the API credentials are present, so callers can fail fast. */
 export function isN1coApiConfigured(): boolean {
-  return Boolean(process.env.N1CO_API_CLIENT_ID && process.env.N1CO_API_CLIENT_SECRET)
+  const { clientId, clientSecret } = getCredentials()
+  return Boolean(clientId && clientSecret)
 }
 
 // Module-scope token cache. Survives across requests on a warm serverless
@@ -53,12 +67,9 @@ function clearTokenCache(): void {
  * Refreshes 60s before expiry to avoid racing the boundary.
  */
 export async function getN1coAccessToken(): Promise<string> {
-  const clientId = process.env.N1CO_API_CLIENT_ID
-  const clientSecret = process.env.N1CO_API_CLIENT_SECRET
+  const { clientId, clientSecret } = getCredentials()
   if (!clientId || !clientSecret) {
-    throw new Error(
-      'N1CO API credentials missing (N1CO_API_CLIENT_ID / N1CO_API_CLIENT_SECRET)',
-    )
+    throw new Error('N1CO API credentials missing (N1CO_CLIENT_ID / N1CO_CLIENT_SECRET)')
   }
 
   if (cachedToken && Date.now() < cachedToken.expiresAt - 60_000) {
