@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth-session'
 import { getN1coSubscriptionLink, buildN1coLink } from '@/lib/n1co'
+import { isN1coApiConfigured, cancelN1coSubscription } from '@/lib/n1co-api'
 import { getPlanPrice, getPlanFeatures, PlanType } from '@/core/plans'
 import { enforceDowngradeLimits } from '@/lib/billing'
 import { logAuditEvent } from '@/lib/audit'
@@ -174,15 +175,66 @@ export async function cancelSubscriptionAction(tenantId: string) {
   if (!session.isOwner && session.role !== 'SUPER_ADMIN') return { success: false, error: 'OWNER_ONLY' }
 
   try {
+    const sub = await db.query.subscriptions.findFirst({
+      where: eq(subscriptions.tenantId, tenantId),
+    })
+    if (!sub) return { success: false, error: 'No hay suscripción activa' }
+
     const now = new Date()
-    // Mark as cancelled locally. The customer must also cancel directly in the
-    // N1CO portal (https://pay.n1co.shop) to stop future charges.
+
+    // ── Stop the recurring charge at N1CO FIRST ───────────────────────────────
+    // Cancelling only in our DB would leave N1CO charging the card every cycle.
+    // So if we cannot stop it upstream we deliberately do NOT mark it cancelled
+    // locally — the UI must never say "cancelled" while the customer is still
+    // being charged. The owner gets an actionable error instead.
+    if (!isN1coApiConfigured()) {
+      console.error('[Cancel] N1CO API credentials not configured — cannot stop recurring charge')
+      return {
+        success: false,
+        error: 'No se pudo detener el cobro recurrente: la integración con N1CO no está configurada. Contacta a soporte.',
+      }
+    }
+
+    if (!sub.n1coSubscriptionId) {
+      console.error(`[Cancel] tenant ${tenantId} has no n1coSubscriptionId — cannot cancel upstream`)
+      return {
+        success: false,
+        error: 'No pudimos identificar tu suscripción en N1CO, por lo que no podemos detener el cobro automáticamente. Contacta a soporte para cancelarla.',
+      }
+    }
+
+    const result = await cancelN1coSubscription(sub.n1coSubscriptionId)
+    if (!result.ok) {
+      // Full upstream response is logged so the exact N1CO error/body is visible.
+      console.error(
+        `[Cancel] N1CO cancel failed — tenant ${tenantId}, subscription ${sub.n1coSubscriptionId}:`,
+        result.error,
+      )
+      return {
+        success: false,
+        error: 'No pudimos cancelar el cobro recurrente en N1CO. Intenta de nuevo; si el problema persiste, contacta a soporte.',
+      }
+    }
+
+    console.log(
+      `[Cancel] N1CO subscription ${sub.n1coSubscriptionId} cancelled for tenant ${tenantId} ` +
+      `(status ${result.status}) — response: ${result.body.slice(0, 300)}`,
+    )
+
+    // Upstream billing is stopped — now it's safe to reflect it locally.
+    // If N1CO also fires a SubscriptionCancelled webhook, that handler is
+    // idempotent and preserves this original cancelledAt timestamp.
     await db.update(subscriptions)
       .set({ status: 'CANCELLED', cancelledAt: now, updatedAt: now })
       .where(eq(subscriptions.tenantId, tenantId))
 
     revalidatePath('/[locale]/admin/billing', 'page')
-    await logAuditEvent({ action: 'SUBSCRIPTION_CANCELLED', userId: session.userId, tenantId })
+    await logAuditEvent({
+      action: 'SUBSCRIPTION_CANCELLED',
+      userId: session.userId,
+      tenantId,
+      details: { n1coSubscriptionId: sub.n1coSubscriptionId },
+    })
     return { success: true }
   } catch (err) {
     console.error('cancelSubscription error:', err)

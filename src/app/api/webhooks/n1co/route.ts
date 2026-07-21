@@ -27,7 +27,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { subscriptions, tenants, n1coWebhookEvents } from '@/db/schema'
+import { subscriptions, tenants, n1coWebhookEvents, subscriptionPlans } from '@/db/schema'
 import { and, eq, ilike } from 'drizzle-orm'
 import {
   validateWebhookSignature,
@@ -134,53 +134,71 @@ export async function POST(req: NextRequest) {
     //    If nothing safe matches, we log and skip instead of guessing.
     if (!sub) {
       const email = extractWebhookEmail(event)
-      if (email) {
-        const candidates = await db
-          .select({
-            id:                 subscriptions.id,
-            tenantId:           subscriptions.tenantId,
-            plan:               subscriptions.plan,
-            pendingPlan:        subscriptions.pendingPlan,
-            n1coSubscriptionId: subscriptions.n1coSubscriptionId,
-            updatedAt:          subscriptions.updatedAt,
-          })
-          .from(subscriptions)
-          .innerJoin(tenants, eq(tenants.id, subscriptions.tenantId))
-          .where(and(
-            ilike(tenants.contactEmail, email),
-            eq(subscriptions.status, 'PENDING_PAYMENT'),
-          ))
 
-        // Never touch a row already tied to a different N1CO subscription.
-        const safe = candidates.filter(
-          (c) => !c.n1coSubscriptionId || c.n1coSubscriptionId === subscriptionId,
-        )
-
-        // When several tenants share the email, prefer the one whose plan price
-        // matches the amount just charged (→ correct plan), then the most recent.
-        const priceMatches = (c: (typeof safe)[number]) =>
-          n1coAmount != null && getPlanPrice(c.pendingPlan ?? c.plan) === n1coAmount
-        safe.sort((a, b) => {
-          const d = (priceMatches(b) ? 1 : 0) - (priceMatches(a) ? 1 : 0)
-          if (d !== 0) return d
-          return (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0)
+      const pending = await db
+        .select({
+          id:                 subscriptions.id,
+          tenantId:           subscriptions.tenantId,
+          plan:               subscriptions.plan,
+          pendingPlan:        subscriptions.pendingPlan,
+          n1coSubscriptionId: subscriptions.n1coSubscriptionId,
+          updatedAt:          subscriptions.updatedAt,
+          contactEmail:       tenants.contactEmail,
         })
+        .from(subscriptions)
+        .innerJoin(tenants, eq(tenants.id, subscriptions.tenantId))
+        .where(eq(subscriptions.status, 'PENDING_PAYMENT'))
 
-        if (safe.length > 0) {
-          sub = await db.query.subscriptions.findFirst({
-            where: eq(subscriptions.id, safe[0].id),
-          })
-          console.log(
-            `[N1CO Webhook] ${type} — linked PENDING_PAYMENT subscription ${safe[0].id} ` +
-            `(tenant ${safe[0].tenantId}) by email: ${email}` +
-            (safe.length > 1 ? ` — ${safe.length} candidates, picked best by plan/recency` : '')
-          )
-        }
+      // Never attach to a row already tied to a *different* N1CO subscription.
+      const safe = pending.filter(
+        (c) => !c.n1coSubscriptionId || c.n1coSubscriptionId === subscriptionId,
+      )
+
+      // Plan prices come from the DB plans table — the same source used to build
+      // the N1CO checkout links — falling back to the code constants.
+      const dbPlans = await db
+        .select({ slug: subscriptionPlans.slug, price: subscriptionPlans.price })
+        .from(subscriptionPlans)
+      const priceOf = (slug: string): number => {
+        const row = dbPlans.find((p) => p.slug === slug)
+        const parsed = row ? parseFloat(row.price) : NaN
+        return Number.isNaN(parsed) ? getPlanPrice(slug) : parsed
       }
+
+      // Anchor on the AMOUNT: only a subscription awaiting payment for a plan
+      // priced exactly at what N1CO just charged can be the right one.
+      const candidates = n1coAmount != null
+        ? safe.filter((c) => priceOf(c.pendingPlan ?? c.plan) === n1coAmount)
+        : []
+
+      // Email only breaks ties between otherwise-equal candidates.
+      const emailMatches = (c: (typeof safe)[number]) =>
+        Boolean(email && c.contactEmail && c.contactEmail.toLowerCase() === email.toLowerCase())
+
+      candidates.sort((a, b) => {
+        const d = (emailMatches(b) ? 1 : 0) - (emailMatches(a) ? 1 : 0)
+        if (d !== 0) return d
+        return (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0)
+      })
+
+      if (candidates.length > 0) {
+        const picked = candidates[0]
+        sub = await db.query.subscriptions.findFirst({
+          where: eq(subscriptions.id, picked.id),
+        })
+        console.log(
+          `[N1CO Webhook] ${type} — linked subscription ${picked.id} (tenant ${picked.tenantId}, ` +
+          `plan ${picked.pendingPlan ?? picked.plan}) by amount $${n1coAmount}` +
+          `${emailMatches(picked) ? ' + email match' : ''}` +
+          `${candidates.length > 1 ? ` — ${candidates.length} candidates, picked most recent` : ''}`
+        )
+      }
+
       if (!sub) {
         console.warn(
-          `[N1CO Webhook] ${type} — no safe PENDING_PAYMENT match for subscriptionId ` +
-          `${subscriptionId} / email. Skipping to avoid mis-assignment (event logged).`
+          `[N1CO Webhook] ${type} — no PENDING_PAYMENT subscription priced at $${n1coAmount ?? '?'} ` +
+          `for N1CO subscription ${subscriptionId} (buyer: ${email ?? 'unknown'}). ` +
+          `Skipping to avoid mis-assignment (event stored in n1co_webhook_events).`
         )
         return NextResponse.json({ received: true, matched: false })
       }
@@ -337,8 +355,11 @@ export async function POST(req: NextRequest) {
       }
 
       case 'SubscriptionCancelled': {
+        // Idempotent: we may have already cancelled via the N1CO API from the
+        // billing page. Keep the original cancelledAt so the customer-facing
+        // date doesn't jump when N1CO's confirmation webhook lands afterwards.
         await db.update(subscriptions)
-          .set({ status: 'CANCELLED', cancelledAt: now, updatedAt: now })
+          .set({ status: 'CANCELLED', cancelledAt: sub.cancelledAt ?? now, updatedAt: now })
           .where(eq(subscriptions.id, sub.id))
 
         console.log(`[N1CO Webhook] SubscriptionCancelled — tenant ${sub.tenantId}`)
