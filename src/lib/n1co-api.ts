@@ -21,18 +21,27 @@
  * Configuraciones → API → "crear nueva API" → it returns both values.
  *   N1CO_CLIENT_ID       (alias: N1CO_API_CLIENT_ID)
  *   N1CO_CLIENT_SECRET   (alias: N1CO_API_CLIENT_SECRET)
- *   N1CO_BASE_URL        — optional. Defaults to production.
+ *   N1CO_API_BASE_URL    — optional. Defaults to production.
  *                          prod:    https://api.n1co.com
  *                          sandbox: https://api-sandbox.n1co.shop
+ *                          (host only — do NOT include the /api/v3 path)
  */
 
 const DEFAULT_BASE_URL = 'https://api.n1co.com'
 
+/**
+ * Host for the Integration API. Defaults to the documented production host and
+ * is only overridden by N1CO_API_BASE_URL (e.g. to point at sandbox).
+ *
+ * We deliberately do NOT read the older N1CO_BASE_URL here: its value is unknown
+ * and, if it already contains the /api/v3 path, requests end up at
+ * `.../api/v3/api/v3/Token`, which returns an HTML 404 instead of JSON.
+ * As a safety net we also strip a trailing /api/v3 from whatever we are given,
+ * so both "https://api.n1co.com" and "https://api.n1co.com/api/v3" work.
+ */
 function getBaseUrl(): string {
-  // Prefer an explicit override, then the pre-existing N1CO_BASE_URL already
-  // configured in Vercel, then the documented production host.
-  const base = process.env.N1CO_API_BASE_URL || process.env.N1CO_BASE_URL || DEFAULT_BASE_URL
-  return base.replace(/\/+$/, '')
+  const base = process.env.N1CO_API_BASE_URL || DEFAULT_BASE_URL
+  return base.replace(/\/+$/, '').replace(/\/api\/v3$/i, '')
 }
 
 /**
@@ -76,7 +85,8 @@ export async function getN1coAccessToken(): Promise<string> {
     return cachedToken.value
   }
 
-  const res = await fetch(`${getBaseUrl()}/api/v3/Token`, {
+  const tokenUrl = `${getBaseUrl()}/api/v3/Token`
+  const res = await fetch(tokenUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ clientId, clientSecret }),
@@ -85,14 +95,15 @@ export async function getN1coAccessToken(): Promise<string> {
 
   const raw = await res.text().catch(() => '')
   if (!res.ok) {
-    throw new Error(`N1CO token request failed (${res.status}): ${raw.slice(0, 300)}`)
+    throw new Error(`N1CO token request failed (${res.status}) at ${tokenUrl}: ${raw.slice(0, 200)}`)
   }
 
   let data: { accessToken?: string; expiresIn?: number }
   try {
     data = JSON.parse(raw)
   } catch {
-    throw new Error(`N1CO token response was not JSON: ${raw.slice(0, 300)}`)
+    // Almost always means the URL is wrong and we got an HTML error page.
+    throw new Error(`N1CO token response was not JSON from ${tokenUrl}: ${raw.slice(0, 200)}`)
   }
   if (!data.accessToken) {
     throw new Error('N1CO token response did not include accessToken')
