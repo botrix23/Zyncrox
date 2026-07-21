@@ -28,7 +28,10 @@
 const DEFAULT_BASE_URL = 'https://api.n1co.com'
 
 function getBaseUrl(): string {
-  return (process.env.N1CO_API_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, '')
+  // Prefer an explicit override, then the pre-existing N1CO_BASE_URL already
+  // configured in Vercel, then the documented production host.
+  const base = process.env.N1CO_API_BASE_URL || process.env.N1CO_BASE_URL || DEFAULT_BASE_URL
+  return base.replace(/\/+$/, '')
 }
 
 /** True when the API credentials are present, so callers can fail fast. */
